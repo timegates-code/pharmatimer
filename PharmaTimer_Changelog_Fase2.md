@@ -1,6 +1,6 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 2.5.2
+**Versione:** 2.5.3
 **Data inizio fase:** 16 aprile 2026
 **Ultima modifica:** 18 aprile 2026
 **Ambito:** Sviluppo PWA React standalone con persistenza locale, preparata per futuro swap verso backend FastAPI+MariaDB.
@@ -58,6 +58,12 @@ Questo documento raccoglie le decisioni architetturali, la struttura del progett
 - Aggiornata sez. 3 (struttura progetto): rimossi marker `[Step 5]` sui file ora prodotti
 - Totale test: 119/119 (invariato, nessun test aggiunto in 5b-2 come da §13/D13)
 - Sostituito prompt §11 (Sessione 5b parte 2/2 consumato) con prompt Sessione 6 (hook `useNow`) in modalità analisi-first
+
+**Changelog versione 2.5.3 (rispetto alla 2.5.2):**
+- Analisi critica del prompt §11 v2.5.2 (modalità analisi-first): identificati 3 bloccanti, 3 rilevanti, 6 minor
+- 8 AMB-6 pre-approvate congelate nel nuovo §11 esecutivo: A (utils/now.js + resolveNow condiviso), B (rollover resta in AppContext), C (simulatedNow statico), D (useNow solo discendenti Provider), E (timer unico nel Provider), F (shape ibrida {date,dateStr,hhmm,minutes,isSimulated} con date coerente quando simulato), G (ispezione mockup v5 primo passo + TICK_INTERVAL_MS in constants.js), H (target 120 test, +1 su resolveNow)
+- Riscritto §11 da modalità analisi-first a modalità esecutiva (stile v2.5.1 per 5b-2): AMB nel prompt, sanity check a 12 punti, scope file ordinato, zero Q&A iterativo in-session
+- Nessuna modifica al codice o ad altre sezioni (la sessione 6 applicherà le AMB)
 
 ---
 
@@ -645,90 +651,186 @@ Chiarimenti risolti pre-Step 4b (AMB-1/2/3):
 
 ## 11. Prossimo step — messaggio di apertura Sessione 6
 
-Scope Sessione 6: implementare il hook `useNow` che espone "adesso" ai componenti UI, in modalità produzione (system clock reattivo) e sviluppo (valore simulato). Sostituisce le chiamate inline `new Date()` sparse nei selectors e nel Provider.
+Scope Sessione 6: implementare il hook `useNow` (tempo reale in prod, simulato in DEV) + estrazione di `resolveNow` in `src/utils/now.js` come funzione pura condivisa tra hook UI, thunk e selectors.
 
-Il prompt di sotto è in **modalità analisi-first** (non esecutiva): chiede all'apertura sessione di mappare consumatori, trade-off e aperture — prima di proporre qualsiasi file. Il modello di Sessione 5b (D1-Dn pre-approvate) sarà applicato dopo il ciclo analisi/conferma.
+Il prompt qui sotto è il risultato dell'analisi critica del prompt "analisi-first" v2.5.2 (documentata nel blocco changelog 2.5.3): 3 bloccanti + 3 rilevanti + 6 minor identificati e risolti. Tutte le decisioni sono dichiarate come AMB-6 pre-approvate, così che Sessione 6 possa procedere senza Q&A iterativo.
 
 Prompt da incollare nella nuova conversazione del progetto:
 
 ```
-Continuiamo PharmaTimer. Sessione 6: hook useNow.
+Continuiamo PharmaTimer. Sessione 6: hook useNow + refactor resolveNow.
 
 Contesto in KB — leggi integralmente PRIMA di rispondere:
-- PharmaTimer_Project_Spec.md v1.2 (sez. 5 per semantica tempo, se presente)
-- PharmaTimer_Changelog_Fase2.md v2.5.2
+- PharmaTimer_Project_Spec.md v1.2
+- PharmaTimer_Changelog_Fase2.md v2.5.3
+  - sez. 15 "Stato post-Sessione 5b parte 2/2" (stato codice corrente)
   - sez. 1 (decisioni architetturali: "Slider tempo solo in dev")
-  - sez. 15 "Stato post-Sessione 5b parte 2/2" (stato corrente)
-  - sez. 3 (struttura progetto: file target src/hooks/useNow.js)
 
 Stato del codice (119/119 test):
-- AppProvider attivo, rollover detect già funzionante (setInterval 60s + visibilitychange)
+- AppProvider attivo con rollover detect (setInterval 60_000 + visibilitychange)
 - state.simulatedNow: 'HH:MM'|null — gestita da SET_SIMULATED_NOW + thunk setSimulatedNow
-- selectors.selectProssimaDose chiama internamente new Date() con parametro opzionale now
-- selectors.selectToday chiama internamente new Date() con parametro opzionale now
+- actions.js: helper privato resolveNow(state, now?) duplica logica che vive anche in selectors
+- selectors.selectToday e selectProssimaDose chiamano new Date() inline con param opzionale
 - Nessun componente UI reale ancora consuma l'orario reattivo (OggiView è placeholder 5-campi)
-- Prossimo consumatore massivo: Step 7 (vista Oggi completa, stato "in ritardo", conto alla rovescia, delta live)
+- Prossimo consumer massivo: Step 7 (vista Oggi completa, stato "in ritardo", countdown, delta live)
+- Mockup di riferimento: pharmatimer_oggi_v5.jsx nella KB
 
-=== ANALISI DA FARE PRIMA DI PROPORRE CODICE ===
+=== AMB-6 PRE-APPROVATE (adottare senza discuterle) ===
 
-Produci una sezione "Analisi pre-implementazione Sessione 6" che copra:
+AMB-6.A — resolveNow estratto in src/utils/now.js (funzione pura)
+  Nuovo file src/utils/now.js esporta:
+    export function resolveNow(state, referenceDate = new Date()) {
+      // returns { date, dateStr, hhmm, minutes, isSimulated }
+    }
+  Comportamento identico all'attuale actions.resolveNow, esteso a shape ibrida AMB-6.F.
+  Consumer dopo il refactor:
+    - src/state/actions.js: rimuove resolveNow privato, importa da utils/now
+    - src/hooks/useNow.js: lo invoca internamente
+    - src/state/selectors.js: selectToday e selectProssimaDose lo usano invece di new Date() inline
+  Nessuna modifica al dominio puro (recalc.js, planBuilder.js) — restano ignari del concetto "now".
 
-1. Consumatori previsti e requisiti differenziati
-   - Chi chiama useNow in Step 7? Card (per stato in ritardo / delta live / countdown),
-     Header (clock grande visibile?), modali retro-presa?
-   - Granularità: tutti al minuto o qualcuno al secondo?
-   - Quanti re-render al minuto sono accettabili in una pagina con N card?
+AMB-6.B — Rollover detect resta in AppContext
+  Il setInterval 60s + visibilitychange attualmente in AppContext.jsx NON viene spostato
+  dentro useNow. Motivazione: rollover è singleton, useNow è chiamato da N componenti.
+  Modifiche ammesse ad AppContext.jsx: (i) aggiungere state tickMs per il timer centrale
+  (AMB-6.E), (ii) sostituire il literal 60_000 con import di TICK_INTERVAL_MS (AMB-6.G).
+  Il rollover detect riusa lo stesso timer: check invocato al tick + al visibilitychange.
+  Test 119+ preservati.
 
-2. Shape del valore restituito
-   - Date oggetto? { dateStr, hhmm, minutes }? Entrambi?
-   - Se Date: i consumatori chiamano getHours() etc. sparsi, rischio drift
-   - Se struttura piatta: più ergonomico ma meno estendibile
+AMB-6.C — simulatedNow è STATICO
+  Quando state.simulatedNow è valorizzato, resta fisso finché non viene ri-settato
+  (via actions.setSimulatedNow). NON avanza automaticamente. Motivazioni:
+    - coerenza con mockup v5 (slider = valore puntuale)
+    - zero impatto su §13/D1 (azioni reducer restano 16, no TICK_SIMULATED_NOW)
+    - zero complessità su determinismo / regressioni
+  Per "avanzare" manualmente in DEV, il chiamante ri-invoca setSimulatedNow('HH:MM') o
+  null per tornare al clock reale.
 
-3. Integrazione con state.simulatedNow
-   - useNow deve leggere simulatedNow via useAppContext? (accoppiamento Provider)
-   - O accettarlo come parametro esterno (chiamante decide)?
-   - Quando simulatedNow è impostato: valore statico o avanza di 1 minuto ogni 60s reali?
+AMB-6.D — useNow chiamabile solo da discendenti del Provider
+  useNow usa useAppContext internamente. Pattern identico a useAppContext: throw esplicito
+  se chiamato fuori dal Provider tree. Vincolo dichiarato: useNow NON va invocato dentro
+  AppContext.jsx stesso (evita dipendenza circolare).
 
-4. Refactor selectors
-   - selectProssimaDose e selectToday accettano "now" come param opzionale (già cosi)
-   - I consumatori attuali (OggiView placeholder, rollover detect in AppContext) vanno
-     adattati a passare il Date/hhmm proveniente da useNow?
-   - Rollover detect è già nel Provider: mantenerlo li (è in useEffect, non serve hook)
-     o spostarlo dentro useNow stesso?
+AMB-6.E — Timer unico nel Provider, re-render via context value
+  AppContext gestisce un unico setInterval(TICK_INTERVAL_MS). Il tick aggiorna uno state
+  locale tickMs (useState(Date.now())) che viene inserito nel context value accanto a
+  {state, actions}. Nuovo value: { state, actions, tickMs }.
+  Ogni tick → re-render del Provider → re-render di tutti i consumer useAppContext.
+  Accettabile per complessità attuale (PWA mobile, consumer in double digit).
+  Sub-context / event-emitter per granularità fine rinviati a Step 7+ se emergono
+  problemi perf misurati.
+  NESSUNA nuova azione reducer. Il tickMs è ephemeral come simulatedNow.
 
-5. Fonte del tick
-   - Un unico setInterval globale con context/subscription, o setInterval per ogni hook?
-   - Se un setInterval per hook con N card montate → N timer — inefficiente
-   - Alternativa: un solo timer nel Provider che dispatcha NOW_TICK ogni minuto,
-     simulatedNow e tick reale convergono in state.nowTick
+AMB-6.F — Shape return di useNow (coerente con simulatedNow attivo)
+  useNow() → {
+    date: Date,              // oggetto nativo, utile per .getDay(), calendari, ecc.
+    dateStr: 'YYYY-MM-DD',   // match plan.entry.dateStr
+    hhmm: 'HH:MM',           // match plan.entry.ora_prevista
+    minutes: 0..1439,        // hhmm convertito per calcoli delta
+    isSimulated: boolean,    // true se state.simulatedNow è valorizzato
+  }
+  Coerenza date ↔ hhmm quando simulatedNow attivo: costruire date sovrascrivendo
+  hours/minutes con i valori del simulato:
+    if (state.simulatedNow) {
+      const [h, m] = state.simulatedNow.split(':').map(Number);
+      const d = new Date(referenceDate);
+      d.setHours(h, m, 0, 0);
+      return { date: d, hhmm: state.simulatedNow, ..., isSimulated: true };
+    }
+  dateStr: sempre dal referenceDate (il simulato sposta solo HH:MM entro il giorno, non
+  il calendario — regola confermata da AppContext.selectToday e da actions.resolveNow
+  esistenti).
 
-6. Test
-   - Hook testabile con @testing-library/react + vitest (jsdom)?
-   - Vale la pena aggiungere 1-2 test minimi, o rinviare a Step 7?
+AMB-6.G — Primo passo operativo + TICK_INTERVAL_MS in constants.js
+  (1) Primo passo: ispezionare pharmatimer_oggi_v5.jsx per mappare i consumer di "now"
+      nella vista Oggi (Card countdown, Header clock, modali retro-presa). Produrre
+      conteggio e livello di granularità (minuto vs secondo) come nota pre-codice.
+      Obiettivo: dimensionare il design di useNow al fabbisogno Step 7 reale, non
+      immaginato.
+  (2) Estensione src/domain/constants.js (attualmente 14 righe):
+      export const TICK_INTERVAL_MS = 60_000;  // Provider tick + rollover detect
+      Usata da AppContext.jsx (sostituisce il literal 60_000 attuale).
 
-7. Slider DEV
-   - Componente src/components/shared/DevTimeSlider.jsx (già pianificato in §3) va
-     scritto in Sessione 6 o rinviato a Step 7 dopo che useNow e-consumer esistono?
+AMB-6.H — Target test post-Sessione 6 = 120
+  +1 test su src/utils/now.test.js. Suite minima (3-5 asserzioni):
+    - resolveNow con state.simulatedNow=null → hhmm dal referenceDate
+    - resolveNow con state.simulatedNow='14:30' → hhmm='14:30', isSimulated=true,
+      date.getHours()===14 && date.getMinutes()===30
+    - resolveNow con state.simulatedNow='14:30' e referenceDate alle 10:00 → dateStr
+      coerente con referenceDate (il simulato non sposta il calendario)
+  NESSUN test su useNow hook (testing con @testing-library/react + jsdom rinviato a
+  Step 7 quando esistono consumer reali).
+  Totale atteso: 119 (esistenti) + 1 (resolveNow) = 120.
 
-Al termine: proponi **D1-Dn decisioni pre-implementazione** (stile §13 Sessione 5b) da
-confermare prima di scrivere codice. Includi il campo "thunk count post-Sessione 6"
-e "test count target" per chiusura.
+=== SANITY CHECK INIZIALE (PRIMA DI SCRIVERE CODICE) ===
 
-Nessun codice fino alla conferma delle decisioni.
+Conferma per ciascuno dei 12 punti una riga "Punto N: <risposta>":
 
-=== VINCOLI NON NEGOZIABILI ===
+  1. Numero file nuovi + modificati
+  2. Shape del return di useNow
+  3. simulatedNow: statico o avanza automaticamente
+  4. Rollover detect: file che lo ospita dopo Sessione 6
+  5. resolveNow: file che lo ospita dopo Sessione 6 + lista consumer
+  6. AppContext value shape dopo Sessione 6
+  7. Nuove azioni reducer introdotte in questa sessione
+  8. useNow chiamabile fuori Provider
+  9. TICK_INTERVAL_MS: file e valore
+  10. Target test finale
+  11. DevTimeSlider in scope Sessione 6
+  12. Coerenza date ↔ hhmm quando simulatedNow attivo (come risolta)
 
-- File target principale: src/hooks/useNow.js
-- Nessuna dipendenza esterna aggiunta
-- Purezza del dominio preservata: recalc.js e planBuilder.js non devono importare useNow
-- NavBar, routing, App.jsx, main.jsx: intoccati
-- Deviazione AMB-5b2.F ancora vigente: placeholder in OggiView.jsx non va smantellato
-  in questa sessione (Step 7 lo sostituisce con la vista reale)
+Se qualcosa resta oscuro DOPO aver letto le 8 AMB, segnala UNA ambiguità residua
+(AMB-6.I con opzioni). Non procedere con codice prima della mia conferma sui 12 punti.
 
-Al termine della sessione (quando il codice sarà scritto e testato):
-- Riepilogo strutturato
-- Aggiornamento §7 roadmap: Step 6 ✅
-- Prompt apertura Sessione 7 (vista Oggi)
+=== SCOPE ESECUTIVO (dopo conferma) ===
+
+File in ordine di intervento (ispezione preventiva → fondamenta → consumer → test):
+
+  [0] INSPECT    pharmatimer_oggi_v5.jsx (solo lettura, produci nota consumer AMB-6.G.1)
+  M   src/domain/constants.js              aggiunta TICK_INTERVAL_MS (AMB-6.G.2)
+  N   src/utils/now.js                     resolveNow + shape AMB-6.F
+  N   src/utils/now.test.js                suite minima 3-5 asserzioni (AMB-6.H)
+  M   src/state/actions.js                 rimuove resolveNow privato, importa da utils/now
+  M   src/state/selectors.js               selectToday/selectProssimaDose usano utils/now
+  N   src/hooks/useNow.js                  hook consumer di context + utils/now
+  M   src/state/AppContext.jsx             aggiunge tickMs state + TICK_INTERVAL_MS,
+                                            espone tickMs nel context value
+
+File intoccati: App.jsx, main.jsx, NavBar.jsx, OggiView.jsx (placeholder 5b-2 intatto),
+reducer.js, applyHelper.js, recalc.js, planBuilder.js, IRepository.js, LocalRepository.js,
+devCheck.js.
+
+=== REGOLE ===
+
+- Codice e commenti in inglese. UI/error messages in italiano.
+- Purezza del dominio preservata: recalc.js e planBuilder.js NON importano useNow
+  né utils/now.
+- utils/now.js è pura (nessun hook, nessun effect). Testabile in env node.
+- useNow è l'UNICO punto hook-side per leggere "now". selectors puri accettano il valore
+  come parametro, thunks lo risolvono via utils/now.
+- Immutabilità strict sullo state.
+- Nessuna dipendenza esterna aggiunta.
+- Procedura step-by-step: dopo il sanity check + conferma, mostra il patch di
+  constants.js + il file utils/now.js (+ test) PRIMA degli altri file. Attendi
+  conferma che questi passino (119 → 120) prima di procedere con hooks/ e
+  modifiche a AppContext.
+- Se emerge necessità di modificare file Step 1-5, segnalare come AMB-6.J+
+- Verifica end-to-end: dopo tutti i file, conferma che `npm run dev` + browser
+  DevTools → __pt.app.getState() continui a restituire status='ready' e che
+  il tickMs nel context cambi entro 60s (test manuale, non Vitest).
+
+=== AL TERMINE ===
+
+Riepilogo strutturato:
+- File creati/modificati con scopo
+- Test: 120/120 atteso
+- Deviazioni aggiuntive (se emerse durante l'implementazione)
+- Limitazioni note
+- Indicazioni per verifica browser (inclusa `__pt.app.getState().now*` se esposto)
+- Prompt di apertura Sessione 7 (vista Oggi completa)
+
+Al termine della sessione, aggiornamento §7 roadmap (Step 6 ✅) + nuova §16
+"Stato post-Sessione 6" + Changelog bump a v2.5.4.
 ```
 
 ---
