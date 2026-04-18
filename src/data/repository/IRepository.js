@@ -107,6 +107,7 @@
  * @property {(id: number, patch: Partial<LogAssunzione>) => Promise<void>} updateLog
  * @property {(id: number) => Promise<void>}              deleteLog
  * @property {(farmacoId: number, data: string, doseNumero: number, patch: Partial<LogAssunzione>) => Promise<LogAssunzione>} upsertLog
+ * @property {(logs: LogAssunzione[]) => Promise<LogAssunzione[]>} upsertLogsBatch
  *
  * // --- Impostazioni (key/value) ---
  * @property {(chiave: string) => Promise<any>}           getSetting

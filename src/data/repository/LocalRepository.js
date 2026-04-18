@@ -232,6 +232,32 @@ export class LocalRepository {
     });
   }
 
+  async upsertLogsBatch(logs) {
+    // Atomic batch upsert — all-or-nothing in a single IDB transaction.
+    // Used by apply* thunks (Sessione 5b). See Changelog Fase 2 §6.22.
+    if (!logs || logs.length === 0) return [];
+    return db.transaction("rw", db.log_assunzioni, async () => {
+      const results = [];
+      for (const log of logs) {
+        const rows = await db.log_assunzioni
+          .where("[farmaco_id+data]").equals([log.farmaco_id, log.data])
+          .toArray();
+        const existing = rows.find(r => r.dose_numero === log.dose_numero);
+
+        if (existing) {
+          const { id: _dropIncomingId, ...patch } = log;
+          await db.log_assunzioni.update(existing.id, patch);
+          results.push({ ...existing, ...patch });
+        } else {
+          const { id: _dropIncomingId, ...row } = log;
+          const id = await db.log_assunzioni.add(row);
+          results.push({ ...row, id });
+        }
+      }
+      return results;
+    });
+  }
+
   // ==========================================================
   // Impostazioni
   // ==========================================================
