@@ -5,23 +5,34 @@ import {
   useMemo,
   useReducer,
   useRef,
+  useState,
 } from 'react';
 import { initialState, reducer } from './reducer.js';
 import { selectToday } from './selectors.js';
 import { createActions } from './actions.js';
 import { repo } from '../data/repository/index.js';
+import { TICK_INTERVAL_MS } from '../domain/constants.js';
 
 // ============================================================
 // Global state provider. Owns the reducer, wires createActions
 // with a live getState (via ref), triggers init on mount, and
-// detects day rollover (setInterval 60s + visibilitychange).
-// Changelog Fase 2 §11 + §13 (D6, D11, D12).
+// runs a single setInterval(TICK_INTERVAL_MS) that:
+//   (a) updates `tickMs` to force re-render of useNow consumers
+//       (AMB-6.E)
+//   (b) runs day-rollover detection
+// The same handler runs on `visibilitychange` so that returning
+// from background re-aligns both tickMs and the rollover check.
+// Changelog Fase 2 §11 (AMB-6.B, AMB-6.E) + §13 (D6, D11, D12).
 // ============================================================
 
 const AppContext = createContext(null);
 
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+
+  // Tick-driven re-render source for useNow. Updated every
+  // TICK_INTERVAL_MS and on visibilitychange (AMB-6.E).
+  const [tickMs, setTickMs] = useState(() => Date.now());
 
   // Live state handle so thunks read the latest value without
   // stale closures. Updated on every render.
@@ -45,20 +56,23 @@ export function AppProvider({ children }) {
     actions.init();
   }, [actions]);
 
-  // Day rollover detection: setInterval 60s + visibilitychange.
+  // Single interval: tick + rollover detect. Reused by visibilitychange
+  // so that returning from background triggers both a fresh tickMs and
+  // an immediate rollover check.
   useEffect(() => {
-    const check = () => {
+    const tick = () => {
+      setTickMs(Date.now());
       const s = stateRef.current;
       if (s.status !== 'ready') return;
       if (selectToday(s) !== s.lastBuiltForDay) {
         actions.rebuildPlan();
       }
     };
-    const id = setInterval(check, 60_000);
-    document.addEventListener('visibilitychange', check);
+    const id = setInterval(tick, TICK_INTERVAL_MS);
+    document.addEventListener('visibilitychange', tick);
     return () => {
       clearInterval(id);
-      document.removeEventListener('visibilitychange', check);
+      document.removeEventListener('visibilitychange', tick);
     };
   }, [actions]);
 
@@ -77,7 +91,10 @@ export function AppProvider({ children }) {
     };
   }, [actions]);
 
-  const value = useMemo(() => ({ state, actions }), [state, actions]);
+  const value = useMemo(
+    () => ({ state, actions, tickMs }),
+    [state, actions, tickMs]
+  );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

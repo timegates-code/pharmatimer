@@ -2,7 +2,7 @@
 // Action creators — async thunks closing over {dispatch, getState, repo}.
 // All domain work stays pure (recalc/planBuilder); thunks orchestrate
 // I/O (repo) and state transitions (dispatch).
-// See Changelog Fase 2 §11 (AMB-5b2) + §13 for the design contract.
+// See Changelog Fase 2 §11 (AMB-5b2, AMB-6) + §13 for the design contract.
 // ============================================================
 
 import {
@@ -16,6 +16,7 @@ import {
 } from '../domain/recalc.js';
 import { buildMultiDayPlan } from '../domain/planBuilder.js';
 import { addDays } from '../utils/time.js';
+import { resolveNow } from '../utils/now.js';
 import {
   PLAN_DAYS_BEFORE,
   PLAN_DAYS_AFTER,
@@ -28,22 +29,10 @@ import { commitApplyResult } from './applyHelper.js';
 // ------------------------------------------------------------
 // Internal helpers
 // ------------------------------------------------------------
-
-/**
- * Resolve current date + HH:MM for domain input.
- * The date is always derived from the system clock — simulatedNow
- * shifts only HH:MM within the day, never moves the calendar.
- */
-function resolveNow(state, now = new Date()) {
-  const y = now.getFullYear();
-  const mo = String(now.getMonth() + 1).padStart(2, '0');
-  const dd = String(now.getDate()).padStart(2, '0');
-  const dateStr = `${y}-${mo}-${dd}`;
-  const sysHHMM =
-    `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  const hhmm = state.simulatedNow ?? sysHHMM;
-  return { dateStr, hhmm };
-}
+// NOTE: `resolveNow` used to live here as a private helper.
+// It was extracted to `src/utils/now.js` in Sessione 6 (AMB-6.A)
+// so that the hook `useNow`, selectors and thunks share a single
+// source of truth for "now" resolution.
 
 /**
  * Read the previous reducer-held value for a known setting key.

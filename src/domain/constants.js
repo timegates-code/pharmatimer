@@ -13,3 +13,6 @@ export const PLAN_TOTAL_DAYS = PLAN_DAYS_BEFORE + 1 + PLAN_DAYS_AFTER;
 // Init fetches all farmaci (active + inactive) so the Config view
 // can display inactive ones. Plan builder itself filters internally.
 export const GET_FARMACI_SOLO_ATTIVI = false;
+
+// Provider tick + rollover detect (AMB-6.G, Sessione 6)
+export const TICK_INTERVAL_MS = 60_000;
