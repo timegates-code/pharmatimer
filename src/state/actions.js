@@ -2,7 +2,7 @@
 // Action creators — async thunks closing over {dispatch, getState, repo}.
 // All domain work stays pure (recalc/planBuilder); thunks orchestrate
 // I/O (repo) and state transitions (dispatch).
-// See Changelog Fase 2 §11 (AMB-5b2, AMB-6) + §13 for the design contract.
+// See Changelog Fase 2 §11 (AMB-5b2, AMB-6) + §13 + §6.27 (AMB-7a.M).
 // ============================================================
 
 import {
@@ -35,30 +35,25 @@ import { commitApplyResult } from './applyHelper.js';
 // source of truth for "now" resolution.
 
 /**
- * Read the previous reducer-held value for a known setting key.
- * Returns null if the key is not mirrored in state (persist-only key).
+ * Convert an array of {chiave, valore} rows (as returned by repo.getAllSettings)
+ * into a plain object keyed by `chiave`. Handles both shapes defensively:
+ *   - Array<{chiave, valore}> → { chiave: valore, ... }
+ *   - Plain object            → returned as-is
+ *   - null / undefined        → {}
  */
-function readSettingFromState(state, chiave) {
-  switch (chiave) {
-    case 'nome_utente':
-      return state.nomeUtente;
-    default:
-      return null;
+function normaliseSettingsDict(raw) {
+  if (raw == null) return {};
+  if (Array.isArray(raw)) {
+    const out = {};
+    for (const row of raw) {
+      if (row && typeof row.chiave === 'string') {
+        out[row.chiave] = row.valore;
+      }
+    }
+    return out;
   }
-}
-
-/**
- * Dispatch the reducer action matching a known setting key.
- * Returns true if the key is known (dispatch performed), false otherwise.
- */
-function dispatchSettingUpdate(dispatch, chiave, valore) {
-  switch (chiave) {
-    case 'nome_utente':
-      dispatch({ type: 'SET_NOME_UTENTE', payload: valore });
-      return true;
-    default:
-      return false;
-  }
+  if (typeof raw === 'object') return { ...raw };
+  return {};
 }
 
 // ------------------------------------------------------------
@@ -82,12 +77,15 @@ export function createActions({ dispatch, getState, repo }) {
   async function init() {
     dispatch({ type: 'INIT_START' });
     try {
-      const [profili, farmaci, orari, nomeUtente] = await Promise.all([
+      const [profili, farmaci, orari, allSettings] = await Promise.all([
         repo.getProfili(),
         repo.getFarmaci({ soloAttivi: GET_FARMACI_SOLO_ATTIVI }),
         repo.getAllOrari(),
-        repo.getSetting('nome_utente'),
+        repo.getAllSettings(),
       ]);
+
+      const impostazioni = normaliseSettingsDict(allSettings);
+      const nomeUtente = impostazioni.nome_utente ?? '';
 
       const profiloAttivo = profili.find((p) => p.attivo);
       if (!profiloAttivo) {
@@ -111,7 +109,8 @@ export function createActions({ dispatch, getState, repo }) {
       dispatch({
         type: 'INIT_SUCCESS',
         payload: {
-          nomeUtente: nomeUtente ?? '',
+          nomeUtente,
+          impostazioni,
           profili,
           profiloAttivo,
           farmaci,
@@ -284,17 +283,46 @@ export function createActions({ dispatch, getState, repo }) {
     dispatch({ type: 'DISMISS_PROMPT' });
   }
 
+  /**
+   * Optimistic generic setting update.
+   *
+   * Dispatch flow:
+   *   1. SET_IMPOSTAZIONE (chiave/valore) — always
+   *   2. SET_NOME_UTENTE  — only for the 'nome_utente' mirror (legacy field)
+   *
+   * On repo failure, both dispatches are rolled back to their previous values.
+   */
   async function setSetting(chiave, valore) {
-    const state = getState();
-    const prev = readSettingFromState(state, chiave);
-    const isKnown = dispatchSettingUpdate(dispatch, chiave, valore);
+    const stateBefore = getState();
+    const prevValore = stateBefore.impostazioni?.[chiave];
+    const prevNomeUtente = stateBefore.nomeUtente;
+
+    // Optimistic dispatch.
+    dispatch({ type: 'SET_IMPOSTAZIONE', payload: { chiave, valore } });
+    if (chiave === 'nome_utente') {
+      dispatch({ type: 'SET_NOME_UTENTE', payload: valore });
+    }
+
     try {
       await repo.setSetting(chiave, valore);
       return { ok: true };
     } catch (err) {
-      // Optimistic rollback only for reducer-mirrored keys.
-      if (isKnown && prev !== null) {
-        dispatchSettingUpdate(dispatch, chiave, prev);
+      // Rollback optimistic writes.
+      if (prevValore === undefined) {
+        // Key didn't exist before: overwrite with undefined is awkward;
+        // set the prior snapshot verbatim back into the dict.
+        dispatch({
+          type: 'SET_IMPOSTAZIONE',
+          payload: { chiave, valore: prevValore },
+        });
+      } else {
+        dispatch({
+          type: 'SET_IMPOSTAZIONE',
+          payload: { chiave, valore: prevValore },
+        });
+      }
+      if (chiave === 'nome_utente') {
+        dispatch({ type: 'SET_NOME_UTENTE', payload: prevNomeUtente });
       }
       dispatch({
         type: 'SET_ERROR',

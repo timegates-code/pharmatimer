@@ -47,6 +47,7 @@ describe('reducer — stato iniziale', () => {
     expect(initialState).toEqual({
       status: 'idle',
       nomeUtente: '',
+      impostazioni: {},
       profili: [],
       profiloAttivo: null,
       farmaci: [],
@@ -285,5 +286,34 @@ describe('reducer — invarianti', () => {
     expect(next.plan).toBe(s.plan);
     expect(next.lastBuiltForDay).toBe(s.lastBuiltForDay);
     expect(next.presoStack).toBe(s.presoStack);
+  });
+});
+
+// ============================================================
+// SET_IMPOSTAZIONE (Sessione 7a, §6.27)
+// ============================================================
+describe('SET_IMPOSTAZIONE (Sessione 7a, §6.27)', () => {
+  it('initialises impostazioni as {} and merges new keys without overwriting existing ones', () => {
+    // Baseline: initialState seeds impostazioni as empty object.
+    expect(initialState.impostazioni).toEqual({});
+
+    const s1 = reducer(initialState, {
+      type: 'SET_IMPOSTAZIONE',
+      payload: { chiave: 'tema', valore: 'dark' },
+    });
+    expect(s1.impostazioni).toEqual({ tema: 'dark' });
+
+    const s2 = reducer(s1, {
+      type: 'SET_IMPOSTAZIONE',
+      payload: { chiave: 'nome_utente', valore: 'Ada' },
+    });
+    expect(s2.impostazioni).toEqual({ tema: 'dark', nome_utente: 'Ada' });
+
+    // Overwrite an existing key.
+    const s3 = reducer(s2, {
+      type: 'SET_IMPOSTAZIONE',
+      payload: { chiave: 'tema', valore: 'light' },
+    });
+    expect(s3.impostazioni).toEqual({ tema: 'light', nome_utente: 'Ada' });
   });
 });

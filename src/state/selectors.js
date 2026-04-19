@@ -1,7 +1,8 @@
 // ============================================================
 // Selectors — pure read-only projections of AppState.
-// Kept minimal per Changelog §13/D (scope 5b). More will be added
-// in Sessione 7 (vista Oggi) as the UI reveals concrete needs.
+// Kept minimal per Changelog §13/D (scope 5b). More are added on demand.
+// Sessione 7a (§6.27): `selectImpostazione` exposes the generic
+// `state.impostazioni` dict introduced with AMB-7a.M.
 // ============================================================
 //
 // Purity: selectors never call `new Date()` internally for clock
@@ -85,4 +86,17 @@ export function selectFarmaciAttivi(state) {
  */
 export function selectHasError(state) {
   return state.error !== null;
+}
+
+/**
+ * Read a value from the generic `state.impostazioni` dict.
+ * Returns `null` when the key is absent (never undefined).
+ * AMB-7a.M / Changelog §6.27.
+ * @param {import('./reducer.js').AppState} state
+ * @param {string} chiave
+ * @returns {any | null}
+ */
+export function selectImpostazione(state, chiave) {
+  const v = state.impostazioni?.[chiave];
+  return v === undefined ? null : v;
 }

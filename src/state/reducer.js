@@ -2,6 +2,11 @@
 // Root reducer — pure, synchronous, no I/O.
 // All async work (repo, domain calls) happens in thunks (actions.js).
 // See Changelog Fase 2 §13 for the 16-action design.
+// Sessione 7a (AMB-7a.M / §6.27) adds:
+//   - state.impostazioni: { [chiave]: valore } generic dict
+//   - SET_IMPOSTAZIONE action (used by setSetting thunk + init payload)
+// The legacy state.nomeUtente mirror is kept for backwards compatibility
+// with existing reducer cases and selectors.
 // ============================================================
 
 /**
@@ -15,6 +20,7 @@
  * @typedef {object} AppState
  * @property {'idle'|'ready'|'error'} status
  * @property {string} nomeUtente
+ * @property {Record<string, any>} impostazioni   Generic settings dict loaded on init.
  * @property {import('../domain/types.js').Profilo[]} profili
  * @property {import('../domain/types.js').Profilo|null} profiloAttivo
  * @property {import('../domain/types.js').Farmaco[]} farmaci
@@ -31,6 +37,7 @@
 export const initialState = {
   status: 'idle',
   nomeUtente: '',
+  impostazioni: {},
   profili: [],
   profiloAttivo: null,
   farmaci: [],
@@ -60,12 +67,14 @@ export function reducer(state, action) {
       const {
         nomeUtente, profili, profiloAttivo,
         farmaci, orari, plan, lastBuiltForDay,
+        impostazioni,
       } = action.payload;
       return {
         ...state,
         status: 'ready',
         error: null,
         nomeUtente,
+        impostazioni: impostazioni ?? {},
         profili,
         profiloAttivo,
         farmaci,
@@ -135,6 +144,19 @@ export function reducer(state, action) {
 
     case 'SET_NOME_UTENTE':
       return { ...state, nomeUtente: action.payload };
+
+    // --- Generic settings (AMB-7a.M / §6.27) ----------------
+    // Generic key/value update on state.impostazioni. Spread-merge keeps
+    // unrelated keys intact. Callers that keep a mirrored field (e.g. the
+    // legacy nomeUtente mirror of impostazioni.nome_utente) are responsible
+    // for dispatching SET_NOME_UTENTE alongside SET_IMPOSTAZIONE.
+    case 'SET_IMPOSTAZIONE': {
+      const { chiave, valore } = action.payload;
+      return {
+        ...state,
+        impostazioni: { ...state.impostazioni, [chiave]: valore },
+      };
+    }
 
     // --- Error channel --------------------------------------
     case 'SET_ERROR':

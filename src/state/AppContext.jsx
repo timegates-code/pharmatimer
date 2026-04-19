@@ -23,9 +23,14 @@ import { TICK_INTERVAL_MS } from '../domain/constants.js';
 // The same handler runs on `visibilitychange` so that returning
 // from background re-aligns both tickMs and the rollover check.
 // Changelog Fase 2 §11 (AMB-6.B, AMB-6.E) + §13 (D6, D11, D12).
+//
+// Sessione 7a: `AppContext` is exported (was private) so that test
+// helpers can wrap UI in a stub Provider without spinning up the
+// real AppProvider (which triggers repo.init() asynchronously).
+// Changelog §17 (R2) / AMB-7a.L.
 // ============================================================
 
-const AppContext = createContext(null);
+export const AppContext = createContext(null);
 
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
