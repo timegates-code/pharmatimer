@@ -3,6 +3,17 @@
 // Port 1:1 of the `useTheme(dk)` memo object from v5 mockup (lines 202-304).
 // It is NOT a React hook anymore (AMB-7a.G): the hook wrapper lives in
 // src/hooks/useTheme.js and calls this factory with the resolved `dark` flag.
+//
+// Sessione 7b-1 (AMB-7b.C / §6.28): the `cardBg` / `cardBorder` keys and the
+// three global tokens `scaduta{Bg,Tx,Bd}` were renamed to match the feminine
+// enum returned by `getCardState` (uiState.js) and the Spec §5.3 state names:
+//   cardBg/cardBorder:  preso→presa, prossimo→prossima, attesa→in_attesa,
+//                       scaduta→in_ritardo  (saltata/sospesa unchanged).
+//   global tokens:      scadutaBg/Tx/Bd → inRitardoBg/Tx/Bd.
+// Fix motivation: the previous masculine keys silently fell back to
+// `cardBg.attesa` for any dose state, masking the real visual state. There
+// were no consumers of these tokens in the 7a baseline, so the rename is
+// zero-regression.
 // ============================================================
 
 /**
@@ -16,20 +27,20 @@ export function createThemeTokens(dark) {
     headerBg: dk ? '#15141A' : '#FAFAF7',
     headerBorder: dk ? '#2A2833' : '#E7E5E0',
     cardBg: {
-      preso: dk ? '#132B1F' : '#F4FBF5',
-      prossimo: dk ? '#2A2010' : '#FFFAEB',
-      attesa: dk ? '#1C1B23' : '#FFFFFF',
+      presa: dk ? '#132B1F' : '#F4FBF5',
+      prossima: dk ? '#2A2010' : '#FFFAEB',
+      in_attesa: dk ? '#1C1B23' : '#FFFFFF',
       saltata: dk ? '#241A1C' : '#FDF6F6',
       sospesa: dk ? '#1F1E26' : '#F7F6F3',
-      scaduta: dk ? '#2E1A0E' : '#FFF4E8',
+      in_ritardo: dk ? '#2E1A0E' : '#FFF4E8',
     },
     cardBorder: {
-      preso: '#22C55E',
-      prossimo: '#F59E0B',
-      attesa: dk ? '#2A2833' : '#E7E5E0',
+      presa: '#22C55E',
+      prossima: '#F59E0B',
+      in_attesa: dk ? '#2A2833' : '#E7E5E0',
       saltata: '#EF4444',
       sospesa: dk ? '#4A4854' : '#A8A29E',
-      scaduta: '#F97316',
+      in_ritardo: '#F97316',
     },
     modalBg: dk ? '#1F1E26' : '#FFFFFF',
     modalOverlay: dk ? 'rgba(0,0,0,0.65)' : 'rgba(28,25,23,0.45)',
@@ -74,9 +85,9 @@ export function createThemeTokens(dark) {
     infoTxBold: dk ? '#A5F3FC' : '#0C4A6E',
     tapBd: dk ? '#4A4854' : '#D6D3D1',
     tapShadow: dk ? '0 1px 4px rgba(0,0,0,0.5)' : '0 1px 4px rgba(28,25,23,0.08)',
-    scadutaBg: dk ? '#6B2410' : '#FFF7ED',
-    scadutaTx: dk ? '#FB923C' : '#C2410C',
-    scadutaBd: dk ? '#9A3412' : '#FDBA74',
+    inRitardoBg: dk ? '#6B2410' : '#FFF7ED',
+    inRitardoTx: dk ? '#FB923C' : '#C2410C',
+    inRitardoBd: dk ? '#9A3412' : '#FDBA74',
     btnCircleBg: dk ? '#1E2E5C' : '#EFF6FF',
     btnCircleBd: dk ? '#2563EB' : '#93C5FD',
     checkBg: dk ? '#0F2E1E' : '#DCFCE7',

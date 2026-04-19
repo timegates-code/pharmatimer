@@ -2,12 +2,34 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import OggiView from "./components/oggi/OggiView.jsx";
 import ConfigView from "./components/config/ConfigView.jsx";
 import NavBar from "./components/shared/NavBar.jsx";
+import { useTheme } from "./hooks/useTheme.js";
 
 // Shell with bottom nav and route outlets.
 // Only Oggi and Config are implemented in Fase 2; Log and Export stub to redirect.
+//
+// Sessione 7b-1 (AMB-7b.D): `ThemedShell` wraps the whole surface and paints
+// pageBg + textPrimary on the root. Without it, the Log/Export placeholders
+// (below) and ConfigView (pre-port) would show the browser default white
+// background under dark mode, breaking the UX continuity.
+
+function ThemedShell({ children }) {
+  const { tokens: t } = useTheme();
+  return (
+    <div
+      style={{
+        background: t.pageBg,
+        color: t.textPrimary,
+        minHeight: "100vh",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function App() {
   return (
-    <>
+    <ThemedShell>
       <Routes>
         <Route path="/" element={<Navigate to="/oggi" replace />} />
         <Route path="/oggi" element={<OggiView />} />
@@ -17,7 +39,7 @@ export default function App() {
         <Route path="*" element={<Navigate to="/oggi" replace />} />
       </Routes>
       <NavBar />
-    </>
+    </ThemedShell>
   );
 }
 

@@ -7,6 +7,7 @@ import {
   formatDuration,
   formatGapLabel,
   formatDateLabel,
+  groupEntriesByDayAndMomento,
 } from './uiState.js';
 
 // Minimal entry factory — only the fields uiState reads from.
@@ -149,5 +150,74 @@ describe('formatDateLabel', () => {
   it('prefixes "Oggi" when dateStr matches refDateStr', () => {
     const s = formatDateLabel('2026-04-19', '2026-04-19');
     expect(s.startsWith('Oggi ·')).toBe(true);
+  });
+});
+
+describe('groupEntriesByDayAndMomento', () => {
+  it('returns an empty array for empty input', () => {
+    expect(groupEntriesByDayAndMomento([])).toEqual([]);
+  });
+
+  it('sorts days by dateStr ascending even when input order is reversed', () => {
+    const entries = [
+      mkEntry({ key: 'a', dateStr: '2026-04-20', ora_prevista: '08:00' }),
+      mkEntry({ key: 'b', dateStr: '2026-04-19', ora_prevista: '08:00' }),
+    ];
+    const out = groupEntriesByDayAndMomento(entries);
+    expect(out.map(d => d.dateStr)).toEqual(['2026-04-19', '2026-04-20']);
+  });
+
+  it('sorts entries within a day by effective time, using ora_ricalcolata when set', () => {
+    // "a" is scheduled at 15:00 but recalculated to 09:00 → must appear before "b" (12:00).
+    const entries = [
+      mkEntry({ key: 'b', ora_prevista: '12:00' }),
+      mkEntry({ key: 'a', ora_prevista: '15:00', ora_ricalcolata: '09:00' }),
+    ];
+    const out = groupEntriesByDayAndMomento(entries);
+    expect(out).toHaveLength(1);
+    expect(out[0].groups[0].entries.map(e => e.key)).toEqual(['a', 'b']);
+  });
+
+  it('opens a new group whenever descrizione_momento changes', () => {
+    const entries = [
+      mkEntry({
+        key: 'a', ora_prevista: '08:00',
+        orario: { dose_numero: 1, descrizione_momento: 'colazione' },
+      }),
+      mkEntry({
+        key: 'b', ora_prevista: '08:30',
+        orario: { dose_numero: 1, descrizione_momento: 'colazione' },
+      }),
+      mkEntry({
+        key: 'c', ora_prevista: '13:00',
+        orario: { dose_numero: 1, descrizione_momento: 'pranzo' },
+      }),
+    ];
+    const out = groupEntriesByDayAndMomento(entries);
+    expect(out[0].groups).toHaveLength(2);
+    expect(out[0].groups[0].descrizioneMomento).toBe('colazione');
+    expect(out[0].groups[0].primaOra).toBe('08:00');
+    expect(out[0].groups[0].entries.map(e => e.key)).toEqual(['a', 'b']);
+    expect(out[0].groups[1].descrizioneMomento).toBe('pranzo');
+    expect(out[0].groups[1].primaOra).toBe('13:00');
+  });
+
+  it('collapses consecutive entries with the same momento into a single group', () => {
+    // Both entries share the same momento (and both have null momento variants
+    // would collapse the same way — tested implicitly by absence of the field).
+    const entries = [
+      mkEntry({
+        key: 'a', ora_prevista: '07:00',
+        orario: { dose_numero: 1, descrizione_momento: 'colazione' },
+      }),
+      mkEntry({
+        key: 'b', ora_prevista: '08:00',
+        orario: { dose_numero: 1, descrizione_momento: 'colazione' },
+      }),
+    ];
+    const out = groupEntriesByDayAndMomento(entries);
+    expect(out[0].groups).toHaveLength(1);
+    expect(out[0].groups[0].entries).toHaveLength(2);
+    expect(out[0].groups[0].primaOra).toBe('07:00');
   });
 });

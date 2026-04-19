@@ -9,6 +9,8 @@
 //   dateStr bump (Card will show a "⚠ orario: domani" badge in 7b).
 // - `formatDelta/formatDuration/formatGapLabel/formatDateLabel` – ports 1:1
 //   from v5 mockup lines 34-68.
+// - `groupEntriesByDayAndMomento(entries)` – hybrid grouping helper for
+//   Spec §5.4 and mockup gap layout (Sessione 7b-1, AMB-7b.G / §6.29).
 //
 // AMB-7a.E: getCardState never calls `new Date()`; `now` is supplied by the
 // caller, whose shape matches `resolveNow` in utils/now.js ({dateStr, minutes}).
@@ -135,4 +137,97 @@ export function formatDateLabel(dateStr, refDateStr) {
   if (diff === 0) return `Oggi · ${wk} ${dm}`;
   if (diff === 1) return `Domani · ${wk} ${dm}`;
   return `${wk} ${dm}`;
+}
+
+// ============================================================
+// Hybrid grouping for vista Oggi (Sessione 7b-1, AMB-7b.G / §6.29)
+// ============================================================
+
+/**
+ * Partition plan entries into a per-day layout suited for the Oggi view.
+ *
+ * Shape:
+ *   [{dateStr, groups: [{descrizioneMomento, primaOra, entries: PlanEntry[]}]}]
+ *
+ * Ordering:
+ *   - Days are sorted by dateStr ASC.
+ *   - Within a day, entries are sorted by effective time ASC, where effective
+ *     time = ora_ricalcolata ?? ora_prevista (matches the sort used by Card
+ *     rendering and by selectCountersForDay for prossimoIn).
+ *
+ * Grouping rule (§6.29):
+ *   A new group opens whenever `orario.descrizione_momento` differs from the
+ *   previous entry in the day. This yields one group per momento per day even
+ *   when multiple distinct times share the same momento (e.g. 08:00 and 08:30
+ *   both "colazione" belong together). Within a group, individual time gaps
+ *   drive the visual spacing decision in the UI layer, not the grouping.
+ *
+ * `descrizioneMomento` is read from `entry.orario?.descrizione_momento` and
+ * normalised to `null` when absent. Consecutive nulls collapse into a single
+ * group, mirroring any other shared value.
+ *
+ * `primaOra` is the effective time of the group's first entry (formatted as
+ * 'HH:MM' since that is the stored form). Consumers use it directly in the
+ * "ORE HH:MM — DESCRIZIONE_MOMENTO" header.
+ *
+ * The helper is pure: it returns a fresh structure and never mutates `entries`.
+ *
+ * @param {import('../domain/types.js').PlanEntry[]} entries
+ * @returns {Array<{
+ *   dateStr: string,
+ *   groups: Array<{
+ *     descrizioneMomento: string | null,
+ *     primaOra: string,
+ *     entries: import('../domain/types.js').PlanEntry[]
+ *   }>
+ * }>}
+ */
+export function groupEntriesByDayAndMomento(entries) {
+  if (!entries || entries.length === 0) return [];
+
+  // 1. Partition by dateStr. Preserve insertion order inside each bucket;
+  //    the subsequent sort reorders by effective time anyway.
+  const byDate = new Map();
+  for (const e of entries) {
+    if (!byDate.has(e.dateStr)) byDate.set(e.dateStr, []);
+    byDate.get(e.dateStr).push(e);
+  }
+
+  // 2. Build the day-level output: sort the day's entries, then split on
+  //    descrizione_momento transitions.
+  const days = [];
+  const sortedDateKeys = [...byDate.keys()].sort();
+  // Sentinel distinct from any possible momento value (string | null).
+  const NO_PREV = Symbol('no-prev');
+
+  for (const dateStr of sortedDateKeys) {
+    const sorted = byDate.get(dateStr).slice().sort((a, b) => {
+      const am = timeToMinutes(a.ora_ricalcolata ?? a.ora_prevista);
+      const bm = timeToMinutes(b.ora_ricalcolata ?? b.ora_prevista);
+      return am - bm;
+    });
+
+    const groups = [];
+    let current = null;
+    let lastMomento = NO_PREV;
+
+    for (const e of sorted) {
+      const momento = e.orario?.descrizione_momento ?? null;
+      if (momento !== lastMomento) {
+        current = {
+          descrizioneMomento: momento,
+          primaOra: e.ora_ricalcolata ?? e.ora_prevista,
+          entries: [e],
+        };
+        groups.push(current);
+        lastMomento = momento;
+      } else {
+        current.entries.push(e);
+      }
+    }
+
+    days.push({ dateStr, groups });
+  }
+
+  return days;
 }
