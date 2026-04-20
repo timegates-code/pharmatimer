@@ -1,6 +1,11 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { selectCountersForDay } from './selectors.js';
+import {
+  selectCountersForDay,
+  selectUltimaPresa,
+  selectEntryByKey,
+  selectPromptEntry,
+} from './selectors.js';
 
 // Minimal state factory — selectCountersForDay reads only `plan` and
 // `simulatedNow`. No reducer wiring needed.
@@ -103,5 +108,85 @@ describe('selectCountersForDay', () => {
     expect(out.inRitardo).toBe(0);
     expect(out.prossimoIn).toBeNull();
     expect(out.restanti).toBe(1); // pending still counted, just not classified
+  });
+});
+
+describe('selectUltimaPresa', () => {
+  it('returns null when presoStack is empty', () => {
+    const state = { presoStack: [] };
+    expect(selectUltimaPresa(state)).toBeNull();
+  });
+
+  it('returns the key at the top of the stack (most recent push) when presoStack has entries', () => {
+    // Push order: k1 → k2 → k3. Top = 'k3'.
+    const state = { presoStack: ['k1', 'k2', 'k3'] };
+    expect(selectUltimaPresa(state)).toBe('k3');
+  });
+});
+
+describe('selectEntryByKey', () => {
+  it('returns the matching entry or null (miss / hit / absent plan)', () => {
+    const plan = [
+      mkEntry({ key: 'a', stato: 'prevista' }),
+      mkEntry({ key: 'b', stato: 'presa', ora_prevista: '12:00' }),
+    ];
+    // Hit.
+    const hit = selectEntryByKey(mkState(plan), 'b');
+    expect(hit).not.toBeNull();
+    expect(hit.key).toBe('b');
+    expect(hit.stato).toBe('presa');
+    // Miss on a populated plan.
+    expect(selectEntryByKey(mkState(plan), 'z')).toBeNull();
+    // Empty plan.
+    expect(selectEntryByKey(mkState([]), 'a')).toBeNull();
+    // Falsy entryKey.
+    expect(selectEntryByKey(mkState(plan), '')).toBeNull();
+    expect(selectEntryByKey(mkState(plan), null)).toBeNull();
+  });
+});
+
+describe('selectPromptEntry', () => {
+  it('returns null when state.prompt is absent/null or has no entryKey', () => {
+    const plan = [mkEntry({ key: 'a' })];
+    // prompt field missing altogether (initial state).
+    expect(selectPromptEntry(mkState(plan))).toBeNull();
+    // prompt explicitly null (post-dismiss).
+    expect(
+      selectPromptEntry({ ...mkState(plan), prompt: null })
+    ).toBeNull();
+    // prompt object present but without entryKey (defensive: malformed payload).
+    expect(
+      selectPromptEntry({ ...mkState(plan), prompt: { kind: 'gap_recovery' } })
+    ).toBeNull();
+    // entryKey empty string (falsy gate).
+    expect(
+      selectPromptEntry({
+        ...mkState(plan),
+        prompt: { kind: 'gap_recovery', entryKey: '' },
+      })
+    ).toBeNull();
+  });
+
+  it('hydrates via selectEntryByKey: returns the entry on hit, null on stale-key miss', () => {
+    const plan = [
+      mkEntry({ key: 'a', stato: 'prevista' }),
+      mkEntry({ key: 'b', stato: 'ricalcolata', ora_ricalcolata: '11:30' }),
+    ];
+    // Hit: entryKey matches a plan entry.
+    const hit = selectPromptEntry({
+      ...mkState(plan),
+      prompt: { kind: 'gap_recovery', entryKey: 'b' },
+    });
+    expect(hit).not.toBeNull();
+    expect(hit.key).toBe('b');
+    expect(hit.stato).toBe('ricalcolata');
+    // Miss: entryKey points to an entry that is not (or no longer) in plan.
+    // Robustness: null, not throw.
+    expect(
+      selectPromptEntry({
+        ...mkState(plan),
+        prompt: { kind: 'gap_recovery', entryKey: 'ghost' },
+      })
+    ).toBeNull();
   });
 });

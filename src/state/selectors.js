@@ -6,6 +6,17 @@
 // Sessione 7b-1 (AMB-7b.F): `selectCountersForDay` computes the header
 // counters for a given day with TOLLERANZA_MIN-aware "in ritardo" logic
 // (Changelog §6.9 bugfix versus the mockup's `diff < 0`).
+// Sessione 7b-2 (AMB-7b-2.A): `selectUltimaPresa` surfaces the top of
+// `state.presoStack` for the UNDO-eligibility check in OggiView.
+// Sessione 7c-1 (AMB-7c-1.J): `selectEntryByKey` added as a pure lookup
+// helper. Preparatory for 7c-2 auto-prompt hydration, but also useful
+// to modals that need fresh entry data post-dispatch. Not used by the
+// 4 tap-driven modals of 7c-1 themselves (they receive `entry` via
+// props); keeping it here contains the surface area of 7c-2.
+// Sessione 7c-2 (AMB-7c-2.H): `selectPromptEntry` hydrates the entry
+// pointed to by `state.prompt.entryKey`, composing `selectEntryByKey`.
+// Consumed by OggiView's auto-prompt useEffect to open RecuperoModal
+// with source='auto' when the domain raises a 'gap_recovery' prompt.
 // ============================================================
 //
 // Purity: selectors never call `new Date()` internally for clock
@@ -188,4 +199,75 @@ export function selectCountersForDay(state, dateStr, now = new Date()) {
   }
 
   return { presi, saltate, sospese, inRitardo, prossimoIn, restanti };
+}
+
+/**
+ * Return the top of `state.presoStack` (most recent 'presa' eligible for
+ * UNDO), or null if the stack is empty.
+ *
+ * Pure: no dependency on resolveNow / clock. The selector is consumed by
+ * OggiView (7b-2) to compute `isLastPreso` for each DoseCard: the one
+ * whose `entry.key` matches this return value is the only Card whose
+ * check ✓ button is interactive. All others render the non-pulsing,
+ * non-clickable check variant.
+ *
+ * AMB-7b-2.A / Changelog §11.
+ *
+ * @param {import('./reducer.js').AppState} state
+ * @returns {string | null}
+ */
+export function selectUltimaPresa(state) {
+  const stack = state.presoStack;
+  if (!stack || stack.length === 0) return null;
+  return stack[stack.length - 1];
+}
+
+/**
+ * Return the plan entry matching `entryKey`, or null if none is found.
+ *
+ * Pure helper. Preparatory for 7c-2 auto-prompt hydration (the prompt in
+ * state.prompt stores an `entryKey`; consumers need to hydrate the full
+ * entry before rendering). The 4 tap-driven modals of 7c-1 do not use
+ * this selector — they receive `entry` directly via props from DoseCard
+ * — but introducing it here keeps the 7c-2 surface minimal.
+ *
+ * AMB-7c-1.J / Changelog §11.
+ *
+ * @param {import('./reducer.js').AppState} state
+ * @param {string} entryKey
+ * @returns {import('../domain/types.js').PlanEntry | null}
+ */
+export function selectEntryByKey(state, entryKey) {
+  if (!state.plan || !entryKey) return null;
+  return state.plan.find(e => e.key === entryKey) ?? null;
+}
+
+/**
+ * Return the plan entry pointed to by `state.prompt.entryKey`, or null
+ * when no prompt is pending or the pointed entry is not in the plan.
+ *
+ * Composition of AMB-7c-2.H:
+ *   - `state.prompt?.entryKey` gates the lookup (null/undefined/'' → null)
+ *   - `selectEntryByKey` resolves the entry; its own miss-returns-null
+ *     behaviour provides robustness against stale entryKey pointers
+ *     (entry removed from plan between domain emission and UI consumption).
+ *
+ * Consumed by OggiView's auto-prompt useEffect (7c-2) to hydrate
+ * `recuperoModal.entry` when a 'gap_recovery' prompt is raised by the
+ * domain. Returning null is a safe no-op: the caller simply does not
+ * open the modal.
+ *
+ * Not specific to kind='gap_recovery' — future prompt kinds can reuse
+ * this selector for entry hydration. The kind discriminant lives in the
+ * consumer's guard, not here.
+ *
+ * AMB-7c-2.H / Changelog §11.
+ *
+ * @param {import('./reducer.js').AppState} state
+ * @returns {import('../domain/types.js').PlanEntry | null}
+ */
+export function selectPromptEntry(state) {
+  const entryKey = state.prompt?.entryKey;
+  if (!entryKey) return null;
+  return selectEntryByKey(state, entryKey);
 }

@@ -1,10 +1,34 @@
 // ============================================================
-// DoseCard — read-only rendering of a single Plan entry in vista Oggi.
+// DoseCard — single Plan entry renderer for vista Oggi.
 //
 // Sessione 7b-1 (AMB-7b.L): port of the v5 mockup `Card` (lines 365-565)
-// stripped of every interactive affordance. The PRESA button, ALTRO button,
-// UNDO button, SALTATA/SOSPESA edit affordances, and GAP tap are all out
-// of scope: 7b-2 reintroduces PRESA + UNDO, 7c reintroduces the modals.
+// in read-only form. PRESA / UNDO / ALTRO / saltata-sospesa editing / gap
+// tap were all stripped.
+//
+// Sessione 7b-2 (AMB-7b-2.B / AMB-7b-2.C): ACTION AREA reintroduced for the
+// two minimal gestures needed to take the view from read-only to functional:
+//   - PRESA button for non-done states (prevista / ricalcolata / prossima /
+//     in_attesa / in_ritardo), mounted only when `onPresa` is provided
+//   - check ✓ button for stato === 'presa', clickable (dashed border + pulse
+//     animation + UNDO overlay) iff `isLastPreso && onUndo`, otherwise rendered
+//     as a disabled solid-border glyph
+//
+// Sessione 7c-1 (AMB-7c-1.L): four tap affordances added to open the modals
+// wired in OggiView:
+//   - ALTRO pill (next to PRESA) on non-done states, mounted only when
+//     `onAltro` is provided
+//   - SALTATA label in the TIME COLUMN becomes a <button> when `onSaltataTap`
+//     is provided (dashed underline + IconEdit affordance, per v5)
+//   - SOSPESA label analogously with `onSospesaTap`
+//   - GAP badge in the badge row becomes a <TapBadge> (chevron, dashed) when
+//     `onGapTap` is provided AND entry.gap_minuti > 0
+// When the corresponding handler is NOT provided, the Card keeps the 7b-2
+// non-interactive rendering (span / static Badge / no ALTRO).
+//
+// ACTION AREA re-activated for saltata/sospesa (7c-1): the red/gray circle
+// on the right becomes a <button> with `onSaltataTap` / `onSospesaTap` as a
+// redundant tap target (same modal opens from the time-column label — UX
+// redundancy per mockup v5 lines 522-533).
 //
 // Reads:
 //   - Theme tokens via `useTheme()` (same pattern as NavBar / DevTimeSlider).
@@ -24,10 +48,17 @@
 //   "⚠ orario: domani" badge next to the other info badges so the user
 //   knows the recalculated time belongs to the following day even if the
 //   entry.dateStr still references today.
+//
+// pulse-border keyframe:
+//   The `pulse-border 2s infinite` animation on the check button is defined
+//   in OggiView's inline <style> block (alongside scaduta-pulse and
+//   flash-alert) so keyframes travel with their only consumer.
 // ============================================================
 
 import { useTheme } from '../../hooks/useTheme.js';
 import { Badge } from '../shared/Badge.jsx';
+import { TapBadge } from '../shared/TapBadge.jsx';
+import { IconCheck, IconUndo, IconX, IconPause, IconEdit } from '../shared/Icons.jsx';
 import { calcolaDelta, addDays } from '../../utils/time.js';
 import { isCrossMidnightRecalc, formatDelta, formatGapLabel } from '../../utils/uiState.js';
 import { TOLLERANZA_MIN } from '../../domain/constants.js';
@@ -96,9 +127,32 @@ function formatPresaValue(abs) {
  *   entry: import('../../domain/types.js').PlanEntry,
  *   state: 'presa'|'prossima'|'in_attesa'|'in_ritardo'|'saltata'|'sospesa',
  *   isFlashing?: boolean,
+ *   onPresa?: (entry: import('../../domain/types.js').PlanEntry) => void,
+ *   onUndo?:  (entry: import('../../domain/types.js').PlanEntry) => void,
+ *   onAltro?: (entry: import('../../domain/types.js').PlanEntry) => void,
+ *   onSaltataTap?: (entry: import('../../domain/types.js').PlanEntry) => void,
+ *   onSospesaTap?: (entry: import('../../domain/types.js').PlanEntry) => void,
+ *   onGapTap?: (entry: import('../../domain/types.js').PlanEntry) => void,
+ *   isLastPreso?: boolean,
  * }} props
+ *
+ * All `on*` props are OPTIONAL by contract. Existing 7b-1 tests that render
+ * DoseCard without any handler must keep passing. When a handler is absent,
+ * the corresponding affordance is NOT mounted (no "ghost" button with a
+ * detached onClick).
  */
-export function DoseCard({ entry, state, isFlashing = false }) {
+export function DoseCard({
+  entry,
+  state,
+  isFlashing = false,
+  onPresa,
+  onUndo,
+  onAltro,
+  onSaltataTap,
+  onSospesaTap,
+  onGapTap,
+  isLastPreso = false,
+}) {
   const { dark, tokens: t } = useTheme();
   const f = entry.farmaco;
 
@@ -137,6 +191,20 @@ export function DoseCard({ entry, state, isFlashing = false }) {
     });
   }
 
+  // ---------- action-area gating ----------
+
+  // Undo is actually enabled only if BOTH conditions hold.
+  const undoEnabled = isPresa && isLastPreso && typeof onUndo === 'function';
+  // PRESA button shown only for non-done states AND only when onPresa is provided.
+  const showPresaButton = !isDone && typeof onPresa === 'function';
+  // ALTRO pill shown only for non-done states AND only when onAltro is provided (7c-1).
+  const showAltroButton = !isDone && typeof onAltro === 'function';
+  // Saltata / sospesa tap wiring (7c-1).
+  const hasSaltataTap = typeof onSaltataTap === 'function';
+  const hasSospesaTap = typeof onSospesaTap === 'function';
+  // Gap tap wiring (7c-1): only when a handler is provided AND there is a gap.
+  const hasGapTap = typeof onGapTap === 'function' && entry.gap_minuti > 0;
+
   return (
     <div
       className={`rounded-xl overflow-hidden transition-colors duration-200${
@@ -145,9 +213,8 @@ export function DoseCard({ entry, state, isFlashing = false }) {
       style={{
         background: t.cardBg[state] || t.cardBg.in_attesa,
         // Use longhand properties for ALL four sides: mixing `border` shorthand
-        // with `borderLeft` triggers a React warning on rerender (the library
-        // can't guarantee the application order of shorthand vs longhand in
-        // style objects). Same visual result, no warning.
+        // with `borderLeft` longhand triggers a React warning on rerender
+        // (§6.31). Same visual result, no warning.
         borderTop: borderAll,
         borderRight: borderAll,
         borderBottom: borderAll,
@@ -166,12 +233,31 @@ export function DoseCard({ entry, state, isFlashing = false }) {
               >
                 {displayTime}
               </span>
-              <span
-                className="text-xs font-black uppercase tracking-wide block mt-0.5"
-                style={{ color: t.red }}
-              >
-                saltata
-              </span>
+              {hasSaltataTap ? (
+                // 7c-1: tappable label with dashed underline + edit affordance.
+                <button
+                  type="button"
+                  onClick={() => onSaltataTap(entry)}
+                  aria-label="Modifica dose saltata"
+                  className="inline-flex items-center gap-0.5 mt-0.5 cursor-pointer active:scale-95 transition-transform bg-transparent border-0 p-0"
+                  style={{ borderBottom: `1px dashed ${t.red}` }}
+                >
+                  <span
+                    className="text-xs font-black uppercase tracking-wide"
+                    style={{ color: t.red }}
+                  >
+                    saltata
+                  </span>
+                  <IconEdit color={t.red} />
+                </button>
+              ) : (
+                <span
+                  className="text-xs font-black uppercase tracking-wide block mt-0.5"
+                  style={{ color: t.red }}
+                >
+                  saltata
+                </span>
+              )}
             </>
           ) : isSospesa ? (
             <>
@@ -181,12 +267,30 @@ export function DoseCard({ entry, state, isFlashing = false }) {
               >
                 {displayTime}
               </span>
-              <span
-                className="text-xs font-bold uppercase tracking-wide block mt-0.5"
-                style={{ color: t.sospesaTx }}
-              >
-                sospesa
-              </span>
+              {hasSospesaTap ? (
+                <button
+                  type="button"
+                  onClick={() => onSospesaTap(entry)}
+                  aria-label="Modifica dose sospesa"
+                  className="inline-flex items-center gap-0.5 mt-0.5 cursor-pointer active:scale-95 transition-transform bg-transparent border-0 p-0"
+                  style={{ borderBottom: `1px dashed ${t.sospesaTx}` }}
+                >
+                  <span
+                    className="text-xs font-bold uppercase tracking-wide"
+                    style={{ color: t.sospesaTx }}
+                  >
+                    sospesa
+                  </span>
+                  <IconEdit color={t.sospesaTx} />
+                </button>
+              ) : (
+                <span
+                  className="text-xs font-bold uppercase tracking-wide block mt-0.5"
+                  style={{ color: t.sospesaTx }}
+                >
+                  sospesa
+                </span>
+              )}
             </>
           ) : isPresa ? (
             <>
@@ -297,13 +401,24 @@ export function DoseCard({ entry, state, isFlashing = false }) {
                 border={t.warnBd}
               />
             )}
+            {/* 7c-1: gap badge is interactive (TapBadge) iff onGapTap provided. */}
             {entry.gap_minuti > 0 && !isDone && (
-              <Badge
-                label={formatGapLabel(entry.gap_minuti)}
-                bg={t.gapBg}
-                text={t.gapTx}
-                border={t.gapBd}
-              />
+              hasGapTap ? (
+                <TapBadge
+                  label={formatGapLabel(entry.gap_minuti)}
+                  bg={t.gapBg}
+                  text={t.gapTx}
+                  border={t.gapBd}
+                  onClick={() => onGapTap(entry)}
+                />
+              ) : (
+                <Badge
+                  label={formatGapLabel(entry.gap_minuti)}
+                  bg={t.gapBg}
+                  text={t.gapTx}
+                  border={t.gapBd}
+                />
+              )
             )}
             {entry.dose_prec_saltata && !isDone && (
               <Badge
@@ -320,6 +435,152 @@ export function DoseCard({ entry, state, isFlashing = false }) {
             </p>
           )}
         </div>
+
+        {/* ACTION AREA */}
+        {isPresa ? (
+          <button
+            type="button"
+            onClick={undoEnabled ? () => onUndo(entry) : undefined}
+            disabled={!undoEnabled}
+            aria-label={undoEnabled ? 'Annulla ultima presa' : 'Dose presa'}
+            className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-90 relative"
+            style={{
+              background: t.checkBg,
+              border: isLastPreso
+                ? `2px dashed ${t.checkBd}`
+                : `2px solid ${t.checkBd}`,
+              cursor: undoEnabled ? 'pointer' : 'default',
+              animation: isLastPreso ? 'pulse-border 2s infinite' : 'none',
+              boxShadow: isLastPreso ? t.tapShadow : 'none',
+            }}
+          >
+            <IconCheck color={t.checkStroke} />
+            {isLastPreso && (
+              <span className="absolute" style={{ bottom: -2, right: -2 }}>
+                <IconUndo color={t.amberTx} size={10} />
+              </span>
+            )}
+          </button>
+        ) : isSaltata ? (
+          // 7c-1: redundant tap target (same modal as the label tap).
+          // When no handler is provided (e.g. 7b-1 tests), stays as aria-hidden div.
+          hasSaltataTap ? (
+            <button
+              type="button"
+              onClick={() => onSaltataTap(entry)}
+              aria-label="Modifica dose saltata"
+              className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-90 cursor-pointer"
+              style={{
+                background: t.redBg,
+                border: `2px dashed ${t.red}60`,
+                boxShadow: t.tapShadow,
+              }}
+            >
+              <IconX color={t.red} />
+            </button>
+          ) : (
+            <div
+              className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center"
+              style={{
+                background: t.redBg,
+                border: `2px dashed ${t.red}60`,
+              }}
+              aria-hidden="true"
+            >
+              <IconX color={t.red} />
+            </div>
+          )
+        ) : isSospesa ? (
+          hasSospesaTap ? (
+            <button
+              type="button"
+              onClick={() => onSospesaTap(entry)}
+              aria-label="Modifica dose sospesa"
+              className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-90 cursor-pointer"
+              style={{
+                background: t.sospesaBg,
+                border: `2px dashed ${t.sospesaBd}`,
+                boxShadow: t.tapShadow,
+              }}
+            >
+              <IconPause color={t.sospesaTx} />
+            </button>
+          ) : (
+            <div
+              className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center"
+              style={{
+                background: t.sospesaBg,
+                border: `2px dashed ${t.sospesaBd}`,
+              }}
+              aria-hidden="true"
+            >
+              <IconPause color={t.sospesaTx} />
+            </div>
+          )
+        ) : showPresaButton ? (
+          // 7c-1: ALTRO pill (when provided) + vertical divider + PRESA button.
+          // When only onPresa is provided (7b-2 fallback), PRESA appears alone.
+          <>
+            {showAltroButton && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onAltro(entry)}
+                  aria-label="Altre opzioni"
+                  className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-90"
+                  style={{
+                    background: t.altroBg,
+                    border: `2px solid ${t.altroBd}`,
+                    cursor: 'pointer',
+                    boxShadow: t.tapShadow,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 8,
+                      fontWeight: 800,
+                      color: t.altroTx,
+                      letterSpacing: '0.03em',
+                      lineHeight: 1,
+                    }}
+                  >
+                    ALTRO
+                  </span>
+                </button>
+                <div
+                  className="flex-shrink-0 w-px self-stretch rounded"
+                  style={{ background: t.headerBorder }}
+                />
+              </>
+            )}
+            <button
+              type="button"
+              onClick={() => onPresa(entry)}
+              aria-label="Registra dose presa"
+              className="flex-shrink-0 rounded-full flex items-center justify-center transition-all active:scale-90"
+              style={{
+                width: 52,
+                height: 52,
+                background: t.btnCircleBg,
+                border: `2px solid ${t.btnCircleBd}`,
+                cursor: 'pointer',
+                boxShadow: t.tapShadow,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 800,
+                  color: t.blue,
+                  letterSpacing: '0.03em',
+                  lineHeight: 1,
+                }}
+              >
+                PRESA
+              </span>
+            </button>
+          </>
+        ) : null}
       </div>
     </div>
   );
