@@ -49,6 +49,29 @@
 //     focus restore. Signature change is isolated to modal openers —
 //     onPresa / onUndo retain the single-arg contract.
 //
+// Sessione 7d-2 CP5 (AMB-7d-2p2.D/H, §6.41):
+//   - New optional prop `onUndoTap(entry, triggerEl)` opens UndoModal on
+//     tap of the Card body when stato === 'presa'. When provided, the
+//     TIME / SEPARATOR / CONTENT triplet is wrapped in a transparent
+//     `<button>` sibling that does NOT include the ACTION AREA — the
+//     dashed check ✓ keeps its own `onUndo` handler (UNDO direct via
+//     stack, AMB-D). HTML-valid by construction: check button is a
+//     sibling of the wrapper, not a descendant.
+//   - Root `tabIndex={-1}` preserved (§6.54). The wrapper button is
+//     keyboard-focusable on its own via Tab order.
+//
+// Sessione 7d-2 CP6 (AMB-7d-2p3.E/K'', §6.45 + §6.47a):
+//   - §6.45: the isPresa branch now labels "in orario" whenever
+//     |delta_minuti| ≤ TOLLERANZA_MIN (not just delta===0). Pre-CP6 an
+//     anticipation of 1-15 min still rendered "Anticipo" while being
+//     coloured green → mixed signal. Post-CP6 label and colour align.
+//   - §6.47(a): the gap badge now consumes `gapResiduo = gap_minuti −
+//     recupero_minuti` for both the mount guard (`hasGapTap`) and the
+//     Badge/TapBadge label. When a recupero fully covers the gap the
+//     badge unmounts; partial recupero leaves a reduced badge. Part (b)
+//     of §6.47 (dashed-underline affordance on the residual badge) is
+//     explicitly out of CP6 scope (prompt §11 v2.5.18).
+//
 // Reads:
 //   - Theme tokens via `useTheme()` (same pattern as NavBar / DevTimeSlider).
 //   - Enum-aligned token keys from CP1 rename (§6.28): cardBg/cardBorder
@@ -148,6 +171,7 @@ function formatPresaValue(abs) {
  *   isFlashing?: boolean,
  *   onPresa?: (entry: import('../../domain/types.js').PlanEntry) => void,
  *   onUndo?:  (entry: import('../../domain/types.js').PlanEntry) => void,
+ *   onUndoTap?: (entry: import('../../domain/types.js').PlanEntry, triggerEl: HTMLElement) => void,
  *   onAltro?: (entry: import('../../domain/types.js').PlanEntry, triggerEl: HTMLElement) => void,
  *   onSaltataTap?: (entry: import('../../domain/types.js').PlanEntry, triggerEl: HTMLElement) => void,
  *   onSospesaTap?: (entry: import('../../domain/types.js').PlanEntry, triggerEl: HTMLElement) => void,
@@ -159,12 +183,6 @@ function formatPresaValue(abs) {
  * DoseCard without any handler must keep passing. When a handler is absent,
  * the corresponding affordance is NOT mounted (no "ghost" button with a
  * detached onClick).
- *
- * 7d-1 signature note: modal-opening handlers (onAltro, onSaltataTap,
- * onSospesaTap, onGapTap) receive the trigger HTMLElement as the second
- * argument. The gap TapBadge passes `e?.currentTarget` null-safely because
- * the shared TapBadge wrapper may or may not forward the event to its
- * onClick prop; OggiView compensates via `fallbackEntryKey`.
  */
 export function DoseCard({
   entry,
@@ -172,6 +190,7 @@ export function DoseCard({
   isFlashing = false,
   onPresa,
   onUndo,
+  onUndoTap,
   onAltro,
   onSaltataTap,
   onSospesaTap,
@@ -199,6 +218,12 @@ export function DoseCard({
   const freqLabel = f.tipo_frequenza === 'intervallo' ? ` · ogni ${f.intervallo_ore}h` : '';
   const pastoColor = getPastoColor(f.relazione_pasto, dark);
   const displayTime = entry.ora_ricalcolata || entry.ora_prevista;
+  // 7d-2 CP6 (§6.47a): gap residuo = gap_minuti − recupero_minuti. When a
+  // RecuperoModal application partially (or fully) covers the gap, the badge
+  // label reflects what's left. The `?? 0` fallbacks keep the expression
+  // numeric even for plan entries shaped before the recupero_minuti column
+  // existed (defensive — types.js always produces numbers).
+  const gapResiduo = (entry.gap_minuti ?? 0) - (entry.recupero_minuti ?? 0);
 
   // Recalculation diff via domain helper (§6.11). The wrap-around of the
   // mockup is replaced by an explicit date bump when §6.26 flags the bug.
@@ -227,27 +252,267 @@ export function DoseCard({
   // Saltata / sospesa tap wiring (7c-1).
   const hasSaltataTap = typeof onSaltataTap === 'function';
   const hasSospesaTap = typeof onSospesaTap === 'function';
-  // Gap tap wiring (7c-1): only when a handler is provided AND there is a gap.
-  const hasGapTap = typeof onGapTap === 'function' && entry.gap_minuti > 0;
+  // Gap tap wiring (7c-1 + 7d-2 CP6 §6.47a): mount only when a handler is
+  // provided AND the residual gap (after any applied recupero) is positive.
+  const hasGapTap = typeof onGapTap === 'function' && gapResiduo > 0;
+  // 7d-2 CP5: Card body wrapper for isPresa state opens UndoModal.
+  const undoTapEnabled = isPresa && typeof onUndoTap === 'function';
+
+  // ---------- TIME / SEPARATOR / CONTENT extracted as JSX vars ----------
+  // Extraction is necessary so the three blocks can be conditionally wrapped
+  // in a `<button>` (7d-2 CP5) without duplicating markup per branch.
+
+  const timeColumn = (
+    <div className="flex-shrink-0 w-14 text-center">
+      {isSaltata ? (
+        <>
+          <span
+            className="text-sm font-bold block line-through"
+            style={{ color: t.textMuted }}
+          >
+            {displayTime}
+          </span>
+          {hasSaltataTap ? (
+            <button
+              type="button"
+              onClick={(e) => onSaltataTap(entry, e.currentTarget)}
+              aria-label="Modifica dose saltata"
+              className="inline-flex items-center gap-0.5 mt-0.5 cursor-pointer active:scale-95 transition-transform bg-transparent border-0 p-0"
+              style={{ borderBottom: `1px dashed ${t.red}` }}
+            >
+              <span
+                className="text-xs font-black uppercase tracking-wide"
+                style={{ color: t.red }}
+              >
+                saltata
+              </span>
+              <IconEdit color={t.red} />
+            </button>
+          ) : (
+            <span
+              className="text-xs font-black uppercase tracking-wide block mt-0.5"
+              style={{ color: t.red }}
+            >
+              saltata
+            </span>
+          )}
+        </>
+      ) : isSospesa ? (
+        <>
+          <span
+            className="text-sm font-bold block line-through"
+            style={{ color: t.textMuted }}
+          >
+            {displayTime}
+          </span>
+          {hasSospesaTap ? (
+            <button
+              type="button"
+              onClick={(e) => onSospesaTap(entry, e.currentTarget)}
+              aria-label="Modifica dose sospesa"
+              className="inline-flex items-center gap-0.5 mt-0.5 cursor-pointer active:scale-95 transition-transform bg-transparent border-0 p-0"
+              style={{ borderBottom: `1px dashed ${t.sospesaTx}` }}
+            >
+              <span
+                className="text-xs font-bold uppercase tracking-wide"
+                style={{ color: t.sospesaTx }}
+              >
+                sospesa
+              </span>
+              <IconEdit color={t.sospesaTx} />
+            </button>
+          ) : (
+            <span
+              className="text-xs font-bold uppercase tracking-wide block mt-0.5"
+              style={{ color: t.sospesaTx }}
+            >
+              sospesa
+            </span>
+          )}
+        </>
+      ) : isPresa ? (
+        <>
+          <span
+            className="text-base font-bold block"
+            style={{ color: t.green, fontVariantNumeric: 'tabular-nums' }}
+          >
+            {extractHHMM(entry.ora_effettiva)}
+          </span>
+          {(() => {
+            const delta = entry.delta_minuti ?? 0;
+            const abs = Math.abs(delta);
+            const color = abs <= TOLLERANZA_MIN ? t.green : t.red;
+            // 7d-2 CP6 (§6.45): "in orario" copre tutta la finestra di
+            // tolleranza |delta| ≤ TOLLERANZA_MIN. Pre-CP6 solo delta===0
+            // mostrava "in orario"; un anticipo di 1-15 min restava etichettato
+            // "Anticipo" pur essendo già colorato verde → incoerenza UI.
+            if (abs <= TOLLERANZA_MIN) {
+              return (
+                <span className="text-xs font-medium block" style={{ color }}>
+                  in orario
+                </span>
+              );
+            }
+            const label = delta > 0 ? 'Ritardo' : 'Anticipo';
+            return (
+              <>
+                <span
+                  className="text-xs font-semibold block leading-tight"
+                  style={{ color }}
+                >
+                  {label}
+                </span>
+                <span
+                  className="text-xs font-medium block leading-tight"
+                  style={{ color, fontVariantNumeric: 'tabular-nums' }}
+                >
+                  {formatPresaValue(abs)}
+                </span>
+              </>
+            );
+          })()}
+        </>
+      ) : (
+        <>
+          <span
+            className="text-base font-bold block"
+            style={{ color: t.textPrimary, fontVariantNumeric: 'tabular-nums' }}
+          >
+            {displayTime}
+          </span>
+          {isTimeDifferent && (
+            <span
+              className="text-sm block rounded px-1 py-px font-medium"
+              style={{
+                background: t.recalcOrigBg,
+                color: t.recalcOrigTx,
+                textDecoration: 'line-through',
+              }}
+            >
+              {entry.ora_prevista}
+            </span>
+          )}
+        </>
+      )}
+    </div>
+  );
+
+  const separator = (
+    <div className="w-px self-stretch rounded" style={{ background: t.headerBorder }} />
+  );
+
+  const content = (
+    <div className="flex-1 min-w-0">
+      <p
+        className="font-semibold text-sm"
+        style={{ color: isDone && !isPresa ? t.textMuted : t.textCard }}
+      >
+        {f.nome}
+      </p>
+      <p className="text-xs" style={{ color: t.textCardSub }}>
+        {f.funzione}
+        {doseLabel}
+        {freqLabel}
+      </p>
+      <p
+        className="text-xs mb-1.5 font-medium"
+        style={{ color: isDone && !isPresa ? t.textMuted : pastoColor }}
+      >
+        {getPastoText(f)}
+      </p>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {isInRitardo && (
+          <Badge
+            label="⏰ IN RITARDO"
+            bg={t.inRitardoBg}
+            text={t.inRitardoTx}
+            border={t.inRitardoBd}
+          />
+        )}
+        {isTimeDifferent && !isDone && recalcDiff !== null && (
+          <Badge
+            label={formatDelta(recalcDiff)}
+            bg={t.recalcBg}
+            text={t.recalcTx}
+            border={t.recalcBd}
+          />
+        )}
+        {crossMidnight && !isDone && (
+          <Badge
+            label="⚠ orario: domani"
+            bg={t.warnBg}
+            text={t.warnTx}
+            border={t.warnBd}
+          />
+        )}
+        {gapResiduo > 0 && !isDone && (
+          hasGapTap ? (
+            <TapBadge
+              label={formatGapLabel(gapResiduo)}
+              bg={t.gapBg}
+              text={t.gapTx}
+              border={t.gapTx}
+              onClick={(e) => onGapTap(entry, e?.currentTarget)}
+            />
+          ) : (
+            <Badge
+              label={formatGapLabel(gapResiduo)}
+              bg={t.gapBg}
+              text={t.gapTx}
+              border={t.gapBd}
+            />
+          )
+        )}
+        {entry.dose_prec_saltata && !isDone && (
+          <Badge
+            label="⚠ dose prec. saltata"
+            bg={t.warnBg}
+            text={t.warnTx}
+            border={t.warnBd}
+          />
+        )}
+      </div>
+      {f.note && !isDone && (
+        <p className="text-xs mt-1 italic" style={{ color: t.textMuted }}>
+          {f.note}
+        </p>
+      )}
+    </div>
+  );
+
+  // 7d-2 CP5: conditionally wrap TIME / SEP / CONTENT in a button.
+  // The wrapper reproduces the parent flex layout (`flex items-center
+  // gap-2 flex-1 min-w-0`) so the visual result is identical to the
+  // non-wrapped branch. ACTION AREA remains a sibling of the wrapper,
+  // avoiding nested <button> HTML invalidity.
+  const body = undoTapEnabled ? (
+    <button
+      type="button"
+      onClick={(e) => onUndoTap(entry, e.currentTarget)}
+      aria-label="Annulla dose presa"
+      className="flex items-center gap-2 flex-1 min-w-0 bg-transparent border-0 p-0 text-left cursor-pointer"
+    >
+      {timeColumn}
+      {separator}
+      {content}
+    </button>
+  ) : (
+    <>
+      {timeColumn}
+      {separator}
+      {content}
+    </>
+  );
 
   return (
     <div
       data-entry-key={entry.key}
-      // 7d-1 (AMB-7d-1.D/E clarification, discovered in CP browser 5):
-      // `tabIndex={-1}` makes the div programmatically focusable without
-      // adding it to the natural tab order. Required for `useModalA11y`
-      // restore-focus fallback (`[data-entry-key]` query): plain <div>
-      // elements silently ignore .focus() unless they carry tabindex.
-      // -1 means "focusable by script, skipped by Tab key".
       tabIndex={-1}
       className={`rounded-xl overflow-hidden transition-colors duration-200${
         isInRitardo ? ' animate-scaduta' : ''
       }${isFlashing ? ' animate-flash' : ''}`}
       style={{
         background: t.cardBg[state] || t.cardBg.in_attesa,
-        // Use longhand properties for ALL four sides: mixing `border` shorthand
-        // with `borderLeft` longhand triggers a React warning on rerender
-        // (§6.31). Same visual result, no warning.
         borderTop: borderAll,
         borderRight: borderAll,
         borderBottom: borderAll,
@@ -256,227 +521,9 @@ export function DoseCard({
       }}
     >
       <div className="flex items-center gap-2 p-3">
-        {/* TIME COLUMN */}
-        <div className="flex-shrink-0 w-14 text-center">
-          {isSaltata ? (
-            <>
-              <span
-                className="text-sm font-bold block line-through"
-                style={{ color: t.textMuted }}
-              >
-                {displayTime}
-              </span>
-              {hasSaltataTap ? (
-                // 7c-1: tappable label with dashed underline + edit affordance.
-                <button
-                  type="button"
-                  onClick={(e) => onSaltataTap(entry, e.currentTarget)}
-                  aria-label="Modifica dose saltata"
-                  className="inline-flex items-center gap-0.5 mt-0.5 cursor-pointer active:scale-95 transition-transform bg-transparent border-0 p-0"
-                  style={{ borderBottom: `1px dashed ${t.red}` }}
-                >
-                  <span
-                    className="text-xs font-black uppercase tracking-wide"
-                    style={{ color: t.red }}
-                  >
-                    saltata
-                  </span>
-                  <IconEdit color={t.red} />
-                </button>
-              ) : (
-                <span
-                  className="text-xs font-black uppercase tracking-wide block mt-0.5"
-                  style={{ color: t.red }}
-                >
-                  saltata
-                </span>
-              )}
-            </>
-          ) : isSospesa ? (
-            <>
-              <span
-                className="text-sm font-bold block line-through"
-                style={{ color: t.textMuted }}
-              >
-                {displayTime}
-              </span>
-              {hasSospesaTap ? (
-                <button
-                  type="button"
-                  onClick={(e) => onSospesaTap(entry, e.currentTarget)}
-                  aria-label="Modifica dose sospesa"
-                  className="inline-flex items-center gap-0.5 mt-0.5 cursor-pointer active:scale-95 transition-transform bg-transparent border-0 p-0"
-                  style={{ borderBottom: `1px dashed ${t.sospesaTx}` }}
-                >
-                  <span
-                    className="text-xs font-bold uppercase tracking-wide"
-                    style={{ color: t.sospesaTx }}
-                  >
-                    sospesa
-                  </span>
-                  <IconEdit color={t.sospesaTx} />
-                </button>
-              ) : (
-                <span
-                  className="text-xs font-bold uppercase tracking-wide block mt-0.5"
-                  style={{ color: t.sospesaTx }}
-                >
-                  sospesa
-                </span>
-              )}
-            </>
-          ) : isPresa ? (
-            <>
-              <span
-                className="text-base font-bold block"
-                style={{ color: t.green, fontVariantNumeric: 'tabular-nums' }}
-              >
-                {extractHHMM(entry.ora_effettiva)}
-              </span>
-              {(() => {
-                const delta = entry.delta_minuti ?? 0;
-                const abs = Math.abs(delta);
-                const color = abs <= TOLLERANZA_MIN ? t.green : t.red;
-                if (delta === 0) {
-                  return (
-                    <span className="text-xs font-medium block" style={{ color }}>
-                      in orario
-                    </span>
-                  );
-                }
-                const label = delta > 0 ? 'Ritardo' : 'Anticipo';
-                return (
-                  <>
-                    <span
-                      className="text-xs font-semibold block leading-tight"
-                      style={{ color }}
-                    >
-                      {label}
-                    </span>
-                    <span
-                      className="text-xs font-medium block leading-tight"
-                      style={{ color, fontVariantNumeric: 'tabular-nums' }}
-                    >
-                      {formatPresaValue(abs)}
-                    </span>
-                  </>
-                );
-              })()}
-            </>
-          ) : (
-            <>
-              <span
-                className="text-base font-bold block"
-                style={{ color: t.textPrimary, fontVariantNumeric: 'tabular-nums' }}
-              >
-                {displayTime}
-              </span>
-              {isTimeDifferent && (
-                <span
-                  className="text-sm block rounded px-1 py-px font-medium"
-                  style={{
-                    background: t.recalcOrigBg,
-                    color: t.recalcOrigTx,
-                    textDecoration: 'line-through',
-                  }}
-                >
-                  {entry.ora_prevista}
-                </span>
-              )}
-            </>
-          )}
-        </div>
+        {body}
 
-        {/* SEPARATOR */}
-        <div className="w-px self-stretch rounded" style={{ background: t.headerBorder }} />
-
-        {/* CONTENT */}
-        <div className="flex-1 min-w-0">
-          <p
-            className="font-semibold text-sm"
-            style={{ color: isDone && !isPresa ? t.textMuted : t.textCard }}
-          >
-            {f.nome}
-          </p>
-          <p className="text-xs" style={{ color: t.textCardSub }}>
-            {f.funzione}
-            {doseLabel}
-            {freqLabel}
-          </p>
-          <p
-            className="text-xs mb-1.5 font-medium"
-            style={{ color: isDone && !isPresa ? t.textMuted : pastoColor }}
-          >
-            {getPastoText(f)}
-          </p>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {isInRitardo && (
-              <Badge
-                label="⏰ IN RITARDO"
-                bg={t.inRitardoBg}
-                text={t.inRitardoTx}
-                border={t.inRitardoBd}
-              />
-            )}
-            {isTimeDifferent && !isDone && recalcDiff !== null && (
-              <Badge
-                label={formatDelta(recalcDiff)}
-                bg={t.recalcBg}
-                text={t.recalcTx}
-                border={t.recalcBd}
-              />
-            )}
-            {crossMidnight && !isDone && (
-              <Badge
-                label="⚠ orario: domani"
-                bg={t.warnBg}
-                text={t.warnTx}
-                border={t.warnBd}
-              />
-            )}
-            {/* 7c-1: gap badge is interactive (TapBadge) iff onGapTap provided.
-                7d-1 (CP browser 4): border uses `gapTx` instead of `gapBd`
-                for stronger dash contrast on both themes. `gapBd` was too
-                faint in dark mode (rosso #991B1B on near-black bg); `gapTx`
-                tracks the text colour (rosa #FCA5A5 dark / rosso #B91C1C
-                light) producing a crisp visible dash. The static Badge
-                fallback keeps the original token since it has no dashed
-                border. */}
-            {entry.gap_minuti > 0 && !isDone && (
-              hasGapTap ? (
-                <TapBadge
-                  label={formatGapLabel(entry.gap_minuti)}
-                  bg={t.gapBg}
-                  text={t.gapTx}
-                  border={t.gapTx}
-                  onClick={(e) => onGapTap(entry, e?.currentTarget)}
-                />
-              ) : (
-                <Badge
-                  label={formatGapLabel(entry.gap_minuti)}
-                  bg={t.gapBg}
-                  text={t.gapTx}
-                  border={t.gapBd}
-                />
-              )
-            )}
-            {entry.dose_prec_saltata && !isDone && (
-              <Badge
-                label="⚠ dose prec. saltata"
-                bg={t.warnBg}
-                text={t.warnTx}
-                border={t.warnBd}
-              />
-            )}
-          </div>
-          {f.note && !isDone && (
-            <p className="text-xs mt-1 italic" style={{ color: t.textMuted }}>
-              {f.note}
-            </p>
-          )}
-        </div>
-
-        {/* ACTION AREA */}
+        {/* ACTION AREA (sibling of body; never nested inside wrapper) */}
         {isPresa ? (
           <button
             type="button"
@@ -497,8 +544,6 @@ export function DoseCard({
             <IconCheck color={t.checkStroke} />
           </button>
         ) : isSaltata ? (
-          // 7c-1: redundant tap target (same modal as the label tap).
-          // When no handler is provided (e.g. 7b-1 tests), stays as aria-hidden div.
           hasSaltataTap ? (
             <button
               type="button"
@@ -553,8 +598,6 @@ export function DoseCard({
             </div>
           )
         ) : showPresaButton ? (
-          // 7c-1: ALTRO pill (when provided) + vertical divider + PRESA button.
-          // When only onPresa is provided (7b-2 fallback), PRESA appears alone.
           <>
             {showAltroButton && (
               <>

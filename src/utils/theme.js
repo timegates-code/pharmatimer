@@ -129,6 +129,13 @@ export function createThemeTokens(dark) {
     // pinned separator still reads as a distinct surface against pageBg
     // while scrolling multi-day timelines.
     dateSepBgStrong: dk ? '#3D3A47' : '#D6D3D1',
+    // 7d-2 CP7 (AMB-7d-2p3.G / §6.46+§G): ring focus globale, token-aware.
+    // Light: #3B82F6 (Tailwind blue-500, invariato da 7d-1 hardcoded in
+    // OggiView.jsx). Dark: #60A5FA (Tailwind blue-400) — lift su fondi scuri
+    // preserva contrasto AA sui background primari. Degrade accettato su
+    // gapBg dark (#5C1B1B) e redBg dark (#3D1111) dove il ring resta
+    // visibile ma con contrasto marginale.
+    focusRing: dk ? '#60A5FA' : '#3B82F6',
     dateSepTx: dk ? '#CBC9C3' : '#1C1917',
   };
 }

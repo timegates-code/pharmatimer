@@ -48,6 +48,15 @@
 //   - §6.39 renderHelpers wrapper refactor (CP5 this session)
 //   - §6.45/§6.46/§6.47/§6.49/§6.40/§6.41 → 7d-2
 //   - §6.26 cross-midnight warning elevation → Step 9
+//
+// 7d-2 CP7 wiring (AMB-7d-2p3.G / §6.46+§G):
+//   - CSS promoted from top-level `CARD_AND_SLIDER_CSS` const to factory
+//     `buildCss(t)`. Consumer uses `useMemo(() => buildCss(t), [t])` so
+//     the string is rebuilt only on theme-token identity change.
+//   - `:focus-visible` ring colour now reads `t.focusRing` (light #3B82F6
+//     dark #60A5FA) instead of the 7d-1 hardcoded #3B82F6. AA contrast
+//     preserved on all primary backgrounds; documented degrade on dark
+//     `gapBg`/`redBg` (§theme.js comment at token definition).
 // ============================================================
 
 import { useEffect, useMemo, useState } from 'react';
@@ -76,6 +85,7 @@ import { AltroModal } from './modals/AltroModal.jsx';
 import { SaltataModal } from './modals/SaltataModal.jsx';
 import { SospesaModal } from './modals/SospesaModal.jsx';
 import { RecuperoModal } from './modals/RecuperoModal.jsx';
+import { UndoModal } from './modals/UndoModal.jsx';
 
 const IS_DEV = import.meta.env.DEV;
 
@@ -83,7 +93,14 @@ const IS_DEV = import.meta.env.DEV;
 // slider thumb styling. `pulse-border` is used by the DoseCard check button
 // when `isLastPreso=true` (7b-2). All three animations are simple opacity/
 // filter/shadow effects — no GPU layers, safe for the sticky header.
-const CARD_AND_SLIDER_CSS = `
+//
+// 7d-2 CP7 (AMB-7d-2p3.G / §6.46+§G): promoted from top-level const to
+// factory function so the :focus-visible ring can consume `t.focusRing`
+// (light #3B82F6 / dark #60A5FA) instead of the 7d-1 hardcoded #3B82F6.
+// The consumer memoises with useMemo([t]) so the string is rebuilt only
+// when the tokens object identity changes (once per theme toggle).
+function buildCss(t) {
+  return `
   @keyframes scaduta-pulse {
     0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
     50%      { box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.3); }
@@ -115,13 +132,16 @@ const CARD_AND_SLIDER_CSS = `
      Initially scoped to [role=dialog]; CP browser 4 showed the ring is
      equally needed on tappable badges outside dialogs (e.g. gap
      TapBadge) — so the rule is now global. offset 3px + 2.5px width
-     provides clear separation even from dashed/rounded badge borders. */
+     provides clear separation even from dashed/rounded badge borders.
+     7d-2 CP7: colour now token-aware via t.focusRing — dark-mode lift to
+     #60A5FA for better contrast against #15141A pageBg. */
   :focus-visible {
-    outline: 2.5px solid #3B82F6;
+    outline: 2.5px solid ${t.focusRing};
     outline-offset: 3px;
     border-radius: 4px;
   }
 `;
+}
 
 // ---------- SVG icon paths (1:1 mockup v5 theme toggle) ----------
 const MOON_PATH = 'M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z';
@@ -141,6 +161,7 @@ export default function OggiView() {
   const [altroModal, setAltroModal] = useState(CLOSED);
   const [saltataModal, setSaltataModal] = useState(CLOSED);
   const [sospesaModal, setSospesaModal] = useState(CLOSED);
+  const [undoModal, setUndoModal] = useState(CLOSED);
 
   // --- 7c-2 RecuperoModal shape: {entry, source, triggerEl?} | null.
   //     source='manual' (tap on gap badge, triggerEl present) vs
@@ -179,6 +200,12 @@ export default function OggiView() {
     [state.presoStack]
   );
 
+  // 7d-2 CP7 (AMB-7d-2p3.G / §6.46+§G): theme-aware CSS string. Rebuilt
+  // only when the tokens object identity changes (once per theme toggle)
+  // so the :focus-visible ring colour follows t.focusRing without paying
+  // the cost of string interpolation on every render.
+  const cssString = useMemo(() => buildCss(t), [t]);
+
   // 7c-2 (AMB-7c-2.C): auto-prompt hook. When the domain raises a
   // gap_recovery prompt via state.prompt and no other modal is currently
   // open, hydrate RecuperoModal with source='auto'. Any open modal
@@ -197,6 +224,7 @@ export default function OggiView() {
       altroModal.open ||
       saltataModal.open ||
       sospesaModal.open ||
+      undoModal.open ||
       recuperoModal ||
       state.prompt?.kind !== 'gap_recovery'
     ) return;
@@ -210,6 +238,7 @@ export default function OggiView() {
     altroModal.open,
     saltataModal.open,
     sospesaModal.open,
+    undoModal.open,
     recuperoModal,
   ]);
 
@@ -267,6 +296,7 @@ export default function OggiView() {
   const closeAltro    = () => setAltroModal(CLOSED);
   const closeSaltata  = () => setSaltataModal(CLOSED);
   const closeSospesa  = () => setSospesaModal(CLOSED);
+  const closeUndo     = () => setUndoModal(CLOSED);
 
   // 7c-2 (AMB-7c-2.E + F): close RecuperoModal.
   //   source='auto'                      → dismissPrompt (always)
@@ -289,7 +319,7 @@ export default function OggiView() {
 
   return (
     <>
-      <style>{CARD_AND_SLIDER_CSS}</style>
+      <style>{cssString}</style>
       <div className="min-h-screen pb-24" style={{ maxWidth: 430, margin: '0 auto' }}>
         {/* HEADER */}
         <div
@@ -459,6 +489,7 @@ export default function OggiView() {
                             isFlashing={flashingKeys.has(entry.key)}
                             onPresa={() => actions.presa(entry.key)}
                             onUndo={() => actions.annullaUltima()}
+                            onUndoTap={(en, el) => setUndoModal({ open: true, entry: en, triggerEl: el })}
                             isLastPreso={entry.key === ultimaPresa}
                             // 7d-1: modal-opening handlers now capture the
                             // trigger element (e.currentTarget) so
@@ -513,6 +544,14 @@ export default function OggiView() {
           triggerRef={{ current: sospesaModal.triggerEl }}
           onRipristina={(en) => actions.ripristina(en.key, 'attiva')}
           onClose={closeSospesa}
+        />
+      )}
+      {undoModal.open && (
+        <UndoModal
+          entry={undoModal.entry}
+          triggerRef={{ current: undoModal.triggerEl }}
+          onConfirm={(en) => actions.annullaAssunzione(en.key)}
+          onClose={closeUndo}
         />
       )}
       {recuperoModal && (

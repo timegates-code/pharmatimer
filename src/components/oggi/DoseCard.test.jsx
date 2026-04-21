@@ -35,8 +35,10 @@ describe('DoseCard (read-only)', () => {
     );
     // Fixture stores ora_effettiva as '2026-04-19T23:55:00' — Card slices to HH:MM.
     expect(screen.getByText('23:55')).toBeInTheDocument();
-    // delta_minuti = -5 → Anticipo label (|delta| <= TOLLERANZA_MIN so green).
-    expect(screen.getByText('Anticipo')).toBeInTheDocument();
+    // delta_minuti = -5 → §6.45 post-CP6: |delta| ≤ TOLLERANZA_MIN (=15)
+    // collapses Anticipo/Ritardo into "in orario" (green). Pre-CP6 this
+    // test expected 'Anticipo'.
+    expect(screen.getByText('in orario')).toBeInTheDocument();
   });
 
   it('shows the "⏰ IN RITARDO" badge when the visual state is in_ritardo', () => {
@@ -180,7 +182,7 @@ describe('DoseCard (interactive — Sessione 7c-1)', () => {
     expect(onAltro).toHaveBeenCalledWith(plan[0], expect.any(HTMLElement));
   });
 
-  it('calls onGapTap(entry, ...) when the gap badge is tapped (gap_minuti > 0)', () => {
+  it('calls onGapTap(entry, ...) when the gap badge is tapped (gapResiduo > 0)', () => {
     const onGapTap = vi.fn();
     const { container } = renderWithProvider(
       <DoseCard
@@ -237,5 +239,85 @@ describe('DoseCard (interactive — Sessione 7c-1)', () => {
     fireEvent.click(taps[0]);
     expect(onSospesaTap).toHaveBeenCalledTimes(1);
     expect(onSospesaTap).toHaveBeenCalledWith(sospesaEntry, expect.any(HTMLElement));
+  });
+});
+
+// ============================================================
+// Sessione 7d-2 CP5 — onUndoTap wrapper (AMB-7d-2p2.D/H, §6.41)
+// ============================================================
+
+describe('DoseCard (interactive — Sessione 7d-2 CP5, onUndoTap wrapper)', () => {
+  const plan = buildTestPlan();
+  // plan[2] = stato 'presa'
+
+  it('calls onUndoTap(entry, triggerEl) when the Card body wrapper is tapped', () => {
+    const onUndoTap = vi.fn();
+    const { container } = renderWithProvider(
+      <DoseCard
+        entry={plan[2]} state="presa"
+        onUndoTap={onUndoTap}
+      />,
+      { stateOverrides: THEME_LIGHT }
+    );
+    const wrapper = within(container).getByRole('button', { name: 'Annulla dose presa' });
+    fireEvent.click(wrapper);
+    expect(onUndoTap).toHaveBeenCalledTimes(1);
+    expect(onUndoTap).toHaveBeenCalledWith(plan[2], expect.any(HTMLElement));
+  });
+});
+
+// ============================================================
+// Sessione 7d-2 CP6 — DoseCard polish §6.45 + §6.47(a)
+// (AMB-7d-2p3.E / AMB-7d-2p3.K'' / prompt §11 v2.5.18)
+// ============================================================
+
+describe('DoseCard (Sessione 7d-2 CP6 — §6.45 tolleranza + §6.47a gap residuo)', () => {
+  const plan = buildTestPlan();
+  // plan[1] = ricalcolata with gap_minuti=30
+  // plan[2] = presa @ 23:55, delta_minuti=-5
+
+  // §6.45: dose presa con |delta_minuti| > TOLLERANZA_MIN mostra label
+  // "Ritardo" o "Anticipo" + valore in minuti, color rosso.
+  it('renders "Ritardo" + "30 min" when delta_minuti=30 exceeds TOLLERANZA_MIN (§6.45)', () => {
+    const ritardoEntry = {
+      ...plan[2],
+      ora_effettiva: '2026-04-19T08:30:00',
+      delta_minuti: 30,
+    };
+    renderWithProvider(
+      <DoseCard entry={ritardoEntry} state="presa" />,
+      { stateOverrides: THEME_LIGHT }
+    );
+    expect(screen.getByText('Ritardo')).toBeInTheDocument();
+    expect(screen.getByText('30 min')).toBeInTheDocument();
+    // "in orario" must NOT appear — sanity check against the inverse branch.
+    expect(screen.queryByText('in orario')).toBeNull();
+  });
+
+  // §6.47(a): when recupero_minuti fully covers gap_minuti, the gap badge
+  // unmounts entirely (gapResiduo = 0 → neither TapBadge nor Badge render).
+  // hasGapTap is also gated on gapResiduo, so onGapTap is not wired.
+  it('does NOT render the gap badge when recupero_minuti fully covers gap_minuti (§6.47a)', () => {
+    const fullyRecoveredEntry = {
+      ...plan[1],
+      gap_minuti: 60,
+      recupero_minuti: 60,
+    };
+    const { container } = renderWithProvider(
+      <DoseCard
+        entry={fullyRecoveredEntry} state="in_attesa"
+        onPresa={() => {}}
+        onGapTap={() => {}}
+      />,
+      { stateOverrides: THEME_LIGHT }
+    );
+    // No tap-able gap badge.
+    expect(within(container).queryByRole('button', { name: /ritardo/i })).toBeNull();
+    // No non-tap gap label either: formatGapLabel output is not in the DOM.
+    // We search for the "ritardo" substring anywhere in the badge row.
+    // A few other nodes may contain "ritardo" in other contexts (in_ritardo
+    // state, etc.), so we assert specifically that there is NO node whose
+    // text is a gap-label shape ("<n> min ritardo").
+    expect(within(container).queryByText(/\d+ min ritardo/i)).toBeNull();
   });
 });
