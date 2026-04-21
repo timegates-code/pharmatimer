@@ -4,7 +4,21 @@
 // - buildTestPlan({dateStr})  : 3-entry Plan covering prevista/ricalcolata/presa
 // - renderWithProvider(ui, {}) : render wrapped in a stub AppContext.Provider
 //
-// Stable signatures (AMB-7a.L): callers in 7b/7c/7d will rely on these.
+// Stable signatures (AMB-7a.L): callers in 7b/7c/7d rely on these.
+//
+// 7d-1 refactor (§6.39, AMB-7d-1.I): `renderWithProvider` now uses the
+// `wrapper` option of testing-library's `render` instead of wrapping the
+// `ui` externally in `<AppContext.Provider>`. This is strictly a testing
+// tooling change — the external signature is unchanged. The motivation is
+// that testing-library's `rerender` reuses the original mount container
+// and only re-renders the `ui` argument; with the external-wrap pattern
+// `rerender` re-rendered the `ui` WITHOUT the Provider, causing
+// `useAppContext` to throw "AppProvider is missing in the React tree".
+// With the `wrapper` option the Provider is reapplied on every `rerender`.
+//
+// Compatibility: callers that previously worked around the limitation via
+// `unmount() + new render(...)` (7c-1 test pattern, see §6.39 "fix tattico")
+// keep working — that pattern is now superfluous but not harmful.
 // ============================================================
 
 import { render } from '@testing-library/react';
@@ -108,6 +122,9 @@ function defaultNoopActions() {
  * call useAppContext() work without spinning up the real AppProvider
  * (which would trigger repo.init() asynchronously).
  *
+ * Uses testing-library's `wrapper` option (7d-1 refactor, §6.39) so that
+ * `rerender(newUi)` reapplies the Provider instead of losing it.
+ *
  * @param {React.ReactNode} ui
  * @param {{stateOverrides?: object, actions?: object, tickMs?: number}} [options]
  */
@@ -116,7 +133,8 @@ export function renderWithProvider(ui, options = {}) {
   const state = buildTestState(stateOverrides);
   const mergedActions = { ...defaultNoopActions(), ...actions };
   const value = { state, actions: mergedActions, tickMs: tickMs ?? Date.now() };
-  return render(
-    <AppContext.Provider value={value}>{ui}</AppContext.Provider>
-  );
+  function Wrapper({ children }) {
+    return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+  }
+  return render(ui, { wrapper: Wrapper });
 }

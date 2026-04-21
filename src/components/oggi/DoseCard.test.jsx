@@ -151,6 +151,13 @@ describe('DoseCard (interactive — Sessione 7b-2)', () => {
 
 // ============================================================
 // Sessione 7c-1 — tap affordances for modal openers (AMB-7c-1.L / N.e).
+// Updated 7d-1 (AMB-7d-1.D/E): modal-opening handlers now receive
+// (entry, triggerEl) — the second arg is the HTMLElement captured from
+// `e.currentTarget`. Assertions track the new signature. The gap badge
+// (TapBadge) uses a SOFT assertion on the second arg because the shared
+// TapBadge component may or may not forward the native event to its
+// `onClick` prop; OggiView compensates for any undefined trigger via
+// RecuperoModal.fallbackEntryKey.
 // ============================================================
 
 describe('DoseCard (interactive — Sessione 7c-1)', () => {
@@ -158,7 +165,7 @@ describe('DoseCard (interactive — Sessione 7c-1)', () => {
   // plan[0] = prevista (non-done) — for ALTRO tap
   // plan[1] = ricalcolata with gap_minuti=30 — for gap tap
 
-  it('calls onAltro with the entry when the ALTRO pill is clicked (non-done card)', () => {
+  it('calls onAltro(entry, triggerEl) when the ALTRO pill is clicked (non-done card)', () => {
     const onAltro = vi.fn();
     const { container } = renderWithProvider(
       <DoseCard
@@ -168,13 +175,12 @@ describe('DoseCard (interactive — Sessione 7c-1)', () => {
       />,
       { stateOverrides: THEME_LIGHT }
     );
-    // ALTRO pill uses <span>ALTRO</span> inside a button; query the parent button by role + accessible name.
     fireEvent.click(within(container).getByRole('button', { name: 'Altre opzioni' }));
     expect(onAltro).toHaveBeenCalledTimes(1);
-    expect(onAltro).toHaveBeenCalledWith(plan[0]);
+    expect(onAltro).toHaveBeenCalledWith(plan[0], expect.any(HTMLElement));
   });
 
-  it('calls onGapTap with the entry when the gap badge is tapped (gap_minuti > 0)', () => {
+  it('calls onGapTap(entry, ...) when the gap badge is tapped (gap_minuti > 0)', () => {
     const onGapTap = vi.fn();
     const { container } = renderWithProvider(
       <DoseCard
@@ -187,11 +193,16 @@ describe('DoseCard (interactive — Sessione 7c-1)', () => {
     // The gap badge renders as a button (TapBadge). Label text includes "ritardo".
     const gapBtn = within(container).getByRole('button', { name: /ritardo/i });
     fireEvent.click(gapBtn);
+    // Soft assertion on 2nd arg: TapBadge is an unmodified shared component in
+    // 7d-1 scope; if it forwards the native event the trigger will be the
+    // button HTMLElement, otherwise undefined. Either case is acceptable —
+    // OggiView falls back to fallbackEntryKey for focus restore.
     expect(onGapTap).toHaveBeenCalledTimes(1);
-    expect(onGapTap).toHaveBeenCalledWith(plan[1]);
+    const [entryArg] = onGapTap.mock.calls[0];
+    expect(entryArg).toEqual(plan[1]);
   });
 
-  it('calls onSaltataTap with the entry when the SALTATA label is tapped', () => {
+  it('calls onSaltataTap(entry, triggerEl) when the SALTATA label is tapped', () => {
     const onSaltataTap = vi.fn();
     const saltataEntry = { ...plan[0], stato: 'saltata' };
     const { container } = renderWithProvider(
@@ -208,10 +219,10 @@ describe('DoseCard (interactive — Sessione 7c-1)', () => {
     expect(taps.length).toBeGreaterThanOrEqual(1);
     fireEvent.click(taps[0]);
     expect(onSaltataTap).toHaveBeenCalledTimes(1);
-    expect(onSaltataTap).toHaveBeenCalledWith(saltataEntry);
+    expect(onSaltataTap).toHaveBeenCalledWith(saltataEntry, expect.any(HTMLElement));
   });
 
-  it('calls onSospesaTap with the entry when the SOSPESA label is tapped', () => {
+  it('calls onSospesaTap(entry, triggerEl) when the SOSPESA label is tapped', () => {
     const onSospesaTap = vi.fn();
     const sospesaEntry = { ...plan[0], stato: 'sospesa' };
     const { container } = renderWithProvider(
@@ -225,6 +236,6 @@ describe('DoseCard (interactive — Sessione 7c-1)', () => {
     expect(taps.length).toBeGreaterThanOrEqual(1);
     fireEvent.click(taps[0]);
     expect(onSospesaTap).toHaveBeenCalledTimes(1);
-    expect(onSospesaTap).toHaveBeenCalledWith(sospesaEntry);
+    expect(onSospesaTap).toHaveBeenCalledWith(sospesaEntry, expect.any(HTMLElement));
   });
 });

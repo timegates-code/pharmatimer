@@ -92,6 +92,10 @@ export function reducer(state, action) {
       };
 
     // --- Domain commits -------------------------------------
+    // Seeded init path used by AppProvider dual-mode (Sessione 7d-2 CP2, Changelog Fase 2 §6.49 / AMB-7d-2.B).
+    case 'INIT_FROM_SEED':
+      return { ...state, ...action.payload };
+
     case 'COMMIT_APPLY_RESULT': {
       const { plan, prompt, pushPresoKey } = action.payload;
       const presoStack = pushPresoKey
@@ -130,6 +134,11 @@ export function reducer(state, action) {
 
     case 'DISMISS_PROMPT':
       return { ...state, prompt: null };
+
+    // Rehydrate presoStack from today's 'presa' logs at init time (Sessione 7d-2 CP3, Changelog Fase 2 §6.40 / AMB-7d-2.C).
+    // Payload: string[] — entry keys in ASC order by ora_effettiva.
+    case 'SET_PRESO_STACK':
+      return { ...state, presoStack: action.payload };
 
     case 'POP_PRESO_STACK':
       if (state.presoStack.length === 0) return state;

@@ -23,13 +23,19 @@
 // Q1 resolved: the "Confermo saltata" button IS retained (porting fedele,
 // bottom-sheet mobile affordance, zero-cost onClose).
 //
-// AMB-7c-1.C / AMB-7c-1.E / AMB-7c-1.I / Changelog §11.
+// 7d-1 update (AMB-7d-1.C/D/F/J): a11y via `useModalA11y`. See AltroModal
+// header for the pattern rationale.
+//
+// AMB-7c-1.C / AMB-7c-1.E / AMB-7c-1.I / AMB-7d-1.C-F / Changelog §11.
 // ============================================================
 
 import { useState } from 'react';
 import { useTheme } from '../../../hooks/useTheme.js';
+import { useModalA11y } from '../../../hooks/useModalA11y.js';
 import { IconX, IconClock, IconPause } from '../../shared/Icons.jsx';
 import { crossDayHint } from './_crossDayHint.js';
+
+const LABEL_ID = 'saltata-modal-title';
 
 /**
  * @param {{
@@ -38,13 +44,28 @@ import { crossDayHint } from './_crossDayHint.js';
  *   onCambiaInSospesa: (entry: import('../../../domain/types.js').PlanEntry) => void,
  *   onSetTime: (entry: import('../../../domain/types.js').PlanEntry, hhmm: string) => void,
  *   onClose: () => void,
+ *   triggerRef?: { current: HTMLElement | null } | null,
  * }} props
  */
-export function SaltataModal({ entry, todayStr, onCambiaInSospesa, onSetTime, onClose }) {
+export function SaltataModal({
+  entry,
+  todayStr,
+  onCambiaInSospesa,
+  onSetTime,
+  onClose,
+  triggerRef = null,
+}) {
   const { tokens: t } = useTheme();
   const initialTime = entry?.ora_ricalcolata || entry?.ora_prevista || '08:00';
   const [mode, setMode] = useState('choose');
   const [customTime, setCustomTime] = useState(initialTime);
+
+  const { containerRef, modalProps } = useModalA11y({
+    isOpen: !!entry,
+    onClose,
+    labelId: LABEL_ID,
+    triggerRef,
+  });
 
   if (!entry) return null;
   const f = entry.farmaco;
@@ -52,19 +73,19 @@ export function SaltataModal({ entry, todayStr, onCambiaInSospesa, onSetTime, on
 
   return (
     <div
-      role="dialog"
-      aria-label="Saltata — modifica"
       data-testid="saltata-modal"
       className="fixed inset-0 z-50 flex items-end justify-center"
       style={{ background: t.modalOverlay }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
+        ref={containerRef}
+        {...modalProps}
         className="w-full max-w-md rounded-t-2xl p-5 pb-8"
         style={{ background: t.modalBg }}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-base" style={{ color: t.textPrimary }}>
+          <h3 id={LABEL_ID} className="font-bold text-base" style={{ color: t.textPrimary }}>
             {f.nome}
           </h3>
           <button

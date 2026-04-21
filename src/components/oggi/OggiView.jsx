@@ -1,5 +1,5 @@
 // ============================================================
-// OggiView — vista principale (Sessione 7b-1 + 7b-2 + 7c-1 + 7c-2).
+// OggiView — vista principale (Sessione 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1).
 //
 // 7b-1 foundation: header + counters + multi-day grouping + DoseCard
 // read-only + DEV slider + auto-beep.
@@ -13,66 +13,41 @@
 //     until they graduate to index.css when Step 9 lands notifications).
 //
 // 7c-1 wiring (AMB-7c-1.K):
-//   - 4 local useState slots: altroModal / saltataModal / sospesaModal /
-//     recuperoModal, each of shape { open: bool, entry: PlanEntry|null }
-//   - 4 handlers passed to DoseCard: onAltro / onSaltataTap / onSospesaTap /
-//     onGapTap — each sets the corresponding modal open state
-//   - 4 modals mounted AFTER the main layout. Each forwards its actions to
-//     the existing thunks in `actions` (presa / salta / sospendi /
-//     ripristina / recupero). NO new thunks introduced (regola 7c-1).
-//   - NO useEffect on state.prompt. Auto-prompt lifecycle is scope 7c-2.
-//
-// Thunk wiring for modals:
-//   AltroModal
-//     onSaltata(entry)           → actions.salta(entry.key)
-//     onSospesa(entry)           → actions.sospendi(entry.key)
-//     onSetTime(entry, hhmm)     → actions.presa(entry.key,
-//                                    { dataEffettiva: entry.dateStr,
-//                                      oraEffettiva: hhmm })
-//   SaltataModal
-//     onCambiaInSospesa(entry)   → actions.ripristina(entry.key, 'sospesa')
-//     onSetTime(entry, hhmm)     → actions.presa(entry.key,
-//                                    { dataEffettiva: entry.dateStr,
-//                                      oraEffettiva: hhmm })
-//   SospesaModal (AMB-7c-1.F — 1 azione; §6.37 "Cambia in saltata" deferred)
-//     onRipristina(entry)        → actions.ripristina(entry.key, 'attiva')
-//   RecuperoModal (Q3 resolution)
-//     onApply(entry, rec)        → actions.recupero(entry.key, rec)
-//     onReset(entry)             → actions.recupero(entry.key, 0)
+//   - 4 local useState slots for modal open-state, 4 handlers forwarded
+//     to DoseCard, 4 modals mounted after the main layout.
 //
 // 7c-2 wiring (AMB-7c-2 A-J):
-//   - `recuperoModal` state shape CHANGED: from `{open, entry}` (7c-1) to
-//     `{entry, source}` with source='manual'|'auto', or null when closed.
-//     AltroModal / SaltataModal / SospesaModal retain the 7c-1 `{open, entry}`
-//     shape (their lifecycle is tap-only, no auto-prompt).
-//   - Auto-prompt `useEffect` hydrates RecuperoModal with source='auto' when
-//     `state.prompt?.kind === 'gap_recovery'` and no other modal is open.
-//     Guard (AMB-7c-2.C): while any modal is open the auto-prompt is
-//     suspended — it will re-fire naturally on the next render after that
-//     modal closes, provided state.prompt is still set.
-//   - Hydration uses `selectPromptEntry` (7c-2 selector). Per its documented
-//     contract (robustness: stale entryKey / entry removed from plan → null),
-//     we defensively no-op when it returns null; AMB-7c-2.C body in spirit
-//     ("open auto modal for the prompt entry") is preserved — a null entry
-//     simply cannot be rendered safely in RecuperoModal (not modifiable).
-//   - `closeRecupero` implements AMB-7c-2.E:
-//       auto close              → always dismissPrompt
-//       manual close, same key  → dismissPrompt (AMB-7c-2.F: prompt satisfied)
-//       manual close, other key → no dismiss (prompt left pending)
-//       dispatch is idempotent: no-op if state.prompt already null.
-//   - apply / reset paths (Anticipa / Ripristina) do NOT call dismissPrompt
-//     explicitly: they route through `actions.recupero`, whose commit chain
-//     overwrites `state.prompt` via COMMIT_APPLY_RESULT (ephemeral behaviour
-//     §6.48 / AMB-7c-2.D).
+//   - `recuperoModal` shape changed to `{entry, source, triggerEl} | null`.
+//     Auto-prompt hook populates it with source='auto' from state.prompt.
+//   - `closeRecupero` implements dismissPrompt branching per AMB-7c-2.E/F.
 //
-// Scope 7d polish (explicitly NOT wired here):
-//   - UndoModal (UNDO stays as tap-direct on dashed check, 7b-2 contract)
-//   - a11y: focus trap, Escape-to-close, role="dialog" already present
-//   - §6.33 IconUndo overlay size
-//   - §6.34 date separator visibility
-//   - §6.26 cross-midnight warning elevation
+// 7d-1 wiring (AMB-7d-1.C/D/E):
+//   - Each of the 4 modal state slots tracks the DOM element that opened
+//     the modal (`triggerEl`) so it can be passed as `triggerRef` to
+//     `useModalA11y` inside each modal. DoseCard forwards
+//     `e.currentTarget` as the 2nd arg of each modal-opening handler.
+//   - Auto-opened RecuperoModal has no trigger element (opened by state
+//     transition, not by a tap). For it we pass `fallbackEntryKey`, and the
+//     hook's restore chain queries `[data-entry-key="<key>"]` first (see
+//     DoseCard root div `data-entry-key={entry.key}`) before falling back
+//     to `document.body`.
 //
-// Scope 8 (future): Config edits + plan refresh strategy.
+// 7d-1 CP4 (AMB-7d-1.H / §6.34+§6.44):
+//   - DATE SEPARATOR turned into a sticky pill. `position: sticky` with
+//     `top-16` (initial estimate, calibrated visually in CP browser — the
+//     actual header height depends on DEV slider presence and counter row
+//     wrap). `z-20` sits below the header (`z-30`) and above the cards.
+//   - Uses the new `dateSepBgStrong` token for higher contrast against
+//     pageBg while scrolling.
+//   - Prefixed by `IconCalendar` glyph (replaces the inline ─ line dashes
+//     of the 7b-1 layout — line decorations read poorly when pinned).
+//   - Tiny drop shadow `0 1px 2px rgba(0,0,0,0.1)` visually separates the
+//     pinned pill from the content scrolling underneath.
+//
+// Scope 7d polish remaining (explicitly NOT wired here):
+//   - §6.39 renderHelpers wrapper refactor (CP5 this session)
+//   - §6.45/§6.46/§6.47/§6.49/§6.40/§6.41 → 7d-2
+//   - §6.26 cross-midnight warning elevation → Step 9
 // ============================================================
 
 import { useEffect, useMemo, useState } from 'react';
@@ -96,6 +71,7 @@ import { playBeep } from '../../services/audio.js';
 import { DoseCard } from './DoseCard.jsx';
 import { DevTimeSlider } from './DevTimeSlider.jsx';
 import { Badge } from '../shared/Badge.jsx';
+import { IconCalendar } from '../shared/Icons.jsx';
 import { AltroModal } from './modals/AltroModal.jsx';
 import { SaltataModal } from './modals/SaltataModal.jsx';
 import { SospesaModal } from './modals/SospesaModal.jsx';
@@ -132,13 +108,27 @@ const CARD_AND_SLIDER_CSS = `
     background: #2563EB; cursor: pointer; border: 2px solid white;
     box-shadow: 0 1px 3px rgba(0,0,0,0.3);
   }
+  /* 7d-1 (AMB-7d-1.J clarification, extended in CP browser): visible focus
+     ring for ANY focusable element in the app. Tailwind's base reset
+     removes outline on buttons; without this rule the focus-trap from
+     useModalA11y is active but invisible, which defeats the a11y goal.
+     Initially scoped to [role=dialog]; CP browser 4 showed the ring is
+     equally needed on tappable badges outside dialogs (e.g. gap
+     TapBadge) — so the rule is now global. offset 3px + 2.5px width
+     provides clear separation even from dashed/rounded badge borders. */
+  :focus-visible {
+    outline: 2.5px solid #3B82F6;
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
 `;
 
 // ---------- SVG icon paths (1:1 mockup v5 theme toggle) ----------
 const MOON_PATH = 'M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z';
 const SUN_PATHS = 'M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42';
 
-const CLOSED = { open: false, entry: null };
+// 7d-1: CLOSED shape extended with triggerEl slot (AMB-7d-1.D).
+const CLOSED = { open: false, entry: null, triggerEl: null };
 
 // ---------- main view ----------
 
@@ -147,13 +137,14 @@ export default function OggiView() {
   const { dark, tokens: t, mode } = useTheme();
   const now = useNow();
 
-  // --- 7c-1 modal open-state (Altro/Saltata/Sospesa retain {open, entry}) ---
+  // --- 7c-1 modal open-state (+ 7d-1 triggerEl for a11y focus restore) ---
   const [altroModal, setAltroModal] = useState(CLOSED);
   const [saltataModal, setSaltataModal] = useState(CLOSED);
   const [sospesaModal, setSospesaModal] = useState(CLOSED);
 
-  // --- 7c-2 RecuperoModal shape is {entry, source} | null (AMB-7c-2.B).
-  //     source='manual' (tap on gap badge) vs 'auto' (from state.prompt).
+  // --- 7c-2 RecuperoModal shape: {entry, source, triggerEl?} | null.
+  //     source='manual' (tap on gap badge, triggerEl present) vs
+  //     source='auto' (from state.prompt, no triggerEl).
   //     Null means closed; a single instance serves both triggers.
   const [recuperoModal, setRecuperoModal] = useState(null);
 
@@ -211,7 +202,8 @@ export default function OggiView() {
     ) return;
     const entry = selectPromptEntry(state);
     if (!entry) return;
-    setRecuperoModal({ entry, source: 'auto' });
+    // Auto-open has no trigger element (opened by state transition, not tap).
+    setRecuperoModal({ entry, source: 'auto', triggerEl: null });
   }, [
     state.prompt,
     state.plan,
@@ -412,16 +404,30 @@ export default function OggiView() {
           ) : (
             groupedDays.map((day) => (
               <div key={day.dateStr}>
-                {/* DATE SEPARATOR */}
-                <div className="flex items-center gap-3 my-4">
-                  <div className="flex-1 h-px" style={{ background: t.dateSepBg }} />
+                {/* DATE SEPARATOR — 7d-1 sticky pill (AMB-7d-1.H / §6.34+§6.44).
+                    Replaces the 7b-1 "line · label · line" layout: line dashes
+                    don't read well pinned; a full-width pill with icon +
+                    label + strong bg reads instantly while scrolling.
+                    `top-[180px]` calibrated in CP browser against the actual
+                    header height (179px with DEV slider + counter row +
+                    title). In production without DEV slider the header is
+                    shorter; a small gap is acceptable — the alternative
+                    (dynamic measurement via ref + ResizeObserver) is out of
+                    7d-1 scope. */}
+                <div
+                  className="sticky top-[180px] z-20 my-4 py-1.5 px-3 rounded-md flex items-center justify-center gap-2"
+                  style={{
+                    background: t.dateSepBgStrong,
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                  }}
+                >
+                  <IconCalendar color={t.dateSepTx} size={12} />
                   <span
-                    className="text-xs font-bold uppercase tracking-wider px-2"
+                    className="text-xs font-bold uppercase tracking-wider"
                     style={{ color: t.dateSepTx }}
                   >
                     {formatDateLabel(day.dateStr, today)}
                   </span>
-                  <div className="flex-1 h-px" style={{ background: t.dateSepBg }} />
                 </div>
 
                 {/* MOMENTO GROUPS */}
@@ -454,10 +460,13 @@ export default function OggiView() {
                             onPresa={() => actions.presa(entry.key)}
                             onUndo={() => actions.annullaUltima()}
                             isLastPreso={entry.key === ultimaPresa}
-                            onAltro={(en) => setAltroModal({ open: true, entry: en })}
-                            onSaltataTap={(en) => setSaltataModal({ open: true, entry: en })}
-                            onSospesaTap={(en) => setSospesaModal({ open: true, entry: en })}
-                            onGapTap={(en) => setRecuperoModal({ entry: en, source: 'manual' })}
+                            // 7d-1: modal-opening handlers now capture the
+                            // trigger element (e.currentTarget) so
+                            // useModalA11y can restore focus to it on close.
+                            onAltro={(en, el) => setAltroModal({ open: true, entry: en, triggerEl: el })}
+                            onSaltataTap={(en, el) => setSaltataModal({ open: true, entry: en, triggerEl: el })}
+                            onSospesaTap={(en, el) => setSospesaModal({ open: true, entry: en, triggerEl: el })}
+                            onGapTap={(en, el) => setRecuperoModal({ entry: en, source: 'manual', triggerEl: el })}
                           />
                         </div>
                       );
@@ -471,10 +480,13 @@ export default function OggiView() {
       </div>
 
       {/* 7c-1 MODALS (mounted after the main layout, outside the scrolling area) */}
+      {/* 7d-1: each modal receives `triggerRef` as a synthetic { current: el }
+           object so useModalA11y can restore focus to the opener. */}
       {altroModal.open && (
         <AltroModal
           entry={altroModal.entry}
           todayStr={today}
+          triggerRef={{ current: altroModal.triggerEl }}
           onSaltata={(en) => actions.salta(en.key)}
           onSospesa={(en) => actions.sospendi(en.key)}
           onSetTime={(en, hhmm) =>
@@ -487,6 +499,7 @@ export default function OggiView() {
         <SaltataModal
           entry={saltataModal.entry}
           todayStr={today}
+          triggerRef={{ current: saltataModal.triggerEl }}
           onCambiaInSospesa={(en) => actions.ripristina(en.key, 'sospesa')}
           onSetTime={(en, hhmm) =>
             actions.presa(en.key, { dataEffettiva: en.dateStr, oraEffettiva: hhmm })
@@ -497,6 +510,7 @@ export default function OggiView() {
       {sospesaModal.open && (
         <SospesaModal
           entry={sospesaModal.entry}
+          triggerRef={{ current: sospesaModal.triggerEl }}
           onRipristina={(en) => actions.ripristina(en.key, 'attiva')}
           onClose={closeSospesa}
         />
@@ -504,6 +518,13 @@ export default function OggiView() {
       {recuperoModal && (
         <RecuperoModal
           entry={recuperoModal.entry}
+          // Manual opens pass triggerRef; auto opens pass null (no opener).
+          // Both pass fallbackEntryKey — belt-and-suspenders:
+          // - auto: primary restore path via [data-entry-key] → body
+          // - manual: safety net if TapBadge doesn't forward the native event
+          //   (shared component, see DoseCard.test.jsx rationale)
+          triggerRef={recuperoModal.triggerEl ? { current: recuperoModal.triggerEl } : null}
+          fallbackEntryKey={recuperoModal.entry?.key ?? null}
           onApply={(en, rec) => actions.recupero(en.key, rec)}
           onReset={(en) => actions.recupero(en.key, 0)}
           onClose={closeRecupero}

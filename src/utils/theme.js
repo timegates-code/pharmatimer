@@ -14,6 +14,16 @@
 // `cardBg.attesa` for any dose state, masking the real visual state. There
 // were no consumers of these tokens in the 7a baseline, so the rename is
 // zero-regression.
+//
+// Sessione 7d-1 (AMB-7d-1.H / §6.34+§6.44):
+//   Added `dateSepBgStrong` for the sticky date separator. Chosen to sit
+//   visibly between `pageBg` (the body) and `headerBg` (the sticky header
+//   above it) so that when a separator is pinned to `top: <headerH>` it
+//   reads as a distinct surface at a glance while scrolling.
+//   Light: warmGray-300 (`#D6D3D1`, vs dateSepBg `#E7E5E0`).
+//   Dark:  a step lighter than the existing dateSepBg (`#3D3A47`
+//          vs `#2A2833`) — dark mode surfaces need brighter separators to
+//          maintain perceived contrast against the near-black backdrop.
 // ============================================================
 
 /**
@@ -114,6 +124,11 @@ export function createThemeTokens(dark) {
     btnDisabledBg: dk ? '#252430' : '#E7E5E0',
     btnDisabledTx: dk ? '#4A4854' : '#A8A29E',
     dateSepBg: dk ? '#2A2833' : '#E7E5E0',
+    // 7d-1 (AMB-7d-1.H / §6.34+§6.44): stronger variant used for the
+    // sticky date-separator pill. A step brighter than `dateSepBg` so the
+    // pinned separator still reads as a distinct surface against pageBg
+    // while scrolling multi-day timelines.
+    dateSepBgStrong: dk ? '#3D3A47' : '#D6D3D1',
     dateSepTx: dk ? '#CBC9C3' : '#1C1917',
   };
 }

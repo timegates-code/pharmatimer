@@ -1,9 +1,10 @@
-// RecuperoModal — 6 unit tests (AMB-7c-1.N).
+// RecuperoModal — 8 unit tests (7c-1: 6, 7d-1: +2 a11y smoke).
 // Covers: mount gate, slider → rec-value update, apply dispatch (entry, rec),
-// reset button visibility + reset via onApply(entry, 0) wrapped into onReset,
-// primary button disabled at rec=0 when no existing recupero, overlay + close.
+// reset button visibility + reset via onReset(entry), primary button disabled
+// at rec=0 when no existing recupero, overlay + close, a11y focus mount
+// activation, a11y Escape.
 import { describe, it, expect, vi } from 'vitest';
-import { screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { renderWithProvider, buildTestPlan } from '../../../test/renderHelpers.jsx';
 import { RecuperoModal } from './RecuperoModal.jsx';
 
@@ -88,5 +89,26 @@ describe('RecuperoModal', () => {
     const second = renderModal();
     fireEvent.click(screen.getByRole('button', { name: 'Chiudi' }));
     expect(second.props.onClose).toHaveBeenCalledTimes(1);
+  });
+
+  // --- 7d-1 a11y smoke tests (AMB-7d-1.K) ---
+
+  it('a11y: initial focus lands inside the dialog container', async () => {
+    renderModal();
+    await waitFor(() => {
+      const dialog = screen.getByRole('dialog');
+      expect(dialog.contains(document.activeElement)).toBe(true);
+    });
+  });
+
+  it('a11y: Escape triggers onClose via focus trap', async () => {
+    const { props } = renderModal();
+    await waitFor(() => {
+      expect(screen.getByRole('dialog').contains(document.activeElement)).toBe(true);
+    });
+    fireEvent.keyDown(document.activeElement, { key: 'Escape' });
+    await waitFor(() => {
+      expect(props.onClose).toHaveBeenCalledTimes(1);
+    });
   });
 });

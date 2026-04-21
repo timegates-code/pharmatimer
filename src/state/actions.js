@@ -56,6 +56,23 @@ function normaliseSettingsDict(raw) {
   return {};
 }
 
+/**
+ * Derive an entry key from a log row's composite identity.
+ *
+ * The canonical formula lives in `src/domain/planBuilder.js` (see also
+ * `src/domain/recalc.test.js:61` for the test-side assertion):
+ *     key = `${dateStr}-${farmaco.id}-${orario.dose_numero}`
+ *
+ * Log rows use snake_case names (`farmaco_id`, `data`, `dose_numero`); the
+ * same pair `(farmaco.id, orario.dose_numero)` is already threaded across
+ * both worlds by `cambiaProfilo` when computing `logsToDelete`. Centralising
+ * the translation here keeps the mapping in one obvious spot and makes the
+ * eventual promotion to a shared `makeEntryKey(...)` helper a trivial move.
+ */
+function logRowToEntryKey(logRow) {
+  return `${logRow.data}-${logRow.farmaco_id}-${logRow.dose_numero}`;
+}
+
 // ------------------------------------------------------------
 // Thunk factory
 // ------------------------------------------------------------
@@ -118,6 +135,25 @@ export function createActions({ dispatch, getState, repo }) {
           plan,
           lastBuiltForDay: today,
         },
+      });
+
+      // Sessione 7d-2 CP3 (§6.40 / AMB-7d-2.C): rehydrate presoStack
+      // with the keys of every 'presa' log of today. This preserves the
+      // UNDO direct window across page reloads — previously presoStack
+      // was ephemeral (§6.35).
+      //
+      // The repo method returns logs sorted ASC by ora_effettiva, which
+      // matches the LIFO convention of presoStack: top = stack.at(-1)
+      // = most recent press. `selectUltimaPresa` reads the top for the
+      // UNDO direct target.
+      //
+      // Dispatched AFTER INIT_SUCCESS (not merged into its payload) to
+      // keep the init shape change minimal and isolate this concern in
+      // its own action. No-op if there are no 'presa' logs today.
+      const todayPresaLogs = await repo.getLogByDataStato(today, 'presa');
+      dispatch({
+        type: 'SET_PRESO_STACK',
+        payload: todayPresaLogs.map(logRowToEntryKey),
       });
     } catch (err) {
       const code =

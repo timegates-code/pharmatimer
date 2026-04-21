@@ -20,40 +20,54 @@
 // (lines 803-832), renamed per AMB-7c-1.C. No time picker, so no
 // cross-day hint needed.
 //
-// AMB-7c-1.C / AMB-7c-1.F / §6.37 / Changelog §11.
+// 7d-1 update (AMB-7d-1.C/D/F/J): a11y via `useModalA11y`. See AltroModal
+// header for the pattern rationale.
+//
+// AMB-7c-1.C / AMB-7c-1.F / §6.37 / AMB-7d-1.C-F / Changelog §11.
 // ============================================================
 
 import { useTheme } from '../../../hooks/useTheme.js';
+import { useModalA11y } from '../../../hooks/useModalA11y.js';
 import { IconX, IconUndo } from '../../shared/Icons.jsx';
+
+const LABEL_ID = 'sospesa-modal-title';
 
 /**
  * @param {{
  *   entry: import('../../../domain/types.js').PlanEntry | null,
  *   onRipristina: (entry: import('../../../domain/types.js').PlanEntry) => void,
  *   onClose: () => void,
+ *   triggerRef?: { current: HTMLElement | null } | null,
  * }} props
  */
-export function SospesaModal({ entry, onRipristina, onClose }) {
+export function SospesaModal({ entry, onRipristina, onClose, triggerRef = null }) {
   const { tokens: t } = useTheme();
+
+  const { containerRef, modalProps } = useModalA11y({
+    isOpen: !!entry,
+    onClose,
+    labelId: LABEL_ID,
+    triggerRef,
+  });
 
   if (!entry) return null;
   const f = entry.farmaco;
 
   return (
     <div
-      role="dialog"
-      aria-label="Sospesa — ripristino"
       data-testid="sospesa-modal"
       className="fixed inset-0 z-50 flex items-end justify-center"
       style={{ background: t.modalOverlay }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
+        ref={containerRef}
+        {...modalProps}
         className="w-full max-w-md rounded-t-2xl p-5 pb-8"
         style={{ background: t.modalBg }}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-base" style={{ color: t.textPrimary }}>
+          <h3 id={LABEL_ID} className="font-bold text-base" style={{ color: t.textPrimary }}>
             {f.nome} — sospesa
           </h3>
           <button

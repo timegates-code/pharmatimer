@@ -187,6 +187,36 @@ export class LocalRepository {
       .sortBy("dose_numero");
   }
 
+  async getLogByDataStato(data, stato) {
+    // Introduced in Sessione 7d-2 CP1 (§6.40 / AMB-7d-2.C, rectified to
+    // singular naming D-R2 to match getLogByData / getLogByRange /
+    // getLogByFarmacoData family).
+    //
+    // Primary consumer: actions.init() populates state.presoStack with the
+    // keys of all logs in stato='presa' for the current dateStr, so that
+    // a page reload preserves the UNDO direct window (§6.40).
+    //
+    // Strategy: leverage the "data" single-column index (cheap range
+    // lookup), then filter and sort JS-side. A compound [data+stato]
+    // index would be marginally faster but adds schema weight for one
+    // call-site; filter-in-memory is acceptable given typical row count
+    // (~dozens of logs per day).
+    //
+    // Sort key: ora_effettiva ASC. For stato='presa' this field is always
+    // populated by applyAssunzione, so the null-handling below is purely
+    // defensive (enables future callers passing other stato values).
+    const rows = await db.log_assunzioni.where("data").equals(data).toArray();
+    const filtered = rows.filter((r) => r.stato === stato);
+    return filtered.sort((a, b) => {
+      if (a.ora_effettiva == null && b.ora_effettiva == null) return 0;
+      if (a.ora_effettiva == null) return 1;
+      if (b.ora_effettiva == null) return -1;
+      if (a.ora_effettiva < b.ora_effettiva) return -1;
+      if (a.ora_effettiva > b.ora_effettiva) return 1;
+      return 0;
+    });
+  }
+
   async addLog(l) {
     return db.log_assunzioni.add({ ...l });
   }

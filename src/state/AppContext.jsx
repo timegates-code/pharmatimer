@@ -28,11 +28,21 @@ import { TICK_INTERVAL_MS } from '../domain/constants.js';
 // helpers can wrap UI in a stub Provider without spinning up the
 // real AppProvider (which triggers repo.init() asynchronously).
 // Changelog §17 (R2) / AMB-7a.L.
+//
+// Sessione 7d-2 CP2 (§6.49 / AMB-7d-2.B): dual-mode Provider.
+// When `initialStateProp` is passed, Provider skips `repo.init()`
+// and dispatches INIT_FROM_SEED to apply the seed shallow-merged
+// onto initialState. This enables contract tests to assert on
+// specific state shapes without the async repo boot cycle.
+// In DEV, warns on console if the seed omits `status` or
+// `profiloAttivo` — both are load-bearing for selectors and most
+// UI paths, so their absence is almost certainly a test bug.
+// No deep-merge: callers provide complete top-level fields.
 // ============================================================
 
 export const AppContext = createContext(null);
 
-export function AppProvider({ children }) {
+export function AppProvider({ children, initialStateProp }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   // Tick-driven re-render source for useNow. Updated every
@@ -56,9 +66,33 @@ export function AppProvider({ children }) {
     []
   );
 
-  // Boot.
+  // Boot. Dual-mode:
+  //   - seeded: dispatch INIT_FROM_SEED, never call repo.init()
+  //   - normal: invoke actions.init() (the legacy path)
+  // initialStateProp intentionally NOT in deps: changing the seed
+  // mid-life would silently re-dispatch INIT_FROM_SEED; callers
+  // should treat it as mount-only.
   useEffect(() => {
+    if (initialStateProp !== undefined) {
+      if (import.meta.env.DEV) {
+        if (!('status' in initialStateProp)) {
+          // eslint-disable-next-line no-console
+          console.warn(
+            'AppProvider: initialStateProp missing "status" — selectors may misbehave'
+          );
+        }
+        if (!('profiloAttivo' in initialStateProp)) {
+          // eslint-disable-next-line no-console
+          console.warn(
+            'AppProvider: initialStateProp missing "profiloAttivo" — most views assume it is non-null when status==="ready"'
+          );
+        }
+      }
+      dispatch({ type: 'INIT_FROM_SEED', payload: initialStateProp });
+      return;
+    }
     actions.init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [actions]);
 
   // Single interval: tick + rollover detect. Reused by visibilitychange

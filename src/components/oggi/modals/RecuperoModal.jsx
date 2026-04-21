@@ -3,7 +3,8 @@
 // with gap_minuti > 0.
 //
 // Opens from tapping the GAP badge (clock + minutes chip) in the badge row
-// of a DoseCard. Offers:
+// of a DoseCard, OR auto-opens when a new gap prompt appears in state.
+// Offers:
 //   - Slider (step=5 min) bound to [0, calcolaRecuperoMax(farmaco, gap)]
 //   - "Anticipa di HH:MM" primary action → thunk `recupero(entryKey, rec)`
 //   - "Ripristina" action (visible only when `entry.recupero_minuti > 0`)
@@ -25,14 +26,23 @@
 // 1:1 port of `RitardoModal` from pharmatimer_oggi_v5.jsx (lines 648-734),
 // renamed per AMB-7c-1.C.
 //
-// AMB-7c-1.C / AMB-7c-1.G / Q3 resolution / Changelog §11.
+// 7d-1 update (AMB-7d-1.C/D/F/J): a11y via `useModalA11y`. In addition to
+// the manual `triggerRef` path (tap on gap badge), RecuperoModal supports
+// auto-open (see §6.48 ephemeral prompt) — for those cases OggiView does
+// NOT pass a `triggerRef`, and the hook falls back to
+// `[data-entry-key="<fallbackEntryKey>"]` then `document.body` at close.
+//
+// AMB-7c-1.C / AMB-7c-1.G / Q3 resolution / AMB-7d-1.C-F / Changelog §11.
 // ============================================================
 
 import { useState } from 'react';
 import { useTheme } from '../../../hooks/useTheme.js';
+import { useModalA11y } from '../../../hooks/useModalA11y.js';
 import { IconX } from '../../shared/Icons.jsx';
 import { timeToMinutes, minutesToTime, formatDuration } from '../../../utils/time.js';
 import { calcolaRecuperoMax } from '../../../domain/recalc.js';
+
+const LABEL_ID = 'recupero-modal-title';
 
 /**
  * @param {{
@@ -40,11 +50,28 @@ import { calcolaRecuperoMax } from '../../../domain/recalc.js';
  *   onApply: (entry: import('../../../domain/types.js').PlanEntry, recuperoMinuti: number) => void,
  *   onReset: (entry: import('../../../domain/types.js').PlanEntry) => void,
  *   onClose: () => void,
+ *   triggerRef?: { current: HTMLElement | null } | null,
+ *   fallbackEntryKey?: string | null,
  * }} props
  */
-export function RecuperoModal({ entry, onApply, onReset, onClose }) {
+export function RecuperoModal({
+  entry,
+  onApply,
+  onReset,
+  onClose,
+  triggerRef = null,
+  fallbackEntryKey = null,
+}) {
   const { tokens: t } = useTheme();
   const [rec, setRec] = useState(entry?.recupero_minuti || 0);
+
+  const { containerRef, modalProps } = useModalA11y({
+    isOpen: !!entry,
+    onClose,
+    labelId: LABEL_ID,
+    triggerRef,
+    fallbackEntryKey,
+  });
 
   if (!entry) return null;
 
@@ -61,19 +88,19 @@ export function RecuperoModal({ entry, onApply, onReset, onClose }) {
 
   return (
     <div
-      role="dialog"
-      aria-label="Recupero ritardo"
       data-testid="recupero-modal"
       className="fixed inset-0 z-50 flex items-end justify-center"
       style={{ background: t.modalOverlay }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
+        ref={containerRef}
+        {...modalProps}
         className="w-full max-w-md rounded-t-2xl p-5 pb-8"
         style={{ background: t.modalBg }}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-base" style={{ color: t.textPrimary }}>
+          <h3 id={LABEL_ID} className="font-bold text-base" style={{ color: t.textPrimary }}>
             Recupero ritardo
           </h3>
           <button

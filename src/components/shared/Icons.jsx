@@ -1,7 +1,11 @@
 // ============================================================
-// Icons — 7 lightweight SVG glyphs. Port 1:1 from v5 mockup
+// Icons — lightweight SVG glyphs. Port 1:1 from v5 mockup
 // lines 309-331. Props: { color?: string, size?: number }.
 // Default color is 'currentColor' so icons inherit from text.
+//
+// Sessione 7d-1 (AMB-7d-1.H): added IconCalendar for the sticky date
+// separator. Generic outlined calendar glyph (no day number) so it reads
+// well alongside the textual day label in both light and dark modes.
 // ============================================================
 
 export const IconChevron = ({ color = 'currentColor', size = 10 }) => (
@@ -45,5 +49,12 @@ export const IconClock = ({ color = 'currentColor', size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round">
     <circle cx="12" cy="12" r="10" />
     <path d="M12 6v6l4 2" />
+  </svg>
+);
+
+export const IconCalendar = ({ color = 'currentColor', size = 12 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="5" width="18" height="16" rx="2" />
+    <path d="M16 3v4M8 3v4M3 10h18" />
   </svg>
 );

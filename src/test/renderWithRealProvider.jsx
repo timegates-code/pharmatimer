@@ -201,6 +201,21 @@ export function makeFakeRepo(seed = {}) {
 
     // --- Log assunzioni (full concrete: thunks exercise these) ---
     getLogByData:        async (data) => clone(db.logs.filter((l) => l.data === data)),
+    // Sessione 7d-2 CP3 hotfix: mirror LocalRepository.getLogByDataStato.
+    // Returns entries filtered by (data, stato), ASC by ora_effettiva.
+    // Nulls sort last (defensive; 'presa' rows always have ora_effettiva).
+    getLogByDataStato:   async (data, stato) => {
+      const rows = db.logs.filter((l) => l.data === data && l.stato === stato);
+      rows.sort((a, b) => {
+        if (a.ora_effettiva == null && b.ora_effettiva == null) return 0;
+        if (a.ora_effettiva == null) return 1;
+        if (b.ora_effettiva == null) return -1;
+        if (a.ora_effettiva < b.ora_effettiva) return -1;
+        if (a.ora_effettiva > b.ora_effettiva) return 1;
+        return 0;
+      });
+      return clone(rows);
+    },
     getLogByRange:       async (dataDa, dataA) =>
       clone(db.logs.filter((l) => l.data >= dataDa && l.data <= dataA)),
     getLogByFarmacoData: async (fid, data) =>

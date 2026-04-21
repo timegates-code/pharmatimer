@@ -30,6 +30,25 @@
 // redundant tap target (same modal opens from the time-column label — UX
 // redundancy per mockup v5 lines 522-533).
 //
+// Sessione 7d-1 (AMB-7d-1.D/E):
+//   - Root div receives `data-entry-key={entry.key}` (AMB-7d-1.E) so the
+//     `useModalA11y` fallback chain can locate the originating card when
+//     a modal closes without an explicit triggerRef (auto-open case).
+//   - Root div also carries `tabIndex={-1}` so programmatic `.focus()`
+//     from the hook's restore chain actually works on a plain `<div>`
+//     (AMB-7d-1.D/E clarification, discovered in CP browser 5).
+//   - §6.33 closed by REMOVAL rather than resize: IconUndo overlay
+//     deleted. The dashed border + pulse animation + `aria-label=
+//     "Annulla ultima presa"` already communicate the affordance
+//     (visual + a11y). Scaling the overlay 10→14→18 proved the
+//     overlay position was the wrong affordance anyway — removing it
+//     reduces visual noise and keeps the check button clean.
+//   - Every modal-opening handler (ALTRO, SALTATA label+circle, SOSPESA
+//     label+circle, gap TapBadge) now forwards `e.currentTarget` as the
+//     second argument so OggiView can capture the trigger element for
+//     focus restore. Signature change is isolated to modal openers —
+//     onPresa / onUndo retain the single-arg contract.
+//
 // Reads:
 //   - Theme tokens via `useTheme()` (same pattern as NavBar / DevTimeSlider).
 //   - Enum-aligned token keys from CP1 rename (§6.28): cardBg/cardBorder
@@ -58,7 +77,7 @@
 import { useTheme } from '../../hooks/useTheme.js';
 import { Badge } from '../shared/Badge.jsx';
 import { TapBadge } from '../shared/TapBadge.jsx';
-import { IconCheck, IconUndo, IconX, IconPause, IconEdit } from '../shared/Icons.jsx';
+import { IconCheck, IconX, IconPause, IconEdit } from '../shared/Icons.jsx';
 import { calcolaDelta, addDays } from '../../utils/time.js';
 import { isCrossMidnightRecalc, formatDelta, formatGapLabel } from '../../utils/uiState.js';
 import { TOLLERANZA_MIN } from '../../domain/constants.js';
@@ -129,10 +148,10 @@ function formatPresaValue(abs) {
  *   isFlashing?: boolean,
  *   onPresa?: (entry: import('../../domain/types.js').PlanEntry) => void,
  *   onUndo?:  (entry: import('../../domain/types.js').PlanEntry) => void,
- *   onAltro?: (entry: import('../../domain/types.js').PlanEntry) => void,
- *   onSaltataTap?: (entry: import('../../domain/types.js').PlanEntry) => void,
- *   onSospesaTap?: (entry: import('../../domain/types.js').PlanEntry) => void,
- *   onGapTap?: (entry: import('../../domain/types.js').PlanEntry) => void,
+ *   onAltro?: (entry: import('../../domain/types.js').PlanEntry, triggerEl: HTMLElement) => void,
+ *   onSaltataTap?: (entry: import('../../domain/types.js').PlanEntry, triggerEl: HTMLElement) => void,
+ *   onSospesaTap?: (entry: import('../../domain/types.js').PlanEntry, triggerEl: HTMLElement) => void,
+ *   onGapTap?: (entry: import('../../domain/types.js').PlanEntry, triggerEl: HTMLElement | undefined) => void,
  *   isLastPreso?: boolean,
  * }} props
  *
@@ -140,6 +159,12 @@ function formatPresaValue(abs) {
  * DoseCard without any handler must keep passing. When a handler is absent,
  * the corresponding affordance is NOT mounted (no "ghost" button with a
  * detached onClick).
+ *
+ * 7d-1 signature note: modal-opening handlers (onAltro, onSaltataTap,
+ * onSospesaTap, onGapTap) receive the trigger HTMLElement as the second
+ * argument. The gap TapBadge passes `e?.currentTarget` null-safely because
+ * the shared TapBadge wrapper may or may not forward the event to its
+ * onClick prop; OggiView compensates via `fallbackEntryKey`.
  */
 export function DoseCard({
   entry,
@@ -207,6 +232,14 @@ export function DoseCard({
 
   return (
     <div
+      data-entry-key={entry.key}
+      // 7d-1 (AMB-7d-1.D/E clarification, discovered in CP browser 5):
+      // `tabIndex={-1}` makes the div programmatically focusable without
+      // adding it to the natural tab order. Required for `useModalA11y`
+      // restore-focus fallback (`[data-entry-key]` query): plain <div>
+      // elements silently ignore .focus() unless they carry tabindex.
+      // -1 means "focusable by script, skipped by Tab key".
+      tabIndex={-1}
       className={`rounded-xl overflow-hidden transition-colors duration-200${
         isInRitardo ? ' animate-scaduta' : ''
       }${isFlashing ? ' animate-flash' : ''}`}
@@ -237,7 +270,7 @@ export function DoseCard({
                 // 7c-1: tappable label with dashed underline + edit affordance.
                 <button
                   type="button"
-                  onClick={() => onSaltataTap(entry)}
+                  onClick={(e) => onSaltataTap(entry, e.currentTarget)}
                   aria-label="Modifica dose saltata"
                   className="inline-flex items-center gap-0.5 mt-0.5 cursor-pointer active:scale-95 transition-transform bg-transparent border-0 p-0"
                   style={{ borderBottom: `1px dashed ${t.red}` }}
@@ -270,7 +303,7 @@ export function DoseCard({
               {hasSospesaTap ? (
                 <button
                   type="button"
-                  onClick={() => onSospesaTap(entry)}
+                  onClick={(e) => onSospesaTap(entry, e.currentTarget)}
                   aria-label="Modifica dose sospesa"
                   className="inline-flex items-center gap-0.5 mt-0.5 cursor-pointer active:scale-95 transition-transform bg-transparent border-0 p-0"
                   style={{ borderBottom: `1px dashed ${t.sospesaTx}` }}
@@ -401,15 +434,22 @@ export function DoseCard({
                 border={t.warnBd}
               />
             )}
-            {/* 7c-1: gap badge is interactive (TapBadge) iff onGapTap provided. */}
+            {/* 7c-1: gap badge is interactive (TapBadge) iff onGapTap provided.
+                7d-1 (CP browser 4): border uses `gapTx` instead of `gapBd`
+                for stronger dash contrast on both themes. `gapBd` was too
+                faint in dark mode (rosso #991B1B on near-black bg); `gapTx`
+                tracks the text colour (rosa #FCA5A5 dark / rosso #B91C1C
+                light) producing a crisp visible dash. The static Badge
+                fallback keeps the original token since it has no dashed
+                border. */}
             {entry.gap_minuti > 0 && !isDone && (
               hasGapTap ? (
                 <TapBadge
                   label={formatGapLabel(entry.gap_minuti)}
                   bg={t.gapBg}
                   text={t.gapTx}
-                  border={t.gapBd}
-                  onClick={() => onGapTap(entry)}
+                  border={t.gapTx}
+                  onClick={(e) => onGapTap(entry, e?.currentTarget)}
                 />
               ) : (
                 <Badge
@@ -455,11 +495,6 @@ export function DoseCard({
             }}
           >
             <IconCheck color={t.checkStroke} />
-            {isLastPreso && (
-              <span className="absolute" style={{ bottom: -2, right: -2 }}>
-                <IconUndo color={t.amberTx} size={10} />
-              </span>
-            )}
           </button>
         ) : isSaltata ? (
           // 7c-1: redundant tap target (same modal as the label tap).
@@ -467,7 +502,7 @@ export function DoseCard({
           hasSaltataTap ? (
             <button
               type="button"
-              onClick={() => onSaltataTap(entry)}
+              onClick={(e) => onSaltataTap(entry, e.currentTarget)}
               aria-label="Modifica dose saltata"
               className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-90 cursor-pointer"
               style={{
@@ -494,7 +529,7 @@ export function DoseCard({
           hasSospesaTap ? (
             <button
               type="button"
-              onClick={() => onSospesaTap(entry)}
+              onClick={(e) => onSospesaTap(entry, e.currentTarget)}
               aria-label="Modifica dose sospesa"
               className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-90 cursor-pointer"
               style={{
@@ -525,7 +560,7 @@ export function DoseCard({
               <>
                 <button
                   type="button"
-                  onClick={() => onAltro(entry)}
+                  onClick={(e) => onAltro(entry, e.currentTarget)}
                   aria-label="Altre opzioni"
                   className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-90"
                   style={{

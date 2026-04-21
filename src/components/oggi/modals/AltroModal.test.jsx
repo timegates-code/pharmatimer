@@ -1,7 +1,8 @@
-// AltroModal — 6 unit tests (AMB-7c-1.N).
-// Covers: mount-gate, 3 action dispatches, overlay+header close, cross-day hint.
+// AltroModal — 8 unit tests (7c-1: 6, 7d-1: +2 a11y smoke).
+// Covers: mount-gate, 3 action dispatches, overlay+header close, cross-day hint,
+// a11y focus trap mount activation, a11y Escape-to-close.
 import { describe, it, expect, vi } from 'vitest';
-import { screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { renderWithProvider, buildTestPlan } from '../../../test/renderHelpers.jsx';
 import { AltroModal } from './AltroModal.jsx';
 
@@ -91,5 +92,26 @@ describe('AltroModal', () => {
     expect(screen.queryByTestId('cross-day-hint')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /L.ho presa alle/i }));
     expect(screen.getByTestId('cross-day-hint')).toHaveTextContent('Ieri — 18/04');
+  });
+
+  // --- 7d-1 a11y smoke tests (AMB-7d-1.K) ---
+
+  it('a11y: initial focus lands inside the dialog container', async () => {
+    renderModal();
+    await waitFor(() => {
+      const dialog = screen.getByRole('dialog');
+      expect(dialog.contains(document.activeElement)).toBe(true);
+    });
+  });
+
+  it('a11y: Escape triggers onClose via focus trap', async () => {
+    const { props } = renderModal();
+    await waitFor(() => {
+      expect(screen.getByRole('dialog').contains(document.activeElement)).toBe(true);
+    });
+    fireEvent.keyDown(document.activeElement, { key: 'Escape' });
+    await waitFor(() => {
+      expect(props.onClose).toHaveBeenCalledTimes(1);
+    });
   });
 });

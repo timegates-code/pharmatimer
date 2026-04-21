@@ -103,6 +103,7 @@
  * @property {(data: string) => Promise<LogAssunzione[]>} getLogByData
  * @property {(dataDa: string, dataA: string) => Promise<LogAssunzione[]>} getLogByRange
  * @property {(farmacoId: number, data: string) => Promise<LogAssunzione[]>} getLogByFarmacoData
+ * @property {(data: string, stato: "prevista"|"presa"|"saltata"|"sospesa"|"ricalcolata") => Promise<LogAssunzione[]>} getLogByDataStato
  * @property {(l: LogAssunzione) => Promise<number>}      addLog
  * @property {(id: number, patch: Partial<LogAssunzione>) => Promise<void>} updateLog
  * @property {(id: number) => Promise<void>}              deleteLog
