@@ -144,6 +144,15 @@ export function reducer(state, action) {
       if (state.presoStack.length === 0) return state;
       return { ...state, presoStack: state.presoStack.slice(0, -1) };
 
+    // Remove a specific key from presoStack (Sessione 7d-2 CP4, §6.62).
+    // Used by the annullaAssunzione thunk to keep stack coherence when
+    // an individual (non-top) presa is undone. No-op if the key is absent.
+    case 'REMOVE_PRESO_KEY':
+      return {
+        ...state,
+        presoStack: state.presoStack.filter((k) => k !== action.payload),
+      };
+
     // --- Config edits (farmaci / orari / nome) --------------
     case 'SET_FARMACI':
       return { ...state, farmaci: action.payload };

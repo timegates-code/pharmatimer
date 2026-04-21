@@ -11,7 +11,7 @@ import {
   applySospensione,
   applyRecupero,
   applyRipristino,
-  annullaAssunzione,
+  applyAnnullaAssunzione,
   ricalcolaPianoDaProfilo,
 } from '../domain/recalc.js';
 import { buildMultiDayPlan } from '../domain/planBuilder.js';
@@ -257,9 +257,33 @@ export function createActions({ dispatch, getState, repo }) {
     const entryKey = stack[stack.length - 1];
     return commitApplyResult({
       dispatch, getState, repo,
-      domainCall: (plan) => annullaAssunzione(plan, entryKey),
+      domainCall: (plan) => applyAnnullaAssunzione(plan, entryKey),
       popPresoKey: true,
     });
+  }
+
+  /**
+   * Undo a specific assumption identified by entryKey (Sessione 7d-2 CP4,
+   * Changelog Fase 2 §6.41 + §6.62). Unlike annullaUltima, this thunk does
+   * NOT require the target to be on top of presoStack — the UndoModal can
+   * trigger it from any Card currently in state 'presa'.
+   *
+   * On success dispatches REMOVE_PRESO_KEY to keep presoStack coherent.
+   *
+   * Guard DOWNSTREAM_USER_EDITS (§6.61): the pure domain function throws
+   * DomainError when N+1 is 'presa' or 'sospesa'. commitApplyResult maps
+   * DomainError to SET_ERROR with kind:'domain' preserving the code; UI
+   * consumers read state.error.code to surface the banner.
+   */
+  async function annullaAssunzione(entryKey) {
+    const result = await commitApplyResult({
+      dispatch, getState, repo,
+      domainCall: (plan) => applyAnnullaAssunzione(plan, entryKey),
+    });
+    if (result.ok) {
+      dispatch({ type: 'REMOVE_PRESO_KEY', payload: entryKey });
+    }
+    return result;
   }
 
   // ----------------------------------------------------------
@@ -385,6 +409,7 @@ export function createActions({ dispatch, getState, repo }) {
     recupero,
     ripristina,
     annullaUltima,
+    annullaAssunzione,
     cambiaProfilo,
     dismissPrompt,
     setSetting,

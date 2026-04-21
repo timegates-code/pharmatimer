@@ -79,12 +79,15 @@ export async function commitApplyResult({
         type: 'SET_ERROR',
         payload: { kind: 'domain', code: err.code, message: err.message },
       });
-    } else {
-      dispatch({
-        type: 'SET_ERROR',
-        payload: { kind: 'unknown', message: err?.message ?? String(err) },
-      });
+      // Surface the domain code in the thunk return value so UI consumers
+      // (e.g. UndoModal) can branch on it directly, without reading back
+      // from state.error. Sessione 7d-2 CP5 / §6.63.
+      return { ok: false, code: err.code };
     }
+    dispatch({
+      type: 'SET_ERROR',
+      payload: { kind: 'unknown', message: err?.message ?? String(err) },
+    });
     return { ok: false };
   }
 

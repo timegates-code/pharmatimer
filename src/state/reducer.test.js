@@ -317,3 +317,14 @@ describe('SET_IMPOSTAZIONE (Sessione 7a, §6.27)', () => {
     expect(s3.impostazioni).toEqual({ tema: 'light', nome_utente: 'Ada' });
   });
 });
+
+// ============================================================
+// REMOVE_PRESO_KEY (Sessione 7d-2 CP4, §6.62)
+// ============================================================
+describe('REMOVE_PRESO_KEY (Sessione 7d-2 CP4, §6.62)', () => {
+  it('rimuove la key dal presoStack preservando ordine delle altre', () => {
+    const s = { ...initialState, presoStack: ['k1', 'k2', 'k3'] };
+    const next = reducer(s, { type: 'REMOVE_PRESO_KEY', payload: 'k2' });
+    expect(next.presoStack).toEqual(['k1', 'k3']);
+  });
+});
