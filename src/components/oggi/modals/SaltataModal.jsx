@@ -1,28 +1,32 @@
 // ============================================================
-// AltroModal — "Altro" action sheet for a pending dose.
+// SaltataModal — correction sheet for a dose already in stato 'saltata'.
 //
-// Opens from the ALTRO pill on a DoseCard in state 'prevista' | 'ricalcolata'.
+// Opens from tapping the SALTATA label in the time column of a DoseCard.
 // Offers three actions:
-//   1. Saltata   → thunk `salta(entryKey)` (no override)
-//   2. Sospesa   → thunk `sospendi(entryKey)`
-//   3. L'ho presa alle...  → time picker submode → thunk
+//   1. Confermo saltata   → pure onClose (no-op dispatch)
+//   2. Cambia in sospesa  → thunk `ripristina(entryKey, 'sospesa')`
+//   3. L'ho presa alle... → time picker submode → thunk
 //        `presa(entryKey, { dataEffettiva: entry.dateStr, oraEffettiva: customTime })`
 //
-// 1:1 port of `AltroModal` from pharmatimer_oggi_v5.jsx (lines 570-645),
-// femminine rename (isPreso→isPresa dropped here: not applicable) plus
-// AMB-7c-1.I cross-day hint above the time picker.
+// Note on "Correggi a presa" semantics (CP0 / AMB-7c-1.M): `applyAssunzione`
+// has NO guard on `target.stato`, so calling presa() on a 'saltata' entry
+// works out of the box. §6.36 was not consumed.
 //
-// Theme source: useTheme() from AppContext (AMB-7a.C), NOT a prop.
-// Close pattern: overlay-click (outer div onClick where target===currentTarget)
-// + explicit close button in the header.
+// Note on "Cambia in sospesa": uses `ripristina(entryKey, 'sospesa')`, not
+// `sospendi(entryKey)`. applyRipristino is the domain primitive for
+// switching saltata↔sospesa; applySospensione requires a pending state.
 //
-// 7d-1 update (AMB-7d-1.C/D/F/J): a11y via `useModalA11y` — focus trap on
-// mount, Escape-to-close, restore focus to `triggerRef.current` at deactivate.
-// `role="dialog"` + `aria-modal="true"` + `aria-labelledby` applied to the
-// sheet (inner container) via `modalProps`. Overlay div no longer carries
-// role/aria-label. New optional `triggerRef` prop captured by OggiView.
+// 1:1 port of `SaltataCorrectModal` from pharmatimer_oggi_v5.jsx
+// (lines 737-800), renamed per AMB-7c-1.C, with AMB-7c-1.I cross-day
+// hint above the time picker.
 //
-// AMB-7c-1.C / AMB-7c-1.D / AMB-7c-1.I / AMB-7d-1.C-F / Changelog §11.
+// Q1 resolved: the "Confermo saltata" button IS retained (porting fedele,
+// bottom-sheet mobile affordance, zero-cost onClose).
+//
+// 7d-1 update (AMB-7d-1.C/D/F/J): a11y via `useModalA11y`. See AltroModal
+// header for the pattern rationale.
+//
+// AMB-7c-1.C / AMB-7c-1.E / AMB-7c-1.I / AMB-7d-1.C-F / Changelog §11.
 // ============================================================
 
 import { useState } from 'react';
@@ -31,24 +35,22 @@ import { useModalA11y } from '../../../hooks/useModalA11y.js';
 import { IconX, IconClock, IconPause } from '../../shared/Icons.jsx';
 import { crossDayHint } from './_crossDayHint.js';
 
-const LABEL_ID = 'altro-modal-title';
+const LABEL_ID = 'saltata-modal-title';
 
 /**
  * @param {{
  *   entry: import('../../../domain/types.js').PlanEntry | null,
  *   todayStr: string,
- *   onSaltata: (entry: import('../../../domain/types.js').PlanEntry) => void,
- *   onSospesa: (entry: import('../../../domain/types.js').PlanEntry) => void,
+ *   onCambiaInSospesa: (entry: import('../../../domain/types.js').PlanEntry) => void,
  *   onSetTime: (entry: import('../../../domain/types.js').PlanEntry, hhmm: string) => void,
  *   onClose: () => void,
  *   triggerRef?: { current: HTMLElement | null } | null,
  * }} props
  */
-export function AltroModal({
+export function SaltataModal({
   entry,
   todayStr,
-  onSaltata,
-  onSospesa,
+  onCambiaInSospesa,
   onSetTime,
   onClose,
   triggerRef = null,
@@ -71,7 +73,7 @@ export function AltroModal({
 
   return (
     <div
-      data-testid="altro-modal"
+      data-testid="saltata-modal"
       className="fixed inset-0 z-50 flex items-end justify-center"
       style={{ background: t.modalOverlay }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
@@ -98,56 +100,39 @@ export function AltroModal({
         </div>
 
         <p className="text-xs mb-4" style={{ color: t.textSecondary }}>
-          Dose prevista alle {entry.ora_ricalcolata || entry.ora_prevista}
+          Dose prevista alle {entry.ora_ricalcolata || entry.ora_prevista}, marcata come saltata.
         </p>
 
         {mode === 'choose' ? (
           <div className="flex flex-col gap-2">
             <button
               type="button"
-              onClick={() => { onSaltata(entry); onClose(); }}
-              className="w-full py-3 rounded-xl text-sm font-semibold transition-all active:scale-95 flex items-center gap-3 px-4"
-              style={{ background: t.redBg, color: t.redTx, border: `1px solid ${t.red}30` }}
+              onClick={onClose}
+              className="w-full py-3 rounded-xl text-sm font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
+              style={{ background: t.grayBg, color: t.textSecondary, border: `1px solid ${t.headerBorder}` }}
             >
-              <IconX color={t.redTx} />
-              <div className="text-left">
-                <div>Saltata (dimenticata)</div>
-                <div className="text-xs font-normal opacity-70 mt-0.5">
-                  {f.tipo_frequenza === 'intervallo'
-                    ? 'Il ritardo si propaga alla dose successiva'
-                    : 'La dose risulterà non assunta'}
-                </div>
-              </div>
+              <IconX color={t.textSecondary} size={16} />
+              Confermo saltata
             </button>
 
             <button
               type="button"
-              onClick={() => { onSospesa(entry); onClose(); }}
-              className="w-full py-3 rounded-xl text-sm font-semibold transition-all active:scale-95 flex items-center gap-3 px-4"
-              style={{ background: t.sospesaBg, color: t.textSecondary, border: `1px solid ${t.sospesaBd}` }}
+              onClick={() => { onCambiaInSospesa(entry); onClose(); }}
+              className="w-full py-3 rounded-xl text-sm font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
+              style={{ background: t.sospesaBg, color: t.sospesaTx, border: `1px solid ${t.sospesaBd}` }}
             >
-              <IconPause color={t.textSecondary} />
-              <div className="text-left">
-                <div>Sospesa (intenzionale)</div>
-                <div className="text-xs font-normal opacity-70 mt-0.5">
-                  Nessun effetto sulle dosi successive
-                </div>
-              </div>
+              <IconPause color={t.sospesaTx} />
+              Cambia in sospesa
             </button>
 
             <button
               type="button"
               onClick={() => setMode('timepick')}
-              className="w-full py-3 rounded-xl text-sm font-semibold transition-all active:scale-95 flex items-center gap-3 px-4"
+              className="w-full py-3 rounded-xl text-sm font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
               style={{ background: t.blueBg, color: t.blueTx, border: `1px solid ${t.blueBd}` }}
             >
               <IconClock color={t.blueTx} />
-              <div className="text-left">
-                <div>L'ho presa alle...</div>
-                <div className="text-xs font-normal opacity-70 mt-0.5">
-                  Registra un orario passato
-                </div>
-              </div>
+              L'ho presa alle...
             </button>
           </div>
         ) : (

@@ -436,7 +436,7 @@ export function applyRecupero(plan, entryKey, recuperoMinuti) {
 }
 
 // ============================================================
-// CP3 — annullaAssunzione, ricalcolaPianoDaProfilo
+// CP3 — applyAnnullaAssunzione, ricalcolaPianoDaProfilo
 // ============================================================
 
 /**
@@ -462,7 +462,7 @@ export function applyRecupero(plan, entryKey, recuperoMinuti) {
  *   - Any user-applied recupero on N+1 is lost (undo = full restore).
  *
  * KNOWN LIMITATION (documented in Changelog §6.14 amendment): if
- * applyAssunzione auto-skipped prior same-day doses, annullaAssunzione does
+ * applyAssunzione auto-skipped prior same-day doses, applyAnnullaAssunzione does
  * NOT revive them — autoSkip doesn't track causal origin. The user would
  * have to manually re-open those doses in a future UI step.
  *
@@ -470,9 +470,24 @@ export function applyRecupero(plan, entryKey, recuperoMinuti) {
  * @param {string} entryKey
  * @returns {import('./types.js').ApplyResult}
  */
-export function annullaAssunzione(plan, entryKey) {
+export function applyAnnullaAssunzione(plan, entryKey) {
   const target = plan.find((e) => e.key === entryKey);
   // Contract: entryKey always valid.
+
+  // Guard DOWNSTREAM_USER_EDITS (Sessione 7d-2 CP4, Changelog §6.61).
+  // If N+1 is in a user-only state ('presa' or 'sospesa'), the ricalcolata
+  // chain has been superseded by manual intervention; undoing N would
+  // desync it. N+1 'ricalcolata' is always treated as auto-produced (no
+  // user-edited marker in the model today).
+  const nextDoseBefore = findNextDose(
+    plan, target.farmaco.id, target.dateStr, target.orario.dose_numero
+  );
+  if (nextDoseBefore && (nextDoseBefore.stato === 'presa' || nextDoseBefore.stato === 'sospesa')) {
+    throw new DomainError(
+      'DOWNSTREAM_USER_EDITS',
+      'Impossibile annullare: la dose successiva è già stata registrata o sospesa.'
+    );
+  }
 
   // Restore target.
   const restoredStato = target.ora_ricalcolata != null ? 'ricalcolata' : 'prevista';

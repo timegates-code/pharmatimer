@@ -6,7 +6,7 @@ import {
   applySalto,
   applyAssunzione,
   applyRecupero,
-  annullaAssunzione,
+  applyAnnullaAssunzione,
   ricalcolaPianoDaProfilo,
   applyRipristino,
 } from './recalc.js';
@@ -635,10 +635,10 @@ describe('Immutabilità — il plan originale non viene mutato', () => {
 });
 
 // ============================================================
-// T11 — annullaAssunzione ripristina dose e N+1 (post-T04 + recupero)
+// T11 — applyAnnullaAssunzione ripristina dose e N+1 (post-T04 + recupero)
 // ============================================================
 
-describe('T11 — annullaAssunzione ripristina dose e N+1', () => {
+describe('T11 — applyAnnullaAssunzione ripristina dose e N+1', () => {
   let farmaco, orario1, orario2, plan, entry1Key, entry2Key;
 
   beforeEach(() => {
@@ -672,7 +672,7 @@ describe('T11 — annullaAssunzione ripristina dose e N+1', () => {
   });
 
   it('dovrebbe ripristinare dose 1 a prevista con ora_effettiva e delta azzerati', () => {
-    const result = annullaAssunzione(plan, entry1Key);
+    const result = applyAnnullaAssunzione(plan, entry1Key);
     const d1 = result.plan.find((e) => e.key === entry1Key);
     expect(d1.stato).toBe('prevista');
     expect(d1.ora_effettiva).toBeNull();
@@ -680,7 +680,7 @@ describe('T11 — annullaAssunzione ripristina dose e N+1', () => {
   });
 
   it('dovrebbe azzerare tutti i campi di ricalcolo su dose 2 e riportarla a prevista', () => {
-    const result = annullaAssunzione(plan, entry1Key);
+    const result = applyAnnullaAssunzione(plan, entry1Key);
     const d2 = result.plan.find((e) => e.key === entry2Key);
     expect(d2.stato).toBe('prevista');
     expect(d2.ora_ricalcolata).toBeNull();
@@ -692,17 +692,17 @@ describe('T11 — annullaAssunzione ripristina dose e N+1', () => {
   });
 
   it('dovrebbe produrre 2 logWrites (target + N+1) e nessun prompt', () => {
-    const result = annullaAssunzione(plan, entry1Key);
+    const result = applyAnnullaAssunzione(plan, entry1Key);
     expect(result.logWrites).toHaveLength(2);
     expect(result.prompt).toBeNull();
   });
 });
 
 // ============================================================
-// CP3 bonus — annullaAssunzione NON tocca N+1 se non 'ricalcolata'
+// CP3 bonus — applyAnnullaAssunzione NON tocca N+1 se non 'ricalcolata'
 // ============================================================
 
-describe('annullaAssunzione su farmaco fisso (nessuna N+1 da ripristinare)', () => {
+describe('applyAnnullaAssunzione su farmaco fisso (nessuna N+1 da ripristinare)', () => {
   it('dovrebbe ripristinare solo la dose target (1 logWrite)', () => {
     const farmaco = makeFarmaco({
       id: 2,
@@ -716,13 +716,73 @@ describe('annullaAssunzione su farmaco fisso (nessuna N+1 da ripristinare)', () 
       delta_minuti: 5,
     });
     const plan = [entry];
-    const result = annullaAssunzione(plan, entry.key);
+    const result = applyAnnullaAssunzione(plan, entry.key);
     const updated = result.plan.find((e) => e.key === entry.key);
     expect(updated.stato).toBe('prevista');
     expect(updated.ora_effettiva).toBeNull();
     expect(updated.delta_minuti).toBeNull();
     expect(result.logWrites).toHaveLength(1);
     expect(result.prompt).toBeNull();
+  });
+});
+
+// ============================================================
+// Sessione 7d-2 CP4 — applyAnnullaAssunzione guard DOWNSTREAM_USER_EDITS (§6.61)
+// ============================================================
+
+describe('applyAnnullaAssunzione guard DOWNSTREAM_USER_EDITS', () => {
+  let farmaco, orario1, orario2, plan, entry1Key, entry2Key;
+
+  beforeEach(() => {
+    farmaco = makeFarmaco({
+      id: 1,
+      tipo_frequenza: 'intervallo',
+      intervallo_ore: 8,
+      intervallo_minimo_ore: 4,
+      dosi_giornaliere: 2,
+    });
+    orario1 = makeOrario(1, 1);
+    orario2 = makeOrario(1, 2);
+    const e1 = makeEntry(farmaco, orario1, '2026-04-16', '08:00', {
+      stato: 'presa',
+      ora_effettiva: '2026-04-16T10:00:00',
+      delta_minuti: 120,
+    });
+    const e2 = makeEntry(farmaco, orario2, '2026-04-16', '16:00', {});
+    plan = [e1, e2];
+    entry1Key = e1.key;
+    entry2Key = e2.key;
+  });
+
+  it('solleva DomainError se N+1 e in stato presa', () => {
+    const patched = plan.map((e) =>
+      e.key === entry2Key
+        ? {
+            ...e,
+            stato: 'presa',
+            ora_effettiva: '2026-04-16T18:00:00',
+            delta_minuti: 0,
+          }
+        : e
+    );
+    expect(() => applyAnnullaAssunzione(patched, entry1Key)).toThrow(DomainError);
+    try {
+      applyAnnullaAssunzione(patched, entry1Key);
+    } catch (err) {
+      expect(err.code).toBe('DOWNSTREAM_USER_EDITS');
+    }
+  });
+
+  it('solleva DomainError se N+1 e in stato sospesa', () => {
+    const patched = plan.map((e) =>
+      e.key === entry2Key ? { ...e, stato: 'sospesa' } : e
+    );
+    expect(() => applyAnnullaAssunzione(patched, entry1Key)).toThrow(DomainError);
+    try {
+      applyAnnullaAssunzione(patched, entry1Key);
+    } catch (err) {
+      expect(err.code).toBe('DOWNSTREAM_USER_EDITS');
+    }
   });
 });
 
@@ -896,7 +956,7 @@ describe('CP4 — branch coverage', () => {
     expect(updated.recupero_minuti).toBe(30);
   });
 
-  it('annullaAssunzione dovrebbe ripristinare target a ricalcolata se aveva ora_ricalcolata', () => {
+  it('applyAnnullaAssunzione dovrebbe ripristinare target a ricalcolata se aveva ora_ricalcolata', () => {
     const farmaco = makeFarmaco({
       id: 1,
       tipo_frequenza: 'intervallo',
@@ -916,7 +976,7 @@ describe('CP4 — branch coverage', () => {
       gap_originale: 0,
     });
     const plan = [entry];
-    const result = annullaAssunzione(plan, entry.key);
+    const result = applyAnnullaAssunzione(plan, entry.key);
     const updated = result.plan.find((e) => e.key === entry.key);
     // Ramo 'ricalcolata': ora_ricalcolata non-null sul target al momento dell'undo.
     expect(updated.stato).toBe('ricalcolata');
