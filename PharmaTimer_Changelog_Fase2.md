@@ -1,6 +1,6 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 2.5.20
+**Versione:** 2.5.20.1
 **Data inizio fase:** 16 aprile 2026
 **Ultima modifica:** 22 aprile 2026
 **Ambito:** Sviluppo PWA React standalone con persistenza locale, preparata per futuro swap verso backend FastAPI+MariaDB.
@@ -241,6 +241,13 @@ Questo documento raccoglie le decisioni architetturali, la struttura del progett
 - Sostituito §11 placeholder con prompt esecutivo Sessione 7d-2 (sanity check 14 punti CP0 + 7 CP operativi CP1-CP7 + CP browser 6 punti + AMB A-M inline)
 - Nessuna modifica al codice o ad altre sezioni (la Sessione 7d-2 applicherà le AMB)
 - Nessuna deviazione aggiunta a §6 (le Q-N1/Q-N2/Q-N4 sono ratifiche di scelte, non deviazioni dalla spec; diverranno §6.58+ se emergeranno discrepanze in sessione)
+
+**Changelog versione 2.5.20.1 (rispetto alla 2.5.20):**
+- Micro-patch al §11 del prompt Sessione 8-pre: integrate **2 note procedurali** (N1/N2) emerse in chiusura Sessione 8 analisi-first del 22/04/2026, da valutare come candidate §6.69/§6.70 procedurali in apertura di 8-pre.
+  - **N1 — Sanity check intestazione front-matter ad ogni bump versione.** Scoperta quando l'utente ha rilevato che il file v2.5.20 riportava ancora `**Versione:** 2.5.19` nell'intestazione, perché il bump era stato applicato solo al blocco meta del corpo. Applicata subito in questo micro-patch (intestazione ora riporta v2.5.20.1 + Ultima modifica 22/04, coerenza front-matter ↔ corpo preservata).
+  - **N2 — Sanity check sincronizzazione Changelog KB Claude ↔ repo git.** Scoperta in chiusura sessione: il Changelog nel repo `~/Sviluppo/pharmatimer` era fermo a **v2.5.3** (commit `4f2669f` del 18/04, pre-Sessione 6), mentre la KB Claude era aggiornata a v2.5.19. Drift silenzioso di 17 versioni (il codice delle sessioni 6/7a/7b-1/7b-2/7c-1/7c-2/7d-1/7d-2p1/7d-2p2/7d-2p3 era regolarmente committato, solo il Changelog rimasto fuori git). Catch-up applicato con commit unico `2bf2373` del 22/04 (messaggio esplicita range v2.5.3 → v2.5.20).
+- Entrambe le note sono ora ancorate al §11 di 8-pre in una sezione dedicata ("Note procedurali emerse in chiusura Sessione 8 analisi-first") così che vengano trattate naturalmente in apertura della prossima analisi-first invece di essere rimandate indefinitamente.
+- Nessuna modifica al codice, nessuna modifica a §6.NN esistenti (le note sono candidate, non ancora promosse). La formalizzazione eventuale come §6.69/§6.70 procedurali sarà decisione aperta di 8-pre.
 
 **Changelog versione 2.5.20 (rispetto alla 2.5.19):**
 - Sessione 8 analisi-first 22/04/2026 completata: 7 Q (Q3-Q9) risolte in sessione interattiva checkpoint-based; 3 Q residue (Q1/Q2/parziale) differite a 8-pre dedicata per non contaminare 8d polish.
@@ -1611,11 +1618,23 @@ Dimensione attesa: **modesta** (2 Q × 3 sub = 6 decisioni nette, senza UI da pr
 
 ---
 
+### Note procedurali emerse in chiusura Sessione 8 analisi-first (da valutare in 8-pre)
+
+Due scoperte operative del 22/04/2026 da valutare come candidate §6.NN procedurali (tipo §6.60 "sanity check copertura fake repo") in apertura di 8-pre, prima dei Q1/Q2:
+
+**N1 — Sanity check intestazione front-matter ad ogni bump versione.** Durante il delivery v2.5.20 le righe 3 e 5 del file (`**Versione:** X.Y.Z` e `**Ultima modifica:** DD mese YYYY`) erano rimaste ferme alla versione precedente — il bump era presente solo nel blocco meta del corpo. L'utente ha rilevato la discrepanza come "il file scaricato riporta ancora 2.5.19". Regola proposta da formalizzare (§6.60-bis procedurale): *"L'intestazione front-matter del Changelog (righe `**Versione:**` + `**Ultima modifica:**`) va aggiornata in parallelo all'inserimento del nuovo blocco meta nel corpo. Nessun delivery Changelog è considerato completo se le due fonti di versione non sono allineate."*
+
+**N2 — Sanity check sincronizzazione Changelog KB Claude ↔ repo git.** In chiusura di Sessione 8 analisi-first è emerso che il Changelog committato nel repo git era fermo a **v2.5.3** (commit `4f2669f` del 18/04/2026, pre-Sessione 6), mentre la KB Claude era aggiornata fino a v2.5.19. Drift silenzioso di **17 versioni** (v2.5.4 → v2.5.20), tutto il codice delle sessioni intermedie regolarmente committato, solo il Changelog rimasto fuori git. Catch-up applicato con commit unico `2bf2373` del 22/04 (commit message esplicita range v2.5.3 → v2.5.20). Regola proposta da formalizzare (§6.60-ter procedurale): *"A ogni chiusura di sessione analisi/esecutiva che produce un bump Changelog, l'utente deve riportare il file anche nel repo git con commit dedicato. Se in una chiusura successiva emerge drift > 2 versioni tra HEAD git e KB Claude, produrre commit catch-up esplicito (stile `Changelog catch-up vX.Y → vX.Z`) invece di fondere il delta con commit feature."*
+
+Queste due note vanno discusse in apertura di 8-pre per decidere se promuoverle a §6.69/§6.70 candidate oppure mantenerle solo come lesson-learned dichiarata di questa sessione. Zero impatto sul codice in entrambi i casi.
+
+---
+
 ### Azioni sul Mac prima di Sessione 8-pre
 
-1. Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB del progetto Claude con la versione **v2.5.20** di questo delivery.
+1. Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB del progetto Claude con la versione **v2.5.20.1** di questo delivery.
 2. Verificare baseline: `npm test -- --run` → atteso **247/247 su 23 test files**.
-3. Verificare git: commit `Sessione 7d-2 parte 3/3: CP6+CP7 ... 245→247` applicato. **Merge Step 7 verso branch parent/main** raccomandato (7 sotto-sessioni complete, chiusura naturale del porting vista Oggi) ma non bloccante per 8-pre.
+3. Verificare git: HEAD del branch corrente deve includere il commit `Changelog catch-up v2.5.3 → v2.5.20` (`2bf2373` nella working copy di riferimento) + il micro-patch v2.5.20.1. **Merge Step 7 verso branch parent/main** raccomandato (7 sotto-sessioni complete, chiusura naturale del porting vista Oggi) ma non bloccante per 8-pre.
 4. Aprire sessione analisi 8-pre con one-liner:
    `Esegui il prompt al §11 del Changelog (Sessione 8-pre analisi-first).`
 
