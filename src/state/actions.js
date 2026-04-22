@@ -137,23 +137,40 @@ export function createActions({ dispatch, getState, repo }) {
         },
       });
 
-      // Sessione 7d-2 CP3 (§6.40 / AMB-7d-2.C): rehydrate presoStack
-      // with the keys of every 'presa' log of today. This preserves the
-      // UNDO direct window across page reloads — previously presoStack
-      // was ephemeral (§6.35).
+      // Sessione 8-pre (§6.72, supersedes §6.40): rehydrate presoStack
+      // with the keys of every 'presa' log in the window
+      // [today - PLAN_DAYS_BEFORE, ..., today]. Preserves UNDO direct
+      // affordance across cross-day reloads — a press registered
+      // yesterday must remain tappable today via UndoModal.
       //
-      // The repo method returns logs sorted ASC by ora_effettiva, which
-      // matches the LIFO convention of presoStack: top = stack.at(-1)
-      // = most recent press. `selectUltimaPresa` reads the top for the
-      // UNDO direct target.
+      // Source optimization (§6.75): we reuse `logAssunzioni` already
+      // fetched above for buildMultiDayPlan instead of issuing a
+      // dedicated range query. `logAssunzioni` covers
+      // [today - PLAN_DAYS_BEFORE, today + PLAN_DAYS_AFTER], a strict
+      // superset of the presoStack window, so the in-memory filter
+      // below is equivalent to a dedicated query and cheaper.
+      //
+      // Filter semantics:
+      //   - stato === 'presa' (other states are irrelevant to UNDO)
+      //   - data >= startPresoDate (left bound of the window)
+      //   - data <= today (exclude any future-dated 'presa' entries
+      //     that may theoretically live in logAssunzioni via
+      //     PLAN_DAYS_AFTER; defensive guard)
+      //
+      // Sort order: repo.getLogByRange returns ASC by (data,
+      // ora_effettiva). The filter preserves that order, so the LIFO
+      // convention (top = stack.at(-1) = most recent press) holds.
       //
       // Dispatched AFTER INIT_SUCCESS (not merged into its payload) to
-      // keep the init shape change minimal and isolate this concern in
-      // its own action. No-op if there are no 'presa' logs today.
-      const todayPresaLogs = await repo.getLogByDataStato(today, 'presa');
+      // keep the init shape change minimal and isolate this concern
+      // in its own action. No-op if the filter result is empty.
+      const startPresoDate = addDays(today, -PLAN_DAYS_BEFORE);
+      const presaLogsInWindow = logAssunzioni.filter(
+        (l) => l.stato === 'presa' && l.data >= startPresoDate && l.data <= today
+      );
       dispatch({
         type: 'SET_PRESO_STACK',
-        payload: todayPresaLogs.map(logRowToEntryKey),
+        payload: presaLogsInWindow.map(logRowToEntryKey),
       });
     } catch (err) {
       const code =
