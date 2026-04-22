@@ -1,6 +1,6 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 2.5.22
+**Versione:** 2.5.23
 **Data inizio fase:** 16 aprile 2026
 **Ultima modifica:** 22 aprile 2026
 **Ambito:** Sviluppo PWA React standalone con persistenza locale, preparata per futuro swap verso backend FastAPI+MariaDB.
@@ -241,6 +241,35 @@ Questo documento raccoglie le decisioni architetturali, la struttura del progett
 - Sostituito §11 placeholder con prompt esecutivo Sessione 7d-2 (sanity check 14 punti CP0 + 7 CP operativi CP1-CP7 + CP browser 6 punti + AMB A-M inline)
 - Nessuna modifica al codice o ad altre sezioni (la Sessione 7d-2 applicherà le AMB)
 - Nessuna deviazione aggiunta a §6 (le Q-N1/Q-N2/Q-N4 sono ratifiche di scelte, non deviazioni dalla spec; diverranno §6.58+ se emergeranno discrepanze in sessione)
+
+**Changelog versione 2.5.23 (rispetto alla 2.5.22):**
+- Sessione 8a analisi-first completata il 22/04/2026 (stessa giornata di 8-pre impl). Baseline test **invariata a 250/250 su 23 test files** (sessione analisi pura, zero codice).
+- **6 Q risolte, 11 AMB A-K congelate** (scope superiore alle A-F indicative del prompt §11 v2.5.22 per copertura completa post dry-run CP0):
+  - **AMB-A** Routing: `<Route path="/config/*">` in `App.jsx` già presente → nested `<Routes>` in `ConfigView` con relative paths `profili`/`farmaci`/`impostazioni`. Default `<Route index>` redirect a `impostazioni`. Catch-all `*` → `impostazioni`.
+  - **AMB-B** `withTransaction` firma: `(mode: 'r'|'rw', storeNames: string[], fn) => Promise<T>`. **Implementazione con mapping** `storeNames.map(name => db[name])` prima del pass-through a `db.transaction` (rettifica F4 — Dexie 4 non accetta array di stringhe nella signature a 3 arg). Scope: 8a (confermato roadmap).
+  - **AMB-C** ImpostazioniTab PROD: Nome (input + save esplicito, min 1 char trimmed) + Tema (radio 3-stati auto/light/dark, fonte unica `impostazioni.tema`).
+  - **AMB-D** Avanzate-DEV: 3 campi read-only (`schema_version` da `db.verno`, `simulatedNow` da state, `seed_loaded` con **branch A/B/C** determinato al CP0 — A: setting già esistente; B: assente → aggiungere scrittura in `runSeedIfNeeded` quando `result.seeded===true` + fallback runtime per install esistenti; C: naming alternativo → rettifica inline). Pattern `import.meta.env.DEV` gated.
+  - **AMB-E** Unsaved changes: save esplicito + confirm modale su tab change con dirty. **Implementazione inline in 8a** (≤15 righe), estrazione hook `useUnsavedChanges` deferita a 8b (DRY-at-2).
+  - **AMB-F** Header Oggi toggle tema: **shortcut confermato** (zero refactor), conformità §6.65 letterale.
+  - **AMB-G** Cleanup legacy `state.nomeUtente` mirror: **scope 8a** (§17 "Limitazioni note" punto 2 indicava Step 8). Consumer switch a `selectImpostazione(state, 'nome_utente')`. CP0 gate: `grep -rn "nomeUtente"` deve restituire ≤2 consumer attesi (reducer + header Oggi); se >2 branch cleanup split o defer a 8d.
+  - **AMB-H** Test helpers: estensione `renderWithProvider` + `renderWithRealProvider` con opzione `initialEntries` (default assente = no MemoryRouter = backward-compat); wrap con `<MemoryRouter initialEntries>` solo se presente.
+  - **AMB-I** Test strategy: `userEvent` click-driven per nav happy paths; DOM assertions per stato iniziale.
+  - **AMB-J** Target test 8a impl: **250 → 268 (+18)**, tolleranza ±3. Breakdown: +4 shell+routing, +3 TabBar, +3 Nome, +3 Tema, +2 Avanzate-DEV, +2 withTransaction, +1 cleanup mirror.
+  - **AMB-K** Ordine CP 8a impl: **CP0** ricognizione (inc. 5 gate: MemoryRouter helpers, `seed_loaded` setting, `nomeUtente` consumer count, `makeFakeRepo` `withTransaction` absence, Dexie `db[storeName]` accesso) → **CP1** `withTransaction` (repo + IRepository + `makeFakeRepo` stub §6.60) → **CP2** routing + ConfigView shell → **CP3** ConfigTabBar + active state → **CP4** ImpostazioniTab Nome + cleanup mirror (AMB-G) → **CP5** ImpostazioniTab Tema → **CP6** ImpostazioniTab Avanzate-DEV → **CP7** unsaved changes inline → **CP8** full suite + CP browser.
+- **Dry-run CP0 (pre-delivery) — 6 rettifiche integrate** nel prompt impl:
+  - **F1** `seed_loaded` branch A/B/C esplicito (AMB-D).
+  - **F2** Ordine CP blindato: CP1 `withTransaction` + estensione `makeFakeRepo` **contestuale** (§6.60 lesson 7d-2p1).
+  - **F3** CP0 grep `nomeUtente` come gate per AMB-G (branch se >2 consumer).
+  - **F4** AMB-B implementazione dichiara mapping `storeNames.map(name => db[name])` prima del pass-through.
+  - **F5** AMB-H: MemoryRouter wrap condizionale a `initialEntries` presente (backward-compat 250 test esistenti).
+  - **F7** CP browser: punto esplicito sul replace history di `<Navigate replace>` (tap Config → URL `/config/impostazioni`, back → salto a `/oggi`).
+- **§6.76 nuova (procedurale):** fix §3 struttura progetto (riga 451 elencava ancora `OrariTab.jsx` — smentito da §6.65 "niente OrariTab separato"). Hotfix documentale in-session 8a analisi-first (zero impatto codice).
+- **§6.77 nuova (cleanup retroattivo):** rimozione mirror legacy `state.nomeUtente` (§17 "Limitazioni note" punto 2 promossa a deviazione attiva). Ambito esecuzione: 8a implementativa CP4. Consumer switch a `selectImpostazione(state, 'nome_utente')`.
+- Nuova §22.5 "Stato post-Sessione 8a analisi-first" con AMB A-K congelate + rettifiche F1-F7 + scoperte operative (5 gate CP0, absence `fake-indexeddb`, backward-compat helpers).
+- Sostituito §11 (8a analisi-first v2.5.22 consumato) con prompt **Sessione 8a implementativa** (CP0→CP8 + CP browser 5 punti + target 268±3).
+- Aggiornamento roadmap §7: 8a analisi-first ✅ inline nella row 8a; implementativa ⏳ prossima.
+- **§6.69 procedurale rispettata:** front-matter intestazione bumpata in lockstep con corpo (v2.5.22 → v2.5.23, Ultima modifica 22/04 invariata — stessa giornata).
+- **§6.70 procedurale (soft):** drift Changelog KB ↔ repo git atteso = 1 versione (2.5.22 → 2.5.23), sotto soglia 2. Commit v2.5.23 raccomandato ma non obbligatorio.
 
 **Changelog versione 2.5.22 (rispetto alla 2.5.21):**
 - Sessione 8-pre implementativa completata il 22/04/2026 (pattern CP consolidato — CP0 8 punti + CP1 rehydration + CP2 condizionale skippato + CP3 full suite + CP browser 2/2). **2 file modificati**, 0 nuovi, **247 → 250 test** (+3 netti, target AMB-E centrato esattamente).
@@ -1556,6 +1585,60 @@ dispatch({ type: 'SET_PRESO_STACK', payload: presaLogsInWindow.map(logRowToEntry
 
 **Coesistenza con §6.72.** §6.75 implementa §6.72; non la sostituisce. §6.72 resta la deviazione architetturale (estensione della window da day-scoped a cross-day); §6.75 ne è la realizzazione operativa ottimizzata.
 
+### 6.76 procedurale — Fix §3 struttura progetto: rimozione `OrariTab.jsx` fantasma (Sessione 8a analisi-first, scoperta collaterale)
+
+**Contesto.** Durante la ricognizione KB per 8a analisi-first, rilevato che §3 "Struttura del progetto" (riga 451 pre-fix) elencava ancora:
+
+```
+│   │   └── config/
+│   │       ├── ConfigView.jsx          # [Step 8]
+│   │       ├── ProfiliTab.jsx          # [Step 8]
+│   │       ├── FarmaciTab.jsx          # [Step 8]
+│   │       ├── OrariTab.jsx            # [Step 8]
+│   │       └── forms/                  # [Step 8] 3 form
+```
+
+La riga `OrariTab.jsx` contraddice §6.65 (Sessione 8 analisi-first, v2.5.20): *"Nessun tab Orari separato (decisione Q5.c): gli orari vivono solo nested in FarmaciTab"*. Drift documentale silente tra §3 (pre-8) e §6.65 (v2.5.20).
+
+**Hotfix inline applicato** in 8a analisi-first: riga `OrariTab.jsx` rimossa dalla tabella §3. Struttura attesa post-Fase 2 per cartella `config/`:
+
+```
+│   │   └── config/
+│   │       ├── ConfigView.jsx          # [Step 8a]
+│   │       ├── ProfiliTab.jsx          # [Step 8b]
+│   │       ├── FarmaciTab.jsx          # [Step 8c]
+│   │       ├── ImpostazioniTab.jsx     # [Step 8a]
+│   │       ├── ConfigTabBar.jsx        # [Step 8a]
+│   │       └── forms/                  # [Step 8b+8c] form profilo + farmaco
+```
+
+**Classificazione:** procedurale (pattern §6.32, §6.60, §6.69, §6.70). Zero impatto codice — solo KB grooming.
+
+**Lezione.** Aggiornare §3 quando una decisione architetturale in §6.NN altera la struttura prevista. Candidato check in prompt §11 futuri che introducono nuovi file: "verifica coerenza §3 vs decisioni §6.NN recenti".
+
+### 6.77 Cleanup retroattivo mirror `state.nomeUtente` → `impostazioni.nome_utente` (Sessione 8a analisi-first, promozione §17 "Limitazioni note" punto 2)
+
+**Contesto.** §17 (Stato post-Sessione 7a) "Limitazioni note" punto 2: *"Mirror legacy `nomeUtente`. Resta come duplicato di `state.impostazioni.nome_utente`. Non è tecnicamente necessario [...] ma l'ho lasciato per retrocompatibilità con i 24 test esistenti di `reducer.test.js` e con consumer hardcoded futuri. Rimozione rinviata a Step 8 (ConfigView) dove il refactor ha consumer naturale."*
+
+Step 8 è arrivato. ImpostazioniTab (AMB-C) introduce il consumer naturale: la form Nome scrive su `impostazioni.nome_utente` via `setSetting('nome_utente', v)`. Mantenere il mirror significa o duplicare il dispatch (fragile) o accettare che `state.nomeUtente` resti desincronizzato. Nessuna opzione accettabile per build pulita.
+
+**Decisione.** Rimuovere il mirror in **8a implementativa CP4** (contestuale all'introduzione ImpostazioniTab Nome):
+
+1. `src/state/reducer.js`: rimuovere campo `nomeUtente` da `initialState`; rimuovere case `SET_NOME_UTENTE` (se esiste come action separata); `INIT_SUCCESS` non popola più `nomeUtente`.
+2. `src/state/actions.js`: `init()` non deriva più `nomeUtente` da `impostazioni.nome_utente`; `setSetting('nome_utente', v)` non dispatcha più il mirror `SET_NOME_UTENTE`; rollback su errore repo semplificato (solo `SET_IMPOSTAZIONE` rollback).
+3. Consumer: switch a `selectImpostazione(state, 'nome_utente')` (selector introdotto in §17).
+4. Test esistenti che leggono `state.nomeUtente`: rifattorizzare su selector.
+
+**CP0 gate (AMB-G, rettifica F3).** `grep -rn "nomeUtente\|state\.nomeUtente" src/` deve restituire ≤2 consumer attesi (reducer + header Oggi, più i rispettivi test file). Se >2 (consumer non atteso in componenti 7b/7c/7d), branch alternativo:
+- **Branch cleanup split:** include tutti i consumer in 8a CP4 (accetta +1-2 test cascade); target AMB-J ricalibrato +19-20.
+- **Branch defer:** 8a lascia il mirror intatto (AMB-G sospesa), ripropone cleanup in 8d polish. Candidato §6.77 ri-aperta.
+
+**Test attesi:** +1 test di regressione su selettore `selectImpostazione('nome_utente')` che conferma la derivazione dal dict; test esistenti (reducer `SET_IMPOSTAZIONE`, useTheme consumer pattern, etc.) restano verdi senza modifiche.
+
+**Invariante consumer UI.** Header Oggi mostra saluto "Ciao, {nome}" (pattern mockup v5): il switch al selector deve preservare il rendering (include fallback esplicito a stringa vuota — mai `undefined` in UI).
+
+**Classificazione:** cleanup retroattivo (pattern §6.24, §6.48). Zero effetto runtime osservabile dall'utente finale — è refactor interno su data shape.
+
 ---
 
 ## 7. Roadmap Fase 2 — avanzamento
@@ -1585,7 +1668,7 @@ dispatch({ type: 'SET_PRESO_STACK', payload: presaLogsInWindow.map(logRowToEntry
 | **Step 7 completo** | Vista Oggi (porting mockup v5 + interattività + a11y + stack UNDO) | ✅ **Chiuso** | 7 sotto-sessioni (7a→7d-2p3), da baseline 120 a 247 test. 38 deviazioni §6.25-§6.63 |
 | 8 | Vista Config (Profili + Farmaci + Impostazioni) + plan refresh + chiusura Q1/Q2 residue | ⏳ **In corso** | **Split in 5 sotto-sessioni** (8-pre → 8a → 8b → 8c → 8d). Config = 3 tabs (Q4/Q5), niente OrariTab separato. Decisioni Q3-Q9 congelate in §6.64-§6.68 (Sessione 8 analisi-first 22/04/2026 — v2.5.20) |
 | **8-pre** | Chiusura Q1 (scope UNDO_ASSUNZIONE) + Q2 (log range at init) residue | ✅ **Completo** | Analisi-first + implementativa completate 22/04/2026. Esito A al CP0.5 (compliance §6.14 già in place dalla 7d-2p2), CP2 skippato, §6.74 non consumato (riservato). §6.75 nuova (reuse `logAssunzioni`, ottimizzazione §6.72). 2 file modificati, 0 nuovi, **247 → 250 test** (target AMB-E centrato). CP browser 2/2 verdi (punto 3 skip condizionale) |
-| **8a** | Foundation Config: ConfigView shell + routing `/config/*` + tab bar URL-addressable + ImpostazioniTab (Nome + Tema + Avanzate-DEV) + `withTransaction` repo generico + thunks setting-related | ⏳ **Prossima (analisi-first)** | Target ~7-9 file, +12-18 test. Analisi-first pre-requisito per identificare Q residue (routing pattern, `withTransaction` API Dexie, scope ImpostazioniTab Avanzate-DEV, unsaved-changes policy) |
+| **8a** | Foundation Config: ConfigView shell + routing `/config/*` + tab bar URL-addressable + ImpostazioniTab (Nome + Tema + Avanzate-DEV) + `withTransaction` repo generico + thunks setting-related | ⏳ **Prossima (implementativa)** | Analisi-first **completata** 22/04/2026 (v2.5.22 → v2.5.23): 6 Q risolte, 11 AMB A-K congelate, 6 rettifiche F1-F7 applicate via dry-run CP0. §6.76 (fix §3 OrariTab fantasma) e §6.77 (cleanup `nomeUtente` mirror) congelate. Target impl **+18 test** (250 → 268, tolleranza ±3). Scope 7-9 file (~6 nuovi: ConfigView, ConfigTabBar, ImpostazioniTab, forms/; 1-3 modificati: IRepository, LocalRepository, reducer + test helpers) |
 | **8b** | ProfiliTab: CRUD profili + form profilo + riuso `cambiaProfilo` / `setProfiloAttivoConCleanup` (§6.20) + guard §6.5 (delete profilo attivo rifiutato) + rebuildPlan reattivo post-edit (§6.64) | | Target ~7-9 file, +18-22 test |
 | **8c** | FarmaciTab: CRUD farmaci + form unico con orari inline (§6.66) + save atomico `withTransaction` + soft-delete (§6.67) + flip `GET_FARMACI_SOLO_ATTIVI=true` + date editabili (§6.68). CP0: verificare `DoseCard` usi delta storico del log (§6.64 nota) | | Target ~10-12 file, +25-35 test |
 | **8d** | Polish Config + a11y (focus trap dei form, aria-labels, Escape semantics nei confirm dialog) + chiusura deviazioni emerse in 8a-8c | | Target ~3-5 file, +5-10 test |
@@ -1704,101 +1787,327 @@ Chiarimenti risolti pre-Step 4b (AMB-1/2/3):
 ---
 
 
-## 11. Prossimo step — messaggio di apertura Sessione 8a (analisi-first)
+## 11. Prossimo step — messaggio di apertura Sessione 8a (implementativa)
 
-**Modalità:** analisi-first. Sessione 8a apre lo Step 8 (Vista Config) con analisi delle Q architetturali residue sulla **foundation Config**: routing, shell ConfigView, tab bar URL-addressable, scope ImpostazioniTab, `withTransaction` repo generico, unsaved-changes policy. Nessuna modifica al codice in questa sessione — solo Q/AMB congelate per aprire 8a implementativa con scope frozen.
+**Modalità:** implementativa. Sessione 8a implementa la **foundation Config** con AMB A-K congelate da 8a analisi-first (v2.5.23). Zero Q architetturali aperte — solo esecuzione CP0→CP8 + CP browser, con 6 rettifiche F1-F7 già integrate nel prompt.
 
-**Contesto.** Step 7 (vista Oggi) chiuso integralmente post-7d-2p3 (247 test). Sessione 8-pre implementativa (22/04/2026, v2.5.21 → v2.5.22) ha chiuso Q1/Q2 residue da analisi-first 8 (§6.72 + §6.75, 250 test). Step 8 ora apre in pieno con 8a Foundation Config.
+**Contesto.** 8a analisi-first (22/04/2026, v2.5.22 → v2.5.23) ha risolto 6 Q, congelato 11 AMB (A-K), registrato §6.76 (fix §3 OrariTab fantasma) e §6.77 (cleanup mirror `nomeUtente`), applicato 6 rettifiche dry-run CP0. §6.64-§6.68 (v2.5.20) + §6.75 (v2.5.22) restano fonti autoritative — NON rimettere in discussione.
 
-**Decisioni architetturali già congelate da Sessione 8 analisi-first (v2.5.20)** — da NON rimettere in discussione:
-- **§6.64** — Strategia refresh plan post-Config edits + atomicità multi-tabella
-- **§6.65** — Config layout: 3 tabs (Profili / Farmaci / Impostazioni), niente OrariTab separato
-- **§6.66** — Form farmaco unico con orari inline atomico (scope 8c)
-- **§6.67** — Soft-delete farmaco + flip `GET_FARMACI_SOLO_ATTIVI` (scope 8c)
-- **§6.68** — Date farmaco editabili senza vincoli (scope 8c)
-
-**Baseline attesa:** 250/250 su 23 test files (post 8-pre implementativa). Target post-8a implementativa (sessione successiva): **~262-268** (+12-18 per ImpostazioniTab + routing + withTransaction, cfr. §7 roadmap 8a).
+**Baseline attesa:** 250/250 su 23 test files. **Target post-sessione: 268/268 (+18), tolleranza ±3** (AMB-J).
 
 ---
 
 ### Prerequisiti di lettura KB (in ordine)
 
-1. `PharmaTimer_Project_Spec.md` — sezioni pertinenti Config (verificare l'esatta numerazione — §6.60 procedurale impone verifica sez. spec prima di citarle nei prompt §11).
-2. `PharmaTimer_Changelog_Fase2.md` — §6.64, §6.65 (già congelate; fonte per scope 8a Config shell + ImpostazioniTab), §22.4 (stato post-8-pre), §17 (post-7a: nome_utente, impostazioni dict, setSetting, normaliseSettingsDict già esistenti).
-3. Codebase:
-   - `src/App.jsx` + `src/components/NavBar.jsx` — routing corrente + tab stub Config nella NavBar (confermato R2 v2.5.20: solo stub, no view).
-   - `src/state/actions.js` — thunk `setSetting` generico già esistente (da Sessione 7a).
-   - `src/state/reducer.js` — action `SET_IMPOSTAZIONE` (da Sessione 7a, §17).
-   - `src/data/repository/LocalRepository.js` — API esistenti (`getAllSettings`, `upsertSetting`); verificare presenza/assenza di pattern transaction wrapper.
-   - `src/domain/constants.js` — `GET_FARMACI_SOLO_ATTIVI=false` (da flippare in 8c, §6.67).
-   - `src/utils/theme.js` — token già strutturati (scope 8a ImpostazioniTab Tema non richiede nuovi token).
+1. `PharmaTimer_Project_Spec.md` §3 schema (solo `impostazioni_app` è toccata in 8a, ma la gestione routing non tocca schema).
+2. `PharmaTimer_Changelog_Fase2.md` §22.5 (AMB A-K + rettifiche F1-F7), §6.64-§6.68 (foundation Config v2.5.20 — non ridiscutere), §6.76 (fix §3), §6.77 (cleanup mirror), §17 (post-7a `setSetting` + `SET_IMPOSTAZIONE` + `selectImpostazione`).
+3. Codebase (post-CP0 ispezione):
+   - `src/App.jsx` — `<Route path="/config/*" element={<ConfigView />} />` già predisposto. ThemedShell wrapper invariato.
+   - `src/main.jsx` — `BrowserRouter` root invariato.
+   - `src/components/shared/NavBar.jsx` — `pathname.startsWith(tab.to)` coerente con `/config/*` (nessun fix necessario).
+   - `src/data/repository/IRepository.js` + `LocalRepository.js` — estendere con `withTransaction` (AMB-B).
+   - `src/state/reducer.js` + `actions.js` — cleanup mirror `nomeUtente` (AMB-G, §6.77, CP4).
+   - `src/test/renderHelpers.jsx` + `renderWithRealProvider.jsx` — estensione `initialEntries` optional (AMB-H, rettifica F5).
 
 ---
 
-### Q da risolvere in Sessione 8a analisi-first
+### CP0 — Sanity check ispettivo (5 gate)
 
-**Q1 — Routing shell ConfigView**
-- **Q1.a:** React Router è già presente in `App.jsx`? Quale struttura routes correntemente (inferita da §3 Changelog)? Sub-routes `/config/profili`, `/config/farmaci`, `/config/impostazioni` o query param `?tab=`?
-- **Q1.b:** Default sub-route su `/config` (senza trailing): redirect a `/config/impostazioni` (prima da implementare in 8a) o a `/config/profili` (decisione 8b)?
-- **Q1.c:** Deep-link esterno (es. `/config/farmaci` direttamente) deve renderizzare la tab corretta al mount? (Atteso: sì, URL-addressable è AMB v2.5.20 Q4.)
+Prima di qualsiasi edit, eseguire i 5 gate. Se uno fallisce, fermarsi e discutere in chat prima di procedere.
 
-**Q2 — `withTransaction` API**
-- **Q2.a:** Dexie 4 espone `db.transaction('rw', tableA, tableB, async () => {...})`. Esporre in `IRepository` come `withTransaction(tables: string[], callback: () => Promise<T>): Promise<T>` o come `withTransaction(callback: (tx) => Promise<T>): Promise<T>` con inferenza stores?
-- **Q2.b:** Scope 8a è minimale (Impostazioni sono single-table `impostazioni_app`, nessuna transaction richiesta). Anticipare l'API in 8a come preparazione per 8c o deferire a 8c quando serve davvero? AMB v2.5.20 §7 diceva 8a. Confermare o deferire.
-- **Q2.c:** Test strategy: integration test con fake IDB (fake-indexeddb già usato?) o unit test su `makeFakeRepo` con stub `withTransaction` noop?
+**Gate 1 — `seed_loaded` setting (AMB-D, rettifica F1):**
+```
+grep -n "seed_loaded\|impostazioni_app" src/data/seed.js
+```
+Esiti:
+- **A** — `seed_loaded` scritto come setting → AMB-D as-is.
+- **B** — Assente → aggiungere scrittura in `runSeedIfNeeded` quando `result.seeded === true` (una riga in seed.js); fallback runtime `(await repo.getFarmaci()).length > 0` per install esistenti (pre-seed-marker).
+- **C** — Scritto con altro nome (es. `demo_installato`) → rettifica inline AMB-D nel prompt §11 successivo.
 
-**Q3 — ImpostazioniTab scope**
-- **Q3.a:** Nome utente: esiste già `impostazioni.nome_utente` via `SET_IMPOSTAZIONE` + `setSetting` generico (§17 R3). 8a richiede solo una form con input + save → dispatch. Edge case: nome vuoto ammesso?
-- **Q3.b:** Tema: header Oggi ha già toggle tema (§6.46/§G); ImpostazioniTab ne duplica il controllo o redirige al toggle esistente? Fonte di verità = `impostazioni.tema`. Entrambi i controlli devono scrivere sullo stesso setting.
-- **Q3.c:** "Avanzate-DEV": quali toggle? Candidati da §13/D12 + §16 simulatedNow: (i) toggle `simulatedNow` manuale per debug, (ii) tickMs override, (iii) seed reset, (iv) nessuno (solo placeholder per Fase 3)? Decidere scope minimo per 8a.
+**Gate 2 — `nomeUtente` consumer count (AMB-G, rettifica F3):**
+```
+grep -rn "nomeUtente\|state\.nomeUtente" src/ --include='*.jsx' --include='*.js'
+```
+Atteso: ≤4 match (reducer.js, reducer.test.js, actions.js, potenziale header Oggi).
+Se >4 con consumer inatteso → branch:
+- **cleanup split:** include tutti i consumer in CP4 (accetta +1-2 test cascade); target AMB-J ricalibrato +19-20 in fly.
+- **defer:** 8a lascia mirror intatto, §6.77 ri-aperta per 8d. Comunicare scelta in chat prima di CP4.
 
-**Q4 — Unsaved changes policy**
-- **Q4.a:** Form ImpostazioniTab (Nome) ha save esplicito o auto-save onBlur? Se save esplicito, cosa succede se utente cambia tab con modifiche pendenti? Confirm dialog, silent discard, silent persist?
-- **Q4.b:** Pattern deve estendersi coerentemente a ProfiliTab (8b) e FarmaciTab (8c) che avranno form più complessi. Decidere ora il pattern generale evita retrofit.
+**Gate 3 — `MemoryRouter` nei test helpers (AMB-H, rettifica F5):**
+```
+grep -n "MemoryRouter\|initialEntries\|Router" src/test/renderHelpers.jsx src/test/renderWithRealProvider.jsx
+```
+Atteso: zero match (conferma che i 2 helper non hanno router). Se MemoryRouter già presente → rettifica inline AMB-H prima di CP2.
 
-**Q5 — Header Oggi toggle tema: fonte di verità**
-- **Q5.a:** Post-8a ImpostazioniTab, il toggle header Oggi resta shortcut o diventa deprecato? Memo v2.5.20 §6.65: "Header Oggi mantiene toggle tema come shortcut (Config.Impostazioni è fonte)". Confermare o rettificare.
+**Gate 4 — `withTransaction` assente in `makeFakeRepo` (§6.60):**
+```
+grep -n "withTransaction\|makeFakeRepo" src/test/renderWithRealProvider.jsx
+```
+Atteso: `makeFakeRepo` presente, zero `withTransaction`. Conferma che CP1 estende fake contestualmente (§6.60 lesson 7d-2p1).
 
-**Q6 — Test strategy 8a**
-- **Q6.a:** Routing test: `MemoryRouter` wrapper in `renderWithRealProvider`? Già esistente o da aggiungere?
-- **Q6.b:** Tab bar test: solo DOM assertions o anche click-driven navigation via `userEvent`?
-- **Q6.c:** Target delta test 8a: +12-18 (§7 roadmap). Breakdown proposto: +4 ConfigView shell + routing, +4 TabBar, +6 ImpostazioniTab form, +2 integration navigation. Tolleranza ±3.
+**Gate 5 — Dexie `db[storeName]` accesso (AMB-B, rettifica F4):**
+```
+node -e "import('./src/data/db.js').then(m => console.log('stores:', Object.keys(m.db).filter(k => !k.startsWith('_') && typeof m.db[k] === 'object' && m.db[k].name)))"
+```
+Atteso: lista tabelle (`profilo_utente`, `farmaci`, `orari_base`, `log_assunzioni`, `impostazioni_app`). Conferma che `db[storeName]` risolve a Table object valido — base del mapping `storeNames.map(name => db[name])` in `withTransaction`.
 
 ---
 
-### AMB-8a attesi in output (A-F indicativi, da confermare/rettificare in sessione)
+### CP1 — `withTransaction` repo + fake + test
 
-- **A — Routing pattern:** sub-routes `/config/profili` | `/config/farmaci` | `/config/impostazioni`, redirect da `/config` a `/config/impostazioni`, tab bar componente shared con NavLink.
-- **B — `withTransaction` API:** firma canonica + scope (anticipato in 8a vs deferito a 8c).
-- **C — ImpostazioniTab scope 8a minimo:** Nome (input+save) + Tema (radio light/dark/auto) + Avanzate-DEV (scope minimo TBD).
-- **D — Unsaved changes:** pattern per form (save esplicito + confirm su tab change con dirty).
-- **E — Target test 8a:** 250 → ~262-268 (+12-18), tolleranza ±3.
-- **F — Ordine CP operativi 8a implementativa:** CP0 ricognizione → CP1 routing + shell → CP2 TabBar → CP3 ImpostazioniTab Nome + Tema → CP4 ImpostazioniTab Avanzate-DEV (se in scope) → CP5 withTransaction (se in scope 8a) → CP6 full suite + CP browser.
+**AMB-B + rettifica F4 + §6.60.**
 
-### Fuori scope Sessione 8a (dichiarati)
+1. **`src/data/repository/IRepository.js`** — aggiungere JSDoc:
+   ```js
+   * @property {(mode: 'r'|'rw', storeNames: string[], fn: () => Promise<any>) => Promise<any>} withTransaction
+   ```
 
-- ProfiliTab (scope 8b)
-- FarmaciTab + orari inline + soft-delete + flip `GET_FARMACI_SOLO_ATTIVI` (scope 8c)
-- Polish + a11y profondo (scope 8d)
-- Retrofit header Oggi (decisione Q5 gestita ma non implementata fino a 8d)
+2. **`src/data/repository/LocalRepository.js`** — metodo implementazione:
+   ```js
+   async withTransaction(mode, storeNames, fn) {
+     const tables = storeNames.map((name) => db[name]);
+     return db.transaction(mode, tables, fn);
+   }
+   ```
+
+3. **`src/test/renderWithRealProvider.jsx`** — estendere `makeFakeRepo` con stub no-op (§6.60, contestuale a CP1 per rettifica F2):
+   ```js
+   async withTransaction(mode, storeNames, fn) {
+     return await fn();  // no-op atomicity in fake — single-shot in-memory
+   }
+   ```
+
+4. **Nuovo test file o estensione** `src/data/repository/LocalRepository.test.js`: **+2 test**
+   - `withTransaction pass-through`: spy su `db.transaction`, chiama `withTransaction('rw', ['farmaci','orari_base'], fn)` → verificare `db.transaction` invocato con `(mode, [dbFarmaci, dbOrariBase], fn)` e il risultato di `fn` propagato.
+   - `withTransaction error propagation`: `fn` throw → `withTransaction` rigetta con stessa error.
+
+**Δ test: +2**. Verifica: `npm test -- --run` → **252/252**.
+
+---
+
+### CP2 — `ConfigView.jsx` shell + nested Routes
+
+**AMB-A + rettifica F7.**
+
+1. **Nuovo file `src/components/config/ConfigView.jsx`** — ~40 righe:
+   ```jsx
+   import { Routes, Route, Navigate } from 'react-router-dom';
+   import ConfigTabBar from './ConfigTabBar.jsx';
+   import ImpostazioniTab from './ImpostazioniTab.jsx';
+
+   function TabPlaceholder({ title }) { /* "Non ancora implementato" */ }
+
+   export default function ConfigView() {
+     return (
+       <div className="pb-20">
+         <ConfigTabBar />
+         <Routes>
+           <Route index element={<Navigate to="impostazioni" replace />} />
+           <Route path="profili" element={<TabPlaceholder title="Profili" />} />
+           <Route path="farmaci" element={<TabPlaceholder title="Farmaci" />} />
+           <Route path="impostazioni" element={<ImpostazioniTab />} />
+           <Route path="*" element={<Navigate to="impostazioni" replace />} />
+         </Routes>
+       </div>
+     );
+   }
+   ```
+
+2. **Test helpers — estendere con `initialEntries` optional** (AMB-H, rettifica F5):
+   ```jsx
+   // renderHelpers.jsx + renderWithRealProvider.jsx, stesso pattern:
+   const { initialEntries, ...rest } = options;
+   const WrapperInner = /* esistente */;
+   function Wrapper({ children }) {
+     if (initialEntries) {
+       return (
+         <MemoryRouter initialEntries={initialEntries}>
+           <WrapperInner>{children}</WrapperInner>
+         </MemoryRouter>
+       );
+     }
+     return <WrapperInner>{children}</WrapperInner>;
+   }
+   ```
+
+3. **Nuovo file test `src/components/config/ConfigView.test.jsx`**: **+4 test**
+   - `/config/impostazioni` monta ImpostazioniTab
+   - `/config` redirect a `/config/impostazioni`
+   - `/config/profili` monta placeholder (AMB-A letterale)
+   - `/config/foo` (catch-all) redirect a `/config/impostazioni`
+
+**Δ test: +4 (cumulativo +6)**. Verifica: **256/256**.
+
+---
+
+### CP3 — `ConfigTabBar.jsx` + active state
+
+**AMB-A (componente shared NavLink).**
+
+1. **Nuovo file `src/components/config/ConfigTabBar.jsx`** — ~50 righe, pattern analogo a NavBar.jsx (token-aware via `useTheme`, `NavLink`, active state via `pathname.startsWith` o `isActive` di NavLink):
+   ```jsx
+   const TABS = [
+     { to: 'profili',     label: 'Profili' },
+     { to: 'farmaci',     label: 'Farmaci' },
+     { to: 'impostazioni', label: 'Impostazioni' },
+   ];
+   ```
+   Uso `NavLink` con `to={tab.to}` (relative, risolve a `/config/profili` etc.). Styling minimal: sottolineatura active o pill background, token `tabActiveBg`/`tabInactiveBg` se necessario aggiungerli a `theme.js` (solo se mancano).
+
+2. **Nuovo file test `src/components/config/ConfigTabBar.test.jsx`**: **+3 test**
+   - Render 3 tab label
+   - userEvent click su "Profili" → URL `/config/profili`
+   - Active tab style/aria-current riflette URL
+
+**Δ test: +3 (cumulativo +9)**. Verifica: **259/259**.
+
+---
+
+### CP4 — `ImpostazioniTab.jsx` Nome + cleanup mirror
+
+**AMB-C + AMB-G + §6.77.**
+
+1. **Cleanup mirror `nomeUtente` (§6.77) — prima delle UI:**
+   - `src/state/reducer.js`: rimuovere campo `nomeUtente` da `initialState`; rimuovere case `SET_NOME_UTENTE` se action separata esiste; `INIT_SUCCESS` non popola più `nomeUtente`.
+   - `src/state/actions.js`: `init()` non deriva più `nomeUtente`; `setSetting('nome_utente', v)` non dispatcha più mirror; rollback su errore semplificato.
+   - Consumer: switch a `selectImpostazione(state, 'nome_utente')`. Grep CP0 gate 2 ha già mappato consumer.
+   - Test reducer esistenti su `nomeUtente` → refactor su selector.
+
+2. **Nuovo file `src/components/config/ImpostazioniTab.jsx`** — ~100 righe, 3 sezioni (Nome / Tema / Avanzate). In CP4 solo sezione Nome:
+   ```jsx
+   function SezioneNome({ dirty, setDirty }) {
+     const { state, actions } = useAppContext();
+     const nomeAttuale = selectImpostazione(state, 'nome_utente') ?? '';
+     const [value, setValue] = useState(nomeAttuale);
+     const trimmed = value.trim();
+     const canSave = dirty && trimmed.length > 0;
+     return (
+       <section>
+         <label>Nome</label>
+         <input value={value} onChange={(e) => { setValue(e.target.value); setDirty(true); }} />
+         <button disabled={!canSave} onClick={async () => {
+           await actions.setSetting('nome_utente', trimmed);
+           setDirty(false);
+         }}>Salva</button>
+         {dirty && trimmed.length === 0 && <p>Il nome non può essere vuoto.</p>}
+       </section>
+     );
+   }
+   ```
+
+3. **Test `src/components/config/ImpostazioniTab.test.jsx`** — sezione Nome: **+3 test**
+   - Render valore iniziale da `state.impostazioni.nome_utente`
+   - Input vuoto → bottone disabilitato + hint inline
+   - Edit + click Salva → dispatch `setSetting('nome_utente', trimmed)`
+
+4. **Test regressione +1** (AMB-J riga "+1 cleanup mirror"): test che header Oggi (o equivalente consumer) usa `selectImpostazione` invece di `state.nomeUtente` — **oppure** test su selector `selectImpostazione('nome_utente')` che conferma derivazione post-cleanup.
+
+**Δ test: +4 (cumulativo +13)**. Verifica: **263/263**.
+
+---
+
+### CP5 — ImpostazioniTab Tema
+
+**AMB-C (radio 3-stati) + AMB-F (header Oggi shortcut resta).**
+
+Aggiungere sezione Tema in ImpostazioniTab.jsx: radio group 3 opzioni (`auto` / `light` / `dark`), label italiani ("Automatico (segue OS)" / "Chiaro" / "Scuro"), on change → `actions.setSetting('tema', value)`. Selezione riflette `state.impostazioni.tema ?? 'auto'`.
+
+**Test ImpostazioniTab.test.jsx — sezione Tema: +3 test**
+- Render 3 radio, selected riflette `state.impostazioni.tema`
+- Click su "Scuro" → dispatch `setSetting('tema', 'dark')`
+- Default (tema undefined) → radio "auto" selezionato
+
+**Δ test: +3 (cumulativo +16)**. Verifica: **266/266**.
+
+---
+
+### CP6 — ImpostazioniTab Avanzate-DEV
+
+**AMB-D (branch A/B/C per `seed_loaded` da CP0 gate 1).**
+
+Sezione "Avanzate" visible solo se `import.meta.env.DEV`. 3 campi read-only:
+- `schema_version` → `db.verno`
+- `simulatedNow` → `state.simulatedNow` (display HH:MM o "(reale)" se null)
+- `seed_loaded` → secondo esito CP0 gate 1:
+  - A: `selectImpostazione(state, 'seed_loaded')`
+  - B: fallback runtime via selector `selectSeedLoaded` che ritorna `(state.farmaci?.length ?? 0) > 0` (o similare, dipende shape state — verificare in CP0 gate 2 se `state.farmaci` esiste; se no, selector async via `useEffect` + `repo.getFarmaci()` — overhead accettabile DEV-only)
+  - C: `selectImpostazione(state, <nome_alternativo>)`
+
+**Test ImpostazioniTab.test.jsx — sezione Avanzate: +2 test**
+- In DEV (`vi.stubEnv('DEV', true)`) render 3 campi
+- In PROD (`vi.stubEnv('DEV', false)`) sezione non renderizzata
+
+**Δ test: +2 (cumulativo +18)**. Verifica: **268/268 (target AMB-J centrato)**.
+
+---
+
+### CP7 — Unsaved changes inline
+
+**AMB-E.**
+
+In ImpostazioniTab.jsx: wrapper-level `const [dirty, setDirty] = useState(false);`. Sezione Nome passa `dirty`/`setDirty` (come in CP4). Sezione Tema non ha dirty (save istantaneo on change, pattern accettato per radio).
+
+**Listener tab change con dirty:** in ConfigTabBar o in ConfigView, intercettare navigation via `useBlocker` (React Router 6.4+) **solo se dirty**. Conferma modale:
+```jsx
+{blocker.state === 'blocked' && (
+  <Modal>
+    <p>Ci sono modifiche non salvate.</p>
+    <button onClick={() => blocker.reset()}>Annulla</button>
+    <button onClick={() => blocker.proceed()}>Scarta e continua</button>
+  </Modal>
+)}
+```
+
+**Nota compatibilità:** `useBlocker` richiede `DataRouter` (createBrowserRouter). Se il setup attuale usa `BrowserRouter` puro (verificare CP0), l'alternativa è custom hook con `window.history.pushState` listener o pattern `beforeunload` — decisione inline in CP7 se `useBlocker` non disponibile. **Zero test dedicati in 8a** (AMB-J non alloca slot; pattern da stabilizzare in 8b con 2° consumer).
+
+**Δ test: 0 (cumulativo +18)**. Verifica: **268/268 invariato**.
+
+---
+
+### CP8 — Full suite + CP browser
+
+1. `npm test -- --run` → atteso **268/268** (tolleranza ±3 per AMB-J).
+2. `npm run dev`, http://localhost:5173/config:
+
+**CP browser (5 punti):**
+
+1. **URL /config redirect:** page load → URL `/config/impostazioni` (replace, rettifica F7). Browser back → `/oggi` diretto (non `/config`).
+2. **Deep-link:** manual type `/config/profili` → placeholder montato, ConfigTabBar tab "Profili" active.
+3. **Tab switch:** click "Impostazioni" → ImpostazioniTab monta; input Nome mostra `impostazioni.nome_utente` attuale; edit + Salva → `__pt.app.getState().impostazioni.nome_utente` persisted; Cmd+R → valore persistito.
+4. **Tema:** ImpostazioniTab radio "Scuro" → intera UI flip dark immediata; header Oggi toggle coerente (fonte unica, AMB-F); Cmd+R → persistenza.
+5. **Unsaved changes:** edit Nome senza save → click tab "Profili" → confirm dialog appare; "Annulla" mantiene su Impostazioni con dirty intatto; "Scarta e continua" → navigate + dirty reset.
+
+**Avanzate-DEV visibile** in `npm run dev` (mode=development). Verificare 3 campi read-only.
+
+---
+
+### Fuori scope Sessione 8a implementativa (dichiarati)
+
+- ProfiliTab UI e thunks (scope 8b)
+- FarmaciTab + form farmaco + orari inline (scope 8c)
+- `useUnsavedChanges` hook estratto (scope 8b, AMB-E)
+- Polish + a11y profondo (focus trap, aria-labels) (scope 8d)
+- Flip `GET_FARMACI_SOLO_ATTIVI=true` (scope 8c, §6.67)
 - Nuove deviazioni dominio o recalc
-- Ritorno su Q1/Q2 8-pre (chiusi in v2.5.22)
 
-### Output atteso dalla sessione (chiusura 8a analisi-first)
+---
 
-1. **AMB-8a A-F** congelati (o A-G/H se Q aggiunte).
-2. **§6.76+** candidate (se emergono deviazioni dalla spec).
-3. **Aggiornamento §22 eventuale** (§22.5 "Stato post-Sessione 8a analisi-first" se la sessione produce scoperte operative significative; altrimenti solo §11 sostitutivo).
-4. **Aggiornamento roadmap §7:** 8a analisi-first ✅; 8a implementativa ⏳ Prossima.
-5. **Sostituzione §11:** prompt implementativo Sessione 8a (CP operativi + CP browser).
-6. **Bump v2.5.23** (minor, sessione analisi non-explosive).
+### Output atteso dalla sessione (chiusura 8a implementativa)
 
-### Azioni sul Mac prima di Sessione 8a analisi-first
+1. **File nuovi (~5-6):** `ConfigView.jsx`, `ConfigTabBar.jsx`, `ImpostazioniTab.jsx`, `ConfigView.test.jsx`, `ConfigTabBar.test.jsx`, `ImpostazioniTab.test.jsx`.
+2. **File modificati (~4-5):** `IRepository.js`, `LocalRepository.js`, `renderHelpers.jsx`, `renderWithRealProvider.jsx`, `reducer.js`, `actions.js` (cleanup mirror §6.77); eventualmente `seed.js` se CP0 gate 1 Esito B; eventualmente `theme.js` se nuovi token ConfigTabBar.
+3. **Deviazioni §6.NN:** nessuna deviazione **architetturale** attesa (AMB A-K pre-congelate). Eventuali scoperte in CP → §6.78+ candidate.
+4. **§3 aggiornamento:** riga `config/` allineata ai file reali prodotti (ConfigView, ConfigTabBar, ImpostazioniTab). Hotfix inline in chiusura.
+5. **§22.6 "Stato post-Sessione 8a implementativa":** esiti CP, file prodotti, consuntivo test.
+6. **Sostituzione §11:** prompt Sessione 8b analisi-first (ProfiliTab foundation).
+7. **Bump v2.5.24.**
 
-1. Verificare baseline: `npm test -- --run` → atteso **250/250 su 23 test files**.
-2. Confermare di aver letto §22.4 (contesto post-8-pre) + §6.64-§6.68 + §6.75 (non devono essere rimessi in discussione).
-3. Aprire sessione 8a analisi-first con one-liner:
-   `Esegui il prompt al §11 del Changelog (Sessione 8a analisi-first).`
+### Azioni sul Mac prima di Sessione 8a implementativa
+
+1. Verificare baseline: `npm test -- --run` → atteso **250/250 su 23 test files** (invariata).
+2. Confermare di aver letto §22.5 (AMB A-K + rettifiche F1-F7), §6.76, §6.77, §6.64-§6.68 (non rimettere in discussione).
+3. Aprire sessione 8a implementativa con one-liner:
+   `Esegui il prompt al §11 del Changelog (Sessione 8a implementativa).`
 
 ## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3
 
@@ -3081,3 +3390,76 @@ Eseguiti via `__pt.app` (solo `{getState, actions}`) + accesso IDB nativo per se
 5. **Opzionale**: merge Step 7 su parent/main se non già fatto (step completo da 7d-2p3; 8-pre non sposta l'ago sulla decisione di merge).
 6. Aprire sessione 8a analisi-first con one-liner:
    `Esegui il prompt al §11 del Changelog (Sessione 8a analisi-first).`
+
+---
+
+## 22.5 Stato post-Sessione 8a analisi-first
+
+**Data:** 22 aprile 2026 (stessa giornata di 8-pre impl e 8 analisi-first v2.5.20)
+**Baseline test:** 250/250 su 23 test files (invariata — sessione analisi pura, zero codice)
+**Bump:** v2.5.22 → v2.5.23
+
+### Esiti Q
+
+| Q | Tema | Esito |
+|---|---|---|
+| **Q1** | Routing shell ConfigView | Q1.a nested `<Routes>` in ConfigView con relative paths; Q1.b default redirect `/config` → `/config/impostazioni`; Q1.c deep-link automatico via nested Routes. **→ AMB-A** |
+| **Q2** | `withTransaction` API | Q2.a firma `(mode, storeNames:string[], fn)` con **mapping interno** (rettifica F4); Q2.b scope 8a (confermato); Q2.c unit test spy-based senza nuove deps (fake-indexeddb non installato). **→ AMB-B** |
+| **Q3** | ImpostazioniTab scope 8a | Q3.a Nome + save esplicito + min 1 char trimmed; Q3.b Tema fonte unica `impostazioni.tema`; Q3.c Avanzate-DEV 3 campi read-only con branch A/B/C per `seed_loaded` (rettifica F1). **→ AMB-C, AMB-D** |
+| **Q4** | Unsaved changes policy | Q4.a save esplicito + confirm modale su tab change con dirty; Q4.b inline in 8a (≤15 righe), estrazione hook deferita a 8b (DRY-at-2). **→ AMB-E** |
+| **Q5** | Header Oggi toggle tema | Q5.a shortcut confermato, zero refactor. **→ AMB-F** |
+| **Q6** | Test strategy 8a | Q6.a `initialEntries` optional wrap MemoryRouter (backward-compat, rettifica F5); Q6.b `userEvent` click-driven per happy path nav; Q6.c breakdown +18 test su 7 aree. **→ AMB-H, AMB-I, AMB-J** |
+
+### AMB congelate (A-K)
+
+11 AMB congelate. Numerazione superiore alle A-F indicative del prompt §11 v2.5.22 per copertura completa post dry-run CP0:
+
+- **AMB-A** Routing nested `<Routes>` + default redirect + catch-all.
+- **AMB-B** `withTransaction` firma + mapping `storeNames.map(name => db[name])` + scope 8a.
+- **AMB-C** ImpostazioniTab PROD: Nome + Tema.
+- **AMB-D** Avanzate-DEV: 3 campi read-only + branch A/B/C per `seed_loaded`.
+- **AMB-E** Unsaved changes: inline in 8a.
+- **AMB-F** Header Oggi toggle tema: shortcut confermato.
+- **AMB-G** Cleanup mirror `nomeUtente` in scope 8a CP4 (gate CP0).
+- **AMB-H** Test helpers: `initialEntries` optional (backward-compat).
+- **AMB-I** Test strategy: `userEvent` click-driven.
+- **AMB-J** Target test 250 → 268 (+18), tolleranza ±3.
+- **AMB-K** Ordine CP: CP0→CP8 + CP browser.
+
+### Rettifiche dry-run CP0 (F1-F7)
+
+| # | Fragilità | Rettifica applicata |
+|---|---|---|
+| **F1** | `seed_loaded` non osservabile tra settings attuali | AMB-D dichiara branch A/B/C (A: esiste; B: assente → scrittura in `runSeedIfNeeded` + fallback runtime; C: naming alternativo → rettifica inline) |
+| **F2** | `makeFakeRepo` non aggiornato quando si estende IRepository (lesson §6.60 7d-2p1) | AMB-K blindatura CP1: `withTransaction` repo + `makeFakeRepo` stub **contestualmente**, mai separatamente |
+| **F3** | Consumer `state.nomeUtente` potenzialmente >2 (inatteso) | CP0 gate grep; branch cleanup split (target +19-20) o defer a 8d; §6.77 registra entrambi i path |
+| **F4** | Dexie 4 `db.transaction(mode, tables, fn)` richiede Table objects, non stringhe | AMB-B implementazione: `const tables = storeNames.map(name => db[name])` prima del pass-through |
+| **F5** | `renderWithRealProvider` già usato da 10 test OggiView E2E — wrap incondizionato MemoryRouter romperebbe 245 test esistenti | AMB-H `initialEntries` opzionale: wrap solo se presente, default absent = comportamento attuale invariato |
+| **F6** | `useTheme` re-render su `SET_IMPOSTAZIONE` tema | Zero fragilità — meccanica già funzionante (§17 smoke test browser conferma). Nessuna rettifica. |
+| **F7** | `<Navigate replace>` sostituisce history entry, back salta a `/oggi` | CP browser punto esplicito: "tap Config → URL `/config/impostazioni` (replace, non push); browser back → torna a `/oggi` diretto" |
+
+### Scoperte operative
+
+1. **§3 struttura progetto contiene `OrariTab.jsx` fantasma** (riga 451 pre-fix). Smentito da §6.65. Hotfix documentale inline → §6.76. Candidato check in prompt §11 futuri: "verifica coerenza §3 vs decisioni §6.NN recenti".
+
+2. **`fake-indexeddb` non installato** (`package.json` devDependencies). Q2.c risolta con unit test spy-based su `db.transaction`. Se in 8c emergeranno test integration multi-tabella reali, valutare installazione in quel momento (non ora).
+
+3. **`renderWithRealProvider.jsx` (313 righe, 7c-2)** attualmente monta AppProvider reale senza router. Consumer unico: 10 OggiView tests E2E. Non ispezionato il sorgente in analisi-first (inference dalla genesi + §6.60 lesson sufficient). **CP0 8a impl verifica: grep `MemoryRouter\|initialEntries` su `src/test/*.jsx`**. Se MemoryRouter già presente (improbabile) → rettifica inline AMB-H.
+
+4. **`useLocation` / `useNavigate` consumer attuali:** solo NavBar.jsx (confermato via `grep -rn "useLocation\|useNavigate\|NavLink" src/`). Tutti i test 7b/7c/7d passano senza router: wrap condizionale MemoryRouter è safe (F5).
+
+5. **Mockup `pharmatimer_oggi_v5.jsx` non contiene schermate Config** (R2 v2.5.20 rilievo, confermato). ImpostazioniTab è design ex-novo. Nessun nuovo token tema richiesto (`src/utils/theme.js` completo da 7b-1). UX fine (spacing, affordance radio, header "Avanzate") da validare in CP browser Mac — niente design reference pattern-match.
+
+6. **Riga §3 va aggiornata a 8a impl con file reali prodotti** (ConfigView, ConfigTabBar, ImpostazioniTab, updated nested structure). Candidato edit contestuale al delivery 8a impl post-CP8.
+
+### File NON prodotti (analisi pura)
+
+Zero file di codice prodotti in 8a analisi-first. Solo update Changelog (questo delivery). Coerente con modalità analisi-first consolidata (pattern 5b, 7c-2, 8, 8-pre).
+
+### Azioni sul Mac prima di Sessione 8a implementativa
+
+1. Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB del progetto Claude con la versione **v2.5.23** (eseguire `bash ~/Downloads/patch_changelog_v2_5_23.sh` nella dir `~/Sviluppo/pharmatimer/`, poi upload nella KB).
+2. Commit Changelog v2.5.23 nel repo git (§6.70 soft: drift atteso 1 versione, sotto soglia 2; raccomandato ma non obbligatorio).
+3. Verificare baseline invariata: `npm test -- --run` → atteso **250/250 su 23 test files** (invariata da 8-pre impl).
+4. Aprire sessione 8a implementativa con one-liner:
+   `Esegui il prompt al §11 del Changelog (Sessione 8a implementativa).`
