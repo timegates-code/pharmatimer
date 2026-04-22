@@ -1,6 +1,6 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 2.5.21
+**Versione:** 2.5.22
 **Data inizio fase:** 16 aprile 2026
 **Ultima modifica:** 22 aprile 2026
 **Ambito:** Sviluppo PWA React standalone con persistenza locale, preparata per futuro swap verso backend FastAPI+MariaDB.
@@ -241,6 +241,24 @@ Questo documento raccoglie le decisioni architetturali, la struttura del progett
 - Sostituito §11 placeholder con prompt esecutivo Sessione 7d-2 (sanity check 14 punti CP0 + 7 CP operativi CP1-CP7 + CP browser 6 punti + AMB A-M inline)
 - Nessuna modifica al codice o ad altre sezioni (la Sessione 7d-2 applicherà le AMB)
 - Nessuna deviazione aggiunta a §6 (le Q-N1/Q-N2/Q-N4 sono ratifiche di scelte, non deviazioni dalla spec; diverranno §6.58+ se emergeranno discrepanze in sessione)
+
+**Changelog versione 2.5.22 (rispetto alla 2.5.21):**
+- Sessione 8-pre implementativa completata il 22/04/2026 (pattern CP consolidato — CP0 8 punti + CP1 rehydration + CP2 condizionale skippato + CP3 full suite + CP browser 2/2). **2 file modificati**, 0 nuovi, **247 → 250 test** (+3 netti, target AMB-E centrato esattamente).
+- **CP0.5 Esito A pieno:** ispezione `applyAnnullaAssunzione` in `src/domain/recalc.js` ha confermato compliance §6.14 — il ramo N+1 `ricalcolata` resetta tutti i 5 campi checklist (`ora_ricalcolata`, `gap_minuti`, `gap_originale`, `recupero_minuti`, `dose_prec_saltata`) + bonus `ora_ricalcolata_originale: null` + `stato: 'prevista'`. CP2 skippato interamente. **§6.74 non consumato, resta riservato**.
+- **CP0.3 drift risolto:** `PLAN_DAYS_BEFORE=1` confermato in `src/domain/constants.js` (vs citazione `=2` in v2.5.20.1 §11). Window §6.72 operativa = `[today-1, today]` (2 giorni effettivi).
+- **§6.75 nuova (operativa):** reuse `logAssunzioni` già fetchato in `init()` + filter in-memoria per rehydration `presoStack`, invece di query dedicata. Deviazione rispetto al letterale del prompt §11 CP1 (opzioni 1-3 presumevano query dedicata). Motivazione: risparmio round-trip IndexedDB (superset semantico già in memoria).
+- **File modificati:** `src/state/actions.js` (patch 1 blocco, §6.75 + §6.72), `src/state/actions.init.test.js` (riscritto, 3 test scoped "today only" → 6 test cross-day per §6.72 + §6.75). File test esistente riscritto (non previsto dal prompt §11 letterale che diceva "aggiungere 2-3 test"): i 3 test pre-esistenti erano fondati su `getLogByDataStato` che §6.75 rimuove dal flow, sarebbero falliti.
+- **Scenario (b) "altroieri"** del prompt §11 CP1.3 non reachable con `PLAN_DAYS_BEFORE=1` (altroieri fuori window). Rimpiazzato con scenari "yesterday+today combinato" + "window right-bound guard" (log dated tomorrow deve essere escluso pur essendo in `logAssunzioni` via `PLAN_DAYS_AFTER`).
+- **CP browser 2/2 verdi** (punto 3 skip condizionale Esito A):
+  - Punto 1: setup presa storica di ieri (log naturali già presenti: farmaco_id=10 dose 2 @ 16:00 + dose 3 @ 23:50). Post Cmd+R: `presoStack` rehydrato con 4 keys di ieri (10-2, 4-1, 3-1, 10-3) + simmetria stack↔plan; tap body Card Prontinal ieri dose 3 → UndoModal aperta con cross-day hint `Dose presa alle 23:50 il 21/04`.
+  - Punto 2: tap "Annulla assunzione" → entry 10-3 ieri a `stato='ricalcolata'` + `ora_ricalcolata='00:00'` preservato (conferma §6.71 "fatto storico immutabile"); `presoStack` rimuove solo la key target (REMOVE_PRESO_KEY §6.62), altre 3 keys preservate; `state.error === null`.
+- Aggiornamento roadmap §7: step 8-pre ✅. Step 8a ⏳ prossima (analisi-first).
+- Aggiornamento §12 con delta 8-pre (2 modificati, 0 nuovi).
+- Nuova §22.4 "Stato post-Sessione 8-pre implementativa" con esiti CP, file prodotti, scoperte operative (log ieri già presenti → seed artificiale non necessario per CP browser; format `ora_effettiva` ISO datetime in log storici vs HH:MM nel plan).
+- Sostituito §11 (8-pre implementativa v2.5.21 consumato) con prompt **Sessione 8a analisi-first** (Foundation Config: ConfigView shell + routing `/config/*` + tab bar URL-addressable + ImpostazioniTab + `withTransaction` repo generico).
+- Nessuna modifica retroattiva a §6.NN esistenti.
+- **§6.69 procedurale rispettata:** front-matter intestazione bumpata in lockstep con corpo (v2.5.21 → v2.5.22, Ultima modifica 22/04 invariata — stessa giornata).
+- **§6.70 procedurale (soft):** drift Changelog KB ↔ repo git atteso = 1 versione (2.5.21 → 2.5.22), sotto soglia 2. Commit v2.5.22 raccomandato ma non obbligatorio; buona igiene in vista di 8a.
 
 **Changelog versione 2.5.21 (rispetto alla 2.5.20.1):**
 - Sessione 8-pre analisi-first completata il 22/04/2026 (pattern CP consolidato — CP1 procedurali + CP2 Q1 + CP3 Q2 + CP4 sintesi). 6 Q risolte (Q1.a ratifica §6.14 + CP0 verify, Q1.b status quo guard N+1-only end-of-story, Q1.c fatto storico immutabile, Q2.a+b presoStack scope `PLAN_DAYS_BEFORE`, Q2.c retention log defer) + 2 note procedurali N1/N2 promosse.
@@ -1500,6 +1518,44 @@ Semantica equivalente al delete (§6.67): stesso pattern UX, stessa conseguenza 
 
 **Revisione.** Step 9+ o Fase 3, guidato da (a) feedback utente su dimensioni IDB percepite, (b) disponibilità Export come preconditon per cancellazione sicura, (c) decisione backend timing.
 
+### 6.74 Reset completo campi N+1 in `applyAnnullaAssunzione` — NON CONSUMATA (Sessione 8-pre implementativa, CP0.5 Esito A)
+
+**Stato:** Riservata in v2.5.21 per eventuale Esito B al CP0.5 della Sessione 8-pre implementativa. **Non consumata** in sessione esecutiva: CP0.5 ha verificato Esito A pieno (tutti e 5 i campi `ricalcolata` + `stato` resetati correttamente nel corpo di `applyAnnullaAssunzione` già dalla Sessione 7d-2p2 CP4). `src/domain/recalc.js` immutato in 8-pre. `src/domain/recalc.test.js` immutato in 8-pre.
+
+**Evidenza CP0.5** (body `applyAnnullaAssunzione` ramo `nextDose.stato === 'ricalcolata'`): il dictionary mutation già contiene `ora_ricalcolata: null, ora_ricalcolata_originale: null, gap_minuti: 0, gap_originale: 0, recupero_minuti: 0, dose_prec_saltata: false, stato: 'prevista'`.
+
+**Classificazione:** slot numerico §6.74 resta assegnato ma vuoto per preservare continuità numerica delle §6.75+. Pattern coerente con precedenti riservati-non-consumati nel Changelog.
+
+### 6.75 Reuse `logAssunzioni` in `init()` per rehydration `presoStack` (Sessione 8-pre implementativa, ottimizzazione §6.72)
+
+**Contesto.** §6.72 richiede di rehydrate `presoStack` con le keys dei log `presa` nella window `[today - PLAN_DAYS_BEFORE, today]`. Il prompt §11 v2.5.21 CP1 step 1 proponeva 3 opzioni, tutte basate su **query dedicata** al repo (opzione 1: `getLogByRange(start, end, {stato:'presa'})` se filter supportato; opzione 2: loop `getLogByDataStato(d, 'presa')` su N giorni; opzione 3: `getLogByRange(start, end)` + in-memory filter).
+
+**Scoperta CP0.6.** `IRepository.getLogByRange(dataDa, dataA)` non accetta parametro filter (opzione 1 non applicabile). Scelta tra opzione 2 (loop) e opzione 3 (range + filter).
+
+**Scoperta CP0.4+.** A riga 115 di `src/state/actions.js` `init()` chiama già `repo.getLogByRange(startDate, endDate)` con range `[today - PLAN_DAYS_BEFORE, today + PLAN_DAYS_AFTER]` per costruire il `plan` via `buildMultiDayPlan`. Questo range **contiene come superset semantico** la window `[today - PLAN_DAYS_BEFORE, today]` richiesta per `presoStack`. L'array `logAssunzioni` risultante è già in scope al momento della rehydration.
+
+**Decisione (Opzione A).** Riusare `logAssunzioni` con filter in-memoria:
+
+```js
+const startPresoDate = addDays(today, -PLAN_DAYS_BEFORE);
+const presaLogsInWindow = logAssunzioni.filter(
+  (l) => l.stato === 'presa' && l.data >= startPresoDate && l.data <= today
+);
+dispatch({ type: 'SET_PRESO_STACK', payload: presaLogsInWindow.map(logRowToEntryKey) });
+```
+
+**Motivazioni:**
+1. **Zero query IndexedDB extra** (vs stato pre-8-pre: 1 query `getLogByDataStato` a riga 153; vs opzione 2/3 letterali del prompt §11: 1 query dedicata nuova). Round-trip risparmiato.
+2. **Simmetria window garantita**: lo stesso array che alimenta `buildMultiDayPlan` alimenta la rehydration. Nessun rischio di divergenza temporale tra query plan e query stack (scenario: today che cambia tra le due chiamate al clock).
+3. **Guard esplicito `data <= today`**: difensivo contro presunti `presa` dated nel futuro (teoricamente impossibili, ma `logAssunzioni` include `PLAN_DAYS_AFTER`).
+4. **Sort order preservato**: `repo.getLogByRange` ritorna ASC per `(data, ora_effettiva)`; il filter preserva l'ordine; LIFO convention (`top = stack.at(-1) = most recent press`) intatta.
+
+**Deviazione dichiarata.** Micro-deviazione rispetto al letterale del prompt §11 v2.5.21 (che presumeva query dedicata). Non deviazione dalla spec PharmaTimer_Project_Spec.md. Categorizzata come **ottimizzazione** con maggiori garanzie di coerenza.
+
+**Implicazioni sui test.** `repo.getLogByDataStato` **non è più chiamato da `init()`** post-8-pre. Il test file `src/state/actions.init.test.js` è stato riscritto di conseguenza: i 3 test pre-8-pre (scoped "today only" via `getLogByDataStato`) rimpiazzati da 6 test cross-day via `getLogByRange`. Nuovo invariante di test: `expect(repo.getLogByDataStato).not.toHaveBeenCalled()`.
+
+**Coesistenza con §6.72.** §6.75 implementa §6.72; non la sostituisce. §6.72 resta la deviazione architetturale (estensione della window da day-scoped a cross-day); §6.75 ne è la realizzazione operativa ottimizzata.
+
 ---
 
 ## 7. Roadmap Fase 2 — avanzamento
@@ -1528,8 +1584,8 @@ Semantica equivalente al delete (§6.67): stesso pattern UX, stessa conseguenza 
 | **7d-2p3** | ✅ **Completo** · CP6 polish DoseCard (§6.45 "in orario" ±TOLLERANZA_MIN, §6.47a gap residuo label) + CP7 theme token `focusRing` + OggiView `buildCss(t)` token-aware + CP browser 6/6 verdi | ✅ **Completo** | 247/247 test (+2, target AMB-K'' 247±2 centrato esattamente). 23 test files invariato. Zero nuove deviazioni §6 (7 AMB rispettate letteralmente). Scoperta operativa §22.3.1: asimmetria `actions.recupero(key, 0)` su `ora_ricalcolata` |
 | **Step 7 completo** | Vista Oggi (porting mockup v5 + interattività + a11y + stack UNDO) | ✅ **Chiuso** | 7 sotto-sessioni (7a→7d-2p3), da baseline 120 a 247 test. 38 deviazioni §6.25-§6.63 |
 | 8 | Vista Config (Profili + Farmaci + Impostazioni) + plan refresh + chiusura Q1/Q2 residue | ⏳ **In corso** | **Split in 5 sotto-sessioni** (8-pre → 8a → 8b → 8c → 8d). Config = 3 tabs (Q4/Q5), niente OrariTab separato. Decisioni Q3-Q9 congelate in §6.64-§6.68 (Sessione 8 analisi-first 22/04/2026 — v2.5.20) |
-| **8-pre** | Chiusura Q1 (scope UNDO_ASSUNZIONE) + Q2 (log range at init) residue | ⏳ **Prossima (implementativa)** | Analisi-first **completata** 22/04/2026 (v2.5.20.1 → v2.5.21): 6 Q risolte (Q1.a ratifica §6.14 + CP0 verify, Q1.b status quo guard N+1-only end-of-story, Q1.c fatto storico immutabile, Q2.a+b presoStack `PLAN_DAYS_BEFORE`, Q2.c retention defer), 2 note procedurali N1/N2 promosse (§6.69/§6.70), §6.71-§6.73 congelate. Implementativa = **sessione unica** (no split 8-pre-1/2). Scope atteso 2-4 file modificati, 0 nuovi. Target test 247 → **250 ±2**. Δ stimato +3 (Esito A CP0) o +4-5 (Esito B fix §6.14). §6.74 riservato per fix condizionale Esito B |
-| **8a** | Foundation Config: ConfigView shell + routing `/config/*` + tab bar URL-addressable + ImpostazioniTab (Nome + Tema + Avanzate-DEV) + `withTransaction` repo generico + thunks setting-related | | Target ~7-9 file, +12-18 test |
+| **8-pre** | Chiusura Q1 (scope UNDO_ASSUNZIONE) + Q2 (log range at init) residue | ✅ **Completo** | Analisi-first + implementativa completate 22/04/2026. Esito A al CP0.5 (compliance §6.14 già in place dalla 7d-2p2), CP2 skippato, §6.74 non consumato (riservato). §6.75 nuova (reuse `logAssunzioni`, ottimizzazione §6.72). 2 file modificati, 0 nuovi, **247 → 250 test** (target AMB-E centrato). CP browser 2/2 verdi (punto 3 skip condizionale) |
+| **8a** | Foundation Config: ConfigView shell + routing `/config/*` + tab bar URL-addressable + ImpostazioniTab (Nome + Tema + Avanzate-DEV) + `withTransaction` repo generico + thunks setting-related | ⏳ **Prossima (analisi-first)** | Target ~7-9 file, +12-18 test. Analisi-first pre-requisito per identificare Q residue (routing pattern, `withTransaction` API Dexie, scope ImpostazioniTab Avanzate-DEV, unsaved-changes policy) |
 | **8b** | ProfiliTab: CRUD profili + form profilo + riuso `cambiaProfilo` / `setProfiloAttivoConCleanup` (§6.20) + guard §6.5 (delete profilo attivo rifiutato) + rebuildPlan reattivo post-edit (§6.64) | | Target ~7-9 file, +18-22 test |
 | **8c** | FarmaciTab: CRUD farmaci + form unico con orari inline (§6.66) + save atomico `withTransaction` + soft-delete (§6.67) + flip `GET_FARMACI_SOLO_ATTIVI=true` + date editabili (§6.68). CP0: verificare `DoseCard` usi delta storico del log (§6.64 nota) | | Target ~10-12 file, +25-35 test |
 | **8d** | Polish Config + a11y (focus trap dei form, aria-labels, Escape semantics nei confirm dialog) + chiusura deviazioni emerse in 8a-8c | | Target ~3-5 file, +5-10 test |
@@ -1648,165 +1704,101 @@ Chiarimenti risolti pre-Step 4b (AMB-1/2/3):
 ---
 
 
-## 11. Prossimo step — messaggio di apertura Sessione 8-pre (implementativa)
+## 11. Prossimo step — messaggio di apertura Sessione 8a (analisi-first)
 
-**Modalità:** implementativa. Sessione 8-pre applica le decisioni dell'analisi-first consolidata in v2.5.21: ratifica §6.14 (Q1.a) con verifica CP0 ispettiva, estende rehydration `presoStack` a window `PLAN_DAYS_BEFORE` (§6.72, Q2.a+b), formalizza policy deferite §6.71/§6.73 solo in Changelog. **Zero UI, zero nuovi moduli, zero nuove modali.**
+**Modalità:** analisi-first. Sessione 8a apre lo Step 8 (Vista Config) con analisi delle Q architetturali residue sulla **foundation Config**: routing, shell ConfigView, tab bar URL-addressable, scope ImpostazioniTab, `withTransaction` repo generico, unsaved-changes policy. Nessuna modifica al codice in questa sessione — solo Q/AMB congelate per aprire 8a implementativa con scope frozen.
 
-**Contesto.** Sessione 8-pre analisi-first (22/04/2026, v2.5.20.1 → v2.5.21) ha chiuso 6 Q con 5 deviazioni candidate §6.69-§6.73 (di cui 3 procedurali/policy-only e 1 operativa §6.72, più §6.74 riservato per Esito B). Decisione architetturale **sessione unica** confermata: Q1.b chiuso su status quo ha eliminato il rischio principale di esplosione scope (revert totale UI-exposed).
+**Contesto.** Step 7 (vista Oggi) chiuso integralmente post-7d-2p3 (247 test). Sessione 8-pre implementativa (22/04/2026, v2.5.21 → v2.5.22) ha chiuso Q1/Q2 residue da analisi-first 8 (§6.72 + §6.75, 250 test). Step 8 ora apre in pieno con 8a Foundation Config.
 
-**Baseline attesa:** 247/247 su 23 test files (post-7d-2p3). Target post-8-pre: **250 ±2**. Δ stimato +3 (Esito A CP0) o +4-5 (Esito B fix §6.14). Scope file: 2-4 touched, 0 nuovi.
+**Decisioni architetturali già congelate da Sessione 8 analisi-first (v2.5.20)** — da NON rimettere in discussione:
+- **§6.64** — Strategia refresh plan post-Config edits + atomicità multi-tabella
+- **§6.65** — Config layout: 3 tabs (Profili / Farmaci / Impostazioni), niente OrariTab separato
+- **§6.66** — Form farmaco unico con orari inline atomico (scope 8c)
+- **§6.67** — Soft-delete farmaco + flip `GET_FARMACI_SOLO_ATTIVI` (scope 8c)
+- **§6.68** — Date farmaco editabili senza vincoli (scope 8c)
 
----
-
-### CP0 — Sanity check (8 punti, tutti bloccanti tranne punto 8 che può hotfix)
-
-1. **Baseline test:** `npm test -- --run` → atteso **247/247 su 23 test files**. Se difforme, stop e diagnostica prima di procedere.
-2. **Git HEAD:** verifica che il branch corrente includa il commit `Changelog catch-up v2.5.3 → v2.5.20` (`2bf2373`) + il merge di v2.5.20.1 + delivery v2.5.21. Working copy pulita (`git status` → clean) o working copy conservativamente coerente. Se Step 7 già mergiato a parent/main, ok; altrimenti proseguire sul branch corrente.
-3. **Drift costanti `PLAN_DAYS_BEFORE`:** `cat src/domain/constants.js | grep -E 'PLAN_DAYS|GET_FARMACI'`. Annotare valore reale. §15 (5b-2) registra `PLAN_DAYS_BEFORE=1`; §11 v2.5.20.1 lo citava come 2. **Il valore reale determina l'ampiezza operativa §6.72**. Se emerge incongruenza significativa (es. valore = 0 o negativo), stop e riconciliare con utente prima di procedere.
-4. **Stato attuale `actions.init()` — rehydration §6.40:** `grep -n 'presoStack\|getLogByDataStato\|getLogByData\|getLogByRange\|SET_PRESO_STACK' src/state/actions.js`. Individuare la call site esatta di rehydration §6.40. Annotare righe coinvolte per futuro str_replace in CP1.
-5. **Verifica §6.14 compliance (Q1.a, criticità Esito A/B):** `view src/domain/recalc.js` function `applyAnnullaAssunzione` (nome post-§6.58 rename). Checklist ispettiva del reset N+1 `ricalcolata` nel corpo:
-   - [ ] `ora_ricalcolata = null`
-   - [ ] `gap_minuti = 0`
-   - [ ] `gap_originale = null` (o `0`, a seconda della convenzione codebase)
-   - [ ] `recupero_minuti = 0`
-   - [ ] `dose_prec_saltata = false` (se campo presente sul modello; altrimenti N/A)
-   - [ ] `stato = 'prevista'`
-
-   **Pieno match → Esito A:** nessuna modifica `recalc.js` in CP2 (skip CP2 interamente). **Missing ≥1 campo → Esito B:** CP2 applica fix minimo + introduce `§6.74` candidata (formulazione da proporre in-session, pattern §6.61). Non chiedere conferma utente per Esito B se il fix è meccanico (aggiunta reset mancante al dictionary return); chiedere conferma se la deviazione osservata richiede scelta di design non ovvia.
-
-6. **Inventario API repo range:** `grep -n 'getLogByRange\|getLogByData\|getLogByDataStato' src/data/repository/IRepository.js`. Preferire in CP1 l'API più ergonomica per multi-day filter (opzione 1 preferita: `getLogByRange(startDate, endDate, filter?)` se filter stato è supportato; opzione 2: loop di `getLogByDataStato` su N giorni se non c'è range-with-filter; opzione 3: `getLogByRange` seguito da filter in-memory su `stato === 'presa'` se filter non è nella firma).
-
-7. **Reducer `SET_PRESO_STACK` shape:** `grep -n 'SET_PRESO_STACK\|presoStack:' src/state/reducer.js`. Verificare:
-   - Payload accetta array di keys (atteso sì)
-   - Nessun cap sull'array length (atteso nessuno; se presente, ricalibrare a 50+ o rimuovere)
-   - Dedup esplicito se presente (atteso no; se presente, non è bloccante ma annotare)
-
-8. **Mirror `makeFakeRepo` (§6.60 sanity):** `grep -n 'getLogByRange\|getLogByData\|getLogByDataStato' src/test/renderWithRealProvider.jsx`. **Se il metodo scelto al CP0 punto 6 è assente** da `makeFakeRepo`, eseguire hotfix preventivo: aggiungere stub con stessa semantica di `LocalRepository`. Questo punto può hotfix in-session senza stop (è il pattern §6.60 ormai consolidato da 7d-2p1).
+**Baseline attesa:** 250/250 su 23 test files (post 8-pre implementativa). Target post-8a implementativa (sessione successiva): **~262-268** (+12-18 per ImpostazioniTab + routing + withTransaction, cfr. §7 roadmap 8a).
 
 ---
 
-### CP operativi (CP1 → CP3)
+### Prerequisiti di lettura KB (in ordine)
 
-#### CP1 — Implementazione §6.72 (Q2.a + Q2.b): rehydration `presoStack` su window `PLAN_DAYS_BEFORE`
-
-Modifiche in ordine:
-
-1. **`src/state/actions.js`** — nella funzione `init()` thunk, sostituire la call attuale al repo per rehydration `presoStack` con la versione multi-day scelta al CP0 punto 6:
-   - Opzione 1 preferita (range con filter): `const logs = await repo.getLogByRange(startDate, endDate, {stato: 'presa'})`
-   - Opzione 2 (loop): `const logs = []; for (const d of days) logs.push(...await repo.getLogByDataStato(d, 'presa'))`
-   - Opzione 3 (range + in-memory filter): `const all = await repo.getLogByRange(startDate, endDate); const logs = all.filter(l => l.stato === 'presa')`
-   - `startDate = addDays(today, -PLAN_DAYS_BEFORE)`, `endDate = today`
-   - Derivare `entryKey` da ciascun log (pattern esistente §6.40; probabilmente `${dateStr}-${farmaco_id}-${dose_numero}`)
-   - Dispatch `SET_PRESO_STACK` con array keys risultante
-
-2. **`src/test/renderWithRealProvider.jsx`** (solo se CP0 punto 8 ha rilevato metodo mancante) — aggiungere mirror del metodo scelto a `makeFakeRepo` con semantica LocalRepository-compatible. Se l'hotfix è già stato eseguito al CP0, skip qui.
-
-3. **Test file rehydration** — identificare il test file esistente che copre `actions.init()` (probabilmente `src/state/actions.init.test.js` se esiste, altrimenti `src/state/actions.test.js` o equivalente). Aggiungere **2-3 test**:
-   - (a) Ieri ha 1 log `presa`, today 0 → `presoStack = [yesterdayKey]` post-init
-   - (b) Altroieri ha 1 log `presa`, ieri e today 0 → `presoStack = [dayBeforeYesterdayKey]` post-init
-   - (c) Nessun giorno ha log `presa` → `presoStack = []` post-init (sanity regressione)
-   - Usare `vi.useFakeTimers + vi.setSystemTime` per fissare `today` deterministico (pattern §17 consolidato)
-
-4. **Run test area:** `npm test -- --run actions` (o pattern equivalente). Atteso: baseline test file esistenti invariati + 2-3 nuovi test verdi.
-
-#### CP2 — Condizionale Esito B su Q1.a (skip se Esito A al CP0 punto 5)
-
-**Skip completo** se al CP0 punto 5 il corpo `applyAnnullaAssunzione` già fa reset dei 5 (o 6) campi N+1 `ricalcolata`.
-
-Se Esito B:
-
-1. **`src/domain/recalc.js`** — nel corpo di `applyAnnullaAssunzione`, ramo N+1 `stato === 'ricalcolata'`, completare il reset dei campi mancanti identificati al CP0 punto 5 checklist. Pattern minimo di modifica: aggiunta campi al dictionary mutation `nextPlan[idxNext] = {...nextPlan[idxNext], <campi>}`.
-
-2. **`src/domain/recalc.test.js`** — aggiungere test mirato (§6.14 regression): setup plan con N `presa` + N+1 `ricalcolata` auto (tutti i 5 campi non-default). Call `applyAnnullaAssunzione(plan, targetKey)`. Assert: N+1 ritorna con tutti i 5 campi ai valori default (null/0) + `stato === 'prevista'`. 1 test sufficiente (coverage del ramo ricalcolata completa il flow).
-
-3. **Introdurre §6.74 candidata** nel delivery post-sessione: formulazione proposta al punto sintesi chiusura sessione. Pattern: `§6.74 — Fix reset completo campi N+1 in applyAnnullaAssunzione (ratifica operativa §6.14)`.
-
-4. **Run test area:** `npm test -- --run recalc`. Atteso: baseline + 1 nuovo test verde.
-
-#### CP3 — Run test completo + verifica contatori
-
-1. **`npm test -- --run`** (full suite).
-2. Conteggio atteso: **250 ±2**. Breakdown:
-   - Esito A: 247 + 3 (CP1 new) = 250 ✓
-   - Esito B: 247 + 3 (CP1 new) + 1 (CP2 new) = 251 ✓ (dentro tolleranza)
-   - Se esterno alla tolleranza → diagnostica (test flaky, test duplicati, test skipped). Stop e analizzare.
-3. **File test totali:** 23 invariati (nessun file test nuovo in 8-pre) o +1 se CP1 punto 3 ha richiesto creare `actions.init.test.js` dedicato (annotare in chiusura sessione).
+1. `PharmaTimer_Project_Spec.md` — sezioni pertinenti Config (verificare l'esatta numerazione — §6.60 procedurale impone verifica sez. spec prima di citarle nei prompt §11).
+2. `PharmaTimer_Changelog_Fase2.md` — §6.64, §6.65 (già congelate; fonte per scope 8a Config shell + ImpostazioniTab), §22.4 (stato post-8-pre), §17 (post-7a: nome_utente, impostazioni dict, setSetting, normaliseSettingsDict già esistenti).
+3. Codebase:
+   - `src/App.jsx` + `src/components/NavBar.jsx` — routing corrente + tab stub Config nella NavBar (confermato R2 v2.5.20: solo stub, no view).
+   - `src/state/actions.js` — thunk `setSetting` generico già esistente (da Sessione 7a).
+   - `src/state/reducer.js` — action `SET_IMPOSTAZIONE` (da Sessione 7a, §17).
+   - `src/data/repository/LocalRepository.js` — API esistenti (`getAllSettings`, `upsertSetting`); verificare presenza/assenza di pattern transaction wrapper.
+   - `src/domain/constants.js` — `GET_FARMACI_SOLO_ATTIVI=false` (da flippare in 8c, §6.67).
+   - `src/utils/theme.js` — token già strutturati (scope 8a ImpostazioniTab Tema non richiede nuovi token).
 
 ---
 
-### CP browser (3 punti, console-driven via `__pt.app.actions`)
+### Q da risolvere in Sessione 8a analisi-first
 
-Pattern consolidato da 7c-2/7d-2p3. Eseguire dopo CP3 clean.
+**Q1 — Routing shell ConfigView**
+- **Q1.a:** React Router è già presente in `App.jsx`? Quale struttura routes correntemente (inferita da §3 Changelog)? Sub-routes `/config/profili`, `/config/farmaci`, `/config/impostazioni` o query param `?tab=`?
+- **Q1.b:** Default sub-route su `/config` (senza trailing): redirect a `/config/impostazioni` (prima da implementare in 8a) o a `/config/profili` (decisione 8b)?
+- **Q1.c:** Deep-link esterno (es. `/config/farmaci` direttamente) deve renderizzare la tab corretta al mount? (Atteso: sì, URL-addressable è AMB v2.5.20 Q4.)
 
-1. **Cross-day UNDO direct (§6.72 happy path):** via Console DevTools preparare uno scenario con log `presa` registrato ieri (insert diretto via `__pt.app.repo.upsertLogBatch([{...}])` o `setSimulatedNow` di ieri + tap PRESA simulato, poi restore clock). Reload browser (Cmd+R). Verificare:
-   - `__pt.app.getState().presoStack` include la key yesterday
-   - Scroll timeline indietro → Card yesterday visibile con stato `presa`
-   - Tap body Card yesterday → UndoModal apre (pattern §6.41)
+**Q2 — `withTransaction` API**
+- **Q2.a:** Dexie 4 espone `db.transaction('rw', tableA, tableB, async () => {...})`. Esporre in `IRepository` come `withTransaction(tables: string[], callback: () => Promise<T>): Promise<T>` o come `withTransaction(callback: (tx) => Promise<T>): Promise<T>` con inferenza stores?
+- **Q2.b:** Scope 8a è minimale (Impostazioni sono single-table `impostazioni_app`, nessuna transaction richiesta). Anticipare l'API in 8a come preparazione per 8c o deferire a 8c quando serve davvero? AMB v2.5.20 §7 diceva 8a. Confermare o deferire.
+- **Q2.c:** Test strategy: integration test con fake IDB (fake-indexeddb già usato?) o unit test su `makeFakeRepo` con stub `withTransaction` noop?
 
-2. **Cross-day UNDO happy path:** in modale aperta al punto 1, tap "Annulla assunzione". Verificare:
-   - Entry yesterday torna a `stato === 'prevista'` (o `ricalcolata` se aveva `ora_ricalcolata` pre-esistente)
-   - `__pt.app.getState().presoStack` non contiene più la key yesterday
-   - `__pt.app.getState().error === null`
-   - Card yesterday aggiornata visualmente (stato + affordance sparite)
+**Q3 — ImpostazioniTab scope**
+- **Q3.a:** Nome utente: esiste già `impostazioni.nome_utente` via `SET_IMPOSTAZIONE` + `setSetting` generico (§17 R3). 8a richiede solo una form con input + save → dispatch. Edge case: nome vuoto ammesso?
+- **Q3.b:** Tema: header Oggi ha già toggle tema (§6.46/§G); ImpostazioniTab ne duplica il controllo o redirige al toggle esistente? Fonte di verità = `impostazioni.tema`. Entrambi i controlli devono scrivere sullo stesso setting.
+- **Q3.c:** "Avanzate-DEV": quali toggle? Candidati da §13/D12 + §16 simulatedNow: (i) toggle `simulatedNow` manuale per debug, (ii) tickMs override, (iii) seed reset, (iv) nessuno (solo placeholder per Fase 3)? Decidere scope minimo per 8a.
 
-3. **(Condizionale Esito B Q1.a) Reset N+1 ricalcolata post-fix:**
-   - Skip se Esito A al CP0 punto 5
-   - Setup: trovare dose N presa con N+1 auto-ricalcolata dallo stesso `applyAssunzione` (es. Prontinal intervallo 8h con dose 2 presa in ritardo → dose 3 ricalcolata)
-   - Tap body Card N → UndoModal → "Annulla assunzione"
-   - Verificare su entry N+1 in `__pt.app.getState().plan`:
-     - `stato === 'prevista'`
-     - `ora_ricalcolata === null`
-     - `gap_minuti === 0`
-     - `gap_originale === null` (o `0`)
-     - `recupero_minuti === 0`
-     - `dose_prec_saltata === false` (se presente)
+**Q4 — Unsaved changes policy**
+- **Q4.a:** Form ImpostazioniTab (Nome) ha save esplicito o auto-save onBlur? Se save esplicito, cosa succede se utente cambia tab con modifiche pendenti? Confirm dialog, silent discard, silent persist?
+- **Q4.b:** Pattern deve estendersi coerentemente a ProfiliTab (8b) e FarmaciTab (8c) che avranno form più complessi. Decidere ora il pattern generale evita retrofit.
 
----
+**Q5 — Header Oggi toggle tema: fonte di verità**
+- **Q5.a:** Post-8a ImpostazioniTab, il toggle header Oggi resta shortcut o diventa deprecato? Memo v2.5.20 §6.65: "Header Oggi mantiene toggle tema come shortcut (Config.Impostazioni è fonte)". Confermare o rettificare.
 
-### AMB-8-pre pre-approvate (A-F)
-
-- **A — Sessione unica.** 8-pre implementativa in un turno, CP0 → CP3 + CP browser 3 punti. Nessuno split 8-pre-1/2.
-- **B — Ratifica §6.14 per Q1.a con CP0 ispettiva.** Esito A → 0 modifiche `recalc.js`. Esito B → fix meccanico + §6.74 candidata + 1 test. Nessun `rebuildPlan` dal thunk in ogni caso; reset stays monolitico nel dominio.
-- **C — §6.72 init rehydration esteso.** Window `[today - PLAN_DAYS_BEFORE, ..., today]`. API repo preferita scelta al CP0 punto 6. Reducer `SET_PRESO_STACK` e dominio `applyAnnullaAssunzione` invariati (verifica CP0 punti 7 + guard data-agnostic). Guard `DOWNSTREAM_USER_EDITS` continua a funzionare cross-day senza modifiche.
-- **D — Policy (§6.71, §6.73) documentazione-only.** Zero codice, zero test, zero UI. Entrano nel Changelog v2.5.21 (già inclusi) e rimangono come invarianti di progetto.
-- **E — Target test 247 → 250 ±2.** Breakdown: Q2.a/b +3 (CP1), Q1.a Esito A +0 oppure Esito B +1 (CP2). Tolleranza ±2 copre varianti (es. un test flaky scoperto in-session, un test di robustezza aggiuntivo su guard cross-day).
-- **F — Ordine CP operativi:** CP0 ricognizione (8 punti) → CP1 Q2.a/b init rehydration + test → CP2 condizionale Q1.a fix Esito B + test → CP3 test completi → CP browser 3 punti. CP0 tutti bloccanti tranne punto 8 (hotfix in-session OK).
+**Q6 — Test strategy 8a**
+- **Q6.a:** Routing test: `MemoryRouter` wrapper in `renderWithRealProvider`? Già esistente o da aggiungere?
+- **Q6.b:** Tab bar test: solo DOM assertions o anche click-driven navigation via `userEvent`?
+- **Q6.c:** Target delta test 8a: +12-18 (§7 roadmap). Breakdown proposto: +4 ConfigView shell + routing, +4 TabBar, +6 ImpostazioniTab form, +2 integration navigation. Tolleranza ±3.
 
 ---
 
-### Fuori scope Sessione 8-pre implementativa (dichiarati)
+### AMB-8a attesi in output (A-F indicativi, da confermare/rettificare in sessione)
 
-- **Nuove feature UI.** Nessuna modale nuova, nessun bottone nuovo, nessun cambio di layout/tema. UndoModal invariato.
-- **Revert totale catena** (Q1.b chiuso Opzione 1 — status quo guard N+1-only).
-- **Retention log_assunzioni** (Q2.c chiuso Opzione 1 — defer Step 9+/Fase 3; §6.73).
-- **`applyAnnullaRecupero` o reset path generalizzato** (Q1.c chiuso Opzione ii — fatto storico immutabile; §6.71).
-- **Config view e relativi thunks** (scope 8a+).
-- **Cross-midnight UI §6.18/§6.26** (Step 9).
-- **Flip `GET_FARMACI_SOLO_ATTIVI=true`** (scope 8c, §6.67).
-- **Form fill test browser** (pattern §6.43 posticipo e similari — fuori Fase 2 spec v1.3).
+- **A — Routing pattern:** sub-routes `/config/profili` | `/config/farmaci` | `/config/impostazioni`, redirect da `/config` a `/config/impostazioni`, tab bar componente shared con NavLink.
+- **B — `withTransaction` API:** firma canonica + scope (anticipato in 8a vs deferito a 8c).
+- **C — ImpostazioniTab scope 8a minimo:** Nome (input+save) + Tema (radio light/dark/auto) + Avanzate-DEV (scope minimo TBD).
+- **D — Unsaved changes:** pattern per form (save esplicito + confirm su tab change con dirty).
+- **E — Target test 8a:** 250 → ~262-268 (+12-18), tolleranza ±3.
+- **F — Ordine CP operativi 8a implementativa:** CP0 ricognizione → CP1 routing + shell → CP2 TabBar → CP3 ImpostazioniTab Nome + Tema → CP4 ImpostazioniTab Avanzate-DEV (se in scope) → CP5 withTransaction (se in scope 8a) → CP6 full suite + CP browser.
 
----
+### Fuori scope Sessione 8a (dichiarati)
 
-### Output atteso dalla sessione (chiusura 8-pre implementativa)
+- ProfiliTab (scope 8b)
+- FarmaciTab + orari inline + soft-delete + flip `GET_FARMACI_SOLO_ATTIVI` (scope 8c)
+- Polish + a11y profondo (scope 8d)
+- Retrofit header Oggi (decisione Q5 gestita ma non implementata fino a 8d)
+- Nuove deviazioni dominio o recalc
+- Ritorno su Q1/Q2 8-pre (chiusi in v2.5.22)
 
-1. **Consuntivo test** con breakdown Esito A/B e delta effettivo.
-2. **§6.74 candidata** se Esito B (altrimenti "§6.74 non consumato, resta riservato").
-3. **Nuova §22.4 "Stato post-Sessione 8-pre implementativa"** con file prodotti, CP browser esiti puntuali, eventuali hotfix §6.60-pattern sul `makeFakeRepo`.
-4. **Aggiornamento §12** con delta 8-pre (file modificati, ~0 nuovi).
-5. **Aggiornamento §7 roadmap:** 8-pre ✅, 8a ⏳ prossima.
-6. **Sostituzione §11:** prompt analisi-first per Sessione 8a (pattern consolidato — Config foundation + Impostazioni + `withTransaction`).
-7. **Bump v2.5.22** (minor, sessione esecutiva non-explosive).
+### Output atteso dalla sessione (chiusura 8a analisi-first)
 
----
+1. **AMB-8a A-F** congelati (o A-G/H se Q aggiunte).
+2. **§6.76+** candidate (se emergono deviazioni dalla spec).
+3. **Aggiornamento §22 eventuale** (§22.5 "Stato post-Sessione 8a analisi-first" se la sessione produce scoperte operative significative; altrimenti solo §11 sostitutivo).
+4. **Aggiornamento roadmap §7:** 8a analisi-first ✅; 8a implementativa ⏳ Prossima.
+5. **Sostituzione §11:** prompt implementativo Sessione 8a (CP operativi + CP browser).
+6. **Bump v2.5.23** (minor, sessione analisi non-explosive).
 
-### Azioni sul Mac prima di Sessione 8-pre implementativa
+### Azioni sul Mac prima di Sessione 8a analisi-first
 
-1. **Sostituire `PharmaTimer_Changelog_Fase2.md`** nella KB del progetto Claude con la versione **v2.5.21** di questo delivery.
-2. **Verificare baseline:** `npm test -- --run` → atteso **247/247 su 23 test files**.
-3. **Commit Changelog v2.5.21** nel repo git con messaggio dedicato (§6.70 soft: drift attuale v2.5.20→v2.5.21 = 1 versione ≤ 2 → commit non obbligatorio ma buona igiene preventiva in vista di 8-pre implementativa che porterà a v2.5.22).
-4. **Merge Step 7 su parent/main** raccomandato se non già fatto (7 sotto-sessioni complete, chiusura naturale vista Oggi) ma non bloccante per 8-pre.
-5. **Aprire sessione esecutiva 8-pre** con one-liner:
-   `Esegui il prompt al §11 del Changelog (Sessione 8-pre implementativa).`
+1. Verificare baseline: `npm test -- --run` → atteso **250/250 su 23 test files**.
+2. Confermare di aver letto §22.4 (contesto post-8-pre) + §6.64-§6.68 + §6.75 (non devono essere rimessi in discussione).
+3. Aprire sessione 8a analisi-first con one-liner:
+   `Esegui il prompt al §11 del Changelog (Sessione 8a analisi-first).`
 
 ## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3
 
@@ -1949,6 +1941,14 @@ Pattern consolidato da 7c-2/7d-2p3. Eseguire dopo CP3 clean.
 | `src/utils/theme.js` | **mod.** 7d-2p3 | CP7: nuovo token `focusRing: dk ? '#60A5FA' : '#3B82F6'` piazzato accanto a `dateSepBgStrong` (cluster a11y). Commento inline documenta degrade accettato su `gapBg`/`redBg` dark (AMB-G). Light value invariato da 7d-1 hardcoded; dark value lift per contrast AA su `#15141A` pageBg |
 | `src/components/oggi/OggiView.jsx` | **mod.** 7d-2p3 | CP7: `const CARD_AND_SLIDER_CSS` promosso a `function buildCss(t)` top-level (Opzione 1 del prompt §11). Regola `:focus-visible` usa `${t.focusRing}` invece di `#3B82F6` hardcoded. Consumer `const cssString = useMemo(() => buildCss(t), [t])` piazzato dopo `ultimaPresa` + prima dell'`useEffect` auto-prompt (hooks-before-returns). `<style>{cssString}</style>` sostituisce `<style>{CARD_AND_SLIDER_CSS}</style>`. Header comment: nuova sezione "7d-2 CP7 wiring (AMB-7d-2p3.G / §6.46+§G)" |
 | **Totale test passing post-7d-2p3** | | **247/247 su 23 test files** |
+
+### Delta 8-pre implementativa (2 modificati + 0 nuovi = 2 totali)
+
+| Path | Tipo | Delta |
+|---|---|---|
+| `src/state/actions.js` | **mod.** 8-pre | Rehydration `presoStack` in `init()` riscritta (§6.72 + §6.75). Rimossa call `repo.getLogByDataStato(today, 'presa')` a riga 153 pre-8-pre. Introdotto block `const startPresoDate = addDays(today, -PLAN_DAYS_BEFORE); const presaLogsInWindow = logAssunzioni.filter(...)`. Filter triplo: `stato === 'presa'` (semantics), `data >= startPresoDate` (left bound window §6.72), `data <= today` (right-bound defensive vs `PLAN_DAYS_AFTER`). Header comment block aggiornato: nuova sezione "Sessione 8-pre (§6.72, supersedes §6.40) + §6.75 source optimization" |
+| `src/state/actions.init.test.js` | **mod.** 8-pre | Riscrittura completa (6 test vs 3 pre-8-pre). Describe rinominato "Sessione 8-pre, §6.72 + §6.75". `makeRepo` riconfigurato: `getLogByRange` è il canale primario (riceve `rangeLogs`), `getLogByDataStato` mock conservato solo come spy per verificare `not.toHaveBeenCalled()`. 6 scenari: (1) empty window; (2) today only; (3) yesterday only (cross-day happy path §6.72); (4) yesterday+today ASC+LIFO; (5) stato filter (esclude saltata/ricalcolata/sospesa); (6) window right-bound guard (esclude tomorrow). Helper `presaLog({id, data, dose_numero, ora})` factory estratto per DRY. `beforeEach/afterEach` globali per `vi.useFakeTimers` clock fissato a `2026-04-21T10:30:00` |
+| **Totale test passing post-8-pre** | | **250/250 su 23 test files** (+3 netti) |
 
 ---
 
@@ -2997,3 +2997,87 @@ Eseguiti via `__pt.app.actions` in console per guida step-by-step (pattern prefe
 4. Verificare baseline: `npm test -- --run` → atteso **247/247 su 23 test files**
 5. Aprire sessione analisi Step 8 con one-liner:
    `Esegui il prompt al §11 del Changelog (Sessione 8 analisi-first).`
+
+---
+
+## 22.4 Stato post-Sessione 8-pre implementativa
+
+**Data:** 22 aprile 2026
+**Baseline pre-sessione:** 247/247 su 23 test files (post 7d-2p3)
+**Baseline post-sessione:** **250/250 su 23 test files** (+3, target AMB-E centrato esattamente)
+
+### Esiti CP
+
+| CP | Scope | Delta test | Esito |
+|---|---|---|---|
+| **CP0** | Sanity check 8 punti ispettivi (baseline + git + drift costanti + rehydration call site + §6.14 compliance + API repo + reducer + makeFakeRepo) | 0 | ✅ 8/8 (punto 5 Esito A → CP2 skippato) |
+| **CP1** | §6.72 + §6.75: rehydration `presoStack` multi-giorno via reuse `logAssunzioni` + filter in-memoria | +3 netti | ✅ 6/6 nuovi scenari verdi. Test file riscritto integralmente (3 → 6 test) |
+| **CP2** | (condizionale) Esito B Q1.a fix reset campi N+1 | — | ⏭️ Skippato (Esito A al CP0.5) |
+| **CP3** | Full suite post-patch | 0 (cumulativo +3) | ✅ 250/250, 23 test files invariati |
+| **CP browser** | 3 punti console-driven (cross-day seed + UndoModal + annulla happy path; punto 3 Esito B condizionale) | 0 | ✅ 2/2 (punto 3 skip condizionale) |
+
+### File prodotti in 8-pre
+
+2 modificati, 0 nuovi:
+
+| Path | Stato |
+|---|---|
+| `src/state/actions.js` | mod. (§6.72 + §6.75 rehydration riscritta, block `logAssunzioni.filter(...)` sostituisce call `getLogByDataStato`) |
+| `src/state/actions.init.test.js` | mod. (riscrittura 3 → 6 test; source mock da `getLogByDataStato` a `getLogByRange`; `makeRepo` refactored; beforeEach/afterEach globali per fake timers) |
+
+### Consuntivo test
+
+```
+baseline 247 → 250 (+3, target AMB-E 250 ±2 centrato esattamente)
+  src/state/actions.init.test.js        +3  (6 scenari cross-day vs 3 pre-8-pre "today only")
+  TOTAL                                 +3
+```
+
+File test: 23 → **23** (invariato, nessun file test nuovo).
+
+### Deviazioni registrate
+
+**§6.75 nuova (operativa):** reuse `logAssunzioni` in `init()` per rehydration `presoStack` + filter in-memoria. Micro-deviazione dal letterale del prompt §11 v2.5.21 (che presumeva query dedicata nelle 3 opzioni). Motivazione: risparmio 1 round-trip IndexedDB, simmetria window garantita dallo stesso array che alimenta `buildMultiDayPlan`.
+
+**§6.74 non consumata (riservata):** CP0.5 Esito A pieno ha confermato compliance §6.14 già in place dalla 7d-2p2. Slot numerico preservato.
+
+**Riscrittura test file esistente non prevista dal prompt §11 letterale** (che indicava "aggiungere 2-3 test"): i 3 test pre-esistenti in `actions.init.test.js` erano fondati su `getLogByDataStato` che §6.75 rimuove dal flow. Senza riscrittura sarebbero falliti.
+
+**Scenario (b) "altroieri"** del prompt §11 CP1.3 non reachable con `PLAN_DAYS_BEFORE=1` (altroieri = `today-2`, fuori dalla window §6.72 con config corrente). Rimpiazzato con scenari "yesterday+today ASC+LIFO" e "window right-bound guard" (log dated tomorrow escluso pur essendo in `logAssunzioni` via `PLAN_DAYS_AFTER`). Sostanza del prompt (test della window cross-day) preservata.
+
+### 22.4.1 Scoperte operative
+
+**(1) `window.__pt.app.repo` non esposto** (per design §13/D12). Smoke test pubblico espone solo `{getState, actions}`. CP browser punto 1 ha dovuto accedere a IndexedDB via API nativa (`indexedDB.open('pharmatimer')`) per seedare log di test cross-day. Nota per sessioni future: se CP browser richiederanno frequentemente seeding diretto DB, valutare esposizione `repo` (debouncée DEV-only) in §13.
+
+**(2) Log storici di ieri già presenti** nel DB di Roberto al momento del CP browser (farmaco_id=10 dose 2 @ 16:00 + dose 3 @ 23:50, entrambe `stato: 'presa'`). Il test cross-day §6.72 ha potuto funzionare senza seed artificiale — scenario "ieri popolato naturalmente" era già realistico. Il seed artificiale iniziale (id=24) è stato rimosso via `store.delete(24)` dopo aver rilevato il duplicato logico con la row naturale [8].
+
+**(3) Format inconsistenza minore:** nei log storici `ora_effettiva` è ISO datetime completo (`'2026-04-21T23:50:00'`), mentre nel plan in memoria è HH:MM (`'23:50'`). Il seed artificiale iniziale del CP browser usava HH:MM (errato per log); dopo delete non è stato riseedato perché le row naturali bastavano. Non è deviazione (invariante già accettata nel codebase), ma va documentato per evitare errori in seed futuri.
+
+**(4) Confronto CP browser punto 2 rafforza §6.71** "fatto storico immutabile": `ora_ricalcolata='00:00'` su entry 10-3 di ieri è stato **preservato** dopo "Annulla assunzione" (entry tornata a `stato='ricalcolata'`, non `'prevista'`). Coerente con il restore logic nel body di `applyAnnullaAssunzione` (`restoredStato = target.ora_ricalcolata != null ? 'ricalcolata' : 'prevista'`). La deviazione §6.71 è quindi osservabile direttamente dall'UX cross-day UNDO.
+
+### 22.4.2 CP browser (dettaglio puntuale, console-driven)
+
+Eseguiti via `__pt.app` (solo `{getState, actions}`) + accesso IDB nativo per seed/cleanup:
+
+1. **Cross-day UNDO direct §6.72 happy path (PASS)** — log storici di ieri già naturali in DB (farmaco 10 dose 2 @ 16:00 + dose 3 @ 23:50, entrambe `stato:'presa'`, oltre farmaco 4 dose 1 @ 11:00 + farmaco 3 dose 1 @ 12:13). Cmd+R post rehydration. Stack: `['2026-04-21-10-2', '2026-04-21-4-1', '2026-04-21-3-1', '2026-04-21-10-3']` (4 keys di ieri, simmetria stack↔plan verificata 3/3 PASS). Tap body Card Prontinal ieri dose 3 → UndoModal aperta con titolo "Prontinal aerosol 800mcg" + cross-day hint `Dose presa alle 23:50 il 21/04` + bottone "Annulla assunzione" + focus su X. ✅
+
+2. **Cross-day annulla happy path (PASS)** — tap "Annulla assunzione". Post-undo 4/4 PASS:
+   - Entry `2026-04-21-10-3`: `stato: 'ricalcolata'` (preservato perché `ora_ricalcolata='00:00'` pre-esistente, conferma §6.71), `ora_effettiva: null`, `ora_ricalcolata: '00:00'`, `delta_minuti: null` ✅
+   - `presoStack`: `['2026-04-21-10-2', '2026-04-21-4-1', '2026-04-21-3-1']` (rimossa solo la key target, altre 3 preservate, REMOVE_PRESO_KEY §6.62 OK) ✅
+   - `state.error === null` ✅
+   - Altre Card presa di ieri (10-2, 4-1, 3-1) invariate visualmente ✅
+
+3. **Reset N+1 ricalcolata post-fix §6.14 Esito B** — ⏭️ Skippato: CP0.5 Esito A pieno.
+
+### Azioni sul Mac prima di Sessione 8a
+
+1. Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB del progetto Claude con la versione **v2.5.22** di questo delivery.
+2. Commit working copy 8-pre con messaggio suggerito:
+   ```
+   Sessione 8-pre implementativa: §6.72 + §6.75 rehydration presoStack cross-day (actions.js + actions.init.test.js) — 247→250
+   ```
+3. Commit Changelog v2.5.22 nel repo git (§6.70 soft: drift attuale 1 versione, sotto soglia 2 — commit non obbligatorio ma raccomandato in vista di 8a).
+4. Verificare baseline: `npm test -- --run` → atteso **250/250 su 23 test files**.
+5. **Opzionale**: merge Step 7 su parent/main se non già fatto (step completo da 7d-2p3; 8-pre non sposta l'ago sulla decisione di merge).
+6. Aprire sessione 8a analisi-first con one-liner:
+   `Esegui il prompt al §11 del Changelog (Sessione 8a analisi-first).`
