@@ -114,6 +114,9 @@
  * @property {(chiave: string) => Promise<any>}           getSetting
  * @property {(chiave: string, valore: any) => Promise<void>} setSetting
  * @property {() => Promise<Record<string, any>>}         getAllSettings
+ *
+ * // --- Transactions ---
+ * @property {(mode: 'r'|'rw', storeNames: string[], fn: () => Promise<any>) => Promise<any>} withTransaction
  */
 
 // This file exports nothing at runtime — it's a pure contract.

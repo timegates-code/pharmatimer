@@ -102,7 +102,6 @@ export function createActions({ dispatch, getState, repo }) {
       ]);
 
       const impostazioni = normaliseSettingsDict(allSettings);
-      const nomeUtente = impostazioni.nome_utente ?? '';
 
       const profiloAttivo = profili.find((p) => p.attivo);
       if (!profiloAttivo) {
@@ -126,7 +125,6 @@ export function createActions({ dispatch, getState, repo }) {
       dispatch({
         type: 'INIT_SUCCESS',
         payload: {
-          nomeUtente,
           impostazioni,
           profili,
           profiloAttivo,
@@ -363,44 +361,33 @@ export function createActions({ dispatch, getState, repo }) {
   /**
    * Optimistic generic setting update.
    *
-   * Dispatch flow:
-   *   1. SET_IMPOSTAZIONE (chiave/valore) — always
-   *   2. SET_NOME_UTENTE  — only for the 'nome_utente' mirror (legacy field)
+   * Dispatch flow (post §6.77 cleanup): SET_IMPOSTAZIONE only — no
+   * mirrored dispatch. `nome_utente` is treated exactly like any other
+   * setting; consumers read via `selectImpostazione(state, 'nome_utente')`.
    *
-   * On repo failure, both dispatches are rolled back to their previous values.
+   * On repo failure the optimistic SET_IMPOSTAZIONE is rolled back to
+   * the previous value.
    */
   async function setSetting(chiave, valore) {
     const stateBefore = getState();
     const prevValore = stateBefore.impostazioni?.[chiave];
-    const prevNomeUtente = stateBefore.nomeUtente;
 
-    // Optimistic dispatch.
+    // Optimistic dispatch — unique channel post §6.77.
     dispatch({ type: 'SET_IMPOSTAZIONE', payload: { chiave, valore } });
-    if (chiave === 'nome_utente') {
-      dispatch({ type: 'SET_NOME_UTENTE', payload: valore });
-    }
 
     try {
       await repo.setSetting(chiave, valore);
       return { ok: true };
     } catch (err) {
-      // Rollback optimistic writes.
-      if (prevValore === undefined) {
-        // Key didn't exist before: overwrite with undefined is awkward;
-        // set the prior snapshot verbatim back into the dict.
-        dispatch({
-          type: 'SET_IMPOSTAZIONE',
-          payload: { chiave, valore: prevValore },
-        });
-      } else {
-        dispatch({
-          type: 'SET_IMPOSTAZIONE',
-          payload: { chiave, valore: prevValore },
-        });
-      }
-      if (chiave === 'nome_utente') {
-        dispatch({ type: 'SET_NOME_UTENTE', payload: prevNomeUtente });
-      }
+      // Rollback optimistic write. When the key didn't exist before we
+      // still dispatch with `valore: prevValore (undefined)`; the reducer
+      // spread-merge puts that key at `undefined`, which is fine — the
+      // missing-key semantic is already handled by `selectImpostazione`
+      // returning null for undefined.
+      dispatch({
+        type: 'SET_IMPOSTAZIONE',
+        payload: { chiave, valore: prevValore },
+      });
       dispatch({
         type: 'SET_ERROR',
         payload: { kind: 'repo', message: err?.message ?? 'Errore nel salvataggio impostazione' },

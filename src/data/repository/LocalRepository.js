@@ -305,4 +305,22 @@ export class LocalRepository {
     const rows = await db.impostazioni_app.toArray();
     return Object.fromEntries(rows.map(r => [r.chiave, r.valore]));
   }
+
+  // ==========================================================
+  // Transactions
+  // ==========================================================
+
+  // Generic atomic-scope helper. Consumers (thunks) pass store
+  // NAMES (strings) for portability; this method resolves them
+  // to Dexie Table objects via `db[name]` before delegating to
+  // db.transaction. Rettifica F4 — Dexie 4 requires Table objs,
+  // not strings (§6.64, Sessione 8 analisi-first v2.5.20).
+  //
+  // Error handling: Dexie already rolls the transaction back on
+  // any thrown/rejected error inside `fn`. The rejection is
+  // propagated to the caller unchanged.
+  async withTransaction(mode, storeNames, fn) {
+    const tables = storeNames.map((name) => db[name]);
+    return db.transaction(mode, tables, fn);
+  }
 }

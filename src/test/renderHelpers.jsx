@@ -22,6 +22,7 @@
 // ============================================================
 
 import { render } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { AppContext } from '../state/AppContext.jsx';
 import { initialState } from '../state/reducer.js';
 
@@ -129,12 +130,20 @@ function defaultNoopActions() {
  * @param {{stateOverrides?: object, actions?: object, tickMs?: number}} [options]
  */
 export function renderWithProvider(ui, options = {}) {
-  const { stateOverrides = {}, actions = {}, tickMs } = options;
+  const { stateOverrides = {}, actions = {}, tickMs, initialEntries } = options;
   const state = buildTestState(stateOverrides);
   const mergedActions = { ...defaultNoopActions(), ...actions };
   const value = { state, actions: mergedActions, tickMs: tickMs ?? Date.now() };
   function Wrapper({ children }) {
-    return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+    // Inner tree: real AppContext stub. When `initialEntries` is provided
+    // (AMB-8a.H rettifica F5) we additionally wrap in MemoryRouter so that
+    // router hooks / <Routes> mount cleanly. Omitting `initialEntries`
+    // preserves the pre-8a behaviour for the ~13 existing callers.
+    const tree = <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+    if (initialEntries) {
+      return <MemoryRouter initialEntries={initialEntries}>{tree}</MemoryRouter>;
+    }
+    return tree;
   }
   return render(ui, { wrapper: Wrapper });
 }

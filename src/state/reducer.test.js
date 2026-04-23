@@ -46,7 +46,6 @@ describe('reducer — stato iniziale', () => {
   it('ha tutti i campi attesi con i default corretti', () => {
     expect(initialState).toEqual({
       status: 'idle',
-      nomeUtente: '',
       impostazioni: {},
       profili: [],
       profiloAttivo: null,
@@ -72,7 +71,7 @@ describe('reducer — init flow', () => {
 
   it('INIT_SUCCESS popola tutti i dati e porta status a ready', () => {
     const payload = {
-      nomeUtente: 'Mario',
+      impostazioni: { nome_utente: 'Mario' },
       profili: [makeProfilo()],
       profiloAttivo: makeProfilo(),
       farmaci: [makeFarmaco()],
@@ -83,7 +82,7 @@ describe('reducer — init flow', () => {
     const next = reducer(initialState, { type: 'INIT_SUCCESS', payload });
     expect(next.status).toBe('ready');
     expect(next.error).toBeNull();
-    expect(next.nomeUtente).toBe('Mario');
+    expect(next.impostazioni).toEqual({ nome_utente: 'Mario' });
     expect(next.profiloAttivo.nome_profilo).toBe('Standard');
     expect(next.farmaci).toHaveLength(1);
     expect(next.plan).toHaveLength(1);
@@ -210,11 +209,6 @@ describe('reducer — config edits', () => {
     const next = reducer(initialState, { type: 'SET_ORARI', payload: orari });
     expect(next.orari).toBe(orari);
   });
-
-  it('SET_NOME_UTENTE aggiorna il nome', () => {
-    const next = reducer(initialState, { type: 'SET_NOME_UTENTE', payload: 'Giulia' });
-    expect(next.nomeUtente).toBe('Giulia');
-  });
 });
 
 describe('reducer — error channel', () => {
@@ -326,5 +320,24 @@ describe('REMOVE_PRESO_KEY (Sessione 7d-2 CP4, §6.62)', () => {
     const s = { ...initialState, presoStack: ['k1', 'k2', 'k3'] };
     const next = reducer(s, { type: 'REMOVE_PRESO_KEY', payload: 'k2' });
     expect(next.presoStack).toEqual(['k1', 'k3']);
+  });
+});
+
+// ============================================================
+// §6.77 cleanup — state.nomeUtente mirror removal (Sessione 8a CP4)
+// ============================================================
+describe('cleanup §6.77 — legacy nomeUtente mirror rimosso', () => {
+  it('initialState non espone più il campo nomeUtente', () => {
+    expect(initialState).not.toHaveProperty('nomeUtente');
+  });
+
+  it('SET_NOME_UTENTE è un action type non più gestita → default case (no-op)', () => {
+    // Post-cleanup the reducer has no dedicated branch. Dispatching
+    // SET_NOME_UTENTE must hit the default case and return the SAME
+    // state reference (referential equality), and must NOT introduce
+    // a nomeUtente field onto the state.
+    const next = reducer(initialState, { type: 'SET_NOME_UTENTE', payload: 'Giulia' });
+    expect(next).toBe(initialState);
+    expect(next).not.toHaveProperty('nomeUtente');
   });
 });

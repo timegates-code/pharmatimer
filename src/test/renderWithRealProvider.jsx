@@ -232,6 +232,10 @@ export function makeFakeRepo(seed = {}) {
     setSetting:     async (chiave, valore) => { db.impostazioni[chiave] = clone(valore); },
     getAllSettings: async () => clone(db.impostazioni),
 
+    // --- Transactions (no-op atomicity for fake — single-shot in-memory,
+    //     lesson §6.60: extend fake CONTESTUALMENTE to IRepository) ---
+    withTransaction: async (_mode, _storeNames, fn) => fn(),
+
     // --- Test utility (NOT part of IRepository) ---
     // Inspect current in-memory state for post-mutation assertions.
     __db: () => clone(db),

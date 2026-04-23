@@ -95,7 +95,6 @@ describe('AppProvider — dual-mode (Sessione 7d-2 CP2)', () => {
     const seed = {
       status: 'ready',
       profiloAttivo: { id: 7, nome_profilo: 'Test' },
-      nomeUtente: 'Alice',
     };
     const captured = [];
 
@@ -113,7 +112,9 @@ describe('AppProvider — dual-mode (Sessione 7d-2 CP2)', () => {
     // Seed fields applied.
     expect(last.status).toBe('ready');
     expect(last.profiloAttivo).toEqual({ id: 7, nome_profilo: 'Test' });
-    expect(last.nomeUtente).toBe('Alice');
+    // §6.77 cleanup: state.nomeUtente mirror rimosso — non deve apparire
+    // nello state anche se il seed non lo cita.
+    expect(last).not.toHaveProperty('nomeUtente');
     // Non-seeded fields preserved from initialState (NOT wiped).
     expect(last.plan).toEqual([]);
     expect(last.presoStack).toEqual([]);

@@ -5,8 +5,12 @@
 // Sessione 7a (AMB-7a.M / §6.27) adds:
 //   - state.impostazioni: { [chiave]: valore } generic dict
 //   - SET_IMPOSTAZIONE action (used by setSetting thunk + init payload)
-// The legacy state.nomeUtente mirror is kept for backwards compatibility
-// with existing reducer cases and selectors.
+// Sessione 8a CP4 (§6.77) removes the legacy `state.nomeUtente` mirror:
+//   - Field gone from AppState + initialState.
+//   - SET_NOME_UTENTE case removed. Dispatching it is a no-op (default).
+//   - INIT_SUCCESS no longer carries a dedicated `nomeUtente`; the value
+//     lives under `state.impostazioni.nome_utente` and is read via
+//     `selectImpostazione(state, 'nome_utente')`.
 // ============================================================
 
 /**
@@ -19,7 +23,6 @@
 /**
  * @typedef {object} AppState
  * @property {'idle'|'ready'|'error'} status
- * @property {string} nomeUtente
  * @property {Record<string, any>} impostazioni   Generic settings dict loaded on init.
  * @property {import('../domain/types.js').Profilo[]} profili
  * @property {import('../domain/types.js').Profilo|null} profiloAttivo
@@ -36,7 +39,6 @@
 /** @type {AppState} */
 export const initialState = {
   status: 'idle',
-  nomeUtente: '',
   impostazioni: {},
   profili: [],
   profiloAttivo: null,
@@ -65,7 +67,7 @@ export function reducer(state, action) {
 
     case 'INIT_SUCCESS': {
       const {
-        nomeUtente, profili, profiloAttivo,
+        profili, profiloAttivo,
         farmaci, orari, plan, lastBuiltForDay,
         impostazioni,
       } = action.payload;
@@ -73,7 +75,6 @@ export function reducer(state, action) {
         ...state,
         status: 'ready',
         error: null,
-        nomeUtente,
         impostazioni: impostazioni ?? {},
         profili,
         profiloAttivo,
@@ -153,21 +154,21 @@ export function reducer(state, action) {
         presoStack: state.presoStack.filter((k) => k !== action.payload),
       };
 
-    // --- Config edits (farmaci / orari / nome) --------------
+    // --- Config edits (farmaci / orari) ---------------------
+    // SET_NOME_UTENTE was removed in Sessione 8a CP4 (§6.77). The nome is
+    // now exclusively a generic setting — read via `selectImpostazione` and
+    // written via `SET_IMPOSTAZIONE` / `setSetting('nome_utente', …)`.
     case 'SET_FARMACI':
       return { ...state, farmaci: action.payload };
 
     case 'SET_ORARI':
       return { ...state, orari: action.payload };
 
-    case 'SET_NOME_UTENTE':
-      return { ...state, nomeUtente: action.payload };
-
     // --- Generic settings (AMB-7a.M / §6.27) ----------------
     // Generic key/value update on state.impostazioni. Spread-merge keeps
-    // unrelated keys intact. Callers that keep a mirrored field (e.g. the
-    // legacy nomeUtente mirror of impostazioni.nome_utente) are responsible
-    // for dispatching SET_NOME_UTENTE alongside SET_IMPOSTAZIONE.
+    // unrelated keys intact. Post-§6.77 cleanup: no mirrored field to sync
+    // — this action is the sole write channel for every setting including
+    // `nome_utente`.
     case 'SET_IMPOSTAZIONE': {
       const { chiave, valore } = action.payload;
       return {
