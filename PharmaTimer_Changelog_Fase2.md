@@ -1,6 +1,6 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 2.5.24
+**Versione:** 2.5.25
 **Data inizio fase:** 16 aprile 2026
 **Ultima modifica:** 23 aprile 2026
 **Ambito:** Sviluppo PWA React standalone con persistenza locale, preparata per futuro swap verso backend FastAPI+MariaDB.
@@ -242,7 +242,36 @@ Questo documento raccoglie le decisioni architetturali, la struttura del progett
 - Nessuna modifica al codice o ad altre sezioni (la Sessione 7d-2 applicherà le AMB)
 - Nessuna deviazione aggiunta a §6 (le Q-N1/Q-N2/Q-N4 sono ratifiche di scelte, non deviazioni dalla spec; diverranno §6.58+ se emergeranno discrepanze in sessione)
 
-**Changelog versione 2.5.23 (rispetto alla 2.5.22):**
+**Changelog versione 2.5.25 (rispetto alla 2.5.24):**
+- Sessione 8b analisi-first completata il 23/04/2026 (stessa giornata di 8a impl). Baseline test **invariata a 269/269 su 26 test files** (sessione analisi pura, zero codice).
+- **7 Q risolte (Q1-Q7 del prompt §11 v2.5.24 con tutte le sub-questioni a-d), 13 AMB A-M congelate** (scope superiore alle letter indicative del prompt per copertura completa post dry-run CP0):
+  - **AMB-8b.A** UX ProfiliTab: lista sempre visibile + drawer bottom-sheet per edit/nuovo; pulsante `+ Nuovo` header tab (top-right); badge verde "Attivo" + bordo sinistro colorato su row attiva; bottone esplicito "Attiva" dentro drawer (no tap-row-ambiguo). Scartati: FAB (ingombra NavBar + ConfigTabBar), sub-route `/config/profili/:id` (complessità routing zero-valore).
+  - **AMB-8b.B** Form profilo: 6 campi required (`nome_profilo` + 5 time `ora_sveglia`/`ora_colazione`/`ora_pranzo`/`ora_cena`/`ora_sonno`), **validazione ordine monotonica soft (warning non-blocker) ed esclude `ora_sonno`** (spec §10.1 Nottambulo: sonno 02:00 wrappa mezzanotte → hard-check romperebbe caso valido). Duplicati `nome_profilo` soft (nessun vincolo DB, UX propone append " (2)" o correzione utente). Validazione stretta deferita a 8d polish. Drawer full-height mobile-first, focus trap via `useModalA11y` (esistente).
+  - **AMB-8b.C** Reducer: **2 nuove action minime** `SET_PROFILI` (array replace, analoga `SET_FARMACI`/`SET_ORARI`) + `SET_PROFILO_ATTIVO` (campo singolo replace). Scartata opzione combo `UPSERT_PROFILO` (over-engineering). I thunk orchestrano i due dispatch sequenzialmente.
+  - **AMB-8b.D** Thunks: **3 nuovi CRUD** `addProfilo(data)` / `updateProfilo(id, patch)` / `deleteProfilo(id)` + **1 wrapper** `attivaProfilo(id)` che risolve id→profilo via `selectProfiloById` e delega a `cambiaProfilo(profilo)` esistente (§6.20). **Pattern pessimistico** (persist DB first, dispatch after), coerente con `cambiaProfilo`. `updateProfilo` su profilo attivo triggera `rebuildPlan()` dopo commit DB (§6.64 riaffermata).
+  - **AMB-8b.E** `updateProfilo` **NON accetta `attivo` nel patch** — filtro esplicito `const { attivo: _drop, ...safePatch } = patch` all'inizio del thunk. Canale unico di attivazione = `cambiaProfilo`/`attivaProfilo`. Guard previene side-effect cross-profilo silenzioso (es. form che marca dirty per `attivo` toggle errato).
+  - **AMB-8b.F** Delete guard §6.5: il thunk cattura l'`Error` del repo (`"Non si può eliminare il profilo attivo. Attivane un altro prima."`) e dispatch `SET_ERROR` con `kind:'repo'` user-facing. UI bottone Elimina **visibile ma disabled per il profilo attivo** con tooltip/helper text preventivo (hidden scartato: confonde senza spiegare motivo).
+  - **AMB-8b.G** Hook `useUnsavedChanges` **NON estratto in 8b** (Rettifica F1). Pattern dirty-lifted-to-parent già funzionante DRY-at-2 via props opzionali (ImpostazioniTab + ProfiliTab entrambi riceve `dirty`/`setDirty` da ConfigView). Estrazione deferita al 3° consumer naturale (8c FarmaciTab o 8d polish). Conseguenza: CP5 rimosso dal breakdown, scende da 7 a 6 CP.
+  - **AMB-8b.H** `ConfirmDeleteProfiloModal` **inline** in ProfiliTab (scope-minimal, 1 consumer). Stile coerente con `UnsavedChangesModal` (riuso `modalBg`/`tapBd`/`textPrimary` tokens). Promozione a componente standalone deferita a 2° consumer (analogia §6.78 pattern).
+  - **AMB-8b.I** `useTheme` + tokens **pervasivo** su ProfiliTab + drawer + modal fin dalla prima delivery CP1. Preventivo contro hotfix dark post-CP-browser (pattern §6.82, raccomandazione §22.6 scoperta #5). Zero hotfix dark previsti in 8b.
+  - **AMB-8b.J** `renderWithRealProvider.jsx` **NON esteso in 8b** (§6.79 rimane). Tutti i nuovi test 8b in stub `renderWithProvider` + mock actions. L'E2E "edit profilo attivo → rebuildPlan" verificato via spy su `REBUILD_PLAN` action o via `getLogByRange` mock (non via AppProvider reale). Estensione rimandata indefinitamente a consumer effettivo.
+  - **AMB-8b.K** Selectors nuovi in `src/state/selectors.js`: `selectProfili(state)` (pure read `state.profili`), `selectProfiloAttivo(state)` (pure read `state.profiloAttivo`), `selectProfiloById(state, id)` (find-by-id, null se assente). Consumer: ProfiliTab UI + `attivaProfilo` wrapper.
+  - **AMB-8b.L** CP breakdown **6 CP** (post-Rettifica F1): CP0 sanity → CP1 lista/badge/pulsante Nuovo → CP2 drawer edit + form wire → CP3 thunk add+update + selectors + reducer cases → CP4 thunk delete + ConfirmDeleteProfiloModal + disabled-on-active → CP5 thunk attivaProfilo wrapper + wire "Attiva" + CP browser 6 punti. **Target test +14-18** (249-250 → 283-287). Split 8b-1/8b-2 non previsto.
+  - **AMB-8b.M** Schema DB invariato. Tabella `profilo_utente` spec §3.4 usata tal quale. **Spec resta v1.2**, zero riversamento necessario in 8b.
+- **Dry-run CP0 (pre-implementativa) — 5 rettifiche integrate** nel prompt impl:
+  - **F1** Hook `useUnsavedChanges` NON estratto (pattern lifting già DRY-at-2 via props opzionali in ConfigView). CP5 rimosso. Target test ricalibrato 20→14-18. **Impatto architetturale principale della sessione.**
+  - **F2** Reducer: 2 action dedicate (`SET_PROFILI` + `SET_PROFILO_ATTIVO`) invece di una combo `UPSERT_PROFILO`. Coerente con `SET_FARMACI`/`SET_ORARI`, più testabili singolarmente.
+  - **F3** `cambiaProfilo(profilo)` accetta oggetto intero (non id). Wrapper `attivaProfilo(id)` risolve via `selectProfiloById` prima di delegare. Documentato esplicitamente in AMB-D.
+  - **F4** `updateProfilo` filtra `attivo` fuori dal patch (AMB-E). Canale attivazione unico garantito a livello di thunk, non solo UI.
+  - **F5** `useTheme` pervasivo su form ProfiliTab da CP1 (AMB-I). Preventivo contro hotfix §6.82 pattern.
+- **Nessuna nuova §6.NN introdotta** in 8b analisi-first (sessione pura analisi, zero codice, zero deviazioni consumate).
+- Nuova §22.7 "Stato post-Sessione 8b analisi-first" con Q1-Q7 risolte + AMB A-M congelate + rettifiche F1-F5 + scoperte operative + file NON prodotti (per definizione, analisi-first).
+- Sostituito §11 (8b analisi-first v2.5.24 consumato) con prompt **Sessione 8b implementativa** (CP0→CP5 + CP browser 6 punti + target 283-287).
+- Aggiornamento roadmap §7: 8b analisi-first ✅ inline nella row 8b; implementativa ⏳ prossima.
+- **§6.69 procedurale rispettata:** front-matter bumpato in lockstep (v2.5.24 → v2.5.25, stessa giornata 23/04 → Ultima modifica invariata). **Nota drift pregresso:** l'entry "Changelog versione 2.5.24" era assente dall'elenco introduttivo al bump 8a impl (§6.69 drift non rilevato al momento). Non retrocorretto in 8b per principio fatto-storico immutabile (§6.71 analogo); gap documentato in §22.7 come scoperta operativa.
+- **§6.70 procedurale (soft):** drift Changelog KB ↔ repo git atteso = 1 versione (2.5.24 → 2.5.25), sotto soglia 2. Commit v2.5.25 raccomandato ma non obbligatorio.
+
+
 - Sessione 8a analisi-first completata il 22/04/2026 (stessa giornata di 8-pre impl). Baseline test **invariata a 250/250 su 23 test files** (sessione analisi pura, zero codice).
 - **6 Q risolte, 11 AMB A-K congelate** (scope superiore alle A-F indicative del prompt §11 v2.5.22 per copertura completa post dry-run CP0):
   - **AMB-A** Routing: `<Route path="/config/*">` in `App.jsx` già presente → nested `<Routes>` in `ConfigView` con relative paths `profili`/`farmaci`/`impostazioni`. Default `<Route index>` redirect a `impostazioni`. Catch-all `*` → `impostazioni`.
@@ -1923,92 +1952,148 @@ Chiarimenti risolti pre-Step 4b (AMB-1/2/3):
 ---
 
 
-## 11. Prossimo step — messaggio di apertura Sessione 8b (analisi-first)
+## 11. Prossimo step — messaggio di apertura Sessione 8b (implementativa)
 
-**Modalità:** analisi-first pura (nessun codice). Sessione 8b apre il lavoro su ProfiliTab — CRUD profili giorno-tipo con riuso dei thunk esistenti `cambiaProfilo` / `setProfiloAttivoConCleanup` (§6.20).
+**Modalità:** implementativa blindata sulle 13 AMB-8b.A-M + 5 rettifiche F1-F5 congelate in §22.7. Nessuna Q aperta. Tutte le decisioni di design, shape action, firma thunk, selettori, CP breakdown sono già definitive — l'implementazione esegue il piano senza riaprire discussioni UX o architetturali.
 
-**Contesto.** 8a implementativa (23/04/2026, v2.5.23 → v2.5.24) ha consegnato la foundation Config: routing `/config/*`, ConfigTabBar, ImpostazioniTab completa (Nome + Tema + Avanzate-DEV), modal unsaved-changes inline. **269/269 test**, CP browser 5/5 verdi. 8 deviazioni §6.78-§6.85 iscritte (di cui 2 candidate per 8d: §6.81 contrasto + §6.84 router warnings + §6.85 anomalia investigation).
+**Contesto.** 8b analisi-first (23/04/2026, v2.5.24 → v2.5.25) ha consumato il dry-run CP0 sul codebase post-8a e prodotto le 13 AMB su ProfiliTab. **Scoperta architetturale principale (Rettifica F1):** l'hook `useUnsavedChanges` NON si estrae in 8b — il pattern dirty-lifted-to-parent con props opzionali, già attivo in ConfigView + ImpostazioniTab, soddisfa DRY-at-2 quando ProfiliTab aggancia lo stesso pattern. Estrazione deferita al 3° consumer naturale (8c o 8d). Conseguenza: CP breakdown scende da 7 a 6 CP, target test ricalibrato da +18-22 a **+14-18** (269 → 283-287).
 
-**Sessione 8b scope da §7 roadmap:** "ProfiliTab: CRUD profili + form profilo + riuso `cambiaProfilo` / `setProfiloAttivoConCleanup` (§6.20) + guard §6.5 (delete profilo attivo rifiutato) + rebuildPlan reattivo post-edit (§6.64). Target ~7-9 file, +18-22 test."
+**Foundation ereditata da 8a:** `/config/*` nested routing, ConfigTabBar click-intercept via `onTabClick`, `UnsavedChangesModal` inline, pattern `dirty={props?.dirty ?? localDirty}` in ImpostazioniTab. Repo layer profili **già completo** (`addProfilo`/`updateProfilo`/`deleteProfilo` con guard §6.5/`getProfili`/`setProfiloAttivoConCleanup`/`withTransaction`): zero modifiche repo necessarie in 8b.
 
 ---
 
 ### Prerequisiti di lettura KB (in ordine)
 
-1. `PharmaTimer_Project_Spec.md` §3 schema (tabella `profilo_utente` campi e invarianti), §6 (ciclo di vita profili), §7 (UI Config mockup v5 linee 900-1050 ProfiliTab).
+1. `PharmaTimer_Changelog_Fase2.md` §22.7 — **fonte autoritaria** delle 13 AMB e 5 rettifiche. Tutto il resto è supporto.
 2. `PharmaTimer_Changelog_Fase2.md`:
-   - §6.5 (delete profilo attivo rifiutato)
-   - §6.20 (`setProfiloAttivoConCleanup` atomico)
-   - §6.64 (rebuildPlan reattivo post-edit — confermato 8a)
-   - §6.77 (pattern cleanup mirror — base per eventuali simili in 8b)
-   - §6.78 (componenti standalone — ProfiliTab.jsx esiste come placeholder CP2)
-   - §22.6 (stato post-8a, scoperte operative 1-5)
-3. Codebase post-8a:
-   - `src/components/config/ProfiliTab.jsx` (placeholder CP2, testid `config-tab-profili`)
-   - `src/state/actions.js` (12 thunks, focus su `cambiaProfilo`)
-   - `src/data/repository/LocalRepository.js` (metodi profili: `getProfili`, `setProfiloAttivo`, `setProfiloAttivoConCleanup`, `deleteProfilo`, `addProfilo`, `updateProfilo`)
-   - `src/state/reducer.js` (`APPLY_CAMBIO_PROFILO` action, `state.profili`, `state.profiloAttivo`)
-   - `src/state/selectors.js` (selettori profilo disponibili)
+   - §6.5 (delete profilo attivo rifiutato — riferimento AMB-F)
+   - §6.20 (`setProfiloAttivoConCleanup` + `cambiaProfilo` shape — riferimento AMB-D/F3)
+   - §6.64 (rebuildPlan reattivo post-edit — riferimento AMB-D)
+   - §6.77 (pattern cleanup mirror — riferimento per absence di mirror in 8b)
+   - §6.78 (`config-tab-profili` testid stabile CP2→8c — invariante)
+   - §6.82 (hotfix §8a — motivazione AMB-I useTheme pervasivo)
+   - §22.6 (stato post-8a, scoperte operative 1-5, in particolare #5)
+3. `PharmaTimer_Project_Spec.md` §3.4 (tabella `profilo_utente` campi — invariata) + §10.1 (profili esempio Nottambulo come motivazione AMB-B sonno-wrap).
+4. Codebase post-8a (riferimento per assunzioni — già verificate in dry-run CP0):
+   - `src/components/config/ConfigView.jsx` (dirty lifting pattern, UnsavedChangesModal wire)
+   - `src/components/config/ImpostazioniTab.jsx` (pattern `dirty/setDirty` opt-props + useTheme + focus effect)
+   - `src/components/config/ProfiliTab.jsx` (placeholder CP2, testid `config-tab-profili` — outer wrapper invariante)
+   - `src/state/actions.js` (`cambiaProfilo(profilo)` shape oggetto-intero, pattern pessimistico `APPLY_CAMBIO_PROFILO`)
+   - `src/state/reducer.js` (16 action cases, pattern `SET_FARMACI`/`SET_ORARI` come template per 2 nuove)
+   - `src/state/selectors.js` (selettori esistenti come template — zero selettori profilo attuali)
+   - `src/data/repository/LocalRepository.js` (7 metodi profili già implementati)
+   - `src/hooks/useModalA11y.js` (focus trap drawer edit + ConfirmDeleteProfiloModal)
 
 ---
 
-### Modalità analisi-first — deliverable atteso
+### Deliverable atteso
 
-Sessione 8b analisi-first NON produce codice. Produce:
+Sessione 8b implementativa produce:
 
-1. **Risposte a Q1-Qn** (sotto). Ogni Q ha branch possibili; la sessione chiede opinione a Roberto sui trade-off e congela le decisioni come AMB-8b.A/B/C…
-2. **Dry-run CP0** — gate ispettivi sul codebase per identificare fragilità (pattern §22.5 per 8a): verificare assunzioni sui thunks esistenti, consumer pre-esistenti di `state.profili`, shape di `profilo` usata in `cambiaProfilo`. Eventuali rettifiche Fn applicate inline.
-3. **Sostituzione §11** con prompt Sessione 8b implementativa (blindato su AMB + rettifiche).
-4. **Append §22.7 "Stato post-Sessione 8b analisi-first"** con esiti Q + AMB + rettifiche + scoperte operative + file NON prodotti.
-5. **Bump v2.5.24 → v2.5.25.**
-
----
-
-### Q preliminari per 8b analisi-first
-
-**Q1 — Shape ProfiliTab UX.**
-- Q1.a Lista profili è sempre visibile (master) + form di edit inline/drawer (detail-in-place)? Oppure lista → click row → schermata dedicata di edit?
-- Q1.b Pulsante "Nuovo profilo" — dove (header della lista, FAB in basso, inline bottom-of-list)?
-- Q1.c Indicatore profilo attivo — badge "Attivo" sulla row? Radio button a sinistra? Icona check?
-- Q1.d Azione "Attiva profilo" — click sulla row o bottone esplicito "Attiva"?
-
-**Q2 — Form profilo: campi e validazione.**
-- Q2.a 6 campi da spec: `nome_profilo` text + 5 time inputs (sveglia/colazione/pranzo/cena/sonno). Tutti required? Validazione ordine (sveglia < colazione < pranzo < cena < sonno)?
-- Q2.b Edit profilo attivo: permesso? Se sì → `rebuildPlan` viene triggerato automaticamente post-save (§6.64)?
-- Q2.c Form a drawer bottom sheet vs modal centered vs inline expand? (coerenza con UnsavedChangesModal già esistente)
-
-**Q3 — Thunk da aggiungere vs riusare.**
-- Q3.a `addProfilo(data)` thunk nuovo (repo esiste, thunk no)?
-- Q3.b `updateProfilo(id, patch)` thunk nuovo con logic `if (id === profiloAttivo.id) rebuildPlan()` ?
-- Q3.c `deleteProfilo(id)` thunk nuovo con guard §6.5 (profilo attivo non eliminabile, user-facing error via SET_ERROR)?
-- Q3.d `attivaProfilo(id)` wrapper di `cambiaProfilo` — o UI chiama direttamente `actions.cambiaProfilo(profilo)` esistente?
-
-**Q4 — Unsaved changes in ProfiliTab (DRY-at-2 di §6.79).**
-- Q4.a Estrarre `useUnsavedChanges` hook condividendo logica CP7 8a? O duplicare inline in ProfiliTab e promuovere in 8d?
-- Q4.b Se estratto: dove vive (`src/hooks/useUnsavedChanges.js`)? Shape API (`{dirty, setDirty, pendingNav, confirmNav, cancelNav}`)?
-
-**Q5 — Delete profilo: UX guard §6.5.**
-- Q5.a Pulsante "Elimina" sempre visibile ma disabled per profilo attivo? O hidden?
-- Q5.b Confirm modal pre-delete (altra istanza di modal generica pattern)?
-- Q5.c Cascade log_assunzioni: la spec dice preservati (soft-delete analogo farmaci)? O hard-delete cascade?
-
-**Q6 — Test strategy 8b.**
-- Q6.a Pattern test: `renderWithProvider` con stub actions (lightweight) o `renderWithRealProvider` con AppProvider + Dexie mock (E2E)?
-- Q6.b Target test: +18-22 come da §7. Breakdown tentativo su: form render/validate / add thunk / update thunk / delete guard / activate / unsaved guard?
-- Q6.c `renderWithRealProvider` ha bisogno di estensione `initialEntries` (§6.79 defer)? Verificare intra-CP0.
-
-**Q7 — Ordine CP implementativi.**
-- Q7.a CP breakdown tentativo: CP0 sanity → CP1 form render read-only → CP2 add/update thunks → CP3 delete+guard → CP4 activate wire → CP5 unsaved inline/hook → CP6 full suite + browser?
-- Q7.b Scope singolo CP gestibile (analisi intra-sessione se split serve)?
+1. **7-9 file (±1):**
+   - *Nuovi:* `ProfiliTab.test.jsx`, `ConfirmDeleteProfiloModal` inline dentro `ProfiliTab.jsx` (non file separato per AMB-H)
+   - *Modificati:* `ProfiliTab.jsx` (da placeholder a componente funzionale completo), `ConfigView.jsx` (passa `dirty`/`setDirty` a ProfiliTab), `state/actions.js` (4 nuovi thunk), `state/reducer.js` (2 nuove action), `state/selectors.js` (3 nuovi selettori), `reducer.test.js` (regression 2 action), `actions.test.js` (test thunk — se file esistente, altrimenti inline in test suite più vicina), `selectors.test.js` (regression 3 selettori).
+2. **Target test: 269 → 283-287** (+14-18, bound AMB-L). Se a CP5 si è fuori bound: rettifica inline, no escalation.
+3. **CP browser 6 punti** (dettaglio in §CP5 sotto).
+4. **Chiusura con script `cp_close.sh`:** aggiorna §22.8 "Stato post-Sessione 8b implementativa" + consuma §11 → prompt Sessione 8c (FarmaciTab) + bump v2.5.25 → v2.5.26.
 
 ---
 
-### Azioni sul Mac prima di Sessione 8b analisi-first
+### CP breakdown (6 CP, blindato AMB-L)
 
-1. Verificare baseline: `git status` pulito sul branch `step-8` (tutti i file 8a committati) + `npm test -- --run` → atteso **269/269 su 26 test files**.
-2. Aggiornare KB progetto Claude con `PharmaTimer_Changelog_Fase2.md` v2.5.24 (output di `cp_close.sh`).
-3. Aprire sessione 8b analisi-first con one-liner:
-   `Esegui il prompt al §11 del Changelog (Sessione 8b analisi-first).`
+**CP0 — Sanity gate pre-implementazione**
+
+- Baseline: `git status` pulito, `npm test -- --run` = **269/269 su 26 test files**.
+- 4 gate ispettivi:
+  1. `grep -n "state\.profili\b\|state\.profiloAttivo\b" src/` → consumer attesi: OggiView (via `state.profiloAttivo` per render saluto/dose), `state/actions.js` (già noti: `init`, `cambiaProfilo`). Se emergono consumer imprevisti (7b/7c/7d), **rettifica inline** — probabile zero-impact ma da confermare.
+  2. `grep -n "SET_PROFILI\|SET_PROFILO_ATTIVO" src/` → atteso **0 match**. Se >0: naming clash, rinominare le nuove action con suffisso dedicato.
+  3. `grep -n "selectProfili\b\|selectProfiloAttivo\b\|selectProfiloById" src/` → atteso **0 match**. Se >0: naming clash, prefix `select…` comunque riservato per selettori.
+  4. `ls src/hooks/useModalA11y*` → atteso esistente. Se assente (non ricordato da memories): branch alternativo senza focus trap drawer (comunque non-blocker per AMB-I/B, solo deferral a 8d).
+
+**CP1 — ProfiliTab lista + card + "+ Nuovo" (read-only)**
+
+- Trasformare `ProfiliTab.jsx` da placeholder a componente funzionale con lista profili letta da `selectProfili(state)`.
+- Outer wrapper invariante: `<section data-testid="config-tab-profili">` (§6.78 convention).
+- Ogni profilo: card con nome + orari (colazione/pranzo/cena preview), badge "Attivo" verde se `profilo.attivo===1`, bordo sinistro colorato (riuso token theme dal mockup v5 DoseCard language).
+- Header tab: pulsante "+ Nuovo" top-right, opens drawer vuoto (wire in CP2).
+- `useTheme` applicato da subito (AMB-I).
+- **Test attesi (CP1):** +3 (lista render / badge attivo visibile / pulsante Nuovo presente).
+
+**CP2 — Drawer edit profilo + form 6 campi**
+
+- Drawer bottom-sheet full-height. Apertura via click su card (edit) o pulsante "+ Nuovo" (create-mode, campi vuoti).
+- Form 6 campi: `nome_profilo` (text) + `ora_sveglia`/`ora_colazione`/`ora_pranzo`/`ora_cena`/`ora_sonno` (5 `<input type="time">`).
+- Tutti required (client-side gate sul bottone Salva).
+- Validazione ordine monotonica soft come warning non-blocker (AMB-B): `sveglia < colazione < pranzo < cena`, **escluso sonno** per wrap-mezzanotte (Nottambulo).
+- Focus trap via `useModalA11y` (AMB-I).
+- Dirty flag wired: `props?.dirty ?? localDirty` + `setDirty(true)` su ogni onChange field (pattern ImpostazioniTab).
+- Bottoni: Salva (disabled se invalid o !dirty), Annulla (ripristina valori iniziali), nel profilo esistente + non-attivo: Elimina (apre ConfirmDeleteProfiloModal in CP4).
+- **Test attesi (CP2):** +3 (drawer apre su click card con campi popolati / drawer apre vuoto su "+ Nuovo" / validation warning ordine appare).
+
+**CP3 — Thunk add/update + selectors + reducer cases**
+
+- **Selectors nuovi** (AMB-K) in `src/state/selectors.js`:
+  ```js
+  export function selectProfili(state) { return state.profili; }
+  export function selectProfiloAttivo(state) { return state.profiloAttivo; }
+  export function selectProfiloById(state, id) {
+    return state.profili.find(p => p.id === id) ?? null;
+  }
+  ```
+- **Reducer cases nuovi** (AMB-C) in `src/state/reducer.js`:
+  ```js
+  case 'SET_PROFILI':
+    return { ...state, profili: action.payload };
+  case 'SET_PROFILO_ATTIVO':
+    return { ...state, profiloAttivo: action.payload };
+  ```
+- **Thunks nuovi** (AMB-D) in `src/state/actions.js`:
+  - `addProfilo(data)`: pessimistico. `await repo.addProfilo({...data, attivo: 0})` → ottenuto id → `const profiliAggiornati = [...state.profili, {...data, id, attivo: 0}]` → `dispatch SET_PROFILI`. Return `{ok: true, id}`. Catch: `SET_ERROR kind:'repo'`, return `{ok: false}`.
+  - `updateProfilo(id, patch)`: pessimistico. **AMB-E guard:** `const { attivo: _drop, ...safePatch } = patch`. `await repo.updateProfilo(id, safePatch)` → `profiliAggiornati = state.profili.map(p => p.id===id ? {...p, ...safePatch} : p)` → `dispatch SET_PROFILI`. Se `id === state.profiloAttivo?.id`: `dispatch SET_PROFILO_ATTIVO {...state.profiloAttivo, ...safePatch}` + `await rebuildPlan()` (AMB-D / §6.64). Return `{ok: true}`. Catch come sopra.
+- Wire: drawer CP2 submit → `actions.addProfilo` (create) o `actions.updateProfilo` (edit) con `safePatch` dai campi form.
+- **Test attesi (CP3):** +5 (selectProfili / selectProfiloAttivo / selectProfiloById / addProfilo thunk success / updateProfilo thunk con rebuildPlan su attivo). Eventualmente +1-2 se serve copertura error path.
+
+**CP4 — Thunk deleteProfilo + ConfirmDeleteProfiloModal + UX guard**
+
+- **Thunk deleteProfilo(id)** (AMB-D/F) pessimistico. `try { await repo.deleteProfilo(id); } catch (err) { dispatch SET_ERROR kind:'repo', message: err.message; return {ok: false}; }`. Se ok: `profiliAggiornati = state.profili.filter(p => p.id !== id)` → `dispatch SET_PROFILI`. Il repo già solleva l'Error giusto se profilo attivo (§6.5), il thunk non ripete la guard.
+- **ConfirmDeleteProfiloModal inline** dentro `ProfiliTab.jsx` (AMB-H). Shape: backdrop `modalOverlay` + box con titolo "Elimina profilo?" + body "Questa azione non può essere annullata. {nome_profilo} verrà rimosso." + 2 bottoni (Annulla / Elimina red-bordered). Zero focus trap (deferred 8d coerente con UnsavedChangesModal attuale).
+- **UI guard §6.5 (AMB-F):** bottone Elimina nel drawer **visibile per tutti i profili**, **disabled + tooltip "Non puoi eliminare il profilo attivo. Attiva un altro profilo prima."** quando `profilo.attivo===1`. Click su Elimina (non-attivo) → apre ConfirmDeleteProfiloModal → Conferma → `actions.deleteProfilo(id)` → su success: chiude modal + drawer, torna alla lista.
+- **Test attesi (CP4):** +3 (deleteProfilo thunk success non-attivo / deleteProfilo thunk error guard §6.5 / UI modal confirm render e wire).
+
+**CP5 — Thunk attivaProfilo wrapper + wire bottone "Attiva" + CP browser**
+
+- **Thunk attivaProfilo(id)** (AMB-D/F3) wrapper: `const profilo = selectProfiloById(getState(), id)`. Se `profilo == null`: `dispatch SET_ERROR kind:'domain', message:'Profilo non trovato'`, return `{ok: false}`. Altrimenti: `return this.cambiaProfilo(profilo)` (delega + return passthrough). Documentare come wrapper esplicitamente.
+- Wire bottone "Attiva" dentro drawer edit (profilo non-attivo): disabled durante operazione; su click chiama `actions.attivaProfilo(id)`; su success chiude drawer e mostra flash toast (se presente in codebase — altrimenti reliance sul badge "Attivo" che flippa).
+- **Full test suite: `npm test -- --run`**. Atteso range 283-287 (bound AMB-L). Se out-of-bound: rettifica inline documentata come §6.86 (pattern §6.74 "non consumata" se azione errata).
+- **Test attesi (CP5):** +1-2 (attivaProfilo wrapper happy path; eventualmente error path id-non-trovato).
+- **CP browser (6 punti):**
+  1. Apri `/config/profili` → lista 2 profili (Standard attivo + Nottambulo) + pulsante "+ Nuovo" visibile.
+  2. Click su card Standard → drawer apre con 6 campi popolati. Bottone Elimina disabled, tooltip preventivo visibile.
+  3. Modifica `ora_colazione` da 07:30 a 08:00 → dirty → click tab "Impostazioni" → UnsavedChangesModal → Annulla → torna drawer dirty → Salva → drawer chiude, card mostra 08:00. Cmd+R → persistito.
+  4. Apri `/oggi` → tutti gli orari colazione-ancorati scalati di 30 min (Pantorc 07:30, non più 07:00). Conferma rebuildPlan triggered (AMB-D).
+  5. `/config/profili` → click "+ Nuovo" → drawer vuoto → compila "Weekend" 09:00/09:30/13:00/20:30/23:30 → Salva → nuova card in lista, non attiva. Click card Weekend → drawer → bottone "Attiva" → click → badge "Attivo" flippa da Standard a Weekend. Apri `/oggi` → orari cambiati di nuovo. 
+  6. `/config/profili` → click card Standard (ora non-attivo) → bottone Elimina attivo → click → ConfirmDeleteProfiloModal → Conferma → card scompare. Ripristino: crea profilo "Standard-rip" per safety net cleanup manuale, oppure `window.__pt.seed(true)` via DevTools se disponibile.
+
+---
+
+### Out-of-scope 8b (dichiarati ora, eseguiti dopo)
+
+- Estrazione `useUnsavedChanges` hook → 8c o 8d (AMB-G).
+- Promozione `ConfirmDeleteProfiloModal` a componente standalone → al 2° consumer (AMB-H).
+- Estensione `renderWithRealProvider` con `initialEntries` → mai in 8b; se serve in futuro (AMB-J).
+- Rettifica token dark ConfigTabBar (§6.81) → 8d polish.
+- Investigation anomalia `nome_utente` azzerato (§6.85) → 8d polish.
+- FarmaciTab form → 8c.
+
+---
+
+### Azioni sul Mac prima di Sessione 8b implementativa
+
+1. Verificare baseline: `git status` pulito sul branch `step-8` + `npm test -- --run` → atteso **269/269 su 26 test files**.
+2. Aggiornare KB progetto Claude con `PharmaTimer_Changelog_Fase2.md` v2.5.25 (output di questa sessione analisi-first).
+3. Opzionale ma raccomandato: commit Changelog v2.5.25 in repo (coerente con §6.70 — drift = 1, sotto soglia, ma meglio allineare prima di avviare implementativa).
+4. Aprire sessione 8b implementativa con one-liner:
+   `Esegui il prompt al §11 del Changelog (Sessione 8b implementativa).`
 
 ## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3
 
@@ -3472,4 +3557,104 @@ Zero file di codice prodotti in 8a analisi-first. Solo update Changelog (questo 
 4. Commit Changelog v2.5.24 (raccomandato stesso commit dei file di codice per allineare delivery).
 5. Aprire sessione 8b analisi-first con one-liner:
    `Esegui il prompt al §11 del Changelog (Sessione 8b analisi-first).`
+
+## 22.7 Stato post-Sessione 8b analisi-first
+
+**Data:** 23 aprile 2026
+**Baseline test:** **269/269** su 26 test files (invariato — sessione analisi pura)
+**Bump:** v2.5.24 → v2.5.25
+
+### Scope consegnato
+
+Sessione 8b analisi-first NON produce codice. Produce decisioni congelate che blindano l'implementativa: 13 AMB-8b.A-M + 5 rettifiche F1-F5 + 1 scoperta procedurale (drift §6.69 pregresso su v2.5.24, non retrocorretto).
+
+### Q1-Q7 risolte (summary)
+
+| Q | Scope | Decisione |
+|---|---|---|
+| **Q1.a** | Master-detail shape | Lista sempre visibile + drawer bottom-sheet per edit/nuovo |
+| **Q1.b** | "+ Nuovo" placement | Bottone top-right header tab |
+| **Q1.c** | Indicator attivo | Badge verde "Attivo" + bordo sinistro colorato |
+| **Q1.d** | Azione Attiva | Bottone esplicito "Attiva" dentro drawer |
+| **Q2.a** | Required + validazione | Tutti required; ordine soft warning escluso `ora_sonno` (spec §10.1 Nottambulo wrap-mezzanotte) |
+| **Q2.b** | Edit attivo | Permesso, `rebuildPlan()` post-save (§6.64) |
+| **Q2.c** | Container form | Drawer bottom-sheet full-height mobile-first, `useModalA11y` focus trap |
+| **Q3.a** | `addProfilo` | Nuovo thunk pessimistico |
+| **Q3.b** | `updateProfilo` | Nuovo thunk con guard `attivo` filter + rebuildPlan su profilo attivo |
+| **Q3.c** | `deleteProfilo` | Nuovo thunk senza guard duplicata (repo §6.5 già solleva Error) |
+| **Q3.d** | Attivazione | Wrapper `attivaProfilo(id)` → `selectProfiloById` → `cambiaProfilo(profilo)` |
+| **Q4.a** | Hook extraction | **NON estrarre in 8b** (Rettifica F1 — DRY-at-2 già soddisfatto via props opt lifting in ConfigView) |
+| **Q4.b** | Hook shape | N/A — deferita |
+| **Q5.a** | Elimina UX | Visibile ma disabled per profilo attivo + tooltip preventivo |
+| **Q5.b** | Confirm modal | Sì, `ConfirmDeleteProfiloModal` inline (scope-minimal, stile UnsavedChangesModal) |
+| **Q5.c** | Cascade log | Hard-delete senza cascade (log ha solo FK `farmaco_id`, nessuna rel. con profilo) |
+| **Q6.a** | Test strategy | Tutto stub `renderWithProvider`; E2E rebuildPlan via spy action |
+| **Q6.b** | Target test | +14-18 (ricalibrato da F1): lista/drawer 6 · thunk add/update 3 · delete 3 · attivaProfilo 2 · selectors 3 · confirm modal 1 |
+| **Q6.c** | `renderWithRealProvider` | **NON esteso** (§6.79 rimane) — spy su action basta |
+| **Q7.a** | CP breakdown | 6 CP (CP0→CP5 + browser finale) — CP5 hook cancellato |
+| **Q7.b** | Split risk | 8b-1/8b-2 non previsto (riduzione 7→6 CP dà margine adeguato) |
+
+### 13 AMB-8b congelate
+
+| AMB | Scope | Congelato |
+|---|---|---|
+| **A** | UX ProfiliTab | lista+drawer / "+ Nuovo" top-right / badge "Attivo" / bottone "Attiva" drawer |
+| **B** | Form 6 campi | tutti required; ordine soft escluso `ora_sonno`; duplicati nome soft; focus trap useModalA11y |
+| **C** | Reducer actions | `SET_PROFILI` (array) + `SET_PROFILO_ATTIVO` (campo) — 2 action separate |
+| **D** | Thunks | 3 CRUD pessimistici + wrapper `attivaProfilo(id)` via `selectProfiloById` + `cambiaProfilo` |
+| **E** | Guard updateProfilo | filtra `attivo` dal patch — canale attivazione unico via `cambiaProfilo` |
+| **F** | Delete guard | repo solleva Error (§6.5), thunk cattura → SET_ERROR; UI disabled+tooltip |
+| **G** | Hook extraction | **deferita** al 3° consumer (8c/8d) — props opt lifting sufficiente |
+| **H** | ConfirmDeleteProfiloModal | inline in ProfiliTab (1 consumer) — promozione al 2° consumer |
+| **I** | useTheme pervasivo | applicato da CP1 su tutti i form element — preventivo §6.82 |
+| **J** | renderWithRealProvider | non esteso in 8b (§6.79 rimane) — spy bastano |
+| **K** | Selectors | `selectProfili`, `selectProfiloAttivo`, `selectProfiloById` |
+| **L** | CP breakdown | 6 CP, target test +14-18, no split 8b-1/8b-2 |
+| **M** | Schema spec | invariato (v1.2 resta) — tabella `profilo_utente` §3.4 usata tal quale |
+
+### 5 rettifiche F integrate nel prompt impl
+
+| F | Trigger | Rettifica |
+|---|---|---|
+| **F1** | Dry-run CP0 su `ConfigView.jsx` | Pattern dirty-lifted via props opt già attivo + riproducibile in ProfiliTab senza nuovo hook → `useUnsavedChanges` deferito (AMB-G). **Architetturalmente la scoperta più importante della sessione.** CP breakdown 7→6, target 20→14-18. |
+| **F2** | Dry-run CP0 su `reducer.js` | Pattern `SET_FARMACI`/`SET_ORARI` template per 2 action simili → scelta minimalista `SET_PROFILI`+`SET_PROFILO_ATTIVO` invece di combo `UPSERT_PROFILO` |
+| **F3** | Dry-run CP0 su `actions.js cambiaProfilo` | `cambiaProfilo` accetta oggetto profilo, non id → wrapper `attivaProfilo(id)` risolve id→profilo via selettore (AMB-D esplicitata) |
+| **F4** | Analisi semantica guard attivazione | `updateProfilo` può accettare `attivo` in patch se form buggy → filtro esplicito nel thunk (AMB-E) chiude vulnerabilità silenziosa |
+| **F5** | §22.6 scoperta operativa #5 | Gap sistematico useTheme su form 8a CP4 → AMB-I pre-emptive useTheme su ProfiliTab da CP1 |
+
+### Scoperte operative
+
+1. **Repo layer profili completo:** `addProfilo`/`updateProfilo`/`deleteProfilo` (con guard §6.5 in-repo) / `getProfili` / `setProfiloAttivo` / `setProfiloAttivoConCleanup` / `withTransaction` — **tutti già implementati** in LocalRepository.js. Zero lavoro repo in 8b (pattern inverso rispetto a 8a, dove `withTransaction` fu introdotto in CP1).
+
+2. **Pattern dirty-lifted già DRY-at-2 nativo:** ConfigView lifta `dirty`/`setDirty` e li passa a ImpostazioniTab via props opt con fallback locale. Estendere il pattern a ProfiliTab (stessi props) è zero-cost e soddisfa DRY-at-2 naturalmente. Il 3° consumer (8c FarmaciTab con potenziali drawer nested) è il momento corretto per estrarre l'hook — prima è premature abstraction. Questa scoperta rompe l'assunzione iniziale del prompt §11 v2.5.24 (che preannunciava hook extraction in 8b) e costituisce la rettifica F1.
+
+3. **Zero selettori profilo attuali:** `selectors.js` post-8a ha 10 selettori (selectToday / selectEntriesForDay / selectProssimaDose / selectFarmaciAttivi / selectHasError / selectImpostazione / selectCountersForDay / selectUltimaPresa / selectEntryByKey / selectPromptEntry). Nessun `selectProfili*`. I 3 nuovi (AMB-K) non hanno naming clash (grep 0 match atteso — gate CP0 punto 3).
+
+4. **`cambiaProfilo` shape oggetto-intero è importante:** il thunk esistente `cambiaProfilo(profilo)` (non `cambiaProfilo(id)`) richiede risoluzione id→profilo a monte. `attivaProfilo(id)` wrapper coglie questa asimmetria in un punto unico, evitando di scaricare sul consumer UI la responsabilità di risolvere profilo via selettore. Pattern replicabile per future wrapper con simile asimmetria.
+
+5. **Drift procedurale §6.69 pregresso su v2.5.24:** l'entry "Changelog versione 2.5.24 (rispetto alla 2.5.23):" è **assente** dall'elenco introduttivo del file al momento dell'apertura di 8b. Il front-matter dice v2.5.24 ma manca il bullet summary. Questo è un drift §6.69 non rilevato al bump 8a impl. **Non retrocorretto in 8b** per principio fatto-storico immutabile (§6.71 analogo): le modifiche alla v2.5.25 aggiungono la nuova entry sopra v2.5.23, lasciando il gap visibile come traccia. Non serve nuova §6.NN (è rispetto della regola esistente, non deviazione nuova).
+
+6. **`config-tab-profili` testid invariante (§6.78):** l'outer wrapper `<section data-testid="config-tab-profili">` del placeholder CP2 deve essere preservato in 8b CP1 come outer del componente funzionale. I 4 test routing ConfigView.test.jsx dipendono da questo — modifiche al testid spezzerebbero silenziosamente la suite.
+
+### Deviazioni §6.NN introdotte
+
+**Nessuna.** Sessione analisi pura, zero codice, zero deviazioni consumate. Le deviazioni previste per 8b (es. §6.86 eventuale rettifica target test se out-of-bound) verranno iscritte solo se materializzate in implementativa.
+
+### File prodotti / NON prodotti
+
+**Prodotti (modificati):**
+- `PharmaTimer_Changelog_Fase2.md` v2.5.24 → v2.5.25: bump front-matter + nuova entry 2.5.25 + §11 sostituita (analisi-first → implementativa) + §22.7 append.
+
+**NON prodotti (per definizione, analisi-first):**
+- Nessun file di codice sorgente.
+- Nessun file test.
+- Nessun hotfix script.
+
+### Azioni sul Mac post-Sessione 8b analisi-first
+
+1. Verificare che `git status` sia pulito sul branch `step-8` (nessun file codice 8b previsto — solo il Changelog deve muoversi).
+2. Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB del progetto Claude con la versione **v2.5.25** (questo delivery).
+3. Opzionale: `git add PharmaTimer_Changelog_Fase2.md && git commit -m "Changelog v2.5.25 (Sessione 8b analisi-first)"` — raccomandato per mantenere drift §6.70 sotto soglia.
+4. Aprire sessione 8b implementativa con one-liner:
+   `Esegui il prompt al §11 del Changelog (Sessione 8b implementativa).`
 
