@@ -164,6 +164,21 @@ export function reducer(state, action) {
     case 'SET_ORARI':
       return { ...state, orari: action.payload };
 
+    // --- Profili (AMB-8b.C / Sessione 8b / §11) -------------
+    // Full-list replacement pattern (template: SET_FARMACI/SET_ORARI).
+    // SET_PROFILI is dispatched by add/update/delete thunks with the
+    // post-mutation array; the list shape is small (2-3 profili) so
+    // the write amplification is negligible. SET_PROFILO_ATTIVO is a
+    // single-field write used by updateProfilo when the patched profilo
+    // is the currently active one (mirror sync). The canonical channel
+    // for full-profile activation remains APPLY_CAMBIO_PROFILO (reused
+    // by the attivaProfilo wrapper in CP5, not a new reducer case).
+    case 'SET_PROFILI':
+      return { ...state, profili: action.payload };
+
+    case 'SET_PROFILO_ATTIVO':
+      return { ...state, profiloAttivo: action.payload };
+
     // --- Generic settings (AMB-7a.M / §6.27) ----------------
     // Generic key/value update on state.impostazioni. Spread-merge keeps
     // unrelated keys intact. Post-§6.77 cleanup: no mirrored field to sync

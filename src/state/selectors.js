@@ -271,3 +271,40 @@ export function selectPromptEntry(state) {
   if (!entryKey) return null;
   return selectEntryByKey(state, entryKey);
 }
+
+/**
+ * Return the full list of profili (ordered by id as returned by repo).
+ *
+ * AMB-8b.K / Sessione 8b / Changelog §11.
+ *
+ * @param {import('./reducer.js').AppState} state
+ * @returns {import('../domain/types.js').Profilo[]}
+ */
+export function selectProfili(state) {
+  return state.profili;
+}
+
+/**
+ * Return the currently active profilo, or null if none is set.
+ *
+ * AMB-8b.K / Sessione 8b / Changelog §11.
+ *
+ * @param {import('./reducer.js').AppState} state
+ * @returns {import('../domain/types.js').Profilo | null}
+ */
+export function selectProfiloAttivo(state) {
+  return state.profiloAttivo;
+}
+
+/**
+ * Lookup a profilo by id. Returns null if not found (never undefined).
+ *
+ * AMB-8b.K / Sessione 8b / Changelog §11.
+ *
+ * @param {import('./reducer.js').AppState} state
+ * @param {number} id
+ * @returns {import('../domain/types.js').Profilo | null}
+ */
+export function selectProfiloById(state, id) {
+  return state.profili.find((p) => p.id === id) ?? null;
+}

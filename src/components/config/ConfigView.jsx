@@ -72,7 +72,7 @@ export default function ConfigView() {
       <ConfigTabBar onTabClick={handleTabClick} />
       <Routes>
         <Route index element={<Navigate to="impostazioni" replace />} />
-        <Route path="profili" element={<ProfiliTab />} />
+        <Route path="profili" element={<ProfiliTab dirty={dirty} setDirty={setDirty} />} />
         <Route path="farmaci" element={<FarmaciTab />} />
         <Route
           path="impostazioni"

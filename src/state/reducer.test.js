@@ -341,3 +341,30 @@ describe('cleanup §6.77 — legacy nomeUtente mirror rimosso', () => {
     expect(next).not.toHaveProperty('nomeUtente');
   });
 });
+
+// ============================================================
+// SET_PROFILI / SET_PROFILO_ATTIVO (Sessione 8b CP3 / AMB-8b.C)
+// ============================================================
+
+describe('reducer — SET_PROFILI / SET_PROFILO_ATTIVO', () => {
+  it('SET_PROFILI sostituisce state.profili con il payload', () => {
+    const before = { ...initialState, profili: [makeProfilo({ id: 1 })] };
+    const next = [
+      makeProfilo({ id: 1 }),
+      makeProfilo({ id: 2, nome_profilo: 'Nottambulo', attivo: 0 }),
+    ];
+    const after = reducer(before, { type: 'SET_PROFILI', payload: next });
+    expect(after.profili).toBe(next);
+    expect(after.profili).toHaveLength(2);
+  });
+
+  it('SET_PROFILO_ATTIVO sostituisce state.profiloAttivo con il payload (oggetto o null)', () => {
+    const p = makeProfilo({ id: 1, ora_colazione: '08:00' });
+    const before = { ...initialState, profiloAttivo: null };
+    const after1 = reducer(before, { type: 'SET_PROFILO_ATTIVO', payload: p });
+    expect(after1.profiloAttivo).toBe(p);
+
+    const after2 = reducer(after1, { type: 'SET_PROFILO_ATTIVO', payload: null });
+    expect(after2.profiloAttivo).toBeNull();
+  });
+});

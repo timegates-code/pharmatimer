@@ -23,7 +23,7 @@ import {
   PLAN_TOTAL_DAYS,
   GET_FARMACI_SOLO_ATTIVI,
 } from '../domain/constants.js';
-import { selectToday } from './selectors.js';
+import { selectToday, selectProfiloById } from './selectors.js';
 import { commitApplyResult } from './applyHelper.js';
 
 // ------------------------------------------------------------
@@ -404,9 +404,135 @@ export function createActions({ dispatch, getState, repo }) {
   // Action bag
   // ----------------------------------------------------------
 
+
+  // ----------------------------------------------------------
+  // Profili CRUD thunks (AMB-8b.D / §11)
+  // ----------------------------------------------------------
+  //
+  // Pessimistic pattern: await repo.* before dispatching the state
+  // mutation. Ensures state.profili never reflects a write that did
+  // not land in IndexedDB. Divergence from setSetting (optimistic) is
+  // intentional — profili CRUD is low-frequency and correctness beats
+  // perceived latency here.
+  //
+  // AMB-8b.E guard in updateProfilo: the `attivo` field is stripped
+  // from the patch before repo.update. Activation flows exclusively
+  // through cambiaProfilo / APPLY_CAMBIO_PROFILO (see attivaProfilo
+  // wrapper in CP5). This closes the vulnerability where a buggy form
+  // could toggle `attivo` via the generic update channel bypassing
+  // the cleanup logic in setProfiloAttivoConCleanup (§6.20).
+
+  async function addProfilo(data) {
+    try {
+      const toInsert = { ...data, attivo: 0 };
+      const id = await repo.addProfilo(toInsert);
+      const state = getState();
+      const profiliAggiornati = [...state.profili, { ...toInsert, id }];
+      dispatch({ type: 'SET_PROFILI', payload: profiliAggiornati });
+      return { ok: true, id };
+    } catch (err) {
+      dispatch({
+        type: 'SET_ERROR',
+        payload: {
+          kind: 'repo',
+          message: err?.message ?? 'Errore nel salvataggio profilo',
+        },
+      });
+      return { ok: false };
+    }
+  }
+
+  async function updateProfilo(id, patch) {
+    // AMB-8b.E: strip `attivo` from patch. Destructuring with rest
+    // handles both "attivo present" and "attivo absent" cleanly.
+    const { attivo: _drop, ...safePatch } = patch;
+    try {
+      await repo.updateProfilo(id, safePatch);
+      const state = getState();
+      const profiliAggiornati = state.profili.map((p) =>
+        p.id === id ? { ...p, ...safePatch } : p
+      );
+      dispatch({ type: 'SET_PROFILI', payload: profiliAggiornati });
+
+      // Mirror active-profile field + rebuild plan if the edited
+      // profilo is the currently active one (§6.64 reactive rebuild).
+      if (state.profiloAttivo && id === state.profiloAttivo.id) {
+        dispatch({
+          type: 'SET_PROFILO_ATTIVO',
+          payload: { ...state.profiloAttivo, ...safePatch },
+        });
+        await rebuildPlan();
+      }
+
+      return { ok: true };
+    } catch (err) {
+      dispatch({
+        type: 'SET_ERROR',
+        payload: {
+          kind: 'repo',
+          message: err?.message ?? 'Errore nell\'aggiornamento profilo',
+        },
+      });
+      return { ok: false };
+    }
+  }
+
+  async function deleteProfilo(id) {
+    // AMB-8b.F: repo.deleteProfilo already raises the §6.5 guard Error
+    // when the target is the active profilo. The thunk just catches and
+    // routes to SET_ERROR — no duplicate guard here.
+    try {
+      await repo.deleteProfilo(id);
+      const state = getState();
+      const profiliAggiornati = state.profili.filter((p) => p.id !== id);
+      dispatch({ type: 'SET_PROFILI', payload: profiliAggiornati });
+      return { ok: true };
+    } catch (err) {
+      dispatch({
+        type: 'SET_ERROR',
+        payload: {
+          kind: 'repo',
+          message: err?.message ?? 'Errore nell\'eliminazione profilo',
+        },
+      });
+      return { ok: false };
+    }
+  }
+
+  // AMB-8b.D / F3: thin wrapper that resolves id -> profilo via
+  // selectProfiloById and delegates to cambiaProfilo(profilo).
+  // Exists because cambiaProfilo accepts a whole profilo object
+  // (scoperta operativa §22.7 #4), and the UI layer naturally has
+  // the id from the drawer context — so centralising the resolution
+  // here avoids pushing selector knowledge to consumers.
+  //
+  // Return contract: {ok: true} on success, {ok: false} on unresolved
+  // id. cambiaProfilo itself has no explicit return; the wrapper adds
+  // one for uniformity with add/update/delete thunks (callers can rely
+  // on `if (result?.ok)` across all profili CRUD thunks).
+  async function attivaProfilo(id) {
+    const profilo = selectProfiloById(getState(), id);
+    if (profilo == null) {
+      dispatch({
+        type: 'SET_ERROR',
+        payload: {
+          kind: 'domain',
+          message: 'Profilo non trovato',
+        },
+      });
+      return { ok: false };
+    }
+    await cambiaProfilo(profilo);
+    return { ok: true };
+  }
+
   return {
     init,
     rebuildPlan,
+    addProfilo,
+    updateProfilo,
+    deleteProfilo,
+    attivaProfilo,
     presa,
     salta,
     sospendi,

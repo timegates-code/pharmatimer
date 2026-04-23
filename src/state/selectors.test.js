@@ -190,3 +190,44 @@ describe('selectPromptEntry', () => {
     ).toBeNull();
   });
 });
+
+// ============================================================
+// Profili selectors (Sessione 8b CP3 / AMB-8b.K)
+// ============================================================
+
+import {
+  selectProfili,
+  selectProfiloAttivo,
+  selectProfiloById,
+} from './selectors.js';
+
+describe('selectProfili / selectProfiloAttivo / selectProfiloById', () => {
+  const P1 = {
+    id: 1, nome_profilo: 'Standard',
+    ora_sveglia: '07:00', ora_colazione: '07:30',
+    ora_pranzo: '13:00', ora_cena: '20:30', ora_sonno: '23:30',
+    attivo: 1,
+  };
+  const P2 = {
+    id: 2, nome_profilo: 'Nottambulo',
+    ora_sveglia: '10:00', ora_colazione: '10:30',
+    ora_pranzo: '14:30', ora_cena: '21:30', ora_sonno: '02:00',
+    attivo: 0,
+  };
+
+  it('selectProfili ritorna state.profili verbatim', () => {
+    const state = { profili: [P1, P2] };
+    expect(selectProfili(state)).toBe(state.profili);
+  });
+
+  it('selectProfiloAttivo ritorna state.profiloAttivo (oggetto o null)', () => {
+    expect(selectProfiloAttivo({ profiloAttivo: P1 })).toBe(P1);
+    expect(selectProfiloAttivo({ profiloAttivo: null })).toBeNull();
+  });
+
+  it('selectProfiloById trova per id, ritorna null su miss', () => {
+    const state = { profili: [P1, P2] };
+    expect(selectProfiloById(state, 2)).toBe(P2);
+    expect(selectProfiloById(state, 999)).toBeNull();
+  });
+});
