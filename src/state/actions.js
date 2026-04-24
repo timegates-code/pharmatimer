@@ -456,12 +456,29 @@ export function createActions({ dispatch, getState, repo }) {
 
       // Mirror active-profile field + rebuild plan if the edited
       // profilo is the currently active one (§6.64 reactive rebuild).
+      //
+      // §6.102 (CP6 Sessione 8d-A-continue, §6.95 preventive retrofit,
+      // AMB-8d.D proactive coherence defence): feed the fresh profilo
+      // directly to rebuildPlanFromFresh to bypass stateRef lag.
+      // AppContext updates stateRef in a useEffect that runs one tick
+      // AFTER the dispatch below; invoking the no-arg `rebuildPlan()`
+      // here would read `state.profiloAttivo` stale (pre-edit
+      // ora_colazione/pranzo/cena), producing a plan with outdated
+      // timings until the next app reload. The same coherence issue
+      // was fixed reactively for the farmaci thunks in 8c-2 CP6
+      // (§6.95 hotfix); here it is applied proactively.
+      //
+      // Prompt §11 referenced "APPLY_CAMBIO_PROFILO" imprecisely —
+      // the dispatch below is SET_PROFILO_ATTIVO (APPLY_CAMBIO_PROFILO
+      // lives in `cambiaProfilo`, a separate flow with its own plan
+      // path via `ricalcolaPianoDaProfilo`).
       if (state.profiloAttivo && id === state.profiloAttivo.id) {
+        const nuovoProfiloAttivo = { ...state.profiloAttivo, ...safePatch };
         dispatch({
           type: 'SET_PROFILO_ATTIVO',
-          payload: { ...state.profiloAttivo, ...safePatch },
+          payload: nuovoProfiloAttivo,
         });
-        await rebuildPlan();
+        await rebuildPlanFromFresh({ profilo: nuovoProfiloAttivo });
       }
 
       return { ok: true };
@@ -539,17 +556,28 @@ export function createActions({ dispatch, getState, repo }) {
   // returns them, but planBuilder ignores orphaned orari whose
   // farmaco_id is not in farmaci.
 
-  async function rebuildPlanFromFresh({ farmaci, orari }) {
+  // §6.102 (CP6 Sessione 8d-A-continue): signature generalized from
+  // `{farmaci, orari}` (both required) to `{profilo?, farmaci?, orari?}`
+  // (all optional, stateRef fallback) to enable proactive coherence
+  // defence for updateProfilo (§6.95 pattern, AMB-8d.D). Retrocompat
+  // for the farmaci thunks (addFarmaco/updateFarmaco/deleteFarmaco):
+  // they keep passing `{farmaci, orari}`, and `profilo` now reads from
+  // stateRef via the fallback — this is correct because those thunks
+  // do not mutate the profilo.
+  async function rebuildPlanFromFresh({ profilo, farmaci, orari } = {}) {
     const state = getState();
-    if (!state.profiloAttivo) return;
+    const targetProfilo = profilo ?? state.profiloAttivo;
+    if (!targetProfilo) return;
+    const targetFarmaci = farmaci ?? state.farmaci;
+    const targetOrari = orari ?? state.orari;
     const today = selectToday(state);
     const startDate = addDays(today, -PLAN_DAYS_BEFORE);
     const endDate = addDays(today, PLAN_DAYS_AFTER);
     const logAssunzioni = await repo.getLogByRange(startDate, endDate);
     const plan = buildMultiDayPlan({
-      profilo: state.profiloAttivo,
-      farmaci,
-      orari,
+      profilo: targetProfilo,
+      farmaci: targetFarmaci,
+      orari: targetOrari,
       logAssunzioni,
       startDate,
       numDays: PLAN_TOTAL_DAYS,

@@ -13,11 +13,27 @@
 //       `attivo` from patch; SET_PROFILI + SET_PROFILO_ATTIVO
 //       dispatched; rebuildPlan invoked (§6.64).
 //
+// CP6 Sessione 8d-A-continue addition:
+//   (7) updateProfilo coherence (§6.95 preventive retrofit / §6.102):
+//       on active profilo, buildMultiDayPlan receives the FRESH
+//       profilo (merged with patch) rather than the stale stateRef
+//       snapshot that `rebuildPlan()` would have read.
+//
 // Pattern: vi.fn repo + createActions closure + dispatched[] capture,
 // mirroring actions.init.test.js / actions.annullaAssunzione.test.js.
 
 import { describe, it, expect, vi } from 'vitest';
+
+// §6.102 / CP6: mock planBuilder to expose an observable spy on
+// buildMultiDayPlan. Default return [] is safe for existing tests
+// (1)-(6) which never assert on plan content — they only check
+// dispatch types, repo calls, and state transitions.
+vi.mock('../domain/planBuilder.js', () => ({
+  buildMultiDayPlan: vi.fn(() => []),
+}));
+
 import { createActions } from './actions.js';
+import { buildMultiDayPlan } from '../domain/planBuilder.js';
 
 const P_ATTIVO = {
   id: 1, nome_profilo: 'Standard',
@@ -236,6 +252,51 @@ describe('actions.attivaProfilo', () => {
     expect(repo.setProfiloAttivoConCleanup).toHaveBeenCalledWith(2, []);
 
     // Nessun SET_ERROR.
+    expect(dispatched.find((a) => a.type === 'SET_ERROR')).toBeUndefined();
+  });
+});
+
+// ============================================================
+// CP6 Sessione 8d-A-continue — §6.95 preventive retrofit (§6.102).
+// ============================================================
+
+describe('actions.updateProfilo — rebuildPlan coherence (§6.95 / §6.102)', () => {
+  it('(7) su profilo attivo: buildMultiDayPlan riceve profilo fresco (patched), non stateRef stale', async () => {
+    // Clear the shared spy between suites so previous tests'
+    // invocations don't pollute the assertion below.
+    buildMultiDayPlan.mockClear();
+
+    // getState() returns a stable reference to `state` that is never
+    // mutated by dispatch — this simulates the real-world stateRef
+    // lag (AppContext updates stateRef in a useEffect one tick AFTER
+    // dispatch). Pre-§6.102, `await rebuildPlan()` would read
+    // `state.profiloAttivo` with the OLD ora_colazione '07:30'.
+    // Post-fix, `rebuildPlanFromFresh({ profilo: nuovo })` receives
+    // the patched profilo directly.
+    const { dispatched, dispatch, getState, repo } = makeDeps();
+    const actions = createActions({ dispatch, getState, repo });
+
+    // Patch ora_colazione '07:30' → '09:00' on the active profilo.
+    const result = await actions.updateProfilo(1, { ora_colazione: '09:00' });
+    expect(result).toEqual({ ok: true });
+
+    // buildMultiDayPlan invoked (rebuildPlanFromFresh path).
+    expect(buildMultiDayPlan).toHaveBeenCalled();
+
+    // Last call received the FRESH profilo (ora_colazione '09:00'),
+    // NOT the stale one from getState() (still '07:30').
+    const lastCallArgs = buildMultiDayPlan.mock.calls.at(-1)[0];
+    expect(lastCallArgs.profilo).toMatchObject({
+      id: 1,
+      ora_colazione: '09:00',
+      attivo: 1,
+    });
+    // Cross-check: stateRef snapshot is still stale (test sanity).
+    expect(getState().profiloAttivo.ora_colazione).toBe('07:30');
+
+    // REBUILD_PLAN dispatched.
+    expect(dispatched.find((a) => a.type === 'REBUILD_PLAN')).toBeDefined();
+    // No error.
     expect(dispatched.find((a) => a.type === 'SET_ERROR')).toBeUndefined();
   });
 });
