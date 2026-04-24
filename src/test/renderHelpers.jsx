@@ -100,7 +100,12 @@ export function buildTestPlan({ dateStr = '2026-04-19' } = {}) {
   ];
 }
 
-/** Default no-op action bag mirroring the 12 real thunks from state/actions.js. */
+/** Default no-op action bag mirroring the real thunks from state/actions.js.
+ *  Sessione 8c-2 CP5 / §6.94: extended with farmaci CRUD thunks so that
+ *  FarmaciTab consumers do not TypeError when tests omit `actions` overrides.
+ *  Other post-8a thunks (addProfilo/updateProfilo/deleteProfilo/attivaProfilo/
+ *  annullaAssunzione) remain intentionally absent — out-of-scope for 8c-2;
+ *  retrofit candidate for 8d. */
 function defaultNoopActions() {
   return {
     init: async () => {},
@@ -115,6 +120,10 @@ function defaultNoopActions() {
     dismissPrompt: () => {},
     setSetting: async () => ({ ok: true }),
     setSimulatedNow: () => {},
+    // Sessione 8c-2 CP5 / §6.94.
+    addFarmaco: async () => ({ ok: true, id: -1 }),
+    updateFarmaco: async () => ({ ok: true }),
+    deleteFarmaco: async () => ({ ok: true }),
   };
 }
 

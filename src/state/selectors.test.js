@@ -231,3 +231,22 @@ describe('selectProfili / selectProfiloAttivo / selectProfiloById', () => {
     expect(selectProfiloById(state, 999)).toBeNull();
   });
 });
+
+// ============================================================
+// Farmaci selectors (Sessione 8c-2 CP5 / AMB-8c-2.C)
+// ============================================================
+
+import { selectFarmacoById } from './selectors.js';
+
+describe('selectFarmacoById', () => {
+  const F1 = { id: 1, nome: 'Pantorc 40mg', attivo: 1 };
+  const F2 = { id: 2, nome: 'Ezevast 10mg', attivo: 1 };
+
+  it('trova per id, ritorna null su miss, gestisce state.farmaci assente', () => {
+    const state = { farmaci: [F1, F2] };
+    expect(selectFarmacoById(state, 2)).toBe(F2);
+    expect(selectFarmacoById(state, 999)).toBeNull();
+    // Defensive: state.farmaci absent (very-early render).
+    expect(selectFarmacoById({}, 1)).toBeNull();
+  });
+});

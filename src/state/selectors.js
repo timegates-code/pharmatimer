@@ -107,6 +107,26 @@ export function selectFarmaciAttivi(state) {
 }
 
 /**
+ * Lookup a farmaco by id. Returns null if not found (never undefined).
+ *
+ * Sessione 8c-2 CP5 / AMB-8c-2.C: signature aligned with selectProfiloById
+ * `(state, id) => ...` for internal consistency. The §11 v2.5.28 prompt
+ * sketched a curried form `(id) => (s) => ...`; the non-curried shape here
+ * wins because every existing call-site reads selectors that way
+ * (actions.js:514 `selectProfiloById(getState(), id)`).
+ *
+ * Defensive `state.farmaci || []` guards against very-early render paths
+ * where the slice might not yet be initialised.
+ *
+ * @param {import('./reducer.js').AppState} state
+ * @param {number} id
+ * @returns {import('../domain/types.js').Farmaco | null}
+ */
+export function selectFarmacoById(state, id) {
+  return (state.farmaci || []).find((f) => f.id === id) ?? null;
+}
+
+/**
  * True if an error is currently set on the state.
  * @param {import('./reducer.js').AppState} state
  * @returns {boolean}

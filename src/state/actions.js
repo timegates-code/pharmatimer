@@ -499,6 +499,116 @@ export function createActions({ dispatch, getState, repo }) {
     }
   }
 
+  // ----------------------------------------------------------
+  // Farmaci CRUD thunks (Sessione 8c-2 CP5 / §11 v2.5.28)
+  // ----------------------------------------------------------
+  //
+  // Pessimistic pattern: all repo writes complete inside a
+  // `withTransaction('rw', ['farmaci','orari_base'], ...)` scope
+  // before state mutations are dispatched. Post-commit we refetch
+  // BOTH farmaci AND orari (§6.93 — extended rationale below),
+  // then dispatch SET_FARMACI + SET_ORARI, then rebuildPlan().
+  //
+  // §6.93 rationale: rebuildPlan reads state.orari to build the
+  // multi-day plan. After replaceOrariForFarmaco(...) state.orari
+  // is stale; a SET_FARMACI-only refresh (as the §11 prompt wrote
+  // literally) would produce a plan based on pre-edit timings.
+  // Refetching via repo.getAllOrari() + SET_ORARI keeps the state
+  // coherent at zero UX cost. The reducer already exposes SET_ORARI
+  // (reducer.js:164, introduced 8a CP4 alongside SET_FARMACI).
+  //
+  // Soft-delete invariant (§6.67): deleteFarmaco sets attivo=0 at
+  // repo level. With GET_FARMACI_SOLO_ATTIVI=true (post-8c CP1),
+  // the refetched farmaci list no longer includes the target; the
+  // subsequent rebuildPlan drops its doses from the plan. Orari
+  // rows remain in IDB for Log Fase 3 consultation — their refetch
+  // returns them, but planBuilder ignores orphaned orari whose
+  // farmaco_id is not in state.farmaci.
+
+  async function addFarmaco(farmacoData, orari) {
+    try {
+      let newId;
+      await repo.withTransaction('rw', ['farmaci', 'orari_base'], async () => {
+        newId = await repo.addFarmaco({ ...farmacoData, attivo: 1 });
+        if (Array.isArray(orari) && orari.length > 0) {
+          await repo.replaceOrariForFarmaco(newId, orari);
+        }
+      });
+      const [farmaci, orariAll] = await Promise.all([
+        repo.getFarmaci({ soloAttivi: GET_FARMACI_SOLO_ATTIVI }),
+        repo.getAllOrari(),
+      ]);
+      dispatch({ type: 'SET_FARMACI', payload: farmaci });
+      dispatch({ type: 'SET_ORARI', payload: orariAll });
+      await rebuildPlan();
+      return { ok: true, id: newId };
+    } catch (err) {
+      dispatch({
+        type: 'SET_ERROR',
+        payload: {
+          kind: 'repo',
+          message: err?.message ?? 'Errore nel salvataggio farmaco',
+        },
+      });
+      return { ok: false };
+    }
+  }
+
+  async function updateFarmaco(id, patch, orari) {
+    try {
+      await repo.withTransaction('rw', ['farmaci', 'orari_base'], async () => {
+        await repo.updateFarmaco(id, patch);
+        if (Array.isArray(orari)) {
+          // Accept empty array (wipe all orari) for contract completeness;
+          // the form UX prevents this but the repo supports it.
+          await repo.replaceOrariForFarmaco(id, orari);
+        }
+      });
+      const [farmaci, orariAll] = await Promise.all([
+        repo.getFarmaci({ soloAttivi: GET_FARMACI_SOLO_ATTIVI }),
+        repo.getAllOrari(),
+      ]);
+      dispatch({ type: 'SET_FARMACI', payload: farmaci });
+      dispatch({ type: 'SET_ORARI', payload: orariAll });
+      await rebuildPlan();
+      return { ok: true };
+    } catch (err) {
+      dispatch({
+        type: 'SET_ERROR',
+        payload: {
+          kind: 'repo',
+          message: err?.message ?? 'Errore nell\'aggiornamento farmaco',
+        },
+      });
+      return { ok: false };
+    }
+  }
+
+  async function deleteFarmaco(id) {
+    // Soft-delete (§6.67): repo sets attivo=0, log rows untouched.
+    // No explicit transaction — single write, atomic at the row level.
+    try {
+      await repo.deleteFarmaco(id);
+      const [farmaci, orariAll] = await Promise.all([
+        repo.getFarmaci({ soloAttivi: GET_FARMACI_SOLO_ATTIVI }),
+        repo.getAllOrari(),
+      ]);
+      dispatch({ type: 'SET_FARMACI', payload: farmaci });
+      dispatch({ type: 'SET_ORARI', payload: orariAll });
+      await rebuildPlan();
+      return { ok: true };
+    } catch (err) {
+      dispatch({
+        type: 'SET_ERROR',
+        payload: {
+          kind: 'repo',
+          message: err?.message ?? 'Errore nell\'eliminazione farmaco',
+        },
+      });
+      return { ok: false };
+    }
+  }
+
   // AMB-8b.D / F3: thin wrapper that resolves id -> profilo via
   // selectProfiloById and delegates to cambiaProfilo(profilo).
   // Exists because cambiaProfilo accepts a whole profilo object
@@ -533,6 +643,9 @@ export function createActions({ dispatch, getState, repo }) {
     updateProfilo,
     deleteProfilo,
     attivaProfilo,
+    addFarmaco,
+    updateFarmaco,
+    deleteFarmaco,
     presa,
     salta,
     sospendi,

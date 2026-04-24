@@ -1,23 +1,26 @@
 // ============================================================
-// FarmaciTab — CP4 Sessione 8c (§22.9 AMB-8c.B–I + §6.88).
+// FarmaciTab — CP5 Sessione 8c-2 (thunks CRUD + delete + data_fine-past).
 // ============================================================
 //
-// CP4 extends CP3 with:
-//   - useUnsavedChanges hook consumer (§22.9 AMB-8c.I, DRY-at-3
-//     extraction consuming rettifica F2).
-//   - Sezione Orari inline between Frequenza&Dosi and Avanzate
-//     (§22.9 AMB-8c.C): N rows = dosi_giornaliere, auto-add on
-//     increase, trim + undo banner on decrease, soft warning
-//     order wrap-mezzanotte-aware via computeOraPrevista dominio.
-//   - Rehydration orari in edit mode from state.orari filtered
-//     by farmaco_id (CP browser step 2 verification).
-//
-// Thunks CRUD + delete + data_fine-past + ConfirmModal land in
-// CP5. Save currently closes without persisting (no-op stub).
+// CP5 extends CP4 with:
+//   - actions.addFarmaco / updateFarmaco / deleteFarmaco wiring
+//     via useAppContext (pessimistic thunks, §6.93 refetch orari).
+//   - "Elimina" button in drawer footer (edit mode only, danger).
+//   - ConfirmModal shared for delete (copy §6.67) and data_fine-past
+//     pre-save interceptor (copy §6.68). §6.89 consumed.
+//   - handleSalva normalises the form payload, routes through the
+//     data_fine-past check when applicable, and delegates to
+//     add/update thunks.
 //
 // Deviations consumed by this file:
-//   §6.88 (CP3)  — campo attivo OMESSO dal form.
-//   §6.91 (CP2)  — badge Temporaneo t.orange vs amber letterale.
+//   §6.88 (CP3)      — campo attivo OMESSO dal form.
+//   §6.91 (CP2)      — badge Temporaneo t.orange vs amber letterale.
+//   §6.89 (CP5)      — ConfirmModal shared promozione 2° consumer.
+//   §6.92 (CP5)      — ConfirmModal shared mounts useModalA11y
+//                      (asymmetric with ConfirmDeleteProfiloModal,
+//                      retrofit target 8d).
+//   §6.93 (CP5)      — thunks farmaci also dispatch SET_ORARI
+//                      (orari refetch needed for rebuildPlan coherence).
 // ============================================================
 
 import { useId, useMemo, useRef, useState } from 'react';
@@ -27,6 +30,7 @@ import { useTheme } from '../../hooks/useTheme.js';
 import { useModalA11y } from '../../hooks/useModalA11y.js';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges.js';
 import { computeOraPrevista } from '../../domain/planBuilder.js';
+import ConfirmModal from '../shared/ConfirmModal.jsx';
 
 // ------------------------------------------------------------
 // Enums + defaults.
@@ -250,7 +254,7 @@ function FarmacoCard({ farmaco, theme: t, onOpen }) {
 function FarmacoDrawer({
   mode, editingId, allFarmaci, onClose, setDirty, triggerRef, theme: t,
 }) {
-  const { state } = useAppContext();
+  const { state, actions } = useAppContext();
   const titleId = useId();
 
   // Active profilo for ora_prevista preview + order warning.
@@ -391,12 +395,125 @@ function FarmacoDrawer({
     onClose();
   }
 
+  // --- CP5: normalization helpers + thunks wire -----------------
+
+  // Convert the form state (strings/empty-string for empty) into the
+  // repo-shape payloads expected by add/updateFarmaco(farmacoData,
+  // orari). Pure: no side effects.
+  function normalizeForm(f) {
+    const trimOrNull = (s) => {
+      const v = (s ?? '').trim();
+      return v === '' ? null : v;
+    };
+    const numOrNull = (s) => {
+      if (s === '' || s == null) return null;
+      const n = Number(s);
+      return Number.isFinite(n) ? n : null;
+    };
+    const tipo = f.tipo_frequenza;
+    const farmacoData = {
+      nome: (f.nome ?? '').trim(),
+      principio_attivo: trimOrNull(f.principio_attivo),
+      funzione: trimOrNull(f.funzione),
+      tipo_frequenza: tipo,
+      intervallo_ore: tipo === 'intervallo' ? numOrNull(f.intervallo_ore) : null,
+      intervallo_minimo_ore: (tipo === 'intervallo' && f.custom_minimo)
+        ? numOrNull(f.intervallo_minimo_ore)
+        : null,
+      dosi_giornaliere: numOrNull(f.dosi_giornaliere) ?? 1,
+      relazione_pasto: f.relazione_pasto,
+      dettaglio_pasto: trimOrNull(f.dettaglio_pasto),
+      note: trimOrNull(f.note),
+      data_inizio: f.data_inizio || null,
+      data_fine: f.data_fine || null,
+    };
+    const orari = f.orari.map((o) => ({
+      dose_numero: Number(o.dose_numero),
+      offset_minuti: Number(o.offset_minuti) || 0,
+      ancora_riferimento: o.ancora_riferimento,
+      descrizione_momento: trimOrNull(o.descrizione_momento),
+    }));
+    return { farmacoData, orari };
+  }
+
+  // ConfirmModal state — 2 independent flows (§6.68 + §6.67).
+  //
+  // `dataFinePendingPayload` holds the normalised save payload while
+  // the user decides on the data_fine-past confirm. On cancel we
+  // discard it (drawer stays open, dirty preserved). On confirm we
+  // pass it to the appropriate thunk.
+  const [dataFineConfirmOpen, setDataFineConfirmOpen] = useState(false);
+  const [dataFinePendingPayload, setDataFinePendingPayload] = useState(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  // Submit-lock so rapid taps / Enter chord cannot fire the thunk twice.
+  const [submitting, setSubmitting] = useState(false);
+
+  function isoToday() {
+    return todayIso();
+  }
+
+  async function commitSave({ farmacoData, orari }) {
+    setSubmitting(true);
+    try {
+      const result = mode === 'create'
+        ? await actions.addFarmaco(farmacoData, orari)
+        : await actions.updateFarmaco(editingId, farmacoData, orari);
+      if (result?.ok) {
+        onClose();
+      }
+      // On failure the thunk already dispatched SET_ERROR; the drawer
+      // stays open so the user can retry or adjust.
+      return result;
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function handleSalva() {
-    // CP5 wiring: thunks. In CP4 this is a no-op close — form state
-    // is discarded on unmount. The test harness verifies gating only.
-    // eslint-disable-next-line no-console
-    console.log('[FarmacoDrawer] save (no-op CP4)', form);
-    onClose();
+    const payload = normalizeForm(form);
+    // Data_fine-past interceptor (§6.68). Applies to both create and
+    // edit (AMB-8c-2.D): the semantic "dose successive scompariranno"
+    // does not distinguish mode.
+    if (payload.farmacoData.data_fine && payload.farmacoData.data_fine < isoToday()) {
+      setDataFinePendingPayload(payload);
+      setDataFineConfirmOpen(true);
+      return;
+    }
+    await commitSave(payload);
+  }
+
+  async function confirmDataFine() {
+    const payload = dataFinePendingPayload;
+    setDataFineConfirmOpen(false);
+    setDataFinePendingPayload(null);
+    if (payload) await commitSave(payload);
+  }
+
+  function cancelDataFine() {
+    setDataFineConfirmOpen(false);
+    setDataFinePendingPayload(null);
+    // Drawer stays open; form dirty preserved.
+  }
+
+  async function confirmDelete() {
+    if (editingId == null) {
+      setDeleteConfirmOpen(false);
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const result = await actions.deleteFarmaco(editingId);
+      setDeleteConfirmOpen(false);
+      if (result?.ok) {
+        onClose();
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function cancelDelete() {
+    setDeleteConfirmOpen(false);
   }
 
   // --- Validation -----------------------------------------------
@@ -754,30 +871,85 @@ function FarmacoDrawer({
           theme={t}
         />
 
-        <footer className="flex gap-2 mt-4">
-          <button
-            type="button"
-            onClick={handleAnnulla}
-            className="flex-1 py-3 rounded-xl text-sm font-semibold border"
-            style={{
-              background: t.modalBg,
-              color: t.textPrimary,
-              borderColor: t.tapBd,
-            }}
-          >
-            Annulla
-          </button>
-          <button
-            type="button"
-            onClick={handleSalva}
-            disabled={!canSave}
-            className="flex-1 py-3 rounded-xl text-sm font-semibold disabled:opacity-50"
-            style={{ background: t.blue, color: '#fff' }}
-          >
-            Salva
-          </button>
+        <footer className="flex flex-col gap-2 mt-4">
+          {mode === 'edit' && (
+            <button
+              type="button"
+              onClick={() => setDeleteConfirmOpen(true)}
+              disabled={submitting}
+              className="w-full py-3 rounded-xl text-sm font-semibold border disabled:opacity-50"
+              style={{
+                background: t.modalBg,
+                color: t.red,
+                borderColor: t.red,
+              }}
+            >
+              Elimina
+            </button>
+          )}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleAnnulla}
+              disabled={submitting}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold border disabled:opacity-50"
+              style={{
+                background: t.modalBg,
+                color: t.textPrimary,
+                borderColor: t.tapBd,
+              }}
+            >
+              Annulla
+            </button>
+            <button
+              type="button"
+              onClick={handleSalva}
+              disabled={!canSave || submitting}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold disabled:opacity-50"
+              style={{ background: t.blue, color: '#fff' }}
+            >
+              Salva
+            </button>
+          </div>
         </footer>
       </div>
+
+      {/* --- ConfirmModal: data_fine nel passato (§6.68) ------------ */}
+      <ConfirmModal
+        open={dataFineConfirmOpen}
+        title="Data fine nel passato"
+        body={
+          <p>
+            Impostando la data fine a{' '}
+            <strong>{dataFinePendingPayload?.farmacoData?.data_fine ?? ''}</strong>,
+            le dosi successive a quella data scompariranno dalla vista Oggi.
+            I log storici saranno preservati.
+          </p>
+        }
+        confirmLabel="Conferma"
+        cancelLabel="Annulla"
+        onConfirm={confirmDataFine}
+        onCancel={cancelDataFine}
+      />
+
+      {/* --- ConfirmModal: delete soft (§6.67) ---------------------- */}
+      <ConfirmModal
+        open={deleteConfirmOpen}
+        title="Elimina farmaco?"
+        body={
+          <p>
+            Sei sicuro di voler eliminare{' '}
+            <strong>{initial.nome || 'questo farmaco'}</strong>?
+            Le eventuali dosi già registrate oggi scompariranno dalla vista Oggi;
+            il log storico sarà preservato per consultazione futura.
+          </p>
+        }
+        confirmLabel="Elimina"
+        cancelLabel="Annulla"
+        danger={true}
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 }

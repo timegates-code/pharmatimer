@@ -1,13 +1,14 @@
 // ============================================================
-// FarmaciTab — CP2 + CP3 + CP4 tests (Sessione 8c).
+// FarmaciTab — CP2 + CP3 + CP4 + CP5 tests (Sessione 8c + 8c-2).
 // ============================================================
 //
 // CP2: 3 tests (render + sort + "+ Nuovo" presence).
 // CP3: 3 tests (drawer open/close + Salva gate + tipo_frequenza toggle).
 // CP4: 3 tests (dosi→orari sync: add / trim+undo / wrap-mezzanotte soft warning).
+// CP5: 2 tests (delete flow §6.67 + data_fine-past flow §6.68).
 // ============================================================
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { screen, within, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProvider } from '../../test/renderHelpers.jsx';
@@ -233,5 +234,93 @@ describe('FarmaciTab — CP4 sezione Orari', () => {
 
     // 1 wrap (cena→sonno+180min = 02:30 del giorno dopo) è ammesso.
     expect(screen.queryByText(/ordine orari anomalo/i)).not.toBeInTheDocument();
+  });
+});
+
+// ============================================================
+// CP5 — delete + data_fine-past flows (§6.67 + §6.68 + §6.89).
+// ============================================================
+
+describe('FarmaciTab — CP5 delete + data_fine-past', () => {
+  it('(a) tap Elimina → ConfirmModal copy §6.67 → conferma → deleteFarmaco(id), drawer chiuso', async () => {
+    const user = userEvent.setup();
+    const deleteFarmaco = vi.fn().mockResolvedValue({ ok: true });
+
+    renderWithProvider(<FarmaciTab />, {
+      stateOverrides: { farmaci: buildFarmaci() },
+      actions: { deleteFarmaco },
+    });
+
+    // Apri drawer in edit mode su Pantorc (id=1).
+    await user.click(
+      within(screen.getByTestId('farmaco-card-1')).getByRole('button')
+    );
+    expect(screen.getByTestId('farmaco-drawer')).toBeInTheDocument();
+
+    // Tap "Elimina" nel footer del drawer. Scope the query to the drawer
+    // to avoid clashing with the ConfirmModal's confirm button label.
+    const drawer = screen.getByTestId('farmaco-drawer');
+    await user.click(within(drawer).getByRole('button', { name: /^elimina$/i }));
+
+    // ConfirmModal open con copy §6.67.
+    const confirm = screen.getByTestId('confirm-modal');
+    expect(within(confirm).getByText(/Pantorc 40mg/i)).toBeInTheDocument();
+    expect(within(confirm).getByText(/log storico/i)).toBeInTheDocument();
+
+    // Conferma: click sul bottone "Elimina" dentro il modal.
+    await user.click(within(confirm).getByRole('button', { name: /^elimina$/i }));
+
+    // Thunk invocato con id=1.
+    expect(deleteFarmaco).toHaveBeenCalledTimes(1);
+    expect(deleteFarmaco).toHaveBeenCalledWith(1);
+
+    // Drawer chiuso (mock returned {ok:true}).
+    expect(screen.queryByTestId('farmaco-drawer')).not.toBeInTheDocument();
+  });
+
+  it('(b) data_fine nel passato → Salva → ConfirmModal copy §6.68 → Conferma → updateFarmaco(id, patch, orari)', async () => {
+    const user = userEvent.setup();
+    const updateFarmaco = vi.fn().mockResolvedValue({ ok: true });
+
+    renderWithProvider(<FarmaciTab />, {
+      stateOverrides: {
+        farmaci: buildFarmaci(),
+        profili: [buildProfiloAttivo()],
+      },
+      actions: { updateFarmaco },
+    });
+
+    // Apri drawer su Duoresp (id=3). Il fixture ha già data_fine='2025-12-31';
+    // per triggerare isDirty modifichiamo a una data chiaramente nel passato.
+    await user.click(
+      within(screen.getByTestId('farmaco-card-3')).getByRole('button')
+    );
+    const drawer = screen.getByTestId('farmaco-drawer');
+    expect(drawer).toBeInTheDocument();
+
+    const dataFine = within(drawer).getByLabelText('Data fine');
+    fireEvent.change(dataFine, { target: { value: '2020-01-01' } });
+
+    // Tap Salva.
+    await user.click(within(drawer).getByRole('button', { name: /^salva$/i }));
+
+    // ConfirmModal open con copy §6.68.
+    const confirm = screen.getByTestId('confirm-modal');
+    expect(within(confirm).getByText(/2020-01-01/)).toBeInTheDocument();
+    expect(within(confirm).getByText(/scompariranno/i)).toBeInTheDocument();
+    expect(within(confirm).getByText(/log storici/i)).toBeInTheDocument();
+
+    // Conferma.
+    await user.click(within(confirm).getByRole('button', { name: /^conferma$/i }));
+
+    // Thunk invocato con id=3, patch contenente data_fine, + orari (array).
+    expect(updateFarmaco).toHaveBeenCalledTimes(1);
+    const [idArg, patchArg, orariArg] = updateFarmaco.mock.calls[0];
+    expect(idArg).toBe(3);
+    expect(patchArg).toMatchObject({ data_fine: '2020-01-01' });
+    expect(Array.isArray(orariArg)).toBe(true);
+
+    // Drawer chiuso.
+    expect(screen.queryByTestId('farmaco-drawer')).not.toBeInTheDocument();
   });
 });
