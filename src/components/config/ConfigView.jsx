@@ -33,15 +33,23 @@ import UnsavedChangesModal from './UnsavedChangesModal.jsx';
 //   - Focus-trap / full a11y of the modal: deferred to 8d
 //     (§11 "Out of scope").
 //
-// Routing contract unchanged from CP2 (AMB-8a.A + rettifica F7).
-// The parent route in App.jsx is <Route path="/config/*" …>,
-// children below use RELATIVE paths (no leading slash).
+// Routing contract: parent route in App.jsx is
+// <Route path="/config/*" …>. §6.104 (Sessione 8d-A-continue-2):
+// child <Navigate> uses ABSOLUTE paths to avoid the
+// v7_relativeSplatPath bug — under the v7 flag opted-in by §6.84
+// (main.jsx), relative paths inside a splat route resolve against
+// the current URL (including the splat segment), which causes a
+// navigation loop on cross-tab clicks (e.g. /config/farmaci →
+// /config/farmaci/profili → /config/farmaci/profili/impostazioni…).
+// Absolute paths bypass the resolution rules entirely.
 
 export default function ConfigView() {
   const [dirty, setDirty] = useState(false);
-  // pendingNavTo: null when idle; a relative tab name ('profili' /
-  // 'farmaci' / 'impostazioni') when a dirty-state navigation was
-  // intercepted and awaits user decision.
+  // pendingNavTo: null when idle; an absolute path
+  // ('/config/profili' / '/config/farmaci' / '/config/impostazioni')
+  // when a dirty-state navigation was intercepted and awaits user
+  // decision. Absolute form comes from ConfigTabBar TABS — see
+  // §6.104 fix.
   const [pendingNavTo, setPendingNavTo] = useState(null);
   const navigate = useNavigate();
 
@@ -58,8 +66,9 @@ export default function ConfigView() {
     setDirty(false);
     const target = pendingNavTo;
     setPendingNavTo(null);
-    // Relative navigate resolves against /config/*: 'profili' →
-    // /config/profili.
+    // Absolute path already: TABS in ConfigTabBar use
+    // '/config/<tab>' form (§6.104), so navigate(target) bypasses
+    // splat-relative resolution.
     navigate(target);
   }
 
@@ -71,14 +80,14 @@ export default function ConfigView() {
     <div className="pb-20">
       <ConfigTabBar onTabClick={handleTabClick} />
       <Routes>
-        <Route index element={<Navigate to="impostazioni" replace />} />
+        <Route index element={<Navigate to="/config/impostazioni" replace />} />
         <Route path="profili" element={<ProfiliTab dirty={dirty} setDirty={setDirty} />} />
         <Route path="farmaci" element={<FarmaciTab dirty={dirty} setDirty={setDirty} />} />
         <Route
           path="impostazioni"
           element={<ImpostazioniTab dirty={dirty} setDirty={setDirty} />}
         />
-        <Route path="*" element={<Navigate to="impostazioni" replace />} />
+        <Route path="*" element={<Navigate to="/config/impostazioni" replace />} />
       </Routes>
       {pendingNavTo !== null && (
         <UnsavedChangesModal

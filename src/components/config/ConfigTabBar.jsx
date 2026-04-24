@@ -16,9 +16,12 @@ import { useTheme } from '../../hooks/useTheme.js';
 //   - headerBg / headerBorder : sfondo + bordo inferiore della bar
 //   - navActive / navInactive : colore label e underline active
 //
-// Relative paths (`to="profili"`) risolvono rispetto al parent
-// Route `/config/*` montato da App.jsx, quindi il full URL
-// diventa `/config/profili` ecc.
+// Absolute paths (`to="/config/profili"` etc.): §6.104 fix
+// (Sessione 8d-A-continue-2). Sotto `v7_relativeSplatPath: true`
+// opt-in (§6.84, main.jsx), i path relativi dentro lo splat route
+// `/config/*` risolvono contro l'URL corrente (incluso il segmento
+// splat) — causerebbe loop di navigazione cross-tab. Gli absolute
+// path bypassano le regole di resolution.
 //
 // NavLink (react-router-dom v6.30): `isActive` è auto-derivato
 // dal match URL, e `aria-current="page"` è auto-applicato al DOM
@@ -28,9 +31,9 @@ import { useTheme } from '../../hooks/useTheme.js';
 // coerente con la struttura di 3 tab navigazionali.
 
 const TABS = [
-  { to: 'profili',      label: 'Profili' },
-  { to: 'farmaci',      label: 'Farmaci' },
-  { to: 'impostazioni', label: 'Impostazioni' },
+  { to: '/config/profili',      label: 'Profili' },
+  { to: '/config/farmaci',      label: 'Farmaci' },
+  { to: '/config/impostazioni', label: 'Impostazioni' },
 ];
 
 export default function ConfigTabBar({ onTabClick } = {}) {
