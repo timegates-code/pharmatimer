@@ -507,7 +507,8 @@ export function createActions({ dispatch, getState, repo }) {
   // `withTransaction('rw', ['farmaci','orari_base'], ...)` scope
   // before state mutations are dispatched. Post-commit we refetch
   // BOTH farmaci AND orari (§6.93 — extended rationale below),
-  // then dispatch SET_FARMACI + SET_ORARI, then rebuildPlan().
+  // then dispatch SET_FARMACI + SET_ORARI, then rebuild the plan
+  // via `rebuildPlanFromFresh` (§6.95 — stateRef-bypass below).
   //
   // §6.93 rationale: rebuildPlan reads state.orari to build the
   // multi-day plan. After replaceOrariForFarmaco(...) state.orari
@@ -517,13 +518,47 @@ export function createActions({ dispatch, getState, repo }) {
   // coherent at zero UX cost. The reducer already exposes SET_ORARI
   // (reducer.js:164, introduced 8a CP4 alongside SET_FARMACI).
   //
+  // §6.95 rationale (hotfix CP6 8c-2, scoperta durante browser step 4):
+  // calling `await rebuildPlan()` right after SET_FARMACI/SET_ORARI
+  // reads `stateRef.current`, which AppContext updates in a
+  // `useEffect([state])` that runs one tick AFTER the dispatch.
+  // Within the same microtask chain the thunk sees a state snapshot
+  // that still excludes the freshly-written farmaco/orari — result:
+  // the new med has zero entries in the plan. The fix keeps the
+  // freshly-fetched `farmaci` + `orariAll` in local scope and feeds
+  // them directly to `buildMultiDayPlan`, bypassing stateRef. Note:
+  // `updateProfilo` (see above) has the same pattern but its active
+  // profilo is spread into the dispatch payload so the observable
+  // effect differs — retrofit candidate for 8d.
+  //
   // Soft-delete invariant (§6.67): deleteFarmaco sets attivo=0 at
   // repo level. With GET_FARMACI_SOLO_ATTIVI=true (post-8c CP1),
   // the refetched farmaci list no longer includes the target; the
-  // subsequent rebuildPlan drops its doses from the plan. Orari
-  // rows remain in IDB for Log Fase 3 consultation — their refetch
+  // subsequent rebuild drops its doses from the plan. Orari rows
+  // remain in IDB for Log Fase 3 consultation — their refetch
   // returns them, but planBuilder ignores orphaned orari whose
-  // farmaco_id is not in state.farmaci.
+  // farmaco_id is not in farmaci.
+
+  async function rebuildPlanFromFresh({ farmaci, orari }) {
+    const state = getState();
+    if (!state.profiloAttivo) return;
+    const today = selectToday(state);
+    const startDate = addDays(today, -PLAN_DAYS_BEFORE);
+    const endDate = addDays(today, PLAN_DAYS_AFTER);
+    const logAssunzioni = await repo.getLogByRange(startDate, endDate);
+    const plan = buildMultiDayPlan({
+      profilo: state.profiloAttivo,
+      farmaci,
+      orari,
+      logAssunzioni,
+      startDate,
+      numDays: PLAN_TOTAL_DAYS,
+    });
+    dispatch({
+      type: 'REBUILD_PLAN',
+      payload: { plan, lastBuiltForDay: today },
+    });
+  }
 
   async function addFarmaco(farmacoData, orari) {
     try {
@@ -540,7 +575,7 @@ export function createActions({ dispatch, getState, repo }) {
       ]);
       dispatch({ type: 'SET_FARMACI', payload: farmaci });
       dispatch({ type: 'SET_ORARI', payload: orariAll });
-      await rebuildPlan();
+      await rebuildPlanFromFresh({ farmaci, orari: orariAll });
       return { ok: true, id: newId };
     } catch (err) {
       dispatch({
@@ -570,7 +605,7 @@ export function createActions({ dispatch, getState, repo }) {
       ]);
       dispatch({ type: 'SET_FARMACI', payload: farmaci });
       dispatch({ type: 'SET_ORARI', payload: orariAll });
-      await rebuildPlan();
+      await rebuildPlanFromFresh({ farmaci, orari: orariAll });
       return { ok: true };
     } catch (err) {
       dispatch({
@@ -595,7 +630,7 @@ export function createActions({ dispatch, getState, repo }) {
       ]);
       dispatch({ type: 'SET_FARMACI', payload: farmaci });
       dispatch({ type: 'SET_ORARI', payload: orariAll });
-      await rebuildPlan();
+      await rebuildPlanFromFresh({ farmaci, orari: orariAll });
       return { ok: true };
     } catch (err) {
       dispatch({
