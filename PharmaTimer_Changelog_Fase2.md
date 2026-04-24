@@ -1,8 +1,8 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 2.5.27
+**Versione:** 2.5.28
 **Data inizio fase:** 16 aprile 2026
-**Ultima modifica:** 23 aprile 2026
+**Ultima modifica:** 24 aprile 2026
 **Ambito:** Sviluppo PWA React standalone con persistenza locale, preparata per futuro swap verso backend FastAPI+MariaDB.
 
 Questo documento raccoglie le decisioni architetturali, la struttura del progetto, le deviazioni dalla specifica e lo stato di avanzamento della Fase 2. È il **punto di riferimento unico** per ogni sessione di sviluppo: leggerlo prima di iniziare garantisce continuità senza dover rileggere l'intero storico chat.
@@ -341,6 +341,26 @@ Questo documento raccoglie le decisioni architetturali, la struttura del progett
 - Nuovo §22.8 stato post-Sessione 8b implementativa
 - §11 sostituita con stub Sessione 8c (FarmaciTab analisi-first, prompt da scrivere in apertura sessione)
 - Drift §6.69 pregresso (entry §1 ferme a v2.5.20.1, gap di 5 versioni) NON retrocorretto per principio fatto-storico immutabile
+
+**Changelog versione 2.5.28 (rispetto alla 2.5.27):**
+- Sessione 8c implementativa **parziale** (CP1-CP4 completati, CP5-CP6 rimandati a 8c-2 contingency per preservare qualità, come previsto da §11 v2.5.27 note finali).
+- **CP1** flip `GET_FARMACI_SOLO_ATTIVI = true` in `src/domain/constants.js`: **287/287 test invariati** (zero rotti — consumer unico `actions.js:99` in `init()`, nessun test di integrazione con fixture `attivo:0` su farmaci).
+- **CP2** lista FarmaciTab read-only + `FarmacoCard` interno + `selectFarmaci` in selectors.js + sort alfabetico collation `it` + border-left + badge Cronico/Temporaneo + bottone "+ Nuovo" disabled. **287 → 290 test** (+3 netti).
+- **CP3** `FarmacoDrawer` + form 3 sezioni (Anagrafica / Frequenza & Dosi / Avanzate) con H2 sticky per sezione, `useModalA11y` focus trap, backdrop gated (§6.86.1/.4), validation required + duplicate name warning case-insensitive+trim, hard check `intervallo_minimo_ore < intervallo_ore` + conditional rendering `intervallo_ore`. ConfigView wire `dirty/setDirty` su `<Route path="farmaci">`. **290 → 293 test** (+3 netti). **§6.88 consumata** (campo `attivo` OMESSO dal form, commento inline).
+- **CP4** hook `useUnsavedChanges` estratto in `src/hooks/useUnsavedChanges.js` (AMB-8c.I, rettifica F2 / DRY-at-3, AMB-8b.G chiusa implicitamente). FarmaciTab consuma il hook al posto di `useState`+fallback. **Sezione Orari inline** tra Frequenza&Dosi e Avanzate con `OrarioRow` sub-component mobile-first (grid 2-col ancora+offset + textarea descrizione). Auto-sync righe↔`dosi_giornaliere`: add con defaults (ancora=colazione, offset=0) + trim con banner `role="status"` + undo label "Ripristina" (no collision con footer "Annulla"). Rehydration orari in edit mode da `state.orari.filter(farmaco_id)`. Soft warning ordine `wrapCount > 1` usando `computeOraPrevista` importato da `src/domain/planBuilder.js` (zero duplicazione dominio). **293 → 297 test** (+4 netti: 1 hook + 3 FarmaciTab).
+- **3 deviazioni §6 aperte** in questa sessione:
+  - **§6.88** — campo `attivo` OMESSO dal form farmaco (CP3, AMB-8c.H). Soft-delete (§6.67) diventa unico canale user-level di disattivazione; schema DB invariato.
+  - **§6.90** — `SET_FARMACI` action type + test preesistenti da Sessione 8a CP4 (§6.77 cleanup), non catturati dall'analisi 8c (§22.9) che aveva scope AMB-only. Reducer.js:161 e reducer.test.js:201 già presenti come "template pattern" insieme a `SET_ORARI`. Effetto: CP5 punto 3 del prompt §11 v2.5.27 degenera in no-op; target finale 8c rivisto 309±3 → **308±3** per coerenza. Nessuna azione correttiva sul codice, solo documentale. Precedente analogo: §6.60.
+  - **§6.91** — badge "Temporaneo" in `FarmacoCard` usa token `t.orange` (non `amber` letterale AMB-8c.A), per token-completeness: theme.js espone terna `orange/orangeBg/orangeTx` simmetrica a `green`, mentre `amber` ha solo `amberBg/amberTx` partials. Impatto: nominalismo visuale, zero impatto semantico.
+- **Scoperta operativa CP0**: 19 file `.bak` relitti (suffissi `.cp1 .cp2 .cp3 .cp4 .cp5 .cp6 .cp7 .hotfix .hotfixbug`) residui di sessioni 8a/8b presenti in `src/test/`, `src/components/config/`, `src/data/repository/`, `src/state/`. Rimozione massiva via `find src -name '*.bak' -delete` in apertura CP2 (untracked, zero perdita). Rischio grep fantasma nelle future sessioni neutralizzato.
+- **Scoperta operativa CP4**: `computeOraPrevista` già esportata pura da `src/domain/planBuilder.js:7` (re-export backward-compat). Import diretto evita re-implementazione logica ora_prevista virtuale — coerente con "helper pure inline" (scelta utente) senza duplicazione dominio.
+- **Contingency split deciso in chiusura CP4**: CP5 (thunks CRUD + ConfirmModal shared + delete + data_fine-past + 12 test) + CP6 (CP browser 7 punti) delegati a **Sessione 8c-2**. Rationale: attenzione residua post-CP4 insufficiente per qualità CP5, consistent con note finali §11 v2.5.27.
+- **§11 sostituita** con prompt esecutivo **Sessione 8c-2 contingency** (CP0 sanity-light + CP5 thunks/ConfirmModal/delete/data_fine-past + CP6 browser; baseline 297, target **308 ±3**).
+- Nuovo **§22.10** stato post-Sessione 8c implementativa (parziale CP1-CP4).
+- §7 roadmap: riga 8c → "⏸️ In corso (parziale CP1-CP4)", nuova riga **8c-2** pianificata (CP5+CP6).
+- §12 titolo esteso con `+ 8a + 8b + 8c-parz`; nuova tabella delta 8c parziale.
+- Deviazioni **candidate** ancora aperte per 8c-2: **§6.89** (ConfirmModal promozione 2° consumer, rationale F3) rimane da aprire al primo commit CP5 8c-2.
+- Drift §6.69 pregresso invariato rispetto a v2.5.27 (entry 2.5.28 in continuità posizionale con 2.5.27).
 
 **Changelog versione 2.5.27 (rispetto alla 2.5.26):**
 - Sessione 8c analisi-first completata 23/04/2026: 14 AMB-8c.A-N congelate per FarmaciTab (lista+drawer + form 4 sezioni §6.66 + thunks CRUD + hook `useUnsavedChanges` estratto + `ConfirmModal` shared + soft-delete + flip `GET_FARMACI_SOLO_ATTIVI`)
@@ -1853,6 +1873,56 @@ Tra il completamento del Punto 3 (Nome `'Roberto test'` correttamente persistito
 
 ---
 
+## 6.88 — Rimozione campo `attivo` dal form farmaco (8c CP3)
+
+**Contesto.** §6.66 (Sessione 8 analisi-first) includeva `attivo` tra i campi editabili del form farmaco sezione "Avanzate". AMB-8c.H (Sessione 8c analisi-first, §22.9) ha rettificato la scelta con rettifica F1: il campo resta in schema DB (necessario per infrastruttura filtering post-flip `GET_FARMACI_SOLO_ATTIVI`) ma **non è editabile in UI**.
+
+**Decisione.** In CP3 8c impl, il form FarmacoDrawer omette `attivo`. Soft-delete (§6.67) diventa unico canale user-level di disattivazione. Con `GET_FARMACI_SOLO_ATTIVI=true` post-flip CP1 e farmaci inattivi non visibili in FarmaciTab lista, un checkbox "Attivo" nel form sarebbe alias funzionale nascosto di delete senza i suoi safeguard (ConfirmModal + copy §6.67 + `rebuildPlan` esplicito).
+
+**Razionale.** Consistenza con principio "un solo canale per operazione destructive": delete via bottone dedicato con conferma, non via toggle nascosto in un form CRUD. Se in futuro emerge caso d'uso "disattiva temporaneamente senza eliminare" (es. sospensione terapia su farmaco cronico con intenzione di riprendere), sarà feature "pausa" separata in Log Fase 3, **non** ripristino del campo in form.
+
+**Schema DB invariato.** Il flag resta come infrastruttura per `WHERE attivo=1` del repo.
+
+**Consumatori impattati.** Solo `FarmaciTab.jsx` → `FarmacoDrawer` → sezione Avanzate. Commento inline nel codice riporta §6.88.
+
+---
+
+## 6.89 — [Candidata, non ancora consumata: attesa CP5 8c-2]
+
+**Contesto.** AMB-8b.H (Sessione 8b) fissava la regola "promozione `ConfirmModal` shared al 2° tab consumer". Rettifica F3 (Sessione 8c analisi-first, §22.9) interpreta "2° consumer" in senso più sfumato: in FarmaciTab il modal è consumato in 2 scenari distinti dello stesso tab (delete + data_fine-past), rendendo la promozione contestuale più efficiente della duplicazione inline.
+
+**Status.** Non ancora consumata. Prevista apertura al primo commit CP5 della Sessione 8c-2 contingency.
+
+---
+
+## 6.90 — `SET_FARMACI` case + test preesistenti da Sessione 8a CP4 (§6.77 cleanup)
+
+**Contesto.** CP0 di 8c impl (gate 3c "naming clash check") ha rivelato che `reducer.js:161` e `reducer.test.js:201` già contenevano il case `SET_FARMACI` + test previsti da AMB-8c.E + CP5 punto 3 del prompt §11 v2.5.27.
+
+**Origine.** Introdotti in Sessione 8a CP4 (§6.77 "nomeUtente mirror removal") come "full-list replacement pattern" template insieme a `SET_ORARI`. Il commento `reducer.js:168` ne fa cenno esplicito. Non catturati dall'analisi 8c (§22.9) che aveva scope AMB-only e non riesaminava il reducer post-8a.
+
+**Effetto operativo.** CP5 punto 3 del prompt §11 v2.5.27 degenera in no-op (conformità già verificata). Δ test CP5 atteso +12 → +11 effettivi. Target finale 8c rivisto **309±3 → 308±3**.
+
+**Nessuna azione correttiva sul codice.** Solo documentale. Precedente analogo: §6.60 (drift-preventive scoperta hotfix in-session).
+
+**Lezione.** Le analisi-first hanno scope AMB ma possono cieche a infrastruttura già in place. In 8d considerare regola procedurale: "gate CP0 deve grep-check ogni action type dichiarato come NEW nell'analisi, per intercettare preesistenze".
+
+---
+
+## 6.91 — Badge "Temporaneo" usa `t.orange` (non `amber` letterale AMB-8c.A)
+
+**Contesto.** AMB-8c.A (Sessione 8c analisi-first) specificava testualmente "badge cronica verde / **temp amber**" per `FarmacoCard`.
+
+**Decisione.** In CP2 8c impl, il badge usa token `t.orange` invece di `t.amberBg/amberTx`. Rationale: `theme.js` espone **terna** `orange/orangeBg/orangeTx` simmetrica a `green/greenBg/greenTx` usata da `ProfiloCard` per "Attivo", mentre `amber` ha solo `amberBg/amberTx` partials (no token base). Usare `amber` richiederebbe 2 access al theme (Bg+Tx) senza colore primario coerente per il border-left e il font del badge stesso.
+
+**Differenza visiva.** Orange (`#FB923C` dark / `#C2410C` light) è leggermente più rosso rispetto all'amber (`#FEF3C7`/`#92400E`). Percezione: indistinguibile nel contesto "warning non-critico / temporaneo".
+
+**Impatto.** Nominalismo visuale; zero impatto funzionale/semantico.
+
+**Alternative valutate.** Introdurre token `amber` base in theme.js (scope creep); tornare letteralmente ad amber partials (architettura inconsistente). Scelta utente confermata: opzione A (orange, consigliata).
+
+---
+
 ## 7. Roadmap Fase 2 — avanzamento
 
 | Step | Contenuto | Stato | Note |
@@ -1882,7 +1952,8 @@ Tra il completamento del Punto 3 (Nome `'Roberto test'` correttamente persistito
 | **8-pre** | Chiusura Q1 (scope UNDO_ASSUNZIONE) + Q2 (log range at init) residue | ✅ **Completo** | Analisi-first + implementativa completate 22/04/2026. Esito A al CP0.5 (compliance §6.14 già in place dalla 7d-2p2), CP2 skippato, §6.74 non consumato (riservato). §6.75 nuova (reuse `logAssunzioni`, ottimizzazione §6.72). 2 file modificati, 0 nuovi, **247 → 250 test** (target AMB-E centrato). CP browser 2/2 verdi (punto 3 skip condizionale) |
 | **8a** | Foundation Config: ConfigView shell + routing `/config/*` + tab bar URL-addressable + ImpostazioniTab (Nome + Tema + Avanzate-DEV) + `withTransaction` repo generico + thunks setting-related | ✅ **Completo** | Implementativa completata 23/04/2026 (v2.5.23 → v2.5.24). **250 → 269 test** (+19, target AMB-J +18 ±3 bound superiore). 6 nuovi file, 13 modificati. 3 hotfix intra-sessione (dark tokens, useEffect rehydrate, button block). 8 deviazioni §6.78-§6.85 (di cui 3 candidate 8d). CP browser 5/5 verdi |
 | **8b** | ProfiliTab: CRUD profili + form profilo + riuso `cambiaProfilo` / `setProfiloAttivoConCleanup` (§6.20) + guard §6.5 (delete profilo attivo rifiutato) + rebuildPlan reattivo post-edit (§6.64) | | Target ~7-9 file, +18-22 test |
-| **8c** | FarmaciTab: CRUD farmaci + form unico con orari inline (§6.66) + save atomico `withTransaction` + soft-delete (§6.67) + flip `GET_FARMACI_SOLO_ATTIVI=true` + date editabili (§6.68). CP0: verificare `DoseCard` usi delta storico del log (§6.64 nota) | | Target ~10-12 file, +25-35 test |
+| **8c** | FarmaciTab: CRUD farmaci + form unico con orari inline (§6.66) + save atomico `withTransaction` + soft-delete (§6.67) + flip `GET_FARMACI_SOLO_ATTIVI=true` + date editabili (§6.68). CP0: verificare `DoseCard` usi delta storico del log (§6.64 nota) | ⏸️ **In corso (parziale CP1-CP4)** | Sessione 24/04/2026 (v2.5.27 → v2.5.28) completata CP1-CP4: **287 → 297 test** (+10 netti). 3 deviazioni consumate (§6.88/6.90/6.91). CP5 (thunks CRUD + ConfirmModal + delete + data_fine-past) + CP6 (browser) delegati a **8c-2 contingency** (decisione runtime per preservare qualità, coerente con §11 v2.5.27 note finali) |
+| **8c-2** | CP5+CP6 di 8c: 3 thunks (`addFarmaco`/`updateFarmaco`/`deleteFarmaco`) pessimistici con `withTransaction`, `ConfirmModal` shared (§6.89 aprire), delete button + copy §6.67, data_fine-past interceptor + copy §6.68, file nuovo `actions.farmaci.test.js`, 2 test end-to-end FarmaciTab, CP browser 7 punti | ⏳ **Pianificata** | Baseline 297, target **308 ±3** (Δ +11 netti; -1 vs target originale per §6.90 conformità preesistente). §6.89 candidata da aprire |
 | **8d** | Polish Config + a11y (focus trap dei form, aria-labels, Escape semantics nei confirm dialog) + chiusura deviazioni emerse in 8a-8c | | Target ~3-5 file, +5-10 test |
 | 9 | Notifiche locali (Notification API + scheduling) + **fix dominio §6.18 cross-midnight** (§6.26) | | |
 | 10 | Service worker attivo + manifest definitivo + icone | | |
@@ -1999,255 +2070,85 @@ Chiarimenti risolti pre-Step 4b (AMB-1/2/3):
 ---
 
 
-## 11. Prossimo step — Sessione 8c implementativa (FarmaciTab CRUD + hook extraction + ConfirmModal shared)
+## 11. Prossimo step — Sessione 8c-2 contingency (CP5+CP6 di 8c: thunks CRUD + ConfirmModal shared + delete + data_fine-past + CP browser)
 
-**Scope.** 14 AMB-8c.A-N congelate (§22.9) su FarmaciTab: lista + drawer con form 4 sezioni (§6.66) + thunks CRUD pessimistici (§6.64) + hook `useUnsavedChanges` estratto (chiusura AMB-8b.G) + `ConfirmModal` shared (promozione al 2° consumer) + soft-delete (§6.67) + flip `GET_FARMACI_SOLO_ATTIVI` + date editabili con confirm past (§6.68).
+**Scope.** Completamento Sessione 8c implementativa sospesa dopo CP4 (v2.5.28). Apertura §6.89 (ConfirmModal promozione 2° consumer) al primo commit CP5. Tutte le AMB-8c.J/K + CP5/CP6 del prompt §11 v2.5.27 confermate, tenuto conto di **§6.90** (SET_FARMACI case + test già in place da 8a CP4 — CP5 punto 3 no-op documentale, Δ test ridotto di 1).
 
-**Baseline test:** 287/287 su 28 test files (post-8b impl, §22.8).
-**Target test:** **309 ±3** (+22 netti).
-**Bump finale:** v2.5.27 → v2.5.28 a chiusura sessione.
+**Baseline test:** 297/297 su 30 test files (post-8c CP4, §22.10).
+**Target test:** **308 ±3** (+11 netti: era 309±3 pre-§6.90, ora 308±3 per conformità preesistente).
+**Bump finale:** v2.5.28 → v2.5.29 a chiusura sessione.
 
-### CP0 — sanity check (zero codice, 6 gate)
+### CP0 sanity-light (3 gate — zero codice)
 
-1. `git status` pulito sul branch corrente (step-8 o successore). `git log -1 --oneline` dovrebbe mostrare il commit di chiusura 8b impl (o il Changelog v2.5.27).
-2. Full test suite: `npm run test` → attesi **287/287 su 28 test files**. Se divergente: stop + diagnosi prima di proseguire.
-3. Naming clash check (grep -rn in `src/`, atteso 0 match per ciascuno):
-   - `useUnsavedChanges` (nuovo hook in CP4)
-   - `ConfirmModal` senza prefisso (nuovo componente shared in CP5; `ConfirmDeleteProfiloModal` esistente da 8b NON è clash)
-   - `SET_FARMACI` come action type (nuovo case reducer in CP5)
-   - `addFarmaco`, `updateFarmaco`, `deleteFarmaco` come thunk in `src/state/actions.js` (atteso 0; i metodi repo omonimi esistono già e non collidono).
-4. `makeFakeRepo` in `src/test/renderWithRealProvider.jsx`: verificare presenza di `addFarmaco`, `updateFarmaco`, `deleteFarmaco`, `replaceOrariForFarmaco`, `getFarmaci`, `withTransaction`. Se gap → stub contestuale al primo CP che consuma il metodo mancante (pattern §6.60 / AMB-8a.K).
-5. DoseCard delta_minuti gate (rassicurazione §6.64 nota, già validato da 7d-2p3 §22.3.1 + §6.45): 1 test fixture con `delta_minuti=15` + `ora_prevista` mutata post-render verifica che il rendering di `delta_minuti` resti `15` invariato. Se falso → stop + pre-fix dominio obbligatorio prima di CP3.
-6. `GET_FARMACI_SOLO_ATTIVI` valore attuale in `src/domain/constants.js` → atteso `false` (AMB-5b2.D status quo). CP1 flipperà a `true`.
+1. `git status`: working tree pulito se 8c è stato committato (`git log -1 --oneline` mostra "Sessione 8c CP1-CP4 parziale" o equivalente), oppure dirty working-set uncommitted (contains constants.js + selectors.js + FarmaciTab.jsx + ConfigView.jsx + FarmaciTab.test.jsx + useUnsavedChanges.js + useUnsavedChanges.test.jsx). Entrambi accettabili; se altro — stop.
+2. Full test suite: `npm test -- --run` → atteso **297/297 su 30 test files**. Divergente → diagnosi prima di proseguire.
+3. Naming clash micro-check per CP5:
+   - `ConfirmModal` senza prefisso (solo commento TODO in `ProfiliTab.jsx:514`, non clash).
+   - `addFarmaco`, `updateFarmaco`, `deleteFarmaco` come thunk in `src/state/actions.js`: atteso 0 match (repo methods omonimi esistono già e non collidono).
 
-Stop + segnalazione se uno dei 6 gate fallisce.
+### Prerequisiti lettura (prima di CP5)
 
-### AMB-8c letterali (richiamo da §22.9)
+- `src/state/actions.js` (pattern thunk pessimistici + `withTransaction` + `dispatch SET_*` + `rebuildPlan`)
+- `src/data/repository/LocalRepository.js` (signature `addFarmaco`, `updateFarmaco`, `deleteFarmaco`, `replaceOrariForFarmaco`, `getFarmaci`, `withTransaction`)
+- `src/components/config/ProfiliTab.jsx` sezione `ConfirmDeleteProfiloModal` (template pattern §6.86.3 per `ConfirmModal` shared)
+- `src/state/actions.profili.test.js` (template file per `actions.farmaci.test.js` — split-per-concern §6.87)
+- §6.67 copy delete + §6.68 copy data_fine-past (testi user-facing)
 
-- **A** UX: lista flat alfabetica + drawer bottom-sheet. "+ Nuovo" top-right header. Card con `nome` + `funzione` + badge cronica/temp (derivato da `data_fine === null`) + `N×/die` + border-left colorato. Tap-to-edit. Inattivi non visibili (lista usa `soloAttivi=true`, stesso canale del plan).
-- **B** Form 4 sezioni scroll-verticale continuo con H2 sticky, `useModalA11y` focus trap. Required: `nome`, `tipo_frequenza`, `dosi_giornaliere`, `relazione_pasto`, `data_inizio`. Conditional: `intervallo_ore` required sse `tipo_frequenza==='intervallo'`. Soft warning ordine orari wrap-mezzanotte-aware (analogo AMB-8b.B `ora_sonno`). Duplicati nome soft warning.
-- **C** Sezione Orari: render N righe = `dosi_giornaliere`. Auto-add righe su aumento (defaults ancora=`colazione`, offset=0, descrizione vuota). Trim ultime righe su diminuzione + banner `role="status"` con affordance undo inline. Niente confirm modale (no nested modals).
-- **D** `intervallo_minimo_ore`: checkbox "Personalizza limite minimo"; off → valore persistito `null` (fallback repo computa 50% runtime); on → input esplicito con hard validation `intervallo_minimo_ore < intervallo_ore`.
-- **E** Reducer: **1 sola** action `SET_FARMACI` (array completo, include farmaco appena creato/aggiornato). Nessuna action separata per orari — il rebuildPlan post-CRUD rilegge orari da repo.
-- **F** Thunks pessimistici:
-  - `addFarmaco(farmacoData, orari)` → tx `rw ['farmaci','orari_base']`: `repo.addFarmaco(farmacoData)` → `repo.replaceOrariForFarmaco(newId, orari)` → dispatch `SET_FARMACI` (lista rifetch) → `rebuildPlan()`.
-  - `updateFarmaco(id, patch, orari?)` → tx: `repo.updateFarmaco(id, patch)` → se `orari` presente `repo.replaceOrariForFarmaco(id, orari)` → dispatch `SET_FARMACI` → `rebuildPlan()`.
-  - `deleteFarmaco(id)` → no-tx: `repo.deleteFarmaco(id)` (soft, setta `attivo=false` §6.4) → dispatch `SET_FARMACI` → `rebuildPlan()`.
-- **G** rebuildPlan trigger: **sempre** post-CRUD farmaci. No distinzione attivo/inattivo del farmaco (a differenza del profilo attivo in 8b). `farmaci` filtered `soloAttivi=true` globale post-flip.
-- **H** Campo `attivo` **rimosso dalla sezione Avanzate del form §6.66** (deviazione §6.88 da aprire al primo commit CP3 con rationale F1: soft-delete diventa unico canale user-level di disattivazione; schema DB invariato, flag resta come infrastruttura di filtering).
-- **I** Hook `useUnsavedChanges` estratto in `src/hooks/useUnsavedChanges.js`, API `const [isDirty, setDirty] = useUnsavedChanges({ onChange })`, sync outbound via `useEffect`. FarmaciTab primo consumer in 8c. ProfiliTab/ImpostazioniTab **NON toccati** (retrofit differito a 8d, candidato §6.NN 8d).
-- **J** `ConfirmModal` shared in `src/components/shared/ConfirmModal.jsx` parametrico (props: `open`, `title`, `body`, `confirmLabel`, `cancelLabel='Annulla'`, `danger=false`, `onConfirm`, `onCancel`). Promozione al 2° consumer (deviazione §6.89 da aprire al primo commit CP5 con rationale F3). Pattern focus trap + z-[60] ereditato da `ConfirmDeleteProfiloModal` (§6.86.3).
-- **K** data_fine-past confirm: pre-save interceptor nel form farmaco. Se `data_fine < today` → apri `ConfirmModal` con copy §6.68. Confirm → prosegui `updateFarmaco`. Annulla → return al form con dirty preservato.
-- **L** Flip `GET_FARMACI_SOLO_ATTIVI: true` in `src/domain/constants.js` (CP1). FarmaciTab lista e plan Oggi usano lo stesso canale `soloAttivi=true`.
-- **M** Test: file nuovo `src/state/actions.farmaci.test.js` (convenzione §6.87). `renderWithRealProvider` NON esteso (§6.79 invariato). Spy-based su actions.
-- **N** CP breakdown: 7 CP (CP0-CP6). No split 8c-1/8c-2 pre-pianificato. Contingency: se CP5 satura (>15 AMB consumate per bug imprevisti o >30 righe di `ConfirmModal` wrapping), aprire 8d anticipata con polish (ConfirmModal + data_fine-past interceptor spostati là).
+### CP5 — thunks CRUD + reducer (§6.90 no-op) + selectors + ConfirmModal shared + delete + data_fine-past
 
-### CP1 — flip `GET_FARMACI_SOLO_ATTIVI` + remediation test
+1. **Aprire §6.89** al primo commit CP5 con rationale F3 (promozione 2° consumer vs 3° canonico AMB-8b.H, interpretazione "2° uso distinto" non strettamente "2° tab"). ProfiliTab retrofit candidato 8d.
+2. Creare `src/components/shared/ConfirmModal.jsx` parametrico. API props: `{open, title, body, confirmLabel, cancelLabel='Annulla', danger=false, onConfirm, onCancel}`. Stile `z-[60]` + `useModalA11y` + focus trap ereditati da `ConfirmDeleteProfiloModal` (§6.86.3). Pattern no-backdrop-dismiss (buttons-only).
+3. **Reducer:** §6.90 documenta che `SET_FARMACI` è già presente in `reducer.js:161` + test `reducer.test.js:201`. **NO edits** a reducer.js / reducer.test.js in CP5. Skip CP5 punto 3 del prompt §11 v2.5.27.
+4. **Selectors** in `src/state/selectors.js`: verificare / aggiungere:
+   - `selectFarmaci` (già presente da CP2)
+   - `selectFarmacoById = (id) => (s) => (s.farmaci || []).find(f => f.id === id)` (nuovo, 1 test in `selectors.test.js`)
+5. **3 thunks** in `src/state/actions.js` (pattern pessimistico):
+   - `addFarmaco(farmacoData, orari)` → tx `rw ['farmaci','orari_base']`: `repo.addFarmaco` → `repo.replaceOrariForFarmaco(newId, orari)` → dispatch `SET_FARMACI` (rifetch) → `rebuildPlan()`.
+   - `updateFarmaco(id, patch, orari?)` → tx: `repo.updateFarmaco` → se `orari` presente `repo.replaceOrariForFarmaco(id, orari)` → dispatch `SET_FARMACI` → `rebuildPlan()`.
+   - `deleteFarmaco(id)` → no-tx: `repo.deleteFarmaco(id)` (soft, `attivo=0`) → dispatch `SET_FARMACI` → `rebuildPlan()`.
+   Errori repo → `dispatch SET_ERROR` + drawer resta aperto.
+6. **FarmaciTab save wiring**: bottone Salva chiama `handleSalva` che ora:
+   - Valida form (already in CP4)
+   - Se `patch.data_fine && patch.data_fine < todayIso` → apri `ConfirmModal` con copy §6.68; conferma → prosegui; annulla → ritorna al form (dirty preservato)
+   - Altrimenti commit diretto via thunk (add o update in base a mode)
+   - Su success chiude drawer + `setDirty(false)`
+7. **FarmaciTab delete wiring**: bottone "Elimina" in footer drawer (visibile solo in edit mode, danger style rosso). Tap → apri `ConfirmModal` con copy §6.67 + danger. Conferma → `deleteFarmaco(id)` → chiude drawer.
+8. **Test** (file nuovo `src/state/actions.farmaci.test.js` convenzione §6.87, 6 test): add success, add repo-fail, update con orari (replaceOrariForFarmaco invocato), update senza orari (replaceOrari NON invocato), delete success, delete repo-fail.
+9. **Test FarmaciTab**: 2 test end-to-end append in `FarmaciTab.test.jsx`: (a) delete flow tap Elimina → ConfirmModal → conferma → thunk chiamato; (b) data_fine-past flow yesterday → Salva → ConfirmModal → conferma → thunk chiamato.
+10. **Test selectors**: 1 test `selectFarmacoById`.
+11. **Test reducer**: NO aggiunte (§6.90: case già coperto).
 
-1. In `src/domain/constants.js`: `GET_FARMACI_SOLO_ATTIVI = true`.
-2. Full suite run: `npm run test`.
-3. Gestione breakage atteso:
-   - Fixture con farmaci `attivo=false` che si aspettavano visibili → aggiornare seed di test o aggiungere farmaco attivo per asserzione.
-   - Test `actions.init.test.js` o similari che mockavano `getFarmaci` con `{soloAttivi: false}` esplicito → verificare coerenza.
-4. Soglia: ≤5 test rotti → hotfix intra-sessione (patch fixtures, aprire §6.90 se pattern). >5 → stop + diagnosi (possibile revert temporaneo e escalation come candidato §6.NN strutturale).
-5. Δ test netto atteso: **0** (remediation ripristina baseline 287).
+Δ test CP5 atteso: **+10** (6 actions + 2 FarmaciTab + 1 selectors + 1 reducer pregresso-coperto; net era +12 nel prompt v2.5.27, ora +10 per §6.90). **297 → 307**.
 
-### CP2 — FarmaciTab lista read-only + card + "+ Nuovo" disabled
+### CP6 — CP browser (7 punti, target 307 + eventuali hotfix)
 
-1. In `src/components/config/FarmaciTab.jsx` sostituire placeholder (verificare che l'outer `<section data-testid="config-tab-farmaci">` sia preservato — invariante §6.78 per routing test).
-2. `useTheme` hook applicato da subito (pattern preventivo AMB-8b.I).
-3. Import + consumo di `selectFarmaci` o equivalente. Se selettore mancante: crearlo in `src/state/selectors.js` (`selectFarmaci = (s) => s.farmaci || []`).
-4. Fetch mount-time: il plan già popola `state.farmaci` via `actions.init()` con `soloAttivi=true` (post-flip CP1). FarmaciTab legge dal state — **nessun fetch separato**.
-5. Ordinamento: `[...farmaci].sort((a, b) => a.nome.localeCompare(b.nome, 'it'))`.
-6. Card compatta `<FarmacoCard>` (componente interno a FarmaciTab, pattern 8b `<ProfiloCard>`):
-   - Riga 1: `nome` (bold) + badge cronica ("Cronico" bg-green) o temp ("Temporaneo" bg-amber) a destra.
-   - Riga 2: `funzione` (text-secondary, italic).
-   - Riga 3 meta: `dosi_giornaliere + "×/die"` + eventuale `intervallo_ore + "h"` se tipo_frequenza intervallo.
-   - Border-left 4px del colore primary token (useTheme).
-   - Tap handler: apre drawer (CP3 — in CP2 handler no-op / console.log).
-7. "+ Nuovo" bottone top-right dell'header tab, aria-label "Nuovo farmaco". Disabled in CP2 (abilitato in CP3).
-8. Test: 3 nuovi in `FarmaciTab.test.jsx` (creato):
-   - Render lista con fixture 3 farmaci (2 cronici + 1 temporaneo) → asserisci nomi presenti + badge corretti.
-   - Sort alfabetico stabile su fixture [Pantorc, Ezevast, Duoresp] → asserisci ordine [Duoresp, Ezevast, Pantorc].
-   - "+ Nuovo" bottone presente e `disabled` in CP2.
+Testare su Chrome con `__pt.app.actions` da console se affordance tap insufficiente.
 
-Δ test CP2: **+3** (287 → 290).
+1. `/config/farmaci` → lista render fixture seed (cronici + temporanei). Sort ok. Badge cronica verde / temp orange (§6.91).
+2. Tap card "Medrol 16mg" → drawer edit rehydrated: campi base + 2 righe Orari (07:30/13:30 con ancora=colazione, offset=0 e +360min — verifica esatta via `computeOraPrevista` preview inline §CP4).
+3. In drawer Medrol: cambio `dosi_giornaliere` 2→3 → 3ª riga con defaults. Cambio 3→1 → banner "2 orari rimossi" con "Ripristina" (label §CP4, non "Annulla"). Undo ripristina.
+4. "+ Nuovo" → drawer vuoto → nome="Test", tipo=fisso, dosi=1, 1 riga Orario defaults, relazione=indifferente, data_inizio=today → Salva → drawer chiude → "Test" in lista → `/oggi` include dose Test.
+5. Tap card "Test" → drawer edit → "Elimina" → ConfirmModal copy §6.67 → Elimina → drawer chiude → "Test" scompare dalla lista + `/oggi`.
+6. Tap card "Pantorc 40mg" → Avanzate → `data_fine`=yesterday → Salva → ConfirmModal copy §6.68 → Conferma → drawer chiude → Pantorc resta in lista MA `/oggi` non include più Pantorc (plan rebuilt con `data_fine < today`).
+7. Guard modal-first §6.86.4: drawer dirty → tap backdrop = no-op. X close funziona. Escape chiude. Tab-switch da ConfigView triggera UnsavedChangesModal.
 
-### CP3 — Drawer + sezioni Anagrafica / Frequenza&Dosi / Avanzate (no Orari)
+### Azioni di chiusura Sessione 8c-2
 
-1. `<FarmacoDrawer>` componente interno a FarmaciTab.jsx:
-   - `<div className="fixed inset-0 z-50 ...">` backdrop + container bottom-sheet mobile-first.
-   - `useModalA11y(isOpen, onClose)` per focus trap + restore focus.
-   - Backdrop click gated: `onClick={isDirty ? () => {} : onClose}` — pattern §6.86.1.
-   - Header con titolo ("Nuovo farmaco" / "Modifica {nome}") + X close button (z-index preservato).
-   - Body scrollable con H2 sticky per ogni sezione.
-   - Footer con bottoni "Annulla" + "Salva" (+ eventuale "Elimina" in edit mode, CP5).
-2. Dirty state: `const [isDirty, setDirty] = useState(false)` **local in CP3** (hook extraction in CP4). Propaga a ConfigView via prop opt `onDirtyChange` (pattern 8b F1 letterale).
-3. Sezione Anagrafica:
-   - `nome` required (FormField component inline, pattern 8b).
-   - `principio_attivo` optional.
-   - `funzione` optional.
-4. Sezione Frequenza & Dosi:
-   - `tipo_frequenza` radio (`fisso` / `intervallo`) required.
-   - `intervallo_ore` number input decimal, visible iif `tipo_frequenza==='intervallo'`, required in quella branch.
-   - `intervallo_minimo_ore` controlled via checkbox "Personalizza limite minimo" (AMB-D): off → `null` persistito; on → input numerico esplicito con hard validation `< intervallo_ore`.
-   - `dosi_giornaliere` number input 1-24 (step 1), required.
-5. Sezione Avanzate:
-   - `relazione_pasto` select enum (prima/durante/dopo/stomaco_pieno/lontano/indifferente), required.
-   - `dettaglio_pasto` free text optional.
-   - `note` textarea optional.
-   - `data_inizio` date input, required, default `today` in create.
-   - `data_fine` date input, optional (nullable).
-   - **Campo `attivo` OMESSO** — aprire **§6.88** in questo CP con entry del tipo:
-     > §6.88 — Rimozione campo `attivo` dal form farmaco (8c CP3). Il campo resta in schema DB e filtra il plan, ma non è editabile in UI — soft-delete (§6.67) diventa unico canale user-level. Rationale: con `GET_FARMACI_SOLO_ATTIVI=true` post-flip e inattivi non visibili in FarmaciTab lista, un checkbox "Attivo" nel form sarebbe alias funzionale nascosto di delete senza i suoi safeguard. Deviazione da §6.66 letterale; schema §3.1 spec invariato.
-6. Warning soft (duplicati nome, ordine orari) visualizzati come `role="status"` inline (pattern 8b letterale).
-7. Test: 3 nuovi append a `FarmaciTab.test.jsx`:
-   - Drawer apre su tap card, chiude su X, focus trap validato.
-   - Form required nome: submit con nome vuoto non triggera thunk, mostra errore.
-   - Cambio `tipo_frequenza` fisso→intervallo mostra `intervallo_ore`; reverse lo nasconde.
-
-Δ test CP3: **+3** (290 → 293).
-
-### CP4 — Sezione Orari inline + hook `useUnsavedChanges` estratto
-
-1. Creare `src/hooks/useUnsavedChanges.js`:
-   ```js
-   import { useState, useEffect } from 'react';
-
-   /**
-    * Manages dirty state with outbound sync to parent via onChange callback.
-    * Tuple-like API mimics useState for drop-in ergonomics.
-    */
-   export function useUnsavedChanges({ onChange } = {}) {
-     const [isDirty, setDirty] = useState(false);
-     useEffect(() => { onChange?.(isDirty); }, [isDirty, onChange]);
-     return [isDirty, setDirty];
-   }
-   ```
-2. Refactor `FarmaciTab.jsx` per consumare il hook invece di `useState` locale. `ProfiliTab.jsx` + `ImpostazioniTab.jsx` **NON toccati** (retrofit differito a 8d).
-3. Sezione Orari inline nel form (tra Frequenza&Dosi e Avanzate):
-   - Header H2 sticky "Orari di assunzione".
-   - Container con N righe, dove `N = dosi_giornaliere`.
-   - Ogni riga: `dose_numero` (readonly, display `#{i+1}`) | `offset_minuti` (number input signed) | `ancora_riferimento` (select enum sveglia/colazione/pranzo/cena/sonno/assoluto) | `descrizione_momento` (text input optional).
-4. Sync righe con `dosi_giornaliere`:
-   - useEffect watcher su `dosi_giornaliere`:
-     - Se > `orari.length` → append righe con defaults `{dose_numero: i, offset_minuti: 0, ancora_riferimento: 'colazione', descrizione_momento: ''}`.
-     - Se < `orari.length` → trim ultimi `(orari.length - dosi_giornaliere)` + set banner `role="status"` con testo e bottone "Annulla" che ripristina.
-5. Validation inline:
-   - Per ogni riga: `offset_minuti` numerico (può essere negativo), `ancora_riferimento` in enum (select garantisce).
-   - Soft warning ordine orari: calcola `ora_prevista` virtuale per ogni dose usando profilo attivo corrente, verifica monotonia crescente `dose_i < dose_{i+1}` **escludendo wrap-mezzanotte** (es. Prontinal dose 3 @ 00:00 dopo dose 2 @ 16:00 è ammesso). Warning `role="status"` inline se ordine violato ma salvabile.
-6. Test: 4 nuovi:
-   - `useUnsavedChanges.test.js` (nuovo file in `src/hooks/`): initial `isDirty=false`; `setDirty(true)` aggiorna; `onChange` callback invocato con `true`.
-   - FarmaciTab: cambio `dosi_giornaliere` 2→4 produce 4 righe con defaults.
-   - FarmaciTab: cambio `dosi_giornaliere` 4→2 produce 2 righe + banner "2 orari rimossi".
-   - FarmaciTab: soft warning ordine con fixture wrap-mezzanotte (`dose_3=00:00 < dose_2=16:00`) → no warning.
-
-Δ test CP4: **+4** (293 → 297).
-
-### CP5 — Thunks CRUD + reducer + selectors + ConfirmModal shared + delete + data_fine-past
-
-1. Creare `src/components/shared/ConfirmModal.jsx`. Aprire **§6.89** al primo commit:
-   > §6.89 — Promozione `ConfirmModal` shared al 2° consumer (8c CP5, non al 3° canonico AMB-8b.H). Rationale: in FarmaciTab il modal è consumato in 2 scenari distinti dello stesso tab (delete + data_fine-past), rendendo la promozione contestuale più efficiente della duplicazione inline. AMB-8b.H interpretata come "promozione quando emerge 2° uso distinto" non strettamente "2° tab". ProfiliTab retrofit candidato 8d.
-2. API ConfirmModal:
-   ```jsx
-   <ConfirmModal
-     open={boolean}
-     title="string"
-     body={<>...JSX...</>}
-     confirmLabel="Elimina"
-     cancelLabel="Annulla"  // default
-     danger={true}           // default false
-     onConfirm={fn}
-     onCancel={fn}
-   />
-   ```
-   Stile: pattern `ConfirmDeleteProfiloModal` (§6.86.3 z-[60], focus trap, `useModalA11y`).
-3. Reducer: aggiungere `case 'SET_FARMACI': return { ...state, farmaci: action.payload };` in `src/state/reducer.js`. Test update `reducer.test.js` (+1 test).
-4. Selectors in `src/state/selectors.js` (se mancanti):
-   - `selectFarmaci = (s) => s.farmaci || []`
-   - `selectFarmacoById = (id) => (s) => (s.farmaci || []).find(f => f.id === id)`
-5. Thunks in `src/state/actions.js` (3 nuovi):
-   - `addFarmaco(farmacoData, orari)`:
-     ```
-     return repo.withTransaction('rw', ['farmaci','orari_base'], async () => {
-       const newId = await repo.addFarmaco(farmacoData);
-       await repo.replaceOrariForFarmaco(newId, orari);
-       return newId;
-     }).then(async () => {
-       const farmaci = await repo.getFarmaci({ soloAttivi: true });
-       dispatch({ type: 'SET_FARMACI', payload: farmaci });
-       await rebuildPlan();
-     }).catch(err => dispatch({ type: 'SET_ERROR', payload: {kind:'repo', message: err.message} }));
-     ```
-     (Pattern pessimistico letterale — adattare sintassi allo stile 8b esistente.)
-   - `updateFarmaco(id, patch, orari)` — simmetrica, `replaceOrariForFarmaco` solo se `orari` passato.
-   - `deleteFarmaco(id)` — no withTransaction (single-table):
-     ```
-     await repo.deleteFarmaco(id);
-     const farmaci = await repo.getFarmaci({ soloAttivi: true });
-     dispatch({ type: 'SET_FARMACI', payload: farmaci });
-     await rebuildPlan();
-     ```
-6. Form save wiring:
-   - Bottone Salva del drawer valida form → costruisce `farmacoData` + `orari` → chiama thunk appropriato → on success chiude drawer e marca clean (`setDirty(false)`).
-   - Pre-save data_fine-past interceptor:
-     ```js
-     if (patch.data_fine && patch.data_fine < todayISO) {
-       setConfirmState({ type: 'data_fine_past', patch, orari });
-       return; // aspetta conferma
-     }
-     // ... commit diretto
-     ```
-     `<ConfirmModal open={confirmState?.type === 'data_fine_past'} ... />` con copy §6.68 letterale.
-7. Delete wiring:
-   - Bottone "Elimina" in footer drawer (visible solo in edit mode, danger style).
-   - Tap → `setConfirmState({ type: 'delete', id })`.
-   - `<ConfirmModal open={confirmState?.type === 'delete'} title={"Elimina {nome}?"} body={<copy §6.67>} confirmLabel="Elimina" danger onConfirm={() => deleteFarmaco(id)} onCancel={...} />`.
-8. Test: file nuovo `src/state/actions.farmaci.test.js` (convenzione §6.87) con 6 test split-per-concern:
-   - `addFarmaco` success → dispatch SET_FARMACI + rebuildPlan spy called.
-   - `addFarmaco` repo fail → dispatch SET_ERROR.
-   - `updateFarmaco` con orari → replaceOrariForFarmaco invocato + rebuildPlan.
-   - `updateFarmaco` senza orari → replaceOrariForFarmaco NON invocato.
-   - `deleteFarmaco` success → dispatch SET_FARMACI + rebuildPlan.
-   - `deleteFarmaco` repo fail → dispatch SET_ERROR.
-   
-   Plus 2 append `FarmaciTab.test.jsx`:
-   - Delete flow end-to-end: tap Elimina → ConfirmModal → Conferma → thunk chiamato.
-   - Data_fine-past flow: set data_fine=yesterday → Salva → ConfirmModal mostrato → Conferma → thunk chiamato.
-   
-   Plus 1 test reducer SET_FARMACI + 1 test selectors (2 totali in file esistenti).
-
-Δ test CP5: **+12** (297 → 309).
-
-### CP6 — CP browser (7 punti)
-
-Eseguire sul browser Chrome con `__pt.app.actions` dalla console se affordance tap manuale non sufficiente (pattern 7d-2p3).
-
-1. Apertura `/config/farmaci` → lista render con fixture seed (8 cronici §10.2 + 3 temporanei attivi §10.3 se data corrente nel range). Sort alfabetico verificato. Badge cronica verde / temp amber corretti.
-2. Tap card "Medrol 16mg" → drawer apre con sezioni rehydrated: nome, funzione "Cortisone broncospasmo", tipo `intervallo`, `intervallo_ore=6`, `dosi_giornaliere=2`, 2 righe Orari (07:30/13:30 con ancora=colazione, offset=0 e +360min rispettivamente — verifica esatta).
-3. In drawer Medrol: cambio `dosi_giornaliere` 2→3 → 3ª riga appare con defaults (ancora=colazione, offset=0). Cambio 3→1 → banner "2 orari rimossi" con undo. Undo ripristina 3.
-4. "+ Nuovo" → drawer vuoto → compila nome="Test", tipo_frequenza=fisso, dosi_giornaliere=1, 1 riga Orario (ancora=colazione, offset=0), relazione_pasto=indifferente, data_inizio=today → Salva → drawer chiude → farmaco "Test" in lista → `/oggi` include dose Test.
-5. Tap card "Test" → drawer edit → bottone "Elimina" → `ConfirmModal` mostra copy §6.67 → Elimina → drawer chiude → "Test" scompare da lista → `/oggi` non include più "Test".
-6. Tap card "Pantorc 40mg" → edit sezione Avanzate → `data_fine` = ieri (date-picker o manual input) → Salva → `ConfirmModal` data_fine-past con copy §6.68 → Conferma → drawer chiude → Pantorc resta in lista ma `/oggi` non include più Pantorc (plan rebuilt con `data_fine < today`).
-7. Guard modal-first (§6.86.4) su drawer con dirty: modifica campo → tap backdrop → no-op (backdrop gated). X close funziona.
-
-### Azioni di chiusura sessione 8c impl
-
-1. Full test run finale: target **309 ±3**.
-2. Bump Changelog: front-matter + entry 2.5.28 (rispetto alla 2.5.27) con summary CP eseguiti + deviazioni consumate (§6.88, §6.89, eventuali §6.90+).
-3. Nuovo §22.10 stato post-Sessione 8c implementativa (mirror §22.8 struttura).
-4. Sostituire §11 con stub Sessione 8d (polish Config + a11y + retrofit hook/modal a ProfiliTab/ImpostazioniTab + chiusura deviazioni 8a-8c candidate).
-5. Aggiornare §7 roadmap: 8c ✅, 8d ⏳.
-6. Aggiornare §12 file prodotti con delta 8c (stimato ~10-12 file nuovi + ~4-6 modificati).
-7. Azioni Mac: `git add -A && git commit -m "Sessione 8c implementativa (Changelog v2.5.28)"` (preferibilmente split codice + Changelog).
+1. Full test run finale: target **308 ±3**.
+2. Bump Changelog: front-matter v2.5.28 → v2.5.29 + entry 2.5.29 con summary CP5/CP6 + deviazioni consumate (§6.89 + eventuali §6.92+).
+3. §22.11 nuovo stato post-Sessione 8c-2.
+4. §11 sostituita con prompt Sessione 8d (polish Config + a11y + retrofit `useUnsavedChanges` a ProfiliTab/ImpostazioniTab + `ConfirmModal` retrofit ProfiliTab + chiusura deviazioni 8a-8c candidate: §6.81 ConfigTabBar inactive color, §6.84 React Router future flags, §6.89 retrofit).
+5. §7 roadmap: 8c ✅, 8c-2 ✅, 8d ⏳.
+6. §12 delta 8c-2.
+7. Git: `git add -A && git commit -m "Sessione 8c-2 (Changelog v2.5.29)"` (split codice + Changelog consigliato).
 
 ### Note finali
 
-- Se CP5 risultasse sovraccarica (>15 AMB consumate per hotfix imprevisti, o prompt 8c impl supera qualità mantenibile): chiudere sessione dopo CP4 e aprire **8c-2 contingency** con CP5+CP6. Decisione runtime basata su attenzione residua, non pre-dichiarata.
-- Ogni hotfix intra-sessione richiede apertura §6.90+ con rationale esplicita (§6.69/§6.70 drift-preventive).
-- Rispetto delle regole bash zsh interattiva (single-quoted echo, no apostrofi italiani nei blocchi) per tutti i comandi operativi durante la sessione.
+- Se CP5 dovesse saturare (>10 AMB consumate per hotfix imprevisti su thunks o ConfirmModal focus-trap issues): chiudere dopo CP5 e aprire **8c-3 contingency-2** con CP6 solo. Evento imprevisto; default path è CP5+CP6 in unica sessione 8c-2.
+- Rispetto regole bash zsh interattiva (single-quoted echo, no apostrofi italiani) per tutti i comandi operativi della sessione.
+- Cleanup `.bak` già fatto in 8c CP0: zero file relitti residui, grep fantasma neutralizzati.
 
-## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3
+## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3 + 8-pre + 8a + 8b + 8c-parz
 
 | File | Step | Note |
 |---|---|---|
@@ -2398,6 +2299,28 @@ Eseguire sul browser Chrome con `__pt.app.actions` dalla console se affordance t
 | **Totale test passing post-8-pre** | | **250/250 su 23 test files** (+3 netti) |
 
 ---
+
+
+
+### Delta 8c parziale (CP1-CP4) — 2 nuovi + 4 modificati = 6 totali
+
+| Path | Tipo | Delta |
+|---|---|---|
+| `src/domain/constants.js` | **mod.** 8c CP1 | `GET_FARMACI_SOLO_ATTIVI = false` → `true` (1 riga flip, AMB-8c.L). Consumer unico `src/state/actions.js:99` in `init()`; zero test rotti (remediation ripristina 287/287). |
+| `src/state/selectors.js` | **mod.** 8c CP2 | Append `selectFarmaci(state) => state.farmaci \|\| []` prima di `selectFarmaciAttivi` (+12 righe, JSDoc con nota post-CP1 flip). |
+| `src/components/config/FarmaciTab.jsx` | **mod.** 8c CP2+CP3+CP4 | Riscrittura completa da placeholder §6.78 a ~870 righe: `FarmaciTab` root + `FarmacoCard` (badge Cronico/Temporaneo §6.91, border-left color-coded, sort `localeCompare('it')`, card tap a openerRef) + `FarmacoDrawer` (form 4 sezioni: Anagrafica / Frequenza&Dosi / Orari / Avanzate con H2 sticky; `useModalA11y` focus trap; backdrop gated §6.86.1/.4; X close button; Salva gate su `canSave`; save no-op CP3/CP4 — thunks in CP5) + `OrarioRow` sub-component (grid 2-col ancora+offset + textarea descrizione, mobile-first) + helpers inline (FormField, FormSelect, FormTextarea, FormCheckbox, SectionHeading) — candidati promozione shared 8d. §6.88 consumata (campo `attivo` OMESSO). Auto-sync `dosi_giornaliere` ↔ righe orari (add defaults / trim+banner "Ripristina" con undo). Rehydration orari edit mode da `state.orari.filter(farmaco_id)`. Duplicate name warning case-insensitive+trim. Hard check `intervallo_minimo_ore < intervallo_ore`. Soft warning ordine wrap-aware via import `computeOraPrevista` dominio (zero duplicazione). |
+| `src/components/config/FarmaciTab.test.jsx` | **nuovo** 8c CP2+CP3+CP4 | 9 test totali (+3 CP2 lista + 3 CP3 drawer/form + 3 CP4 orari/undo/wrap-mezzanotte). Fixtures locali `buildFarmaci()` + `buildProfiloAttivo()`. Mix `userEvent` (click, type per input text) + `fireEvent.change` (number inputs controllati). |
+| `src/components/config/ConfigView.jsx` | **mod.** 8c CP3 | 1 riga wire: `<Route path="farmaci" element={<FarmaciTab dirty={dirty} setDirty={setDirty} />} />` (da `<FarmaciTab />` stand-alone). Allinea con pattern ProfiliTab/ImpostazioniTab. |
+| `src/hooks/useUnsavedChanges.js` | **nuovo** 8c CP4 | Hook ~15 righe, API tuple-like `[isDirty, setDirty] = useUnsavedChanges({onChange?})`. AMB-8c.I. Consuma rettifica F2 (DRY-at-3), chiude AMB-8b.G implicitamente. ProfiliTab + ImpostazioniTab retrofit differito 8d. |
+| `src/hooks/useUnsavedChanges.test.jsx` | **nuovo** 8c CP4 | 1 test (6 asserzioni): initial false + onChange mount + setDirty(true) flips + setDirty(false) reverts, `renderHook` + `act` pattern (template: `useAutoBeep.test.jsx`). |
+| **Totale test passing post-CP4 (8c parziale)** | | **297/297 su 30 test files** (+10 netti rispetto a baseline 287). Target finale 8c completo: 308 ±3 dopo 8c-2 (era 309 ±3 pre-§6.90). |
+
+**NON prodotti (scope CP5-CP6, sessione 8c-2):**
+- `src/components/shared/ConfirmModal.jsx` (§6.89 da aprire)
+- `addFarmaco` / `updateFarmaco` / `deleteFarmaco` thunks in `src/state/actions.js`
+- `src/state/actions.farmaci.test.js`
+- Delete button + data_fine-past interceptor in FarmaciTab
+- 1 test `selectFarmacoById` in `selectors.test.js`
 
 ## 13. Decisioni pre-implementazione Sessione 5b
 
@@ -3994,3 +3917,88 @@ Se emergeranno hotfix CP0 (flip impact >5 test) o gap `makeFakeRepo`, §6.90+ de
 3. Opzionale raccomandato: `git add PharmaTimer_Changelog_Fase2.md && git commit -m "Changelog v2.5.27 (Sessione 8c analisi-first)"`.
 4. Aprire Sessione 8c implementativa con one-liner:
    `Esegui il prompt al §11 del Changelog (Sessione 8c implementativa).`
+
+
+## 22.10 Stato post-Sessione 8c implementativa (parziale CP1-CP4)
+
+**Data:** 24 aprile 2026
+**Baseline test pre-sessione:** 287/287 su 28 test files (§22.9 post-analisi-first).
+**Baseline test post-sessione:** **297/297 su 30 test files** (+10 netti, +2 test files).
+**Bump:** v2.5.27 → v2.5.28.
+
+### Scope consegnato
+
+Sessione 8c implementativa aperta come one-liner `Esegui il prompt al §11 del Changelog (Sessione 8c implementativa)` consumando prompt §11 v2.5.27. Completati **CP0 sanity + CP1 flip + CP2 lista + CP3 drawer+form + CP4 sezione Orari + hook extraction**. CP5 (thunks + ConfirmModal + delete + data_fine-past) e CP6 (browser) delegati a 8c-2 contingency per preservare qualità (decisione runtime coerente con §11 note finali v2.5.27).
+
+### Esiti CP gate-by-gate
+
+| CP | Scope | Esito | Δ test |
+|----|-------|-------|--------|
+| **CP0** | 6 gate sanity + cleanup .bak | ✅ Tutti verdi dopo scoperta §6.90 (SET_FARMACI preesistente). 19 file `.bak` rimossi (CP2 pre-work). | 0 |
+| **CP1** | Flip `GET_FARMACI_SOLO_ATTIVI = true` | ✅ 287/287 invariati (zero rotti — consumer unico `init()`). | 0 |
+| **CP2** | FarmaciTab lista + `selectFarmaci` | ✅ 3 test verdi al 1° run. | +3 |
+| **CP3** | Drawer + form 3 sezioni + ConfigView props wire | ✅ 3 test verdi al 1° run. §6.88 consumata. Intrusione "script fantasma" su modals rimediata con `git checkout src/components/oggi/modals/`. | +3 |
+| **CP4** | Hook `useUnsavedChanges` + sezione Orari + rehydration + wrap-aware warning | ✅ 4 test verdi al 1° run (1 hook + 3 FarmaciTab). | +4 |
+
+### Deviazioni §6.NN consumate / aperte
+
+- **§6.88** — Rimozione campo `attivo` dal form farmaco. Consumata inline al commit CP3. Rationale F1 / AMB-8c.H.
+- **§6.90** — `SET_FARMACI` case + test preesistenti da 8a CP4. Scoperta CP0 gate 3c. Documentale (no codice). Target finale rivisto 309±3 → **308±3**.
+- **§6.91** — Badge "Temporaneo" usa `t.orange` (non amber letterale). Rationale token-completeness. Scelta utente confermata opzione A (orange, consigliata).
+- **§6.89** — (candidata, non ancora aperta) Promozione `ConfirmModal` shared al 2° consumer. Riservata per CP5 in 8c-2.
+
+### Scoperte operative
+
+1. **`.bak` residui pervasivi** — 19 file con suffissi cp1..cp7 / hotfix / hotfixbug in `src/test/`, `src/components/config/`, `src/data/repository/`, `src/state/`. Residui di sessioni 8a/8b non rimossi. Grep-fantasma creò rumore nel CP0 gate 3c (un `.bak` faceva match su `SET_FARMACI`). Cleanup globale `find src -name '*.bak' -delete` in apertura CP2. Lezione: aggiungere alias zsh o step `nettoBak` in template gate CP0 futuri.
+
+2. **`computeOraPrevista` già esportata pura** da `src/domain/planBuilder.js:7` (re-export backward-compat). Import diretto evita re-implementazione logica wrap-mezzanotte. Coerente con scelta utente "helper pure inline" (le opzioni UI helper e import dominio sono compatibili).
+
+3. **`state.profiloAttivo` ambiguous contract** — il selettore `selectProfiloAttivo` ritorna `state.profiloAttivo` ma non è chiaro se sia ID o oggetto. Workaround defensivo: `state.profili.find(p => p.attivo === 1) ?? state.profili[0]`. Candidato chiarimento 8d o documentazione §1.
+
+4. **Intrusione "script fantasma" CP3** — Roberto ha lanciato per errore un installer precedente (versione stale di `cp3_install.sh` renominato da Chrome come `cp3_install (1).sh` o simile). Effetto: 9 file modals modificati + 5 test persi. Rimedio in-flight: `git checkout src/components/oggi/modals/` + rm file corrotto + re-run installer corretto. Lezione: `head -4 ~/Downloads/cp3_install.sh` check prima di `bash` ha salvato la situazione.
+
+5. **`sticky top-0` + `overflow-y-auto`** del drawer richiede che l'ancestor H2 sia dentro lo scroll container, quindi `-mx-5 px-5` per bleeding full-width (coerente con mobile-first). Nessun problema rilevato ma pattern-da-ricordare per SectionHeading shared in 8d.
+
+### File prodotti / NON prodotti
+
+**Prodotti (modificati):**
+- `src/domain/constants.js` — 1 riga flip (CP1).
+- `src/state/selectors.js` — `selectFarmaci` append (CP2).
+- `src/components/config/FarmaciTab.jsx` — riscrittura integrale CP2→CP3→CP4 (~870 righe).
+- `src/components/config/ConfigView.jsx` — 1 riga wire `dirty/setDirty` su Route farmaci (CP3).
+- `PharmaTimer_Changelog_Fase2.md` — v2.5.27 → **v2.5.28** (questo delivery).
+
+**Prodotti (nuovi):**
+- `src/components/config/FarmaciTab.test.jsx` — 9 test (3 CP2 + 3 CP3 + 3 CP4).
+- `src/hooks/useUnsavedChanges.js` — 15 righe.
+- `src/hooks/useUnsavedChanges.test.jsx` — 1 test (6 asserzioni).
+
+**NON prodotti (scope 8c-2):**
+- `src/components/shared/ConfirmModal.jsx`
+- 3 thunks in `src/state/actions.js`
+- `src/state/actions.farmaci.test.js`
+- Test `selectFarmacoById` in `selectors.test.js`
+- Delete button wiring + data_fine-past interceptor in FarmaciTab
+
+### Azioni sul Mac post-Sessione 8c (parziale)
+
+1. Verificare `git status` atteso: 4 M (`constants.js`, `selectors.js`, `FarmaciTab.jsx`, `ConfigView.jsx`) + 3 ?? (`FarmaciTab.test.jsx`, `useUnsavedChanges.js`, `useUnsavedChanges.test.jsx`).
+2. **Commit consigliato (split codice + Changelog, pattern 8b §6.70 drift-preventive):**
+   ```
+   git add src/domain/constants.js src/state/selectors.js \
+           src/components/config/FarmaciTab.jsx \
+           src/components/config/FarmaciTab.test.jsx \
+           src/components/config/ConfigView.jsx \
+           src/hooks/useUnsavedChanges.js \
+           src/hooks/useUnsavedChanges.test.jsx
+   git commit -m "Sessione 8c CP1-CP4 parziale: flip + lista + drawer + hook + orari (287→297)"
+   ```
+3. Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude con la versione **v2.5.28** (questo delivery).
+4. Commit Changelog separato:
+   ```
+   git add PharmaTimer_Changelog_Fase2.md
+   git commit -m "Changelog v2.5.28 (Sessione 8c parziale CP1-CP4)"
+   ```
+5. Aprire **Sessione 8c-2 contingency** con one-liner:
+   `Esegui il prompt al §11 del Changelog (Sessione 8c-2 contingency).`
+
