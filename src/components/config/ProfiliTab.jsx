@@ -3,6 +3,7 @@ import { useAppContext } from '../../state/AppContext.jsx';
 import { selectProfili, selectProfiloById } from '../../state/selectors.js';
 import { useTheme } from '../../hooks/useTheme.js';
 import { useModalA11y } from '../../hooks/useModalA11y.js';
+import ConfirmModal from '../shared/ConfirmModal.jsx';
 
 // ============================================================
 // ProfiliTab — gestione profili giornalieri (Sessione 8b).
@@ -481,88 +482,30 @@ function ProfiloDrawer({ mode, editingId, onClose, setDirty, triggerRef, theme: 
           )}
         </footer>
 
-        {deleteConfirmOpen && (
-          <ConfirmDeleteProfiloModal
-            nomeProfilo={profiloAttuale?.nome_profilo ?? ''}
-            onCancel={() => setDeleteConfirmOpen(false)}
-            onConfirm={async () => {
-              const result = await actions.deleteProfilo(editingId);
-              setDeleteConfirmOpen(false);
-              if (result?.ok) onClose();
-            }}
-            theme={t}
-          />
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
-// ConfirmDeleteProfiloModal — inline dialog (AMB-8b.H).
-// ============================================================
-//
-// Scope-minimal, same pattern as UnsavedChangesModal (8a CP7):
-//   - modalOverlay backdrop
-//   - centered box (rounded + shadow-lg)
-//   - 2 buttons: Annulla (outlined) / Elimina profilo (red destructive)
-//   - ZERO focus-trap (deferred to 8d polish, consistent with 8a)
-//   - ZERO backdrop-click dismiss (buttons only)
-//
-// Inline per AMB-8b.H rule "promote to standalone on 2nd consumer".
-// When a 2nd confirm-destroy dialog lands (e.g. delete farmaco in 8c),
-// extract a shared ConfirmModal base together with UnsavedChangesModal.
-
-function ConfirmDeleteProfiloModal({ nomeProfilo, onCancel, onConfirm, theme: t }) {
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="confirm-delete-profilo-title"
-      data-testid="confirm-delete-profilo"
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4"
-      style={{ background: t.modalOverlay }}
-    >
-      <div
-        className="max-w-sm w-full rounded p-6 shadow-lg"
-        style={{ background: t.modalBg, color: t.textPrimary }}
-      >
-        <h3
-          id="confirm-delete-profilo-title"
-          className="text-lg font-semibold mb-2"
-        >
-          Elimina profilo?
-        </h3>
-        <p className="text-sm mb-4">
-          Questa azione non può essere annullata.{' '}
-          <strong>{nomeProfilo}</strong> verrà rimosso.
-        </p>
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 border rounded"
-            style={{
-              background: t.modalBg,
-              color: t.textPrimary,
-              borderColor: t.tapBd,
-            }}
-          >
-            Annulla
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="px-4 py-2 border rounded font-semibold"
-            style={{
-              background: t.modalBg,
-              color: t.red,
-              borderColor: t.red,
-            }}
-          >
-            Elimina profilo
-          </button>
-        </div>
+        {/* §6.89 (CP5 Sessione 8d-A-continue): retrofit
+            ConfirmDeleteProfiloModal inline → ConfirmModal shared
+            (src/components/shared/ConfirmModal.jsx created in 8c-2 CP5).
+            Copy preserved 1:1 from predecessor. §6.92 auto-resolved:
+            shared modal mounts useModalA11y (focus-trap + Escape-to-close
+            + restore-focus), which the inline predecessor lacked. */}
+        <ConfirmModal
+          open={deleteConfirmOpen}
+          title="Elimina profilo?"
+          body={
+            <p>
+              Questa azione non può essere annullata.{' '}
+              <strong>{profiloAttuale?.nome_profilo ?? ''}</strong> verrà rimosso.
+            </p>
+          }
+          confirmLabel="Elimina profilo"
+          danger={true}
+          onConfirm={async () => {
+            const result = await actions.deleteProfilo(editingId);
+            setDeleteConfirmOpen(false);
+            if (result?.ok) onClose();
+          }}
+          onCancel={() => setDeleteConfirmOpen(false)}
+        />
       </div>
     </div>
   );

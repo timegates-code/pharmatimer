@@ -131,7 +131,7 @@ describe('ProfiliTab — CP2 drawer form', () => {
 // ============================================================
 
 describe('ProfiliTab — CP4 elimina profilo (non-attivo)', () => {
-  it('click su Elimina apre ConfirmDeleteProfiloModal e conferma chiama actions.deleteProfilo', async () => {
+  it('click su Elimina apre ConfirmModal shared e conferma chiama actions.deleteProfilo', async () => {
     const user = userEvent.setup();
     const deleteProfilo = vi.fn().mockResolvedValue({ ok: true });
     renderWithProvider(<ProfiliTab />, {
@@ -141,10 +141,13 @@ describe('ProfiliTab — CP4 elimina profilo (non-attivo)', () => {
     await user.click(within(screen.getByTestId('profilo-card-2')).getByRole('button'));
     const drawer = await screen.findByTestId('profilo-drawer');
 
-    expect(screen.queryByTestId('confirm-delete-profilo')).not.toBeInTheDocument();
+    // §6.89 retrofit (8d-A-continue CP5): testid è ora 'confirm-modal'
+    // (shared component in ../shared/ConfirmModal.jsx), non più
+    // 'confirm-delete-profilo' (inline predecessor removed).
+    expect(screen.queryByTestId('confirm-modal')).not.toBeInTheDocument();
 
     await user.click(within(drawer).getByRole('button', { name: 'Elimina' }));
-    const confirm = await screen.findByTestId('confirm-delete-profilo');
+    const confirm = await screen.findByTestId('confirm-modal');
     expect(within(confirm).getByText(/elimina profilo\?/i)).toBeInTheDocument();
     expect(within(confirm).getByText('Nottambulo')).toBeInTheDocument();
 
