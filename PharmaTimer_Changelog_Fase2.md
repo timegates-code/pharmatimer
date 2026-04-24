@@ -1,6 +1,6 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 2.5.29
+**Versione:** 2.5.30
 **Data inizio fase:** 16 aprile 2026
 **Ultima modifica:** 24 aprile 2026
 **Ambito:** Sviluppo PWA React standalone con persistenza locale, preparata per futuro swap verso backend FastAPI+MariaDB.
@@ -341,6 +341,32 @@ Questo documento raccoglie le decisioni architetturali, la struttura del progett
 - Nuovo §22.8 stato post-Sessione 8b implementativa
 - §11 sostituita con stub Sessione 8c (FarmaciTab analisi-first, prompt da scrivere in apertura sessione)
 - Drift §6.69 pregresso (entry §1 ferme a v2.5.20.1, gap di 5 versioni) NON retrocorretto per principio fatto-storico immutabile
+
+**Changelog versione 2.5.30 (rispetto alla 2.5.29):**
+- Sessione **8d analisi-first** completata 24/04/2026: 5 AMB-8d.A-E congelate. Baseline test invariata **306/306 su 31 test files** (zero codice toccato, solo documentale). Bump v2.5.29 → v2.5.30.
+- **AMB-8d.A** — Split Sessione 8d in **8d-A** (tier A+B, pattern-based) + **8d-B** (tier C + §6.85, design-decision + investigation). Documentato in nuova **§6.99** (deviazione procedurale).
+- **AMB-8d.B** — §6.96 sticky separator `/oggi` approach = **CSS var `--app-header-height` aggiornata da ResizeObserver** sull'header root. Scope 8d-B.
+- **AMB-8d.C** — §6.94 `defaultNoopActions()` retrofit scope = **tutti i 5 thunks mancanti** (`addProfilo / updateProfilo / deleteProfilo / attivaProfilo / annullaAssunzione`). Scope 8d-A.
+- **AMB-8d.D** — §6.95 preventive retrofit `updateProfilo` a `rebuildPlanFromFresh` pattern = **proattivo** (coherence defence, non reattivo on-demand). Scope 8d-A.
+- **AMB-8d.E** — §6.85 `nome_utente` azzerato anomalia = **include in 8d-B tier C** (investigation con strumentazione logging). Il prompt §11 v2.5.29 l'aveva omessa dai prerequisiti di lettura pur marcandola "candidate 8d investigation" in §6.85:1871 + §22.6:3745 — lapsus di scrittura sanato.
+- **Scope 8d-A (6 retrofit, target test 310-312 / +4 a +6):**
+  - CP1 §6.84 future flags Router v7 (zero Δ test)
+  - CP2 §6.94 bag noop +5 (zero Δ test)
+  - CP3 §6.97 DoseCard copy `indifferente` (+1)
+  - CP4 §6.98 UnsavedChanges guard FarmacoDrawer (+2)
+  - CP5 §6.89+§6.92 ProfiliTab retrofit ConfirmModal shared (0-1)
+  - CP6 §6.95 proactive updateProfilo retrofit (+1)
+- **Scope 8d-B (3 item, target test TBD in analisi-first 8d-B):**
+  - §6.81 ConfigTabBar dark token
+  - §6.96 sticky separator dinamico (AMB-8d.B)
+  - §6.85 nome_utente investigation (AMB-8d.E)
+- **§11 sostituita** con prompt esecutivo **Sessione 8d-A impl** (CP0 sanity + CP1-CP6 retrofit + CP7 browser+bump+commit). Target 310-312 test, bump v2.5.30 → v2.5.31.
+- Nuovo **§22.12** stato post-Sessione 8d analisi-first.
+- §7 roadmap: 8d → "⏸️ Split in 8d-A + 8d-B (analisi-first ✅)"; nuova riga **8d-A ⏳** + **8d-B ⏳**.
+- Nessuna modifica a §12 (zero file codice prodotti in 8d analisi-first).
+- Nessun commit Mac-side di codice richiesto; solo commit Changelog bump alla consegna.
+
+---
 
 **Changelog versione 2.5.29 (rispetto alla 2.5.28):**
 - Sessione 8c-2 contingency completata (CP5+CP6 di 8c). Baseline 297/297 → **306/306 su 31 test files** (+9 netti; target §11 v2.5.28 "308 ±3" soddisfatto con -2 in range). Bump v2.5.28 → v2.5.29.
@@ -2058,6 +2084,40 @@ I 3 thunks passano `{farmaci, orari}` freschi (già in scope locale dopo il refe
 
 ---
 
+## 6.99 — Split Sessione 8d in 8d-A (tier A+B) + 8d-B (tier C + §6.85)
+
+**Sessione:** 8d analisi-first (24/04/2026, v2.5.29 → v2.5.30).
+
+**Contesto.** Il prompt §11 v2.5.29 proponeva Sessione 8d unica su scope "polish Config + retrofit candidate 8a-8c" e prospettava esplicitamente possibile split 8d-A / 8d-B (note finali §11 v2.5.29). L'analisi-first ha ratificato lo split.
+
+**Decisione (AMB-8d.A).** Split in 2 sessioni separate:
+
+**8d-A (tier A + tier B, pattern-based, zero design-decision):**
+- §6.84 React Router future flags v7 (`v7_startTransition` + `v7_relativeSplatPath`)
+- §6.94 `defaultNoopActions()` +5 thunks profili/annullaAssunzione (AMB-8d.C)
+- §6.97 DoseCard copy `indifferente` → "indifferentemente dai pasti"
+- §6.98 `FarmacoDrawer.handleAnnulla` consulta `dirty` → UnsavedChangesModal (pattern replica ProfiliTab)
+- §6.89 + §6.92 ProfiliTab retrofit `ConfirmDeleteProfiloModal` → `ConfirmModal` shared (auto-fix asimmetria a11y)
+- §6.95 `updateProfilo` retrofit `rebuildPlanFromFresh` preventive (AMB-8d.D proattivo)
+
+**8d-B (tier C + §6.85, scope variabile con design-decision e investigation):**
+- §6.81 ConfigTabBar dark token `subTabInactive` (design review)
+- §6.96 sticky separator dinamico `--app-header-height` + ResizeObserver (AMB-8d.B)
+- §6.85 `nome_utente` azzerato (investigation con strumentazione logging) — AMB-8d.E
+
+**Motivazione split.** Tier A+B sono retrofit pattern-based con modello di riferimento già presente nel codice (8b/8c-2); sessione analisi+impl lineare e atomica. Tier C + §6.85 richiedono design choice aperta (token a11y, approccio dinamico) e investigation strumentata; meritano sessione dedicata con feedback browser rapido.
+
+**Impatto versioning.**
+- v2.5.30 (questa): analisi-first 8d + split formalizzato + prompt 8d-A impl in §11.
+- v2.5.31: impl 8d-A (target 310-312 test).
+- v2.5.32 (analisi-first 8d-B) + v2.5.33 (impl 8d-B) oppure combo single-bump se analisi-first 8d-B è leggera.
+
+**Impatto roadmap §7.** Riga 8d → "⏸️ Split in 8d-A + 8d-B (analisi-first ✅)"; nuove righe **8d-A** e **8d-B** pianificate.
+
+**Classificazione.** Deviazione procedurale (scope-split, non tecnica). Zero impatto codice.
+
+---
+
 ## 7. Roadmap Fase 2 — avanzamento
 
 | Step | Contenuto | Stato | Note |
@@ -2089,7 +2149,9 @@ I 3 thunks passano `{farmaci, orari}` freschi (già in scope locale dopo il refe
 | **8b** | ProfiliTab: CRUD profili + form profilo + riuso `cambiaProfilo` / `setProfiloAttivoConCleanup` (§6.20) + guard §6.5 (delete profilo attivo rifiutato) + rebuildPlan reattivo post-edit (§6.64) | | Target ~7-9 file, +18-22 test |
 | **8c** | FarmaciTab: CRUD farmaci + form unico con orari inline (§6.66) + save atomico `withTransaction` + soft-delete (§6.67) + flip `GET_FARMACI_SOLO_ATTIVI=true` + date editabili (§6.68). CP0: verificare `DoseCard` usi delta storico del log (§6.64 nota) | ✅ **Completo** (via 8c+8c-2) | 8c parziale 24/04/2026 (v2.5.27 → v2.5.28, CP1-CP4, 287 → 297 test, §6.88/6.90/6.91). 8c-2 contingency 24/04/2026 (v2.5.28 → v2.5.29, CP5+CP6, 297 → 306 test). 7 deviazioni totali 8c-2 (§6.89 consumata parziale, §6.92/6.93/6.94/6.95/6.96/6.97/6.98 nuove) |
 | **8c-2** | CP5+CP6 di 8c: 3 thunks (`addFarmaco`/`updateFarmaco`/`deleteFarmaco`) pessimistici con `withTransaction`, `ConfirmModal` shared (§6.89 consumata parziale), delete button + copy §6.67, data_fine-past interceptor + copy §6.68, file nuovo `actions.farmaci.test.js`, 2 test end-to-end FarmaciTab, CP browser 7 punti + hotfix §6.95 intra-CP6 | ✅ **Completo** | **297 → 306 test** (+9 netti, target §11 v2.5.28 "308 ±3" soddisfatto con -2 in range). 3 commit separati (`dda9af7` CP5, `06dc680` CP6 hotfix §6.95, + Changelog). 7 deviazioni §6.89/6.92-6.98. CP browser 7/7 verdi |
-| **8d** | Polish Config + retrofit 8a-8c candidate: §6.81 ConfigTabBar dark color, §6.84 React Router future flags, §6.89 retrofit `ConfirmDeleteProfiloModal` → `ConfirmModal` shared + §6.92 `useModalA11y` su ProfiliTab, §6.94 completamento `defaultNoopActions`, §6.95 preventive retrofit `updateProfilo`, §6.96 sticky separator, §6.97 DoseCard copy `indifferente`, §6.98 UnsavedChanges guard FarmacoDrawer close path | ⏳ **Pianificata** | Target ~5-8 file, +5-10 test. Tutte le §6.NN candidate sono non-blocker; prioritizzazione da definire in analisi-first 8d |
+| **8d** | Polish Config + retrofit 8a-8c candidate: §6.81 ConfigTabBar dark color, §6.84 React Router future flags, §6.89 retrofit `ConfirmDeleteProfiloModal` → `ConfirmModal` shared + §6.92 `useModalA11y` su ProfiliTab, §6.94 completamento `defaultNoopActions`, §6.95 preventive retrofit `updateProfilo`, §6.96 sticky separator, §6.97 DoseCard copy `indifferente`, §6.98 UnsavedChanges guard FarmacoDrawer close path, §6.85 `nome_utente` investigation | ⏸️ **Split in 8d-A + 8d-B** (analisi-first ✅ 24/04/2026, v2.5.30) | 5 AMB-8d.A-E congelate. Split documentato in §6.99. Impl dilazionata su 2 sessioni |
+| **8d-A** | Tier A+B pattern-based, zero design-decision: §6.84 Router future flags, §6.94 noop bag +5, §6.97 DoseCard copy, §6.98 FarmacoDrawer guard, §6.89+§6.92 ProfiliTab ConfirmModal retrofit, §6.95 proactive `updateProfilo` retrofit | ⏳ **Pianificata** | Target 310-312 test (+4 a +6). 6 CP + CP browser + bump v2.5.30 → v2.5.31. ~80 righe modificate |
+| **8d-B** | Tier C design-decision + investigation: §6.81 ConfigTabBar dark token, §6.96 sticky separator CSS var+ResizeObserver (AMB-8d.B), §6.85 `nome_utente` investigation con strumentazione logging (AMB-8d.E) | ⏳ **Pianificata** | Analisi-first separata richiesta. Target test TBD (baseline post-8d-A) |
 | 9 | Notifiche locali (Notification API + scheduling) + **fix dominio §6.18 cross-midnight** (§6.26) | | |
 | 10 | Service worker attivo + manifest definitivo + icone | | |
 | 11 | Polish finale, QA, accessibilità estesa, gestione errori | | |
@@ -2205,74 +2267,176 @@ Chiarimenti risolti pre-Step 4b (AMB-1/2/3):
 ---
 
 
-## 11. Prossimo step — Sessione 8d — polish Config + retrofit candidate 8a-8c
+## 11. Prossimo step — Sessione 8d-A — impl tier A+B (retrofit pattern-based)
 
-**Scope.** Sessione di polish/retrofit delle deviazioni non-blocker accumulate in 8a/8b/8c/8c-2. Ordine d'attacco in **analisi-first** (AMB-first), poi implementativa CP-based. Focus: zero feature nuove, solo chiusura debito tecnico identificato.
+**Scope.** Sessione **implementativa** dei 6 retrofit tier A+B congelati in AMB-8d.A-E (Sessione 8d analisi-first, v2.5.30). Zero design-decision: tutti i retrofit hanno modello di riferimento già presente nel codice (8b/8c-2).
 
-**Baseline test:** 306/306 su 31 test files (post-8c-2, §22.11).
-**Target test:** **312 ±3** (+6 netti orientativo; Δ reale dipende da AMB 8d su test retrofit).
-**Bump finale:** v2.5.29 → v2.5.30 a chiusura sessione.
+**Baseline test:** 306/306 su 31 test files (post-8d analisi-first, invariata).
+**Target test:** **310-312** su 31-32 test files (+4 a +6 netti).
+**Bump finale:** v2.5.30 → v2.5.31 a chiusura sessione.
+**Scope NON incluso:** tier C + §6.85 → delegati a **Sessione 8d-B** (vedi §6.99).
 
 ### CP0 sanity-light (3 gate — zero codice)
 
-1. `git status`: working tree pulito. Ultimo commit: `Changelog v2.5.29 (Sessione 8c-2)` o equivalente. Se dirty → stop diagnosi.
+1. `git status`: working tree pulito. Ultimo commit: `Changelog v2.5.30 (Sessione 8d analisi-first)` o equivalente. Se dirty → stop diagnosi.
 2. Full test suite: `npm test -- --run` → atteso **306/306 su 31 test files**. Divergente → diagnosi prima di proseguire.
-3. Inventario §6.NN candidate aperte (grep):
-   - `grep -n "candidate 8d\|candidato 8d" /mnt/project/PharmaTimer_Changelog_Fase2.md | wc -l` → atteso ≥ 8 (copertura §6.81, §6.84, §6.89, §6.92, §6.94, §6.95, §6.96, §6.97, §6.98).
+3. Inventario retrofit target (sanity grep):
+   - `grep -n "§6.84\|§6.89\|§6.92\|§6.94\|§6.95\|§6.97\|§6.98" /mnt/project/PharmaTimer_Changelog_Fase2.md | wc -l` → ≥ 20 occorrenze attese (tutte le 7 §6.NN + §6.99 split doc).
+   - `grep -n "AMB-8d\." /mnt/project/PharmaTimer_Changelog_Fase2.md | wc -l` → ≥ 10 (A-E ciascuna citata più volte).
 
-### Prerequisiti lettura (analisi-first 8d)
+### Struttura CP
 
-- §6.81 (ConfigTabBar inactive color dark mode)
-- §6.84 (React Router future flags v7_startTransition + v7_relativeSplatPath)
-- §6.89 (ConfirmModal shared — retrofit ProfiliTab)
-- §6.92 (`useModalA11y` asymmetry predecessor)
-- §6.94 (`defaultNoopActions()` completamento thunks profili/annullaAssunzione)
-- §6.95 (stateRef-bypass preventive retrofit a `updateProfilo`)
-- §6.96 (sticky separator top hardcoded 180px)
-- §6.97 (DoseCard copy `indifferente` mismatch)
-- §6.98 (UnsavedChangesModal guard FarmacoDrawer close path missing)
+Ogni CP = 1 commit separato (pattern 8b §6.70).
 
-### Scope previsto per analisi-first
+---
 
-Dall'inventario emerge una **prioritizzazione naturale** in tre tier:
+#### **CP1 — §6.84 Router future flags v7**
 
-**Tier A — retrofit a basso rischio, alto valore** (raccomandati per 8d):
-- §6.89 + §6.92 — migrazione `ConfirmDeleteProfiloModal` → `ConfirmModal` shared (chiude entrambe in un singolo commit; pattern replica da 8c-2 consumato)
-- §6.98 — UnsavedChanges guard su `FarmacoDrawer.handleAnnulla` (~10 righe, pattern replica da ProfiliTab)
-- §6.97 — DoseCard copy mapping per `relazione_pasto='indifferente'` (isolato, 1 map/switch)
+**File.** `src/main.jsx` (o dove è montato `<BrowserRouter>`; verificare `grep -rn "BrowserRouter" src/`).
 
-**Tier B — retrofit a basso rischio, valore architetturale** (da valutare):
-- §6.94 — `defaultNoopActions()` append profili/annullaAssunzione (preventive, zero test-breaking)
-- §6.95 — preventive retrofit `updateProfilo` a `rebuildPlanFromProfilo` pattern (coherence defence)
-- §6.84 — React Router future flags v7 (zero-cost warning silencer)
+**Modifica.**
+```jsx
+<BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+```
 
-**Tier C — scope variabile, necessita AMB** (da valutare):
-- §6.81 — ConfigTabBar dark color — scelta token puntuale (visual review richiesto)
-- §6.96 — sticky separator dinamico — richiede CSS var o JS observer, valutare approccio
+**Verifica.** Dev server + test: i 2 warning React Router spariscono da `npm test -- --run` (stderr pulito sui test `ConfigTabBar.test.jsx` + `ConfigView.test.jsx`).
 
-### Domande aperte per analisi-first 8d
+**Δ test atteso:** 0 (warning silencer, zero behavior change).
 
-Q1. 8d copre tutti i 3 tier in una sessione o split in 8d-A / 8d-B?
-Q2. §6.96 sticky separator: CSS var approach vs JS ResizeObserver?
-Q3. §6.94 preventive retrofit: includere tutti i thunks mancanti o solo quelli già esposti come test override frequente?
-Q4. §6.95 preventive retrofit `updateProfilo`: proattivo (prima di scoprire bug user-visible) o reattivo (attendere se/quando emerge)?
+**Commit:** `Sessione 8d-A CP1 §6.84: React Router v7 future flags opt-in`
 
-### Azioni di chiusura Sessione 8d
+---
 
-1. Full test run finale: target **312 ±3** orientativo (da rivedere AMB-first).
-2. Bump Changelog: front-matter v2.5.29 → v2.5.30 + entry 2.5.30 con summary retrofit + deviazioni consumate.
-3. §22.12 nuovo stato post-Sessione 8d.
-4. §11 sostituita con prompt **Sessione 9** (notifiche locali + fix §6.18 cross-midnight + §6.26).
-5. §7 roadmap: 8d ✅, 9 ⏳ (o diversificato se 8d split).
-6. §12 delta 8d.
-7. Git: 1+N commit (1 per Changelog + N per retrofit batches, pattern 8b §6.70).
+#### **CP2 — §6.94 `defaultNoopActions()` completamento**
 
-### Note finali
+**File.** `src/test/renderHelpers.jsx` — funzione `defaultNoopActions()`.
+
+**Modifica.** Append 5 `vi.fn()` per: `addProfilo`, `updateProfilo`, `deleteProfilo`, `attivaProfilo`, `annullaAssunzione`.
+
+**Scope.** AMB-8d.C: tutti i 5 thunks mancanti (simmetria completa action factory ↔ bag noop).
+
+**Verifica.** `npm test -- --run` → 306/306 invariati (nessun consumer esistente rompe).
+
+**Δ test atteso:** 0 (infrastruttura mock, zero behavior).
+
+**Commit:** `Sessione 8d-A CP2 §6.94: defaultNoopActions completamento (5 thunks profili+annullaAssunzione)`
+
+---
+
+#### **CP3 — §6.97 DoseCard copy `indifferente` → "indifferentemente dai pasti"**
+
+**File.** `src/components/oggi/DoseCard.jsx` (o helper testuale dove risiede il map `relazione_pasto` → label).
+
+**Diagnosi preliminare (parte del CP, zero codice prima):**
+1. `grep -rn "lontano dai pasti\|indifferente\|relazione_pasto" src/components/oggi/` per localizzare il map/switch.
+2. Confermare che il branch mancante sia `indifferente` → label attesa "indifferentemente dai pasti".
+
+**Modifica.** Aggiungere branch `indifferente` al map/switch con label corretta. Verificare che gli altri 4 branch (`prima`, `durante`, `dopo`, `lontano`) siano invariati.
+
+**Test.** 1 nuovo test in `DoseCard.test.jsx`:
+```js
+it('rende "indifferentemente dai pasti" quando relazione_pasto=indifferente', () => { ... })
+```
+
+**Δ test atteso:** +1.
+
+**Commit:** `Sessione 8d-A CP3 §6.97: DoseCard copy indifferente fix`
+
+---
+
+#### **CP4 — §6.98 FarmacoDrawer UnsavedChanges guard**
+
+**File.** `src/components/config/FarmaciTab.jsx` — handler `handleAnnulla` del drawer (e/o close handler bottone ×).
+
+**Pattern di riferimento.** `ProfiliTab::handleClose` (8b CP7, §6.86.3).
+
+**Modifica.** `handleAnnulla` consulta `dirty` (esposto da `useUnsavedChanges` in 8c CP4 §6.87/AMB-8c.I):
+- Se `dirty === false` → chiude drawer direttamente (comportamento attuale).
+- Se `dirty === true` → apre `UnsavedChangesModal`, on-confirm chiude drawer + reset form, on-cancel preserva form.
+
+**Test.** 2 nuovi test in `FarmaciTab.test.jsx`:
+- `guard scatta su Annulla con form dirty`
+- `Annulla con form clean chiude drawer senza guard`
+
+**Δ test atteso:** +2.
+
+**Commit:** `Sessione 8d-A CP4 §6.98: FarmacoDrawer UnsavedChanges guard su handleAnnulla`
+
+---
+
+#### **CP5 — §6.89+§6.92 ProfiliTab retrofit ConfirmModal shared**
+
+**Scope combinato.** Retrofit `ConfirmDeleteProfiloModal` (inline in ProfiliTab da 8b CP7) → consumo `src/components/shared/ConfirmModal.jsx` (creato in 8c-2 CP5). Auto-risolve asimmetria a11y §6.92 (ConfirmModal shared già monta `useModalA11y`).
+
+**File.**
+- `src/components/config/ProfiliTab.jsx` — sostituire import+JSX `<ConfirmDeleteProfiloModal>` con `<ConfirmModal>` props-mapped.
+- `src/components/config/ConfirmDeleteProfiloModal.jsx` (se file standalone) — rimuovere o marcare dead code. Verificare prima con `grep -rn "ConfirmDeleteProfiloModal" src/`.
+- `src/components/config/ProfiliTab.test.jsx` — adattare query/selector test esistente sul modal delete.
+
+**Pattern di riferimento.** FarmaciTab consumo `ConfirmModal` in 8c-2 CP5 (delete + data_fine-past).
+
+**Mapping props.** Verificare in analisi-first la coerenza label/copy tra `ConfirmDeleteProfiloModal` predecessore e `ConfirmModal` shared. Eventuali divergenze copy: documentare come deviazione §6.100 in questo CP, non mescolare in hotfix silenti.
+
+**Δ test atteso:** 0-1 (adattamento test esistente + eventuale smoke test focus-trap post-retrofit).
+
+**Commit:** `Sessione 8d-A CP5 §6.89+§6.92: ProfiliTab retrofit ConfirmModal shared + a11y`
+
+---
+
+#### **CP6 — §6.95 proactive `updateProfilo` retrofit `rebuildPlanFromFresh`**
+
+**File.** `src/state/actions.js` — thunk `updateProfilo` (~actions.js:464 da §6.95 nota).
+
+**Pattern di riferimento.** Thunks farmaci 8c-2 CP5 (`addFarmaco/updateFarmaco/deleteFarmaco`): post-dispatch, rebuild plan inline da dati freschi bypassando `stateRef`.
+
+**Modifica attesa.**
+1. Dopo `dispatch APPLY_CAMBIO_PROFILO` (payload spread con profilo aggiornato), invocare `rebuildPlanFromFresh({profilo: nuovoProfilo})` o equivalente generalizzazione dell'helper che accetti `{profilo?, farmaci?, orari?}` con fallback a `stateRef` per i non forniti.
+2. Se `rebuildPlanFromFresh` va generalizzato: documentare come rifattorizzazione positiva del helper, non deviazione negativa. Eventuale nuova §6.100 se shape dell'helper cambia visibilmente.
+
+**Test.** 1 nuovo test in `actions.profili.test.js`:
+- `updateProfilo: rebuildPlan usa profilo fresco non stateRef stale`
+
+**Δ test atteso:** +1.
+
+**Commit:** `Sessione 8d-A CP6 §6.95: updateProfilo proactive rebuildPlanFromFresh (coherence defence)`
+
+---
+
+#### **CP7 — CP browser + Changelog + commit finale**
+
+**Browser checklist (ridotta, solo user-visible changes):**
+1. `/config/profili` delete profilo con form dirty → ConfirmModal shared + focus-trap attivo (CP5).
+2. `/config/farmaci` create farmaco con solo Nome → tap Annulla → UnsavedChangesModal appare (CP4).
+3. `/oggi` farmaco con `relazione_pasto='indifferente'` (creato user-level) rende "Assumere indifferentemente dai pasti" (CP3).
+4. Console dev server → zero warning React Router v6 future flags (CP1).
+
+**Changelog bump.**
+- Front-matter: v2.5.30 → **v2.5.31**, Ultima modifica = data sessione.
+- Nuova entry v2.5.31 con summary per CP + §6.NN consumate + Δ test finale.
+- Nuova **§22.13** stato post-Sessione 8d-A.
+- §7 roadmap: riga 8d-A → ✅ **Completo**.
+- §11 sostituita con prompt **Sessione 8d-B** (analisi-first: §6.81 design review + §6.96 impl CSS var+ResizeObserver già AMB-8d.B + §6.85 investigation strumentazione).
+
+**Commit finale.**
+```
+git add PharmaTimer_Changelog_Fase2.md
+git commit -m "Changelog v2.5.31 (Sessione 8d-A)"
+```
+
+Total commit sessione 8d-A: **7** (CP1..CP6 + Changelog).
+
+### Note operative
 
 - Rispetto regole bash zsh interattiva (single-quoted echo, no apostrofi italiani) per tutti i comandi operativi.
-- Le §6.NN del tier A sono ottimali come "warm-up" analisi-first; i tier B/C richiedono più discussione.
-- Se necessario: split 8d-A (tier A + tier B low-risk) + 8d-B (tier C high-discussion). Decisione in analisi-first.
-- Baseline corrente 306/306 è solida: zero tech debt bloccante, tutti retrofit sono "rifinitura".
+- Se emerge hotfix intra-sessione (pattern §6.82/§6.83/§6.95): commit separato drift-preventive (pattern 8b §6.70), non mescolare in commit CP.
+- Se la sessione si dimostra troppo densa dopo CP3-CP4 (attenzione residua insufficiente): chiudere come **8d-A parziale** e aprire **8d-A-continue** (pattern 8c → 8c-2).
+- Nessun nuovo pattern architetturale atteso: tutti i retrofit seguono modelli già consolidati.
+
+### Checklist AMB da rispettare
+
+- **AMB-8d.C** (CP2): tutti i 5 thunks noop, non subset.
+- **AMB-8d.D** (CP6): retrofit proattivo `updateProfilo`, non condizionale.
+- **AMB-8d.A** (fuori scope): non anticipare item tier C (§6.81, §6.96, §6.85) — sono 8d-B.
 
 ## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3 + 8-pre + 8a + 8b + 8c-parz + 8c-2
 
@@ -4232,4 +4396,84 @@ Sessione 8c-2 contingency aperta come one-liner `Esegui il prompt al §11 del Ch
    - (commit 8c parziale CP1-CP4)
 5. Aprire **Sessione 8d — polish Config + retrofit candidate 8a-8c** con one-liner:
    `Esegui il prompt al §11 del Changelog (Sessione 8d).`
+
+
+## 22.12 Stato post-Sessione 8d analisi-first
+
+**Data:** 24 aprile 2026
+**Baseline test pre-sessione:** 306/306 su 31 test files (§22.11 post-8c-2).
+**Baseline test post-sessione:** **306/306 su 31 test files** (invariata — zero codice toccato, solo documentale).
+**Bump:** v2.5.29 → v2.5.30. Step 8d **split in 8d-A + 8d-B** (§6.99).
+
+### Scope consegnato
+
+Sessione 8d analisi-first aperta come one-liner `Esegui il prompt al §11 del Changelog (Sessione 8d).` consumando prompt §11 v2.5.29. Eseguita in un singolo turno di discussione: 5 AMB-8d.A-E congelate + split sessione formalizzato. Zero codice prodotto; solo deliverable documentale (questo Changelog v2.5.30).
+
+### Esiti CP0
+
+| Gate | Scope | Esito |
+|------|-------|-------|
+| **Gate 1** | `git status` + `git log -1` | ✅ Tree clean su branch `step-8`. Ultimo commit `f00b5d0 Changelog v2.5.29 (Sessione 8c-2 contingency)`. |
+| **Gate 2** | `npm test -- --run` | ✅ **306/306 su 31 test files** in 5.99s. 2 warning React Router visibili (confermano §6.84 riproducibile in test, target CP1 8d-A). |
+| **Gate 3** | `grep candidate 8d / candidato 8d` | ✅ 19 occorrenze (atteso ≥ 8). Tutti i 9 retrofit coperti + §6.85 outlier segnalato. |
+
+### AMB-8d.A-E congelate
+
+| ID | Decisione | Ratifica |
+|----|-----------|----------|
+| **AMB-8d.A** | Split 8d → 8d-A (tier A+B) + 8d-B (tier C + §6.85) | ✅ Roberto diretta |
+| **AMB-8d.B** | §6.96 approach = CSS var `--app-header-height` + ResizeObserver | ✅ Roberto diretta |
+| **AMB-8d.C** | §6.94 bag noop = tutti i 5 thunks (`addProfilo/updateProfilo/deleteProfilo/attivaProfilo/annullaAssunzione`) | ✅ Roberto diretta |
+| **AMB-8d.D** | §6.95 retrofit `updateProfilo` = proattivo (coherence defence) | ✅ Roberto diretta |
+| **AMB-8d.E** | §6.85 scope = include in 8d-B tier C (investigation) | ✅ Roberto diretta |
+
+### Deviazioni §6.NN aperte / consumate
+
+**Nuova:**
+- **§6.99** — Split Sessione 8d in 8d-A (tier A+B, pattern-based) + 8d-B (tier C + §6.85, design-decision + investigation). Deviazione procedurale, zero impatto codice.
+
+**Consumate:** nessuna (sessione analisi-first).
+
+**Pending su 8d-A:** §6.84 (CP1), §6.94 (CP2), §6.97 (CP3), §6.98 (CP4), §6.89+§6.92 (CP5), §6.95 (CP6).
+
+**Pending su 8d-B:** §6.81, §6.96 (AMB-8d.B già congelata → direct impl), §6.85 (AMB-8d.E investigation).
+
+### Scoperte analisi
+
+1. **§6.85 outlier sanato.** Il prompt §11 v2.5.29 elencava §6.81, §6.84, §6.89, §6.92, §6.94, §6.95, §6.96, §6.97, §6.98 tra i prerequisiti di lettura ma ometteva §6.85 ("candidate 8d investigation" esplicito in §6.85:1871 e §22.6:3745). Lapsus di scrittura, non scope deliberato. Ratificato AMB-8d.E include in 8d-B.
+
+2. **§6.99 pattern.** Prima "deviazione procedurale" documentata come §6.NN di categoria scope-split (precedenti analoghi: split 7d → 7d-1 + 7d-2, split 7d-2 in 3 parti, split 8c → 8c-2 contingency — ma nessuno aveva §6.NN dedicata; erano solo righe §7). Stabilisce precedente: da qui in avanti, ogni split formale di sessione va §6.NN-tracciato.
+
+3. **Warning React Router riproducibili nei test.** Gate 2 CP0 ha mostrato i 2 warning `v7_startTransition` + `v7_relativeSplatPath` su `ConfigTabBar.test.jsx` + `ConfigView.test.jsx` (stderr). Conferma §6.84 è fix zero-cost + high-impact (pulizia test output), giusto candidato CP1 8d-A.
+
+### File prodotti / NON prodotti
+
+**Prodotti (modificati):**
+- `PharmaTimer_Changelog_Fase2.md` — v2.5.29 → **v2.5.30** (questo delivery).
+
+**Prodotti (nuovi):** nessuno (sessione analisi-first).
+
+**NON prodotti (scope 8d-A):** tutti i retrofit codice — vedi §11 per breakdown CP1-CP6.
+**NON prodotti (scope 8d-B):** investigation §6.85 + design review §6.81 + impl §6.96.
+
+### Azioni sul Mac post-Sessione 8d analisi-first
+
+1. Stato git corrente: tree clean, ultimo commit `f00b5d0`.
+2. **Commit Changelog separato** (solo questo file):
+   ```
+   cd ~/Sviluppo/pharmatimer
+   git add PharmaTimer_Changelog_Fase2.md
+   git commit -m "Changelog v2.5.30 (Sessione 8d analisi-first)"
+   ```
+3. Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude con la versione **v2.5.30** (questo delivery).
+4. Verifica finale stato git:
+   ```
+   git log --oneline -3
+   ```
+   Atteso (top 3):
+   - `<hash>` Changelog v2.5.30 (Sessione 8d analisi-first)
+   - `f00b5d0` Changelog v2.5.29 (Sessione 8c-2 contingency)
+   - `06dc680` Sessione 8c-2 CP6 hotfix §6.95: rebuildPlanFromFresh nei thunks farmaci (stateRef-bypass)
+5. Aprire **Sessione 8d-A impl** (nuova conversazione Claude) con one-liner:
+   `Esegui il prompt al §11 del Changelog (Sessione 8d-A).`
 
