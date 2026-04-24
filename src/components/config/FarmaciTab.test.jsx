@@ -324,3 +324,64 @@ describe('FarmaciTab — CP5 delete + data_fine-past', () => {
     expect(screen.queryByTestId('farmaco-drawer')).not.toBeInTheDocument();
   });
 });
+
+// ============================================================
+// CP4 (Sessione 8d-A-continue) — UnsavedChangesModal guard
+// on drawer close path (§6.98).
+// ============================================================
+
+describe('FarmaciTab — 8d-A-continue §6.98 UnsavedChanges guard su close', () => {
+  it('guard scatta su Annulla con form dirty', async () => {
+    const user = userEvent.setup();
+    renderWithProvider(<FarmaciTab />, {
+      stateOverrides: { farmaci: buildFarmaci() },
+    });
+
+    // Open drawer in create mode.
+    await user.click(screen.getByRole('button', { name: /nuovo farmaco/i }));
+    const drawer = screen.getByTestId('farmaco-drawer');
+    expect(drawer).toBeInTheDocument();
+
+    // Dirty the form: type into Nome field.
+    const nomeInput = within(drawer).getByLabelText('Nome');
+    await user.type(nomeInput, 'Test');
+
+    // Click Annulla in drawer footer (scope via within to avoid any
+    // label clash with other Annulla buttons).
+    await user.click(within(drawer).getByRole('button', { name: /^annulla$/i }));
+
+    // UnsavedChangesModal appears. Use role=heading (level 3) to
+    // disambiguate the h3 title from the body paragraph which also
+    // contains the phrase "modifiche non salvate".
+    expect(
+      screen.getByRole('heading', { name: /modifiche non salvate/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /scarta e continua/i }),
+    ).toBeInTheDocument();
+
+    // Drawer still mounted (guard blocks close).
+    expect(screen.getByTestId('farmaco-drawer')).toBeInTheDocument();
+  });
+
+  it('Annulla con form clean chiude drawer senza guard', async () => {
+    const user = userEvent.setup();
+    renderWithProvider(<FarmaciTab />, {
+      stateOverrides: { farmaci: buildFarmaci() },
+    });
+
+    // Open drawer in create mode.
+    await user.click(screen.getByRole('button', { name: /nuovo farmaco/i }));
+    const drawer = screen.getByTestId('farmaco-drawer');
+    expect(drawer).toBeInTheDocument();
+
+    // Click Annulla footer immediately — form is clean, isDirty=false.
+    await user.click(within(drawer).getByRole('button', { name: /^annulla$/i }));
+
+    // Drawer unmounted, no UnsavedChangesModal ever mounted.
+    expect(screen.queryByTestId('farmaco-drawer')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: /modifiche non salvate/i }),
+    ).not.toBeInTheDocument();
+  });
+});

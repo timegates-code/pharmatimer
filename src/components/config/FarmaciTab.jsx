@@ -31,6 +31,7 @@ import { useModalA11y } from '../../hooks/useModalA11y.js';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges.js';
 import { computeOraPrevista } from '../../domain/planBuilder.js';
 import ConfirmModal from '../shared/ConfirmModal.jsx';
+import UnsavedChangesModal from './UnsavedChangesModal.jsx';
 
 // ------------------------------------------------------------
 // Enums + defaults.
@@ -389,10 +390,33 @@ function FarmacoDrawer({
     setDirty(true);
   }
 
-  function handleAnnulla() {
+  // §6.98 (CP4 Sessione 8d-A-continue): close path split into
+  // `doAnnulla` (silent primitive: restore initial + close) and
+  // `handleAnnulla` (gated: prompts via UnsavedChangesModal when
+  // form is dirty). All close triggers (X button, Annulla footer,
+  // Escape via useModalA11y) funnel through handleAnnulla; the
+  // backdrop click is already `!isDirty`-gated (§6.86.1), so dirty
+  // backdrop is a no-op and doesn't need routing here.
+  //
+  // Pattern reference note: prompt §11 cited "ProfiliTab::handleClose
+  // §6.86.3" but ProfiliTab does silent close on Annulla and §6.86.3
+  // is the z-index bump of the shared UnsavedChangesModal. The
+  // actual precedent for prompt-on-dirty is ConfigView mounting
+  // UnsavedChangesModal for the cross-tab guard; FarmacoDrawer is
+  // the 2° consumer here (candidate §6.102 — focus-trap retrofit
+  // of UnsavedChangesModal deferred to 8d-B tier C).
+  function doAnnulla() {
     setForm(initial);
     setRemovedOrari([]);
     onClose();
+  }
+
+  function handleAnnulla() {
+    if (isDirty) {
+      setUnsavedConfirmOpen(true);
+      return;
+    }
+    doAnnulla();
   }
 
   // --- CP5: normalization helpers + thunks wire -----------------
@@ -445,6 +469,8 @@ function FarmacoDrawer({
   const [dataFineConfirmOpen, setDataFineConfirmOpen] = useState(false);
   const [dataFinePendingPayload, setDataFinePendingPayload] = useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  // §6.98: unsaved-changes guard on close path (dirty-gated).
+  const [unsavedConfirmOpen, setUnsavedConfirmOpen] = useState(false);
   // Submit-lock so rapid taps / Enter chord cannot fire the thunk twice.
   const [submitting, setSubmitting] = useState(false);
 
@@ -950,6 +976,17 @@ function FarmacoDrawer({
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
       />
+
+      {/* --- UnsavedChangesModal: close path guard (§6.98) ---------- */}
+      {unsavedConfirmOpen && (
+        <UnsavedChangesModal
+          onCancel={() => setUnsavedConfirmOpen(false)}
+          onDiscard={() => {
+            setUnsavedConfirmOpen(false);
+            doAnnulla();
+          }}
+        />
+      )}
     </div>
   );
 }
