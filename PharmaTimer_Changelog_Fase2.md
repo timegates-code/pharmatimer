@@ -1,6 +1,6 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 2.5.30
+**Versione:** 2.5.31
 **Data inizio fase:** 16 aprile 2026
 **Ultima modifica:** 24 aprile 2026
 **Ambito:** Sviluppo PWA React standalone con persistenza locale, preparata per futuro swap verso backend FastAPI+MariaDB.
@@ -341,6 +341,21 @@ Questo documento raccoglie le decisioni architetturali, la struttura del progett
 - Nuovo §22.8 stato post-Sessione 8b implementativa
 - §11 sostituita con stub Sessione 8c (FarmaciTab analisi-first, prompt da scrivere in apertura sessione)
 - Drift §6.69 pregresso (entry §1 ferme a v2.5.20.1, gap di 5 versioni) NON retrocorretto per principio fatto-storico immutabile
+
+**Changelog versione 2.5.31 (rispetto alla 2.5.30):**
+- Sessione **8d-A parziale** completata 24/04/2026: 3 CP su 6 eseguiti (CP1 §6.84, CP2 §6.94, CP3 §6.97 riscoped). Baseline test **306/306 → 307/307 su 31 test files** (+1 da CP3 regression guard). Bump v2.5.30 → v2.5.31.
+- **CP1 §6.84** — React Router v7 future flags. Scope ridotto ad **app router only** (`src/main.jsx`): tentativo estensione al test router `MemoryRouter` in `src/test/renderHelpers.jsx` ha causato hang deterministico >26min di `vitest run`, rollback immediato. Warning `React Router Future Flag` persistono in stderr dei test. Dettagli in nuova **§6.100**.
+- **CP2 §6.94** — `defaultNoopActions()` completamento (AMB-8d.C): +5 thunks noop (`addProfilo/updateProfilo/deleteProfilo/attivaProfilo/annullaAssunzione`) in `src/test/renderHelpers.jsx`. Pattern `async () => ({...})` coerente con noop pre-esistenti (non `vi.fn()` letterale del prompt §11 CP2: micro-invarianza auto-evidente nel diff, non documentata). Commento header aggiornato. Δ test = 0 come atteso.
+- **CP3 §6.97** — **Riscoped da fix a regression guard**. Diagnosi 8d-A (git blame `src/components/oggi/DoseCard.jsx` linee 120-140, commit `1c900064` del 19 apr 2026) ha confermato che il branch `indifferente` + early-return esistono dalla creazione del file: bug descritto in §6.97 **non riproducibile nel codice attuale**. Nuovo describe block in `DoseCard.test.jsx` con 1 test assertion di contratto. §6.97 chiusa. Dettagli in nuova **§6.101**.
+- **Nuove §6.100** (CP1 scope app-only) + **§6.101** (CP3 riscope + chiusura §6.97).
+- **CP4-CP6 + CP7 NON eseguiti** — chiusura parziale per stanchezza sessione (~2h20min + hang CP1). Pattern §6.99-style: prosecuzione in **Sessione 8d-A-continue** con baseline 307/307 e scope residuo (CP4 §6.98 drawer guard, CP5 §6.89+§6.92 ProfiliTab retrofit, CP6 §6.95 proactive `updateProfilo`, CP7 bump v2.5.32).
+- **§11 sostituita** con prompt esecutivo **Sessione 8d-A-continue** (CP0 sanity su baseline 307 + CP4-CP6 + CP7 bump v2.5.31 → v2.5.32).
+- Nuovo **§22.13** stato post-Sessione 8d-A parziale.
+- §7 roadmap: riga 8d-A da "⏳ Pianificata" a **"⚠️ Parziale (CP1-CP3 ✅, CP4-CP7 deferred)"**, nuova riga **8d-A-continue ⏳**.
+- Nessuna modifica a §12 (3 file codice toccati in 8d-A parziale: `src/main.jsx`, `src/test/renderHelpers.jsx`, `src/components/oggi/DoseCard.test.jsx` — tutti già tracciati in sessioni precedenti).
+- Commit code-side (sul Mac, branch `step-8`): `2d79055` CP1, `98cb25f` CP2, `ace1ed2` CP3. Commit Changelog alla consegna.
+
+---
 
 **Changelog versione 2.5.30 (rispetto alla 2.5.29):**
 - Sessione **8d analisi-first** completata 24/04/2026: 5 AMB-8d.A-E congelate. Baseline test invariata **306/306 su 31 test files** (zero codice toccato, solo documentale). Bump v2.5.29 → v2.5.30.
@@ -2058,7 +2073,9 @@ I 3 thunks passano `{farmaci, orari}` freschi (già in scope locale dopo il refe
 
 ---
 
-## 6.97 — DoseCard copy mismatch `indifferente` → "lontano dai pasti" (bug pregresso, candidate 8d)
+## 6.97 — DoseCard copy mismatch `indifferente` → "lontano dai pasti" (bug pregresso, candidate 8d) — CHIUSA in 8d-A CP3
+
+**Stato:** ✅ **Chiusa in Sessione 8d-A CP3** (24/04/2026) — bug **non riproducibile** nel codice attuale. Vedi §6.101 per dettagli diagnosi (git blame commit `1c900064` del 19 apr 2026 conferma branch `indifferente` + early-return presenti dalla creazione del file). Aggiunto regression guard test in `DoseCard.test.jsx`. L'osservazione originale in 8c-2 CP6 punto 4 resta non spiegata (ipotesi residue: stale cache browser, state transiente non persistito, errore di osservazione).
 
 **Scoperta.** CP6 punto 4 (Sessione 8c-2): creato farmaco "Test" con `relazione_pasto='indifferente'`. In `/oggi` la card rende "Assumere lontano dai pasti" invece di "Assumere indifferentemente dai pasti".
 
@@ -2118,6 +2135,55 @@ I 3 thunks passano `{farmaci, orari}` freschi (già in scope locale dopo il refe
 
 ---
 
+## 6.100 — Sessione 8d-A CP1: scope §6.84 ridotto ad app-only (test router deferred)
+
+**Contesto.** CP1 §6.84 (Sessione 8d-A) applicava le future flag `v7_startTransition` + `v7_relativeSplatPath` al `<BrowserRouter>` in `src/main.jsx` per silenziare i warning React Router v7. Il prompt §11 v2.5.30 CP1 specificava come file target `src/main.jsx` (app router) ma prescriveva come verifica finale "stderr pulito sui test ConfigTabBar + ConfigView", implicando copertura del test router anche.
+
+**Scoperta.** Post-sed su `main.jsx` il warning check mostrava ancora 4 righe React Router Future Flag su stderr dei test. Diagnosi (`grep -rn "BrowserRouter\|MemoryRouter" src/test/`) ha rivelato che `src/test/renderHelpers.jsx:153` monta `<MemoryRouter initialEntries={initialEntries}>` senza future flag. Estensione al test router avrebbe completato il fix.
+
+**Tentativo estensione (rollback).** sed analogo su `renderHelpers.jsx:153` → warning check subset (ConfigTabBar+ConfigView) **verde**, ma full suite `npm test -- --run` in **hang deterministico** (26+ min, zero output, nessun banner vitest, zero progressi test files). Ripetibile via `npx vitest run` diretto: hang early in setup/transform. Bisezione non approfondita per costo/beneficio (incidente nella prima metà sessione, 5 CP ancora da fare).
+
+**Ipotesi non diagnosticata.** `React.startTransition` wrappa gli update del router. In jsdom + vitest, pattern async test che attendono state update potrebbero non risolversi mai se una transition è pending e non ha modo di "flushare" (es. `await screen.findBy...` dopo navigation). MemoryRouter con `future={{ v7_startTransition: true }}` potrebbe triggerare questa patologia in ≥1 test file, mandando la suite in hang. Non riproducibile con il subset ConfigTabBar+ConfigView → significa che il colpevole è altrove (candidato: test che usano `useNavigate` o effettuano navigation imperative in test body).
+
+**Decisione 8d-A.** Rollback di `renderHelpers.jsx`, mantenere il fix su `main.jsx`. Warning test persistono in ogni `npm test` (rumore stderr) — accettato come compromesso:
+- App runtime / dev server: **clean**, v7-ready.
+- Test suite: warning persistenti ma 306 → 307 invariata integrity, zero flake da hang.
+
+**Deferred.** Retrofit test router come item tier C → **Sessione 8d-B** analisi-first (decidere: (a) bisezione per identificare test file colpevole + fix mirato, (b) wrapper `act()` generalizzato attorno a MemoryRouter in renderHelpers, (c) silenziare i 2 warning via vitest `onConsoleLog` filter come workaround non-invasivo, (d) upgrade a react-router-dom 7.x che rende i future flag default).
+
+**Non-deviazione implementata.** `src/main.jsx:39` ha `<BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>`. §6.84 rimane formalmente **aperta** per la parte test router.
+
+---
+
+## 6.101 — Sessione 8d-A CP3: §6.97 riscoped da fix a regression guard + chiusura
+
+**Contesto.** CP3 §6.97 (Sessione 8d-A) era prescritto come fix al presunto bug "DoseCard rende 'lontano dai pasti' per `relazione_pasto='indifferente'`" (osservato in 8c-2 CP6 punto 4).
+
+**Scoperta diagnosi preliminare CP3.** Grep su `src/components/oggi/DoseCard.jsx` ha rivelato che:
+- Linea 125-126: `if (f.relazione_pasto === 'indifferente') { return 'Assumere indifferentemente dai pasti'; }` — **early-return incondizionato presente**.
+- Linea 138: `return map[f.relazione_pasto] || 'Assumere indifferentemente dai pasti';` — fallback anch'esso corretto.
+
+**Git blame conferma.** Entrambe le linee risalgono a commit `1c900064` del 19/04/2026 (Sessione 7b-1 — vista Oggi read-only iniziale). Il branch `indifferente` esiste **dalla creazione del file**, mai toccato da commit successivi. Nessun fix silenzioso post-8c-2.
+
+**Grep esteso su tutto `src/`.** Verificato che `DoseCard.jsx` è l'unico renderer testuale di `relazione_pasto`. `FarmaciTab.jsx` usa il valore solo come option label nel dropdown form. Nessun altro consumer potenzialmente patologico.
+
+**Conclusione.** Il bug descritto in §6.97 **non è riproducibile** nel codice attuale. Con `relazione_pasto === 'indifferente'` la funzione `getPastoText` ritorna incondizionatamente "Assumere indifferentemente dai pasti" via early-return. Non c'è cammino di codice che produca "lontano dai pasti" per quell'input.
+
+**Ipotesi residue non falsificabili:**
+- (a) Stale cache browser in 8c-2 CP6 (app in watch mode + HMR, stato renderer disallineato transitoriamente).
+- (b) Errore di osservazione in 8c-2 CP6 (es. farmaco osservato aveva `relazione_pasto` diverso, confusione con altra card).
+- (c) Race / transient state non persistito (es. form commit non ancora atomicizzato).
+
+**Decisione riscope CP3 (opzione A approvata 24/04):** il prompt §11 CP3 prescriveva `+1` test come regression coverage. Mantenuto Δ test +1 come **regression guard** proattivo: nuovo describe block in `DoseCard.test.jsx` con 1 test che documenta il contratto `getPastoText(indifferente)`. Zero code change a `DoseCard.jsx`. Scopo: prevenire reintroduzione del bug in refactor futuri che rimuovessero l'early-return.
+
+**Chiusura §6.97.** Annotata come "CHIUSA in 8d-A CP3 (bug non riproducibile)" con rimando a questa §6.101.
+
+**Alternative scartate:**
+- **(B)** CP3 rimosso (Δ test 0, 6 commit totali invece di 7): asciutto ma nessuna protezione contro regressione futura.
+- **(C)** Verifica browser empirica pre-decisione: costo aggiuntivo senza information gain (il git blame è già evidenza conclusiva).
+
+---
+
 ## 7. Roadmap Fase 2 — avanzamento
 
 | Step | Contenuto | Stato | Note |
@@ -2150,7 +2216,8 @@ I 3 thunks passano `{farmaci, orari}` freschi (già in scope locale dopo il refe
 | **8c** | FarmaciTab: CRUD farmaci + form unico con orari inline (§6.66) + save atomico `withTransaction` + soft-delete (§6.67) + flip `GET_FARMACI_SOLO_ATTIVI=true` + date editabili (§6.68). CP0: verificare `DoseCard` usi delta storico del log (§6.64 nota) | ✅ **Completo** (via 8c+8c-2) | 8c parziale 24/04/2026 (v2.5.27 → v2.5.28, CP1-CP4, 287 → 297 test, §6.88/6.90/6.91). 8c-2 contingency 24/04/2026 (v2.5.28 → v2.5.29, CP5+CP6, 297 → 306 test). 7 deviazioni totali 8c-2 (§6.89 consumata parziale, §6.92/6.93/6.94/6.95/6.96/6.97/6.98 nuove) |
 | **8c-2** | CP5+CP6 di 8c: 3 thunks (`addFarmaco`/`updateFarmaco`/`deleteFarmaco`) pessimistici con `withTransaction`, `ConfirmModal` shared (§6.89 consumata parziale), delete button + copy §6.67, data_fine-past interceptor + copy §6.68, file nuovo `actions.farmaci.test.js`, 2 test end-to-end FarmaciTab, CP browser 7 punti + hotfix §6.95 intra-CP6 | ✅ **Completo** | **297 → 306 test** (+9 netti, target §11 v2.5.28 "308 ±3" soddisfatto con -2 in range). 3 commit separati (`dda9af7` CP5, `06dc680` CP6 hotfix §6.95, + Changelog). 7 deviazioni §6.89/6.92-6.98. CP browser 7/7 verdi |
 | **8d** | Polish Config + retrofit 8a-8c candidate: §6.81 ConfigTabBar dark color, §6.84 React Router future flags, §6.89 retrofit `ConfirmDeleteProfiloModal` → `ConfirmModal` shared + §6.92 `useModalA11y` su ProfiliTab, §6.94 completamento `defaultNoopActions`, §6.95 preventive retrofit `updateProfilo`, §6.96 sticky separator, §6.97 DoseCard copy `indifferente`, §6.98 UnsavedChanges guard FarmacoDrawer close path, §6.85 `nome_utente` investigation | ⏸️ **Split in 8d-A + 8d-B** (analisi-first ✅ 24/04/2026, v2.5.30) | 5 AMB-8d.A-E congelate. Split documentato in §6.99. Impl dilazionata su 2 sessioni |
-| **8d-A** | Tier A+B pattern-based, zero design-decision: §6.84 Router future flags, §6.94 noop bag +5, §6.97 DoseCard copy, §6.98 FarmacoDrawer guard, §6.89+§6.92 ProfiliTab ConfirmModal retrofit, §6.95 proactive `updateProfilo` retrofit | ⏳ **Pianificata** | Target 310-312 test (+4 a +6). 6 CP + CP browser + bump v2.5.30 → v2.5.31. ~80 righe modificate |
+| **8d-A** (parziale) | Tier A+B pattern-based. **CP1-CP3 completati** (v2.5.31): §6.84 Router future flags app-only (§6.100), §6.94 noop bag +5 (AMB-8d.C), §6.97 DoseCard regression guard riscoped (§6.101 + chiusura §6.97). **CP4-CP7 deferred** a 8d-A-continue | ⚠️ **Parziale** | 306 → 307 test (+1 da CP3). 3 commit Mac-side: `2d79055`, `98cb25f`, `ace1ed2`. Bump v2.5.30 → v2.5.31 |
+| **8d-A-continue** | CP4 §6.98 FarmacoDrawer UnsavedChanges guard + CP5 §6.89+§6.92 ProfiliTab retrofit ConfirmModal + CP6 §6.95 proactive `updateProfilo` retrofit + CP7 bump v2.5.31 → v2.5.32 | ⏳ **Pianificata** | Baseline 307/307. Target ~310-311 test (+3 a +4). 4 CP + browser + bump finale |
 | **8d-B** | Tier C design-decision + investigation: §6.81 ConfigTabBar dark token, §6.96 sticky separator CSS var+ResizeObserver (AMB-8d.B), §6.85 `nome_utente` investigation con strumentazione logging (AMB-8d.E) | ⏳ **Pianificata** | Analisi-first separata richiesta. Target test TBD (baseline post-8d-A) |
 | 9 | Notifiche locali (Notification API + scheduling) + **fix dominio §6.18 cross-midnight** (§6.26) | | |
 | 10 | Service worker attivo + manifest definitivo + icone | | |
@@ -2267,80 +2334,26 @@ Chiarimenti risolti pre-Step 4b (AMB-1/2/3):
 ---
 
 
-## 11. Prossimo step — Sessione 8d-A — impl tier A+B (retrofit pattern-based)
+## 11. Prossimo step — Sessione 8d-A-continue — impl CP4+CP5+CP6 + CP7 bump
 
-**Scope.** Sessione **implementativa** dei 6 retrofit tier A+B congelati in AMB-8d.A-E (Sessione 8d analisi-first, v2.5.30). Zero design-decision: tutti i retrofit hanno modello di riferimento già presente nel codice (8b/8c-2).
+**Scope.** Prosecuzione **Sessione 8d-A parziale** (chiusa a v2.5.31 dopo CP1-CP3, vedi §22.13). Esecuzione CP residui: **CP4 §6.98 drawer guard**, **CP5 §6.89+§6.92 ProfiliTab retrofit**, **CP6 §6.95 proactive updateProfilo**, **CP7 bump changelog**. Zero design-decision: AMB-8d.C/D già consumate o consumanti, retrofit tutti pattern-based.
 
-**Baseline test:** 306/306 su 31 test files (post-8d analisi-first, invariata).
-**Target test:** **310-312** su 31-32 test files (+4 a +6 netti).
-**Bump finale:** v2.5.30 → v2.5.31 a chiusura sessione.
-**Scope NON incluso:** tier C + §6.85 → delegati a **Sessione 8d-B** (vedi §6.99).
+**Baseline test:** 307/307 su 31 test files (post-8d-A CP3, §22.13).
+**Target test:** **310-311** su 31-32 test files (+3 a +4 netti).
+**Bump finale:** v2.5.31 → **v2.5.32** a chiusura sessione.
+**Scope NON incluso:** tier C + §6.85 (→ Sessione 8d-B), test router retrofit §6.84 aggiunto da §6.100 (→ analisi-first 8d-B).
 
 ### CP0 sanity-light (3 gate — zero codice)
 
-1. `git status`: working tree pulito. Ultimo commit: `Changelog v2.5.30 (Sessione 8d analisi-first)` o equivalente. Se dirty → stop diagnosi.
-2. Full test suite: `npm test -- --run` → atteso **306/306 su 31 test files**. Divergente → diagnosi prima di proseguire.
-3. Inventario retrofit target (sanity grep):
-   - `grep -n "§6.84\|§6.89\|§6.92\|§6.94\|§6.95\|§6.97\|§6.98" /mnt/project/PharmaTimer_Changelog_Fase2.md | wc -l` → ≥ 20 occorrenze attese (tutte le 7 §6.NN + §6.99 split doc).
-   - `grep -n "AMB-8d\." /mnt/project/PharmaTimer_Changelog_Fase2.md | wc -l` → ≥ 10 (A-E ciascuna citata più volte).
+1. `git status`: working tree pulito. Ultimo commit atteso: `Changelog v2.5.31 (Sessione 8d-A parziale, CP1-CP3)` o equivalente. Se dirty → stop diagnosi.
+2. Full test suite: `npm test -- --run` → atteso **307/307 su 31 test files**. Divergente → diagnosi prima di proseguire. Nota: 4 righe warning React Router su stderr sono **attese** (§6.100, test router deferred).
+3. Inventario retrofit target:
+   - `grep -n "§6.89\|§6.92\|§6.95\|§6.98" /mnt/project/PharmaTimer_Changelog_Fase2.md | wc -l` → ≥ 12 occorrenze attese.
+   - Verifica che i commit 8d-A CP1-CP3 siano presenti: `git log --oneline | grep "Sessione 8d-A CP"` → atteso 3 match (`2d79055` CP1, `98cb25f` CP2, `ace1ed2` CP3).
 
 ### Struttura CP
 
 Ogni CP = 1 commit separato (pattern 8b §6.70).
-
----
-
-#### **CP1 — §6.84 Router future flags v7**
-
-**File.** `src/main.jsx` (o dove è montato `<BrowserRouter>`; verificare `grep -rn "BrowserRouter" src/`).
-
-**Modifica.**
-```jsx
-<BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-```
-
-**Verifica.** Dev server + test: i 2 warning React Router spariscono da `npm test -- --run` (stderr pulito sui test `ConfigTabBar.test.jsx` + `ConfigView.test.jsx`).
-
-**Δ test atteso:** 0 (warning silencer, zero behavior change).
-
-**Commit:** `Sessione 8d-A CP1 §6.84: React Router v7 future flags opt-in`
-
----
-
-#### **CP2 — §6.94 `defaultNoopActions()` completamento**
-
-**File.** `src/test/renderHelpers.jsx` — funzione `defaultNoopActions()`.
-
-**Modifica.** Append 5 `vi.fn()` per: `addProfilo`, `updateProfilo`, `deleteProfilo`, `attivaProfilo`, `annullaAssunzione`.
-
-**Scope.** AMB-8d.C: tutti i 5 thunks mancanti (simmetria completa action factory ↔ bag noop).
-
-**Verifica.** `npm test -- --run` → 306/306 invariati (nessun consumer esistente rompe).
-
-**Δ test atteso:** 0 (infrastruttura mock, zero behavior).
-
-**Commit:** `Sessione 8d-A CP2 §6.94: defaultNoopActions completamento (5 thunks profili+annullaAssunzione)`
-
----
-
-#### **CP3 — §6.97 DoseCard copy `indifferente` → "indifferentemente dai pasti"**
-
-**File.** `src/components/oggi/DoseCard.jsx` (o helper testuale dove risiede il map `relazione_pasto` → label).
-
-**Diagnosi preliminare (parte del CP, zero codice prima):**
-1. `grep -rn "lontano dai pasti\|indifferente\|relazione_pasto" src/components/oggi/` per localizzare il map/switch.
-2. Confermare che il branch mancante sia `indifferente` → label attesa "indifferentemente dai pasti".
-
-**Modifica.** Aggiungere branch `indifferente` al map/switch con label corretta. Verificare che gli altri 4 branch (`prima`, `durante`, `dopo`, `lontano`) siano invariati.
-
-**Test.** 1 nuovo test in `DoseCard.test.jsx`:
-```js
-it('rende "indifferentemente dai pasti" quando relazione_pasto=indifferente', () => { ... })
-```
-
-**Δ test atteso:** +1.
-
-**Commit:** `Sessione 8d-A CP3 §6.97: DoseCard copy indifferente fix`
 
 ---
 
@@ -2360,7 +2373,7 @@ it('rende "indifferentemente dai pasti" quando relazione_pasto=indifferente', ()
 
 **Δ test atteso:** +2.
 
-**Commit:** `Sessione 8d-A CP4 §6.98: FarmacoDrawer UnsavedChanges guard su handleAnnulla`
+**Commit:** `Sessione 8d-A-continue CP4 §6.98: FarmacoDrawer UnsavedChanges guard su handleAnnulla`
 
 ---
 
@@ -2369,17 +2382,16 @@ it('rende "indifferentemente dai pasti" quando relazione_pasto=indifferente', ()
 **Scope combinato.** Retrofit `ConfirmDeleteProfiloModal` (inline in ProfiliTab da 8b CP7) → consumo `src/components/shared/ConfirmModal.jsx` (creato in 8c-2 CP5). Auto-risolve asimmetria a11y §6.92 (ConfirmModal shared già monta `useModalA11y`).
 
 **File.**
-- `src/components/config/ProfiliTab.jsx` — sostituire import+JSX `<ConfirmDeleteProfiloModal>` con `<ConfirmModal>` props-mapped.
-- `src/components/config/ConfirmDeleteProfiloModal.jsx` (se file standalone) — rimuovere o marcare dead code. Verificare prima con `grep -rn "ConfirmDeleteProfiloModal" src/`.
-- `src/components/config/ProfiliTab.test.jsx` — adattare query/selector test esistente sul modal delete.
+- `src/components/config/ProfiliTab.jsx` — sostituire JSX `<ConfirmDeleteProfiloModal>` con `<ConfirmModal>` props-mapped. Rimuovere dead code function `ConfirmDeleteProfiloModal` (definita inline a linea ~516 secondo discovery 8d-A: linee 485 JSX + 516 funzione).
+- `src/components/config/ProfiliTab.test.jsx` — adattare query/selector test esistente sul modal delete (linea ~134 da discovery 8d-A).
 
 **Pattern di riferimento.** FarmaciTab consumo `ConfirmModal` in 8c-2 CP5 (delete + data_fine-past).
 
-**Mapping props.** Verificare in analisi-first la coerenza label/copy tra `ConfirmDeleteProfiloModal` predecessore e `ConfirmModal` shared. Eventuali divergenze copy: documentare come deviazione §6.100 in questo CP, non mescolare in hotfix silenti.
+**Mapping props.** Verificare in diagnosi pre-edit la coerenza label/copy tra `ConfirmDeleteProfiloModal` predecessore e `ConfirmModal` shared. Eventuali divergenze copy: documentare come nuova §6.102 in questo CP, non mescolare in hotfix silenti.
 
 **Δ test atteso:** 0-1 (adattamento test esistente + eventuale smoke test focus-trap post-retrofit).
 
-**Commit:** `Sessione 8d-A CP5 §6.89+§6.92: ProfiliTab retrofit ConfirmModal shared + a11y`
+**Commit:** `Sessione 8d-A-continue CP5 §6.89+§6.92: ProfiliTab retrofit ConfirmModal shared + a11y`
 
 ---
 
@@ -2391,52 +2403,60 @@ it('rende "indifferentemente dai pasti" quando relazione_pasto=indifferente', ()
 
 **Modifica attesa.**
 1. Dopo `dispatch APPLY_CAMBIO_PROFILO` (payload spread con profilo aggiornato), invocare `rebuildPlanFromFresh({profilo: nuovoProfilo})` o equivalente generalizzazione dell'helper che accetti `{profilo?, farmaci?, orari?}` con fallback a `stateRef` per i non forniti.
-2. Se `rebuildPlanFromFresh` va generalizzato: documentare come rifattorizzazione positiva del helper, non deviazione negativa. Eventuale nuova §6.100 se shape dell'helper cambia visibilmente.
+2. Se `rebuildPlanFromFresh` va generalizzato: documentare come rifattorizzazione positiva del helper, non deviazione negativa. Eventuale nuova §6.102 (o §6.103 se CP5 ne ha già aperta una) se shape dell'helper cambia visibilmente.
 
 **Test.** 1 nuovo test in `actions.profili.test.js`:
 - `updateProfilo: rebuildPlan usa profilo fresco non stateRef stale`
 
 **Δ test atteso:** +1.
 
-**Commit:** `Sessione 8d-A CP6 §6.95: updateProfilo proactive rebuildPlanFromFresh (coherence defence)`
+**Commit:** `Sessione 8d-A-continue CP6 §6.95: updateProfilo proactive rebuildPlanFromFresh (coherence defence)`
 
 ---
 
 #### **CP7 — CP browser + Changelog + commit finale**
 
-**Browser checklist (ridotta, solo user-visible changes):**
+**Browser checklist (ridotta, solo user-visible changes CP4-CP6):**
 1. `/config/profili` delete profilo con form dirty → ConfirmModal shared + focus-trap attivo (CP5).
 2. `/config/farmaci` create farmaco con solo Nome → tap Annulla → UnsavedChangesModal appare (CP4).
-3. `/oggi` farmaco con `relazione_pasto='indifferente'` (creato user-level) rende "Assumere indifferentemente dai pasti" (CP3).
-4. Console dev server → zero warning React Router v6 future flags (CP1).
+3. `/config/profili` update profilo attivo (es. cambio durata_intervallo) → plan `/oggi` si rigenera correttamente (CP6 coherence defence).
 
 **Changelog bump.**
-- Front-matter: v2.5.30 → **v2.5.31**, Ultima modifica = data sessione.
-- Nuova entry v2.5.31 con summary per CP + §6.NN consumate + Δ test finale.
-- Nuova **§22.13** stato post-Sessione 8d-A.
-- §7 roadmap: riga 8d-A → ✅ **Completo**.
-- §11 sostituita con prompt **Sessione 8d-B** (analisi-first: §6.81 design review + §6.96 impl CSS var+ResizeObserver già AMB-8d.B + §6.85 investigation strumentazione).
+- Front-matter: v2.5.31 → **v2.5.32**, Ultima modifica = data sessione.
+- Nuova entry v2.5.32 con summary per CP + §6.NN consumate + Δ test finale.
+- Nuova **§22.14** stato post-Sessione 8d-A-continue.
+- §7 roadmap: riga 8d-A-continue → ✅ **Completo**. Riga 8d-A parziale resta come record storico.
+- §11 sostituita con prompt **Sessione 8d-B** (analisi-first: §6.81 design review + §6.96 impl CSS var+ResizeObserver già AMB-8d.B + §6.85 investigation strumentazione + §6.84 test router retrofit da §6.100).
 
 **Commit finale.**
 ```
 git add PharmaTimer_Changelog_Fase2.md
-git commit -m "Changelog v2.5.31 (Sessione 8d-A)"
+git commit -m "Changelog v2.5.32 (Sessione 8d-A-continue)"
 ```
 
-Total commit sessione 8d-A: **7** (CP1..CP6 + Changelog).
+Total commit sessione 8d-A-continue: **4** (CP4-CP6 + Changelog).
 
 ### Note operative
 
 - Rispetto regole bash zsh interattiva (single-quoted echo, no apostrofi italiani) per tutti i comandi operativi.
 - Se emerge hotfix intra-sessione (pattern §6.82/§6.83/§6.95): commit separato drift-preventive (pattern 8b §6.70), non mescolare in commit CP.
-- Se la sessione si dimostra troppo densa dopo CP3-CP4 (attenzione residua insufficiente): chiudere come **8d-A parziale** e aprire **8d-A-continue** (pattern 8c → 8c-2).
+- Se la sessione si dimostra troppo densa dopo CP5-CP6: chiudere come **8d-A-continue parziale** e aprire **8d-A-continue-2** (pattern §6.99 + §22.13).
 - Nessun nuovo pattern architetturale atteso: tutti i retrofit seguono modelli già consolidati.
+- **Non tentare** estensione future flag React Router al test router `renderHelpers.jsx` — è scope 8d-B con analisi-first dedicata (§6.100).
 
 ### Checklist AMB da rispettare
 
-- **AMB-8d.C** (CP2): tutti i 5 thunks noop, non subset.
 - **AMB-8d.D** (CP6): retrofit proattivo `updateProfilo`, non condizionale.
-- **AMB-8d.A** (fuori scope): non anticipare item tier C (§6.81, §6.96, §6.85) — sono 8d-B.
+- **AMB-8d.A** (fuori scope): non anticipare item tier C (§6.81, §6.96, §6.85, §6.84 test router) — sono 8d-B.
+
+### Contesto sessione precedente (8d-A parziale)
+
+Commit code-side già presenti sul branch `step-8`:
+- `2d79055` CP1 §6.84 (app router future flags)
+- `98cb25f` CP2 §6.94 (noop bag +5)
+- `ace1ed2` CP3 §6.97 (regression guard)
+
+Non rifare questi CP. Baseline test post-CP3 = 307/307.
 
 ## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3 + 8-pre + 8a + 8b + 8c-parz + 8c-2
 
@@ -4476,4 +4496,101 @@ Sessione 8d analisi-first aperta come one-liner `Esegui il prompt al §11 del Ch
    - `06dc680` Sessione 8c-2 CP6 hotfix §6.95: rebuildPlanFromFresh nei thunks farmaci (stateRef-bypass)
 5. Aprire **Sessione 8d-A impl** (nuova conversazione Claude) con one-liner:
    `Esegui il prompt al §11 del Changelog (Sessione 8d-A).`
+
+
+## 22.13 Stato post-Sessione 8d-A parziale (CP1-CP3)
+
+**Data:** 24 aprile 2026
+**Baseline test pre-sessione:** 306/306 su 31 test files (§22.12 post-8d analisi-first).
+**Baseline test post-sessione:** **307/307 su 31 test files** (+1 netto da CP3 regression guard).
+**Bump:** v2.5.30 → v2.5.31. Sessione **parziale**: 3 CP su 6 eseguiti, 4 CP+CP7 deferred a **8d-A-continue**.
+
+### Scope consegnato
+
+Sessione 8d-A impl aperta come one-liner `Esegui il prompt al §11 del Changelog (Sessione 8d-A).` consumando prompt §11 v2.5.30. Eseguiti CP1, CP2, CP3 in sequenza. Chiusa anticipatamente dopo CP3 per stanchezza operatore (~2h20min di lavoro + hang CP1 di 26+ min che ha prosciugato attenzione). Pattern §6.99-style "continue session".
+
+### Esiti CP0
+
+| Gate | Scope | Esito |
+|------|-------|-------|
+| **Gate 1** | `git status` + `git log -1` | ✅ Tree clean su branch `step-8`. Ultimo commit `f1dca3c Changelog v2.5.30`. |
+| **Gate 2** | `npm test -- --run` | ✅ **306/306 su 31 test files** in 6.37s. 2 warning React Router confermati (conferma §6.84 target CP1). |
+| **Gate 3** | sanity grep § + AMB-8d | ✅ 89 occorrenze §6.NN target (≥ 20), 30 occorrenze AMB-8d (≥ 10). Allineato v2.5.30. |
+
+### CP completati
+
+| CP | §6.NN | Δ test | Commit | Note |
+|----|-------|--------|--------|------|
+| **CP1** | §6.84 | 0 | `2d79055` | Scope ridotto ad app-only. Hang full suite su tentativo estensione test router → rollback. Dettagli §6.100. Test router deferred a 8d-B. |
+| **CP2** | §6.94 (AMB-8d.C) | 0 | `98cb25f` | +5 thunks noop in `defaultNoopActions()`. Pattern `async () => ({...})` coerente (non `vi.fn()`). Commento header aggiornato. Zero regressioni 306/306. |
+| **CP3** | §6.97 | +1 | `ace1ed2` | **Riscoped da fix a regression guard**. Git blame conferma bug non riproducibile (branch `indifferente` dal commit `1c900064` del 19 apr). §6.97 chiusa. Dettagli §6.101. 306 → 307. |
+
+### CP deferred a 8d-A-continue
+
+| CP | §6.NN | Δ test atteso | Note |
+|----|-------|---------------|------|
+| **CP4** | §6.98 | +2 | FarmacoDrawer UnsavedChanges guard. Pattern `ProfiliTab::handleClose` (§6.86.3). ~10 righe + 2 test. |
+| **CP5** | §6.89+§6.92 | 0-1 | ProfiliTab retrofit `ConfirmDeleteProfiloModal` inline → `ConfirmModal` shared. Auto-risolve asimmetria a11y §6.92. |
+| **CP6** | §6.95 | +1 | Proactive `updateProfilo` retrofit `rebuildPlanFromFresh` (AMB-8d.D coherence defence). ~5 righe + 1 test. |
+| **CP7** | — | 0 | Bump v2.5.31 → v2.5.32 + browser checklist ridotta + commit finale. |
+
+Target 8d-A-continue: 307 → 310-311 (+3 a +4). Commit attesi: 4 (CP4-CP6 + Changelog).
+
+### Deviazioni §6.NN aperte / consumate / chiuse
+
+**Nuove:**
+- **§6.100** — CP1 scope app-only + test router deferred 8d-B (hang full suite su MemoryRouter future flag).
+- **§6.101** — CP3 riscope fix → regression guard + chiusura §6.97 (bug non riproducibile, diagnosi via git blame).
+
+**Consumate (parziale):**
+- **§6.94** (CP2) — completata AMB-8d.C (bag noop full symmetry).
+
+**Chiuse:**
+- **§6.97** — non riproducibile nel codice, regression guard aggiunto. Rimando a §6.101.
+
+**Pending su 8d-A-continue:** §6.98 (CP4), §6.89+§6.92 (CP5), §6.95 (CP6).
+**Pending su 8d-B:** §6.81, §6.96 (AMB-8d.B), §6.85 (AMB-8d.E), **§6.84 test router retrofit** (aggiunto da §6.100).
+
+### Scoperte
+
+1. **Hang deterministico `future={{ v7_startTransition: true }}` + vitest.** Applicato a `MemoryRouter` in `renderHelpers.jsx` causa hang >26min della full suite, mentre subset 2-file (ConfigTabBar+ConfigView) passa. Patologia non bisecata per costo/beneficio. Documentata come §6.100 per investigazione 8d-B.
+
+2. **§6.97 bug fantasma.** Git blame conferma la "correzione" era già in codice dalla creazione (commit `1c900064`, 19 apr, Sessione 7b-1). L'osservazione in 8c-2 CP6 punto 4 rimane non spiegata: ipotesi residue (stale cache, errore osservazione, transient state) non falsificabili. Lesson: per bug report da CP browser, validare riproducibilità con diagnosi codice-side **prima** di committare a retrofit multi-CP.
+
+3. **Pattern invariance `defaultNoopActions()`.** Prompt §11 CP2 prescriveva `vi.fn()`, codice pre-esistente usava `async () => ({...})`. Scelta locale coerenza silenziosa (non §6.NN-tracciata per micro-invarianza self-evident). Regola implicita: pattern invariance vince su prompt letterale quando l'output è semanticamente equivalente e il pattern locale è uniforme.
+
+### File prodotti / modificati
+
+**Modificati (code):**
+- `src/main.jsx` — future flags su BrowserRouter (CP1).
+- `src/test/renderHelpers.jsx` — +5 thunks noop (CP2).
+- `src/components/oggi/DoseCard.test.jsx` — +1 describe block regression guard (CP3).
+
+**Modificati (docs):**
+- `PharmaTimer_Changelog_Fase2.md` — v2.5.30 → **v2.5.31** (questo delivery).
+
+**Nuovi:** nessuno.
+
+### Azioni sul Mac post-Sessione 8d-A parziale
+
+1. Stato git corrente: tree clean, commit top `ace1ed2` CP3.
+2. **Commit Changelog separato** (solo questo file):
+   ```
+   cd ~/Sviluppo/pharmatimer
+   git add PharmaTimer_Changelog_Fase2.md
+   git commit -m "Changelog v2.5.31 (Sessione 8d-A parziale, CP1-CP3)"
+   ```
+3. Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude con la versione **v2.5.31** (questo delivery).
+4. Verifica finale stato git:
+   ```
+   git log --oneline -5
+   ```
+   Atteso (top 5):
+   - `<hash>` Changelog v2.5.31 (Sessione 8d-A parziale, CP1-CP3)
+   - `ace1ed2` Sessione 8d-A CP3 §6.97: DoseCard regression guard per relazione_pasto=indifferente (riscoped da fix a guard, bug non riproducibile)
+   - `98cb25f` Sessione 8d-A CP2 §6.94: defaultNoopActions completamento (5 thunks profili + annullaAssunzione)
+   - `2d79055` Sessione 8d-A CP1 §6.84: React Router v7 future flags opt-in (app router only; test router deferred)
+   - `f1dca3c` Changelog v2.5.30 (Sessione 8d analisi-first)
+5. Aprire **Sessione 8d-A-continue** (nuova conversazione Claude) con one-liner:
+   `Esegui il prompt al §11 del Changelog (Sessione 8d-A-continue).`
 
