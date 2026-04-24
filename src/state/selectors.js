@@ -86,6 +86,18 @@ export function selectProssimaDose(state, now = new Date()) {
 }
 
 /**
+ * Full farmaci list from state. Post-CP1 flip GET_FARMACI_SOLO_ATTIVI=true,
+ * the array already contains only active farmaci (filtered at repo level).
+ * Use this selector in Config/Oggi UI; `selectFarmaciAttivi` is retained for
+ * defensive filtering when a stale cache might include `attivo=0` entries.
+ * @param {import('./reducer.js').AppState} state
+ * @returns {import('../domain/types.js').Farmaco[]}
+ */
+export function selectFarmaci(state) {
+  return state.farmaci || [];
+}
+
+/**
  * Active farmaci (attivo=1 or truthy).
  * @param {import('./reducer.js').AppState} state
  * @returns {import('../domain/types.js').Farmaco[]}

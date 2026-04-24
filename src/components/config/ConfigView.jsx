@@ -73,7 +73,7 @@ export default function ConfigView() {
       <Routes>
         <Route index element={<Navigate to="impostazioni" replace />} />
         <Route path="profili" element={<ProfiliTab dirty={dirty} setDirty={setDirty} />} />
-        <Route path="farmaci" element={<FarmaciTab />} />
+        <Route path="farmaci" element={<FarmaciTab dirty={dirty} setDirty={setDirty} />} />
         <Route
           path="impostazioni"
           element={<ImpostazioniTab dirty={dirty} setDirty={setDirty} />}
