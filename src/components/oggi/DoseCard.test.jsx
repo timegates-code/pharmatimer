@@ -321,3 +321,23 @@ describe('DoseCard (Sessione 7d-2 CP6 — §6.45 tolleranza + §6.47a gap residu
     expect(within(container).queryByText(/\d+ min ritardo/i)).toBeNull();
   });
 });
+
+describe('DoseCard (Sessione 8d-A CP3 — §6.97 regression guard)', () => {
+  // §6.97 scoperto in 8c-2 CP6 punto 4: farmaco con relazione_pasto='indifferente'
+  // presumibilmente rendeva "Assumere lontano dai pasti". Diagnosi 8d-A (git blame
+  // commit 1c900064, 19 apr 2026) ha confermato che il branch `indifferente` +
+  // early-return esiste dalla creazione del file → bug non riproducibile.
+  // Questo test documenta il contratto getPastoText(indifferente) come difesa
+  // proattiva contro reintroduzione in refactor futuri.
+  const plan = buildTestPlan();
+  // plan[0].farmaco ha relazione_pasto='indifferente' + dettaglio_pasto=null
+  // (default buildTestPlan, linee 63-64 di renderHelpers.jsx).
+
+  it('renders "Assumere indifferentemente dai pasti" per relazione_pasto=indifferente (§6.97)', () => {
+    renderWithProvider(
+      <DoseCard entry={plan[0]} state="prossima" />,
+      { stateOverrides: THEME_LIGHT }
+    );
+    expect(screen.getByText('Assumere indifferentemente dai pasti')).toBeInTheDocument();
+  });
+});
