@@ -438,14 +438,15 @@ export default function OggiView() {
                     Replaces the 7b-1 "line · label · line" layout: line dashes
                     don't read well pinned; a full-width pill with icon +
                     label + strong bg reads instantly while scrolling.
-                    `top-[180px]` calibrated in CP browser against the actual
-                    header height (179px with DEV slider + counter row +
-                    title). In production without DEV slider the header is
-                    shorter; a small gap is acceptable — the alternative
-                    (dynamic measurement via ref + ResizeObserver) is out of
-                    7d-1 scope. */}
+                    `top-[149px]` recalibrated in 8d-C (§6.110) after 8d-B
+                    (§6.107) rolled back the dynamic ResizeObserver approach
+                    (scroll lock regression + CSS var never set due to
+                    early-return idle->ready). 149px = header measured
+                    post-mount in 8d-B browser DevTools; static calibration
+                    accepts residual gap if header layout reflows. Closes
+                    §6.96. */}
                 <div
-                  className="sticky top-[180px] z-20 my-4 py-1.5 px-3 rounded-md flex items-center justify-center gap-2"
+                  className="sticky top-[149px] z-20 my-4 py-1.5 px-3 rounded-md flex items-center justify-center gap-2"
                   style={{
                     background: t.dateSepBgStrong,
                     boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
