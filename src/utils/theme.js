@@ -115,7 +115,15 @@ export function createThemeTokens(dark) {
     sliderTrack: dk ? '#2D4578' : '#DBEAFE',
     sliderFill: '#3B82F6',
     navActive: dk ? '#60A5FA' : '#2563EB',
-    navInactive: dk ? '#4A4854' : '#A8A29E',
+    // 8d-C (§6.112): lift navInactive contrast da sub-AA-ui a >=3:1.
+    // Originale 2.05:1 (dark) / 2.41:1 (light) vs headerBg failava AA-ui 3:1.
+    // Lift a 3.43:1 (dark) / 3.60:1 (light): preserva pattern weak-helper
+    // iOS-like (icon prominent, label helper) ma garantisce leggibilita
+    // minima. Resta sotto subTabInactive (5.27/5.50) per gerarchia visiva
+    // ConfigTabBar > NavBar bottom.
+    //   light #888286 -> 3.60:1 vs #FAFAF7
+    //   dark  #73686D -> 3.43:1 vs #15141A
+    navInactive: dk ? '#73686D' : '#888286',
     // 8d-B CP4 (§6.81 / AMB-8d-B.A): dedicated token for top sub-tab bar
     // (ConfigTabBar). The shared `navInactive` sits at 2.05:1 (dark) /
     // 2.41:1 (light) vs headerBg, below WCAG AA UI threshold (3:1).
