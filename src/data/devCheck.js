@@ -18,7 +18,28 @@ export function installDevCheck() {
     repo,
     seed: runSeedIfNeeded,
     clearDemo: clearDemoData,
-    wipe: wipeDatabase,
+    // 8d-C (§6.113, chiude §6.85 con archiviazione): confirm obbligatorio.
+    // wipeDatabase fa db.delete() totale; senza reload Dexie continua a
+    // operare su un DB cancellato (comportamento indefinito). Incident 8a
+    // CP browser 4->5 (§6.85 nome_utente azzerato) probabile causa:
+    // __pt.wipe() invocato dalla Console senza intent, nessuna safety net.
+    // Fix: confirm prompt + reload automatico post-wipe.
+    wipe: async () => {
+      // eslint-disable-next-line no-alert
+      const ok = window.confirm(
+        '__pt.wipe() drops the entire IndexedDB. Confirm?\n\n' +
+        'The page will reload automatically after wipe.'
+      );
+      if (!ok) {
+        // eslint-disable-next-line no-console
+        console.log('[__pt.wipe] cancelled');
+        return;
+      }
+      await wipeDatabase();
+      // eslint-disable-next-line no-console
+      console.log('[__pt.wipe] DONE. Reloading...');
+      window.location.reload();
+    },
 
     async inspect() {
       const [profili, farmaci, orari, log, settings] = await Promise.all([
