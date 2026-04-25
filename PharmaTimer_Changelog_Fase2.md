@@ -1,8 +1,8 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 2.5.31
+**Versione:** 2.5.34
 **Data inizio fase:** 16 aprile 2026
-**Ultima modifica:** 24 aprile 2026
+**Ultima modifica:** 25 aprile 2026
 **Ambito:** Sviluppo PWA React standalone con persistenza locale, preparata per futuro swap verso backend FastAPI+MariaDB.
 
 Questo documento raccoglie le decisioni architetturali, la struttura del progetto, le deviazioni dalla specifica e lo stato di avanzamento della Fase 2. È il **punto di riferimento unico** per ogni sessione di sviluppo: leggerlo prima di iniziare garantisce continuità senza dover rileggere l'intero storico chat.
@@ -341,6 +341,43 @@ Questo documento raccoglie le decisioni architetturali, la struttura del progett
 - Nuovo §22.8 stato post-Sessione 8b implementativa
 - §11 sostituita con stub Sessione 8c (FarmaciTab analisi-first, prompt da scrivere in apertura sessione)
 - Drift §6.69 pregresso (entry §1 ferme a v2.5.20.1, gap di 5 versioni) NON retrocorretto per principio fatto-storico immutabile
+
+**Changelog versione 2.5.33 (rispetto alla 2.5.32):**
+- Sessione **8d-A-continue-2** completata 25/04/2026: chiusura **§6.104** (fix routing loop ConfigView/ConfigTabBar) + browser check residuo CP7 + bump v2.5.32 → v2.5.33. Baseline test invariata **310/310 su 31 test files** (nessun test aggiunto, AMB-8d-A-continue-2.C "no test in-session").
+- **Fase 1 analisi-first** — 3 AMB ratificate (Roberto: "Decidi tu" → scelte raccomandate):
+  - **AMB-8d-A-continue-2.A** = path absolute (`/config/impostazioni`, `/config/profili`, `/config/farmaci`) per leggerezza e stabilità base path `/config`. Scartate (ii) `useResolvedPath` idiomatic-verboso e (iii) rollback `v7_relativeSplatPath` (annullerebbe §6.84).
+  - **AMB-8d-A-continue-2.B** = audit esaustivo via grep `'Navigate to="[^/]'` + `'NavLink to="[^/]'` + `'navigate("[^/]"'`. Esito: solo 2 file effettivamente coinvolti (ConfigView.jsx + ConfigTabBar.jsx). Audit conferma assenza altri consumer relativi dentro splat routes. **Limitazione del pattern grep documentata** in nota retroattiva §6.104 (vedi sotto).
+  - **AMB-8d-A-continue-2.C** = no test integration aggiunto in 8d-A-continue-2 (§6.100 ha deferred test router future flags). Regression guard = browser check manuale post-fix. Ratifica formale in 8d-B.
+- **Fase 2 CP1 fix §6.104** — commit `67937e5` su branch `step-8`. Modifiche: ConfigView.jsx (2 `<Navigate to>` + 1 `navigate()`) + ConfigTabBar.jsx (3 `<NavLink to>`) → tutti path assoluti `/config/<tab>`. Test 310/310 invariati post-fix.
+- **Fase 3 CP browser 5/5 PASS** (Punto 3 skipped giustificato §6.106):
+  - Punto 1 (`/config/profili` delete profilo non-attivo + form dirty): PASS con caveat **§6.105** (ConfirmModal focus-restore non torna al trigger button su ProfiliTab; riproducibile mouse + keyboard).
+  - Punto 2 (`/config/farmaci` create + tap Annulla): PASS (CP4 §6.98 confermato).
+  - Punto 3 (update profilo attivo + rebuildPlan `/oggi`): SKIP → **§6.106** (ridondante vs unit coverage `actions.profili.test.js:274,283` da CP6 §6.95).
+  - Punto 4 (cross-tab `/config/farmaci` → tap Profili): PASS (URL `/config/profili`, zero loop, console pulita).
+  - Punto 5 (5 coppie cross-tab rimanenti, totale 6 permutazioni ordinate): PASS tutte verdi.
+  - Bonus (cross-tab dirty `ImpostazioniTab` Nome + UnsavedChangesModal + Scarta e continua): PASS, valore persistito ripristinato dopo scarto.
+- **§6.104 chiusa** in v2.5.33: fix path absolute applicato e verificato in browser. Aggiunta **nota audit retroattiva** dentro §6.104 (pattern grep `'NavLink to="[^/]'` non cattura data-driven `to={var}`; estendere a `to={` literal match per audit futuri — lezione operativa).
+- **Nuove §6.105** (ConfirmModal focus-restore non funziona su ProfiliTab — fix scope **8d-B tier C** insieme a §6.103) + **§6.106** (CP7 Punto 3 skipped per ridondanza vs unit coverage §6.95 — pattern documentato).
+- **§11 sostituita** con prompt analisi-first **Sessione 8d-B** (tier C + investigation: §6.81 dark contrast, §6.96 sticky separator CSS var+ResizeObserver per AMB-8d.B, §6.85 `nome_utente` investigation per AMB-8d.E, §6.84 test router retrofit, §6.103 useModalA11y UnsavedChangesModal, §6.105 ConfirmModal focus-restore ProfiliTab).
+- Nuovo **§22.15** stato post-Sessione 8d-A-continue-2.
+- §7 roadmap: riga 8d-A-continue-2 da "⏳ Pianificata" a ✅ **Completo**. Riga 8d-A-continue parziale resta come record storico.
+- Nessuna modifica a §12 (2 file codice toccati in 8d-A-continue-2: `ConfigView.jsx`, `ConfigTabBar.jsx` — già tracciati in 8a).
+- Commit code-side (sul Mac, branch `step-8`): `67937e5` CP1 §6.104. Commit Changelog alla consegna.
+
+**Changelog versione 2.5.32 (rispetto alla 2.5.31):**
+- Sessione **8d-A-continue parziale** completata 24/04/2026: 3 CP su 4 eseguiti (CP4 §6.98, CP5 §6.89+§6.92, CP6 §6.95). Baseline test **307/307 → 310/310 su 31 test files** (+3 netti, in range §11). Bump v2.5.31 → v2.5.32.
+- **CP4 §6.98** — FarmacoDrawer `handleAnnulla` split in `doAnnulla` (silent primitive) + `handleAnnulla` (dirty-gated). Mount conditional `UnsavedChangesModal` su `unsavedConfirmOpen`, on-discard → `doAnnulla`, on-cancel preserva form. Source-of-truth dirty = `isDirty` memo locale (non hook `_isDirty`). Tutti e 4 i trigger close (× header, Annulla footer, Escape useModalA11y, backdrop `!isDirty`-gated) funnel attraverso `handleAnnulla`. **+2 test** (guard su dirty / silent close su clean). 1 hotfix pre-commit intra-CP4: test selector `getByText(/modifiche non salvate/i)` → `getByRole('heading', …)` per disambiguare h3 title vs p body (regex match ambiguo). Rettifica di riferimento §11 (prompt citava "ProfiliTab::handleClose §6.86.3" impropriamente: ProfiliTab fa silent close, §6.86.3 è z-index bump; precedente effettivo è ConfigView cross-tab guard) annotata inline nel commento codice, no §6.NN.
+- **CP5 §6.89+§6.92** — ProfiliTab retrofit: `ConfirmDeleteProfiloModal` inline rimosso (54 righe dead-code + 13 commento intestazione), sostituito con `<ConfirmModal>` shared (`src/components/shared/ConfirmModal.jsx`, creato 8c-2 CP5). Copy preservata 1:1 (title "Elimina profilo?" / confirmLabel "Elimina profilo" / body con `{nomeProfilo}` / danger=true). **§6.92 risolta automaticamente**: ConfirmModal shared monta `useModalA11y` (focus-trap + Escape + restore-focus) che il predecessore mancava ("deferred to 8d polish" consumato). Test esistente (linea 134) adattato: `confirm-delete-profilo` → `confirm-modal` (testid shared, 2 occorrenze). Δ test = 0 (solo adattamento, come da §11 range "0-1"). ProfiliTab.jsx 643 → 585 righe (-58 netti).
+- **CP6 §6.95** — `updateProfilo` proactive retrofit (AMB-8d.D coherence defence). `rebuildPlanFromFresh` generalizzato da `{farmaci, orari}` obbligatori a **`{profilo?, farmaci?, orari?} = {}`** con fallback stateRef via `getState()`. Retrocompat per thunks farmaci esistenti. `updateProfilo` sostituisce `await rebuildPlan()` con `await rebuildPlanFromFresh({ profilo: nuovoProfiloAttivo })` per bypassare stateRef lag (AppContext aggiorna stateRef via useEffect un tick dopo dispatch). **+1 test** (vi.mock planBuilder, verifica `buildMultiDayPlan` riceve profilo fresco ora_colazione:'09:00' non stale '07:30' da getState). Rettifica prompt §11 ("APPLY_CAMBIO_PROFILO" → `SET_PROFILO_ATTIVO` effettivo; APPLY_CAMBIO_PROFILO è in `cambiaProfilo`, flow diverso con `ricalcolaPianoDaProfilo`) annotata inline. **§6.102 aperta** (generalizzazione helper = rifattorizzazione positiva).
+- **Nuove §6.102** (rebuildPlanFromFresh signature extension) + **§6.103** (UnsavedChangesModal 2° consumer → candidate useModalA11y retrofit, docs-only da CP4 parziale) + **§6.104** (ConfigView routing loop — pre-existing interaction con CP1 §6.84 `v7_relativeSplatPath: true`, scoperto in browser check CP7).
+- **CP7 NON eseguito** — browser check ha rivelato blocker §6.104 al tap tab Profili da `/config/farmaci`: URL degenera in `/config/farmaci/profili/impostazioni/impostazioni/...` → rate limit Chrome (`Throttling navigation to prevent the browser from hanging`) + `Maximum update depth exceeded` da `<Navigate>` in ConfigView:41. Root cause: ConfigView + ConfigTabBar scritti contro v6 path-resolution, `v7_relativeSplatPath` opt-in in §6.84 ha flippato risoluzione `<Navigate to="impostazioni">` da parent-relative a splat-relative. Bug **pre-esistente da CP1 8d-A**, non regressione CP4/5/6. Isolato via source-review (2 file coinvolti, fuori scope pattern-retrofit 8d-A-continue). Pattern §6.99-style: chiusura parziale + prosecuzione in **Sessione 8d-A-continue-2** con scope **analisi-first §6.104 + fix + browser check + CP7 bump v2.5.33**.
+- **§11 sostituita** con prompt analisi-first **Sessione 8d-A-continue-2** (§6.104 fix + browser checklist CP4/5/6 + bump Changelog v2.5.32 → v2.5.33).
+- Nuovo **§22.14** stato post-Sessione 8d-A-continue parziale.
+- §7 roadmap: riga 8d-A-continue da "⏳ Pianificata" a **"⚠️ Parziale (CP4-CP6 ✅, CP7 blocker §6.104 deferred)"**, nuova riga **8d-A-continue-2 ⏳**.
+- Nessuna modifica a §12 (4 file codice toccati in 8d-A-continue: `FarmaciTab.jsx`, `FarmaciTab.test.jsx`, `ProfiliTab.jsx`, `ProfiliTab.test.jsx`, `actions.js`, `actions.profili.test.js` — tutti già tracciati in sessioni precedenti).
+- Commit code-side (sul Mac, branch `step-8`): `30b01ce` CP4, `f316e6c` CP5, `264ab1c` CP6. Commit Changelog alla consegna.
+
+---
 
 **Changelog versione 2.5.31 (rispetto alla 2.5.30):**
 - Sessione **8d-A parziale** completata 24/04/2026: 3 CP su 6 eseguiti (CP1 §6.84, CP2 §6.94, CP3 §6.97 riscoped). Baseline test **306/306 → 307/307 su 31 test files** (+1 da CP3 regression guard). Bump v2.5.30 → v2.5.31.
@@ -2184,6 +2221,234 @@ I 3 thunks passano `{farmaci, orari}` freschi (già in scope locale dopo il refe
 
 ---
 
+## 6.102 — Sessione 8d-A-continue CP6: `rebuildPlanFromFresh` signature extension per coherence defence `updateProfilo`
+
+**Contesto.** Sessione 8d-A-continue CP6 (AMB-8d.D proactive). §6.95 hotfix 8c-2 CP6 aveva introdotto `rebuildPlanFromFresh({farmaci, orari})` per bypassare stateRef lag nei thunks farmaci. Commento §6.95 pregresso (actions.js:528-532) anticipava il problema analogo per `updateProfilo`: dispatch `SET_PROFILO_ATTIVO` con payload spread + `await rebuildPlan()` che legge `stateRef.current.profiloAttivo` stale (AppContext aggiorna stateRef via `useEffect([state])` un tick DOPO il dispatch).
+
+**Decisione.** Generalizzare l'helper invece di duplicare la logica:
+
+- **Prima:** `rebuildPlanFromFresh({farmaci, orari})` — 2 parametri obbligatori.
+- **Dopo:** `rebuildPlanFromFresh({profilo?, farmaci?, orari?} = {})` — 3 parametri opzionali con fallback a `state.profiloAttivo`/`state.farmaci`/`state.orari` via `getState()`.
+
+**Call sites:**
+- Thunks farmaci (`addFarmaco`/`updateFarmaco`/`deleteFarmaco`): invariati. Passano `{farmaci, orari}`, `profilo` viene letto da stateRef via fallback. Corretto: questi thunks non mutano il profilo.
+- `updateProfilo` (nuovo): `await rebuildPlanFromFresh({ profilo: nuovoProfiloAttivo })`. Passa profilo fresco esplicitamente; farmaci/orari da fallback stateRef. Sostituisce `await rebuildPlan()`.
+
+**Rationale rifattorizzazione positiva (non deviazione negativa).** La signature extension è retrocompatibile e naturale — l'helper pre-esisteva già in `src/state/actions.js`, il fix del bug analogo richiede *solo* l'aggiunta del parametro `profilo`. Alternativa scartata: helper separato `rebuildPlanFromFreshProfilo` (duplicazione + divergenza futura probabile).
+
+**File toccati:** `src/state/actions.js` (+28 righe: firma + destructuring + commenti §6.102 verbosi per tracciabilità).
+
+**Test delta:** +1 in `actions.profili.test.js`. `vi.mock('../domain/planBuilder.js')` al top del file espone spy su `buildMultiDayPlan`. Nuovo test (7): verifica che dopo `updateProfilo(activeId, {ora_colazione: '09:00'})`, l'ultimo call a `buildMultiDayPlan` riceve `profilo.ora_colazione === '09:00'` (fresh patched), **non** `'07:30'` che getState() continua a ritornare stale (cross-check incluso). Mock default `() => []` non rompe i test (1)-(6) che non assertano su plan content.
+
+**Rettifica prompt §11 annotata inline.** Prompt §11 (`Dopo dispatch APPLY_CAMBIO_PROFILO`) impreciso: `updateProfilo` dispatcha `SET_PROFILO_ATTIVO`. `APPLY_CAMBIO_PROFILO` è in `cambiaProfilo` (flow diverso, ricalcolo via `ricalcolaPianoDaProfilo` non `buildMultiDayPlan`). Commento codice annota la differenza. No §6.NN separata per refuso prompt (coerente con CP4 D6).
+
+---
+
+## 6.103 — UnsavedChangesModal 2° consumer → candidate `useModalA11y` retrofit
+
+**Contesto.** Sessione 8d-A-continue CP4. `UnsavedChangesModal` (`src/components/config/UnsavedChangesModal.jsx`, 8a CP7) aveva 1 solo consumer in ConfigView cross-tab guard. Commento originale 8a (linee 8-16 del file) anticipava: *"ZERO focus-trap (deferred to 8d polish)... When a 2° consumer arrives in 8b (or later), extract shared dialog primitives... current codebase already has `useModalA11y` hook... wire it in then."*
+
+**Trigger.** CP4 §6.98 monta `UnsavedChangesModal` come guard del close path di `FarmacoDrawer` — **FarmacoDrawer è il 2° consumer**. Il trigger promesso è scattato.
+
+**Decisione.** **Retrofit NON eseguito in CP4** — scope §11 CP4 era wiring consumer, non modifica del modal. §11 vincolo esplicito: *"Non tentare estensione future flag React Router al test router... è scope 8d-B con analisi-first dedicata"* — per analogia, retrofit a11y sul modal shared è item **tier C** (design-touching), appartiene a 8d-B con analisi-first.
+
+**Scope retrofit atteso (8d-B tier C):**
+1. Modifica `UnsavedChangesModal` per montare `useModalA11y` (pattern identico a ConfirmModal shared 8c-2 CP5).
+2. Zero cambi API props (`{onCancel, onDiscard}` invariati).
+3. Verifica: Escape → `onCancel`, focus-trap attivo, restore-focus al trigger.
+4. Browser check 2 punti: cross-tab guard ConfigView (consumer 1) + close path FarmacoDrawer (consumer 2).
+
+**File coinvolti attesi:** `src/components/config/UnsavedChangesModal.jsx` (+~10 righe useModalA11y wiring). Δ test 0-2.
+
+**Non-blocker per 8d-A-continue CP4.** Il modal funziona correttamente senza focus-trap come "scope-minimal" originale; l'asimmetria con ConfirmModal shared (che ha focus-trap) è tracciata. CP4 browser check userebbe Escape solo se useModalA11y fosse wired — non requisito scope CP4.
+
+---
+
+## 6.104 — Sessione 8d-A-continue CP7: ConfigView routing loop (interaction con CP1 §6.84 `v7_relativeSplatPath`)
+
+**Contesto.** Sessione 8d-A-continue CP7 (browser checklist). Al tap di un tab in `ConfigTabBar` da una tab diversa (es. click "Profili" mentre su `/config/farmaci`), l'URL degenera accumulando segmenti: `/config/farmaci/profili/impostazioni/impostazioni/impostazioni/…`. Chrome logga `Throttling navigation to prevent the browser from hanging` + React logga `Maximum update depth exceeded` con stack `Navigate (ConfigView:41)`.
+
+**Root cause.** Interazione tra **due decisioni architetturali**:
+
+1. **ConfigView** (8a CP2-CP7) usa `<Navigate to="impostazioni" replace />` (non absolute `/config/impostazioni`) in 2 punti (`index` + `path="*"`). Analogamente `navigate("impostazioni")` in `handleDiscard`. `ConfigTabBar` usa `<NavLink to="profili">` etc. Tutti path relativi scritti contro la semantica **v6**: "relative al parent route".
+
+2. **CP1 §6.84** (8d-A parziale) ha abilitato `v7_relativeSplatPath: true` + `v7_startTransition: true` nel BrowserRouter `src/main.jsx`. `v7_relativeSplatPath` cambia la risoluzione dei path relativi DENTRO route splat (`path="/config/*"` è splat): da "relative al parent route path" (`/config/`) a "relative al matched splat segment". Quando si è già su `/config/farmaci`, un `<NavLink to="profili">` produce `/config/farmaci/profili` invece di `/config/profili`. Nessuna route specifica matcha → matcha `path="*"` in ConfigView → `<Navigate to="impostazioni" replace />` produce `/config/farmaci/profili/impostazioni` → loop infinito.
+
+**Pre-esistenza confermata.** Il bug è stato introdotto al commit **`2d79055` (8d-A CP1 §6.84)**, NON in 8d-A-continue. I CP4/5/6 non hanno toccato routing né ConfigView. Test unit continuano a passare perché §6.100 ha escluso il test router dall'opt-in future flags (il router di test non simula la navigazione browser reale con il nuovo behavior).
+
+**Scoperta tardiva rationale.** 8a-8c CP browser checks erano focalizzati su funzionalità intra-tab (form drawer, delete confirm). Navigazione cross-tab da tab diversa dall'initial `/config/impostazioni` (default) non era stata esercitata. 8d-A parziale (§22.13) NON ha eseguito browser check per stanchezza. 8d-A-continue CP7 è la prima interazione browser post-§6.84.
+
+**Scope fix atteso (8d-A-continue-2 analisi-first):**
+- `ConfigView.jsx:41,49` — `<Navigate to="impostazioni">` → absolute `/config/impostazioni` oppure usare `<Navigate to="./impostazioni">` con analisi behavior vs v7 semantica.
+- `ConfigView.jsx:handleDiscard` — `navigate(target)` analogo.
+- `ConfigTabBar.jsx` — `<NavLink to="profili">` etc. → absolute `/config/profili` oppure pattern alternativo.
+- Decisioni trade-off: path absolute (semplice, ma tight coupling al base path `/config`) vs pattern `useResolvedPath` (idiomatic v7, ma più verboso).
+
+**Decisione 8d-A-continue-2 analisi-first** (blockers vs options):
+- Q1: path absolute vs `useResolvedPath` resolution idiomatic?
+- Q2: fix solo ConfigView+ConfigTabBar o audit di tutto il codice per `<Navigate to>` / `navigate()` / `<NavLink to>` senza leading slash dentro splat routes?
+- Q3: test router (deferred in §6.100) copre questo scenario post-fix? Oppure test browser manuale rimane unica guardia?
+
+**Non-blocker per CP4/5/6.** I 3 CP committati (`30b01ce`, `f316e6c`, `264ab1c`) sono sani: test 310/310 verdi, logica corretta, copy preservata. §6.104 è isolata al shell di navigazione Config; i tab singoli funzionano correttamente se raggiunti **direttamente** via URL o al primo load (default `/config/impostazioni`).
+
+**Workaround temporaneo disponibile (non applicato):** downgrading `v7_relativeSplatPath: false` in `src/main.jsx` ripristinerebbe comportamento v6 e sbloccherebbe browser check immediato, ma annullerebbe §6.84 CP1. Scartato: §6.84 va preservata come scope 8d-A completato; fix proper va in 8d-A-continue-2.
+
+**Esito Sessione 8d-A-continue-2 (chiusura §6.104).** Fix applicato come **path absolute** (AMB-8d-A-continue-2.A): tutti i `<Navigate to>`, `<NavLink to>`, `navigate(...)` dentro lo shell `/config/*` riscritti con leading slash (`/config/impostazioni`, `/config/profili`, `/config/farmaci`). Audit grep esaustivo (AMB-8d-A-continue-2.B) ha confermato che i soli 2 file coinvolti sono `ConfigView.jsx` e `ConfigTabBar.jsx`. Commit `67937e5` su branch `step-8`. Browser check 5/5 verde (6 permutazioni cross-tab + bonus dirty + UnsavedChangesModal). §6.104 **CHIUSA** in v2.5.33.
+
+**Nota audit retroattiva (lezione operativa).** I pattern grep usati in AMB-8d-A-continue-2.B (`'Navigate to="[^/]'`, `'NavLink to="[^/]'`, `'navigate("[^/]"'`) catturano solo i call-site con stringa letterale. NON catturano i casi data-driven (`<NavLink to={tabPath}>`, `navigate(targetVar)`). Per audit futuri di routing relativi dentro splat routes, estendere il pattern a `'to={'` (literal `to={`) per scoprire anche i call-site dinamici. Nel caso 8d-A-continue-2 questo gap non ha causato falsi negativi (l'app non usa NavLink/Navigate data-driven dentro `/config/*`), ma il pattern resta valido come buona pratica.
+
+---
+
+## 6.105 — ConfirmModal focus-restore non funziona su ProfiliTab (delete profilo non-attivo)
+
+**Sessione:** 8d-A-continue-2 CP7 browser check Punto 1 (25/04/2026).
+
+**Contesto.** Verifica CP5 §6.89+§6.92 (ProfiliTab retrofit `ConfirmModal` shared con `useModalA11y`): tap "Elimina" su un profilo non-attivo in `/config/profili` apre il `ConfirmModal` shared (focus-trap attivo, Escape funziona, dismiss ok). Tuttavia, dopo dismiss del modal (sia "Annulla" che backdrop click che Escape), il focus **non torna al bottone "Elimina"** che ha originato l'apertura — finisce sul `<body>` o su elemento parent indeterminato.
+
+**Riproducibilità.** Confermata via mouse e via keyboard (Tab fino al bottone Elimina + Invio per aprire, poi Escape per chiudere → focus perso). Comportamento consistente.
+
+**Confronto con altri consumer di ConfirmModal.**
+- `FarmaciTab` (delete farmaco, 8c-2 CP5): non testato in browser per §6.105 — verifica scope 8d-B.
+- `UnsavedChangesModal` (ConfigView guard, 8a CP6): pattern simile (focus-trap mancante, candidato §6.103 retrofit) — NON ConfirmModal shared.
+
+**Ipotesi root cause.** `useModalA11y` registra trigger via `document.activeElement` al mount. Su ProfiliTab, è possibile che il mount del modal avvenga in un timing in cui `document.activeElement` non sia più il bottone Elimina (es. blur indotto da `setState` re-render del parent). Da diagnosticare in 8d-B con strumentazione ad hoc (logging `triggerRef.current` al mount/unmount).
+
+**Scope fix.** **8d-B tier C**, insieme a §6.103 (UnsavedChangesModal `useModalA11y` retrofit). Possibile fix unificato sull'hook `useModalA11y` se il bug è in shared infrastructure, oppure fix locale ProfiliTab se è race condition specifica al consumer.
+
+**Non-blocker.** Funzionalità delete profilo invariata (modal apre, conferma applica delete, dismiss chiude). Solo regressione a11y minore (focus restore).
+
+**Classificazione.** a11y polish, non-blocker, candidate 8d-B tier C.
+
+---
+
+## 6.106 — CP7 browser check Punto 3 skipped per ridondanza vs unit coverage
+
+**Sessione:** 8d-A-continue-2 CP7 browser check (25/04/2026).
+
+**Contesto.** Il prompt §11 v2.5.32 prescriveva 5 punti di browser check post-fix §6.104:
+
+1. delete profilo non-attivo + form dirty → ConfirmModal + focus-trap (CP5).
+2. create farmaco solo Nome + Annulla → UnsavedChangesModal (CP4).
+3. update profilo attivo (es. cambio `ora_colazione`) → plan `/oggi` rigenera correttamente (CP6 coherence defence §6.95).
+4. cross-tab da `/config/farmaci` (§6.104 regression).
+5. permutazioni rimanenti cross-tab.
+
+**Decisione.** Il **Punto 3** è stato skipped in browser check. Motivazione: il path completo del thunk `updateProfilo` con coherence defence `rebuildPlanFromFresh({profilo: nuovoProfiloAttivo})` è già coperto da test unit dedicati in `src/state/actions.profili.test.js` (linee 274, 283 — test 7 introdotto in 8d-A-continue CP6). Il test mockizza `planBuilder.buildMultiDayPlan` e verifica che riceva il profilo fresco (es. `ora_colazione: '09:00'`) e non quello stale dallo `stateRef` lag. Il browser check sarebbe stato un'osservazione qualitativa di un comportamento già asserito quantitativamente.
+
+**Pattern documentato.** Quando un CP browser checklist item è già coperto da unit test che mockizza il path end-to-end con assertion sull'output (qui: `buildMultiDayPlan` riceve profilo fresco), lo skip è giustificato. Resta utile il browser check quando:
+- Il test unit non copre l'intero path (es. side effect UI non testato).
+- Il bug originale era runtime-only (es. race condition non riproducibile in vitest).
+- Una regressione UI visiva è plausibile (animazioni, layout, focus).
+
+Per Punto 3 nessuna delle 3 condizioni è soddisfatta: il bug §6.95 era stateRef lag deterministico, riproducibile e asseribile in unit test.
+
+**Lezione.** Il CP browser checklist può essere ridotto a posteriori quando la coverage unit cresce. Annotare lo skip nel Changelog come §6.NN dedicata (questa) per tracciabilità — non lasciarlo come decisione silente.
+
+**Classificazione.** Procedurale, scope-reduction giustificata, non-blocker.
+
+---
+
+## 6.107 — CP1 8d-B §6.96 rolled back (scroll regression + CSS var mai settata)
+
+**Sessione:** 8d-B (25 aprile 2026, CP1).
+
+**Stato:** **ROLLED BACK** in-session. §6.96 resta APERTA, re-investigation deferred a 8d-C.
+
+**Scope CP1 originale.** Implementare AMB-8d.B (preesistente da 8d analisi-first): sticky data separator in `/oggi` ancorato dinamicamente alla base dell'header app via CSS var `--app-header-height` aggiornata da `ResizeObserver` su header root, sostituendo il valore letterale `top-[180px]` calibrato a CP browser 7d-1.
+
+**Implementazione.** 4 modifiche in 2 file:
+
+1. `src/test/setup.js` — polyfill stub `ResizeObserver` per jsdom (no-op).
+2. `src/components/oggi/OggiView.jsx` — import `useRef`, `headerRef` + `useEffect` con `ResizeObserver` + cleanup, `ref={headerRef}` sull'header sticky, `top: 'var(--app-header-height, 180px)'` sul DATE SEPARATOR.
+
+Test full suite: 310/310 → 313/313 (CP1 zero Δ test, +3 da CP2/CP3) — verde.
+
+**Esito CP browser (Punto 1).** Due bug concorrenti rilevati:
+
+1. **CSS var mai settata.** `getComputedStyle(document.documentElement).getPropertyValue('--app-header-height')` ritorna `''`. Il fallback letterale 180px nel separator `var(--app-header-height, 180px)` è quindi sempre attivo. Header reale misurato post-mount = 149px (vs 180px ipotizzato in commento 7d-1). Hypothesis root cause: `OggiView` ha early return per `state.status='idle'` che NON renderizza l'header DOM; quando lo state passa a `ready` il rerender mounta l'header, ma `useEffect` con `dep=[]` non riesegue (dep vuoto già consumato durante mount idle). `headerRef.current` resta null per il `ResizeObserver`.
+
+2. **Scroll bloccato sulla pagina `/oggi`.** Lo scroll non risponde al gesto rotellina/trackpad. DevTools: html/body/main hanno `overflow: visible`, main height = 3617px (page completa renderizzata), nessun errore "ResizeObserver loop" in console. Causa esatta non diagnosticata in-session.
+
+**Decisione.** Rollback completo via `git checkout 67937e5 -- src/components/oggi/OggiView.jsx src/test/setup.js`. Stato baseline ripristinato; scroll torna funzionante; separator torna pinned a 180px hardcoded (gap 31px visibile, comportamento pre-§6.96 identico).
+
+**Lezioni.**
+
+- `useEffect(() => {...}, [])` su componenti con render condizionale early-return è un pattern fragile: il ref può essere null al primo mount e l'effetto non riesegue al rerender che monta il target.
+- Il CP test in jsdom NON ha rilevato il bug perché il polyfill `ResizeObserver` è no-op (l'`useEffect` con guard `if (!headerEl || typeof ResizeObserver === 'undefined') return` esce silenziosamente). I test guard a livello unit non possono catturare regressioni di layout/scroll: serve CP browser obbligatorio per modifiche sticky/layout.
+- Lo scroll bloccato è una regressione critica indipendente dal bug 1: introdurre dinamiche su sticky in browser real richiede investigation più profonda di un singolo CP impl.
+
+**Carryforward 8d-C.** Re-investigation §6.96 con scope esteso:
+
+- Ipotesi A: spostare misurazione da `useEffect` a `useLayoutEffect` con `dep=[state.status]` per riapplicare al transition idle→ready.
+- Ipotesi B: usare un wrapper component dedicato `<HeaderHeightProbe>` con `useLayoutEffect` interno mountato solo dopo lo status check.
+- Ipotesi C: investigare la causa del scroll lock (interazione z-index, pointer-events, listener fantasma).
+- Ipotesi D: rinunciare a measurement dinamico, calibrare `top-[N]` a 149px se le condizioni reali sono stabili (regression test contro reflow header).
+
+**Classificazione.** Procedurale + tecnico, deferred 8d-C, alta priorità (regressione gap 31px attiva).
+
+---
+
+## 6.108 — Scope creep §6.81 verso NavBar bottom
+
+**Sessione:** 8d-B (25 aprile 2026, CP browser Punto 2).
+
+**Stato:** APERTA, deferred a 8d-C.
+
+**Osservazione.** Durante CP browser 8d-B Punto 2 (verifica §6.81 ConfigTabBar dark mode contrast), confermata risoluzione del bug originale: i sub-tab "Profili" e "Farmaci" inactive in `/config/*` sono ora chiaramente leggibili in dark mode con il nuovo token `subTabInactive` (5.27:1 dark, 5.50:1 light). Tuttavia Roberto ha rilevato che lo **stesso problema di contrast** è presente sulla **NavBar bottom** (Oggi / Log / Export / Config) dove i tab inactive risultano "poco visibili" in dark mode.
+
+**Confronto contrast NavBar bottom (token `navInactive`).**
+
+- Light: `#A8A29E` vs `headerBg #FAFAF7` → 2.41:1 ❌ (sotto AA-ui 3:1).
+- Dark: `#4A4854` vs `headerBg #15141A` → 2.05:1 ❌ (sotto AA-ui 3:1).
+
+**Trade-off.** §6.81 originale aveva escluso esplicitamente la NavBar bottom dal scope, motivando l'asimmetria col fatto che NavBar segue un pattern "icon prominent + label inactive helper" (4 tab tipo iOS) dove l'effetto "weak inactive" è semantico desiderato. Roberto contesta questa scelta in CP browser: anche con quel pattern, l'inactive deve restare leggibile.
+
+**Decisione 8d-C.** Apri scope-extension §6.81: estendere il fix a `NavBar.jsx` con uno dei pattern seguenti:
+
+- (a) sostituire `navInactive` con `subTabInactive` anche in NavBar (uniformità tutti i tab del prodotto).
+- (b) lift dei valori `navInactive` direttamente in `theme.js` a soglia AA-ui (rinuncia al pattern "weak helper").
+- (c) introdurre nuovo token `tabInactive` unificato per NavBar+ConfigTabBar e rinominare il `subTabInactive` di 8d-B (refactor backward-incompatible interno, 1 sessione di lavoro).
+
+Raccomandazione provvisoria: (a) per minimizzare cambi al modello tokens. Decisione finale in CP1 di 8d-C.
+
+**Classificazione.** Design system, deferred 8d-C, priorità media.
+
+---
+
+## 6.109 — ProfiliTab focus restore wrong target post-CP2 §6.105
+
+**Sessione:** 8d-B (25 aprile 2026, CP browser Punto 3).
+
+**Stato:** APERTA parzialmente regredita, deferred a 8d-C.
+
+**Sintomo.** Post-CP2 §6.105 (estensione API `ConfirmModal` con `triggerRef` opt-in + propagazione 3 consumer + regression guard test verdi), il restore-focus su ProfiliTab dismissal ConfirmModal va su `<input id="profilo-nome">` invece che sul button "Elimina" che ha aperto il modal. Pre-§6.105 il focus restore cadeva su `document.body` (default `useModalA11y`); post-§6.105 è cambiato target ma è ancora errato.
+
+**Asimmetria diagnostica con FarmaciTab.** Il fix §6.105 funziona correttamente su FarmaciTab (CP browser Punto 4: `document.activeElement.tagName === 'BUTTON'`, text "Elimina") ma fallisce su ProfiliTab (Punto 3: `document.activeElement.tagName === 'INPUT'`, id "profilo-nome"). I 2 drawer sono architetturalmente identici nel wiring `useModalA11y` (entrambi montano focus-trap a livello drawer, ConfirmModal child). Differenza individuata solo nel JSX: button Elimina ProfiliTab è dentro uno `<span title=...>` wrapper (introdotto in §6.86.2 per esporre tooltip nativo quando button è disabled per profilo attivo), assente in FarmaciTab.
+
+**Hypothesis residue (non validate).**
+
+- (h1) Il drawer-level focus-trap re-imprigiona il focus al primo tabbable interno (`<input id="profilo-nome">`) dopo il modal teardown. Ma se così fosse, FarmaciTab dovrebbe avere lo stesso sintomo.
+- (h2) Lo `<span>` wrapper interferisce con la logica `tabbable` della libreria focus-trap, escludendo il button Elimina dalla lista tabbable del drawer. Quando il modal restoraza focus, drawer-trap rileva il button "fuori dal trap" e re-imprigiona al primo tabbable conosciuto.
+- (h3) Mouse click su button non trasferisce focus (Safari/macOS standard behavior); `triggerRef.current` punta al button corretto, ma il drawer trap intercetta il `focus()` programmatico e lo redirige.
+
+**Falso negativo del regression guard test.** Il test `(c) Escape su ConfirmModal delete restituisce focus al button Elimina drawer (§6.105)` aggiunto in CP2 (FarmaciTab) è verde. Test analogo in ProfiliTab (`Escape su ConfirmModal restituisce il focus al button Elimina (§6.105)`) anch'esso verde. Significa che jsdom + focus-trap library non riproducono il comportamento del browser real:
+
+- `tabbableOptions: { displayCheck: 'none' }` in `useModalA11y` sopprime check di visibilità che potrebbero essere il discriminante.
+- L'interazione drawer-trap → modal-trap → dismiss in jsdom potrebbe non triggerare il re-trap del drawer come fa il browser.
+
+**Decisione.** Non rollback CP2 (FarmaciTab + ConfirmModal API restano in produzione, hanno valore). ProfiliTab resta in stato "regression parziale": focus va a target prevedibile (input Nome del drawer) invece che a body random. Acceptable in attesa di fix mirato 8d-C.
+
+**Carryforward 8d-C.**
+
+1. Diagnosi live in browser con DevTools logging strumentato (capture `document.activeElement` a ogni transition: pre-modal-open, post-modal-mount, pre-dismiss, post-trap-deactivate, +1 frame, +2 frame).
+2. Test ipotesi h2 con A/B controllato: rimuovere temporaneamente lo span wrapper su ProfiliTab e verificare se il restore va correttamente al button.
+3. Se h2 confermata: scelta tra (a) rimuovere span wrapper §6.86.2 e ripensare tooltip con altro pattern (rischio breaking on disabled state); (b) `requestAnimationFrame` workaround in `useModalA11y.onDeactivate` per outlast il drawer trap re-check; (c) introdurre `pause`/`resume` esplicito sul drawer trap durante modal lifecycle (refactor `useModalA11y` con stack management).
+4. Estendere regression guard test con verifica multi-frame (`waitFor` con multiple ticks) per catturare il pattern in jsdom anche se attualmente passa "for the wrong reason".
+
+**Classificazione.** Tecnico (a11y), deferred 8d-C, priorità media.
+
+---
+
 ## 7. Roadmap Fase 2 — avanzamento
 
 | Step | Contenuto | Stato | Note |
@@ -2217,7 +2482,8 @@ I 3 thunks passano `{farmaci, orari}` freschi (già in scope locale dopo il refe
 | **8c-2** | CP5+CP6 di 8c: 3 thunks (`addFarmaco`/`updateFarmaco`/`deleteFarmaco`) pessimistici con `withTransaction`, `ConfirmModal` shared (§6.89 consumata parziale), delete button + copy §6.67, data_fine-past interceptor + copy §6.68, file nuovo `actions.farmaci.test.js`, 2 test end-to-end FarmaciTab, CP browser 7 punti + hotfix §6.95 intra-CP6 | ✅ **Completo** | **297 → 306 test** (+9 netti, target §11 v2.5.28 "308 ±3" soddisfatto con -2 in range). 3 commit separati (`dda9af7` CP5, `06dc680` CP6 hotfix §6.95, + Changelog). 7 deviazioni §6.89/6.92-6.98. CP browser 7/7 verdi |
 | **8d** | Polish Config + retrofit 8a-8c candidate: §6.81 ConfigTabBar dark color, §6.84 React Router future flags, §6.89 retrofit `ConfirmDeleteProfiloModal` → `ConfirmModal` shared + §6.92 `useModalA11y` su ProfiliTab, §6.94 completamento `defaultNoopActions`, §6.95 preventive retrofit `updateProfilo`, §6.96 sticky separator, §6.97 DoseCard copy `indifferente`, §6.98 UnsavedChanges guard FarmacoDrawer close path, §6.85 `nome_utente` investigation | ⏸️ **Split in 8d-A + 8d-B** (analisi-first ✅ 24/04/2026, v2.5.30) | 5 AMB-8d.A-E congelate. Split documentato in §6.99. Impl dilazionata su 2 sessioni |
 | **8d-A** (parziale) | Tier A+B pattern-based. **CP1-CP3 completati** (v2.5.31): §6.84 Router future flags app-only (§6.100), §6.94 noop bag +5 (AMB-8d.C), §6.97 DoseCard regression guard riscoped (§6.101 + chiusura §6.97). **CP4-CP7 deferred** a 8d-A-continue | ⚠️ **Parziale** | 306 → 307 test (+1 da CP3). 3 commit Mac-side: `2d79055`, `98cb25f`, `ace1ed2`. Bump v2.5.30 → v2.5.31 |
-| **8d-A-continue** | CP4 §6.98 FarmacoDrawer UnsavedChanges guard + CP5 §6.89+§6.92 ProfiliTab retrofit ConfirmModal + CP6 §6.95 proactive `updateProfilo` retrofit + CP7 bump v2.5.31 → v2.5.32 | ⏳ **Pianificata** | Baseline 307/307. Target ~310-311 test (+3 a +4). 4 CP + browser + bump finale |
+| **8d-A-continue** (parziale) | Tier A+B CP residui pattern-based. **CP4-CP6 completati** (v2.5.32): §6.98 FarmacoDrawer UnsavedChanges guard, §6.89+§6.92 ProfiliTab retrofit ConfirmModal shared + a11y (auto-risolta), §6.95 updateProfilo proactive `rebuildPlanFromFresh` (§6.102 generalizzazione helper). **CP7 deferred** per blocker §6.104 (routing loop pre-esistente CP1 §6.84 interaction) | ⚠️ **Parziale** | 307 → 310 test (+3). 3 commit Mac-side: `30b01ce`, `f316e6c`, `264ab1c`. 3 nuove deviazioni: §6.102/§6.103/§6.104. Bump v2.5.31 → v2.5.32 |
+| **8d-A-continue-2** | Analisi-first §6.104 ConfigView routing fix (path absolute, AMB-A) + audit esaustivo (AMB-B) + browser check 5/5 (Punto 3 skip §6.106) + CP7 bump v2.5.32 → v2.5.33 | ✅ **Completo** | 310 → 310 test invariati (AMB-C no test in-session). 1 commit Mac-side: `67937e5` CP1 §6.104. 2 nuove deviazioni: §6.105 (ConfirmModal focus-restore ProfiliTab → 8d-B tier C), §6.106 (Punto 3 skip ridondanza). Audit nota retroattiva in §6.104 (pattern grep limit data-driven). Bump v2.5.32 → v2.5.33 |
 | **8d-B** | Tier C design-decision + investigation: §6.81 ConfigTabBar dark token, §6.96 sticky separator CSS var+ResizeObserver (AMB-8d.B), §6.85 `nome_utente` investigation con strumentazione logging (AMB-8d.E) | ⏳ **Pianificata** | Analisi-first separata richiesta. Target test TBD (baseline post-8d-A) |
 | 9 | Notifiche locali (Notification API + scheduling) + **fix dominio §6.18 cross-midnight** (§6.26) | | |
 | 10 | Service worker attivo + manifest definitivo + icone | | |
@@ -2334,129 +2600,84 @@ Chiarimenti risolti pre-Step 4b (AMB-1/2/3):
 ---
 
 
-## 11. Prossimo step — Sessione 8d-A-continue — impl CP4+CP5+CP6 + CP7 bump
+## 11. Prossimo step — Sessione 8d-C — analisi-first obbligatoria
 
-**Scope.** Prosecuzione **Sessione 8d-A parziale** (chiusa a v2.5.31 dopo CP1-CP3, vedi §22.13). Esecuzione CP residui: **CP4 §6.98 drawer guard**, **CP5 §6.89+§6.92 ProfiliTab retrofit**, **CP6 §6.95 proactive updateProfilo**, **CP7 bump changelog**. Zero design-decision: AMB-8d.C/D già consumate o consumanti, retrofit tutti pattern-based.
+**Stato baseline:** v2.5.34 (post-8d-B impl parziale). 313/313 test su 31 files. Commit top atteso `<hash>` Changelog v2.5.34, parent `eac185a` Sessione 8d-B impl parziale (CP2+CP3+CP4, CP1 rolled back).
 
-**Baseline test:** 307/307 su 31 test files (post-8d-A CP3, §22.13).
-**Target test:** **310-311** su 31-32 test files (+3 a +4 netti).
-**Bump finale:** v2.5.31 → **v2.5.32** a chiusura sessione.
-**Scope NON incluso:** tier C + §6.85 (→ Sessione 8d-B), test router retrofit §6.84 aggiunto da §6.100 (→ analisi-first 8d-B).
+**Modalità:** **analisi-first obbligata**. NESSUN codice prima della Fase 2 (ratifica AMB-8d-C.A÷E) come in 8d-A, 8d-B.
+
+### Scope sessione
+
+5 candidate item, **carryforward da 8d-B + 8d originali**:
+
+| Pos | §6.NN | Tipo | Priorità | Costo stimato |
+|-----|-------|------|----------|---------------|
+| 1 | **§6.107** | re-investigation §6.96 (CP1 8d-B rolled back) | alta — regressione scroll attiva | 1-2h |
+| 2 | **§6.109** | ProfiliTab focus restore (CP2 8d-B parziale) | media | 30-90 min con esito incerto |
+| 3 | **§6.108** | scope-extension §6.81 a NavBar bottom | media | 30 min |
+| 4 | **§6.85** | investigation `nome_utente` azzerato | bassa | timeboxed 1h |
+| 5 | **§6.84** | test router future flags retrofit | bassa | timeboxed 45 min |
+
+Densità sessione attesa: **medio-alta**, possibile split 8d-C / 8d-D se Fase 2 ratifica scope ≥4 item con confidence bassa.
 
 ### CP0 sanity-light (3 gate — zero codice)
 
-1. `git status`: working tree pulito. Ultimo commit atteso: `Changelog v2.5.31 (Sessione 8d-A parziale, CP1-CP3)` o equivalente. Se dirty → stop diagnosi.
-2. Full test suite: `npm test -- --run` → atteso **307/307 su 31 test files**. Divergente → diagnosi prima di proseguire. Nota: 4 righe warning React Router su stderr sono **attese** (§6.100, test router deferred).
-3. Inventario retrofit target:
-   - `grep -n "§6.89\|§6.92\|§6.95\|§6.98" /mnt/project/PharmaTimer_Changelog_Fase2.md | wc -l` → ≥ 12 occorrenze attese.
-   - Verifica che i commit 8d-A CP1-CP3 siano presenti: `git log --oneline | grep "Sessione 8d-A CP"` → atteso 3 match (`2d79055` CP1, `98cb25f` CP2, `ace1ed2` CP3).
+1. `git status`: working tree pulito su branch `step-8`. Ultimo commit atteso: `<hash>` Changelog v2.5.34 oppure `eac185a` Sessione 8d-B impl parziale.
+2. Full test suite: `npm test -- --run` → atteso **313/313 su 31 test files**. 4 righe warning React Router su stderr persistono (§6.84/§6.100 deferred — candidate fix in questa sessione).
+3. Verifica commit 8d-B presente: `git log --oneline | grep "8d-B impl parziale"` → atteso 1 match (`eac185a`).
 
-### Struttura CP
+### Struttura sessione (analisi-first)
 
-Ogni CP = 1 commit separato (pattern 8b §6.70).
+**Fase 1 — Analisi item-per-item.** Per ciascuno dei 5 candidate, produci:
 
----
+- Recap §6.NN dal Changelog (per §6.107 e §6.109 leggere le sezioni dedicate in §6 con ipotesi residue).
+- Trade-off scelte tecniche.
+- Stima costo (file toccati, test attesi, rischio regressione).
+- AMB-8d-C.X dedicata (X = lettera per item) con scelta raccomandata.
 
-#### **CP4 — §6.98 FarmacoDrawer UnsavedChanges guard**
+**Fase 2 — Triage AMB.** Ratifica AMB-8d-C.X + decisione split scope sessione (atomic vs parziale). Particolare attenzione a §6.107: se ipotesi A (`useLayoutEffect` con `dep=[state.status]`) non risolve il scroll lock, considerare hard-defer a 8d-D con scope investigativo dedicato.
 
-**File.** `src/components/config/FarmaciTab.jsx` — handler `handleAnnulla` del drawer (e/o close handler bottone ×).
+**Fase 3 — Implementazione (CP1÷CPn).** Solo dopo Fase 2 completata. Ordine consigliato per dipendenze + rischio:
 
-**Pattern di riferimento.** `ProfiliTab::handleClose` (8b CP7, §6.86.3).
+1. **§6.107** prima (priorità alta, regressione attiva).
+2. **§6.109** secondo (può essere parallela diagnostica con §6.107 se diverso CP).
+3. **§6.108** terzo (impl pura post-AMB).
+4. **§6.85** quarto (investigation timeboxed).
+5. **§6.84** ultimo (più rischioso per hang full suite).
 
-**Modifica.** `handleAnnulla` consulta `dirty` (esposto da `useUnsavedChanges` in 8c CP4 §6.87/AMB-8c.I):
-- Se `dirty === false` → chiude drawer direttamente (comportamento attuale).
-- Se `dirty === true` → apre `UnsavedChangesModal`, on-confirm chiude drawer + reset form, on-cancel preserva form.
+**Fase 4 — CP browser ridotto** OBBLIGATORIO interleaved post-CP1 §6.107 e post-CP2 §6.109 — non rinviare a fine sessione, dato il track record di regressioni invisibili in jsdom.
 
-**Test.** 2 nuovi test in `FarmaciTab.test.jsx`:
-- `guard scatta su Annulla con form dirty`
-- `Annulla con form clean chiude drawer senza guard`
+**Fase 5 — Bump Changelog v2.5.34 → v2.5.35** + nuova §22.17 + §11 sostituita con stub successivo (Sessione 8d-D se carryforward residuo, oppure Step 9 se 8d completo).
 
-**Δ test atteso:** +2.
+### Vincoli
 
-**Commit:** `Sessione 8d-A-continue CP4 §6.98: FarmacoDrawer UnsavedChanges guard su handleAnnulla`
-
----
-
-#### **CP5 — §6.89+§6.92 ProfiliTab retrofit ConfirmModal shared**
-
-**Scope combinato.** Retrofit `ConfirmDeleteProfiloModal` (inline in ProfiliTab da 8b CP7) → consumo `src/components/shared/ConfirmModal.jsx` (creato in 8c-2 CP5). Auto-risolve asimmetria a11y §6.92 (ConfirmModal shared già monta `useModalA11y`).
-
-**File.**
-- `src/components/config/ProfiliTab.jsx` — sostituire JSX `<ConfirmDeleteProfiloModal>` con `<ConfirmModal>` props-mapped. Rimuovere dead code function `ConfirmDeleteProfiloModal` (definita inline a linea ~516 secondo discovery 8d-A: linee 485 JSX + 516 funzione).
-- `src/components/config/ProfiliTab.test.jsx` — adattare query/selector test esistente sul modal delete (linea ~134 da discovery 8d-A).
-
-**Pattern di riferimento.** FarmaciTab consumo `ConfirmModal` in 8c-2 CP5 (delete + data_fine-past).
-
-**Mapping props.** Verificare in diagnosi pre-edit la coerenza label/copy tra `ConfirmDeleteProfiloModal` predecessore e `ConfirmModal` shared. Eventuali divergenze copy: documentare come nuova §6.102 in questo CP, non mescolare in hotfix silenti.
-
-**Δ test atteso:** 0-1 (adattamento test esistente + eventuale smoke test focus-trap post-retrofit).
-
-**Commit:** `Sessione 8d-A-continue CP5 §6.89+§6.92: ProfiliTab retrofit ConfirmModal shared + a11y`
-
----
-
-#### **CP6 — §6.95 proactive `updateProfilo` retrofit `rebuildPlanFromFresh`**
-
-**File.** `src/state/actions.js` — thunk `updateProfilo` (~actions.js:464 da §6.95 nota).
-
-**Pattern di riferimento.** Thunks farmaci 8c-2 CP5 (`addFarmaco/updateFarmaco/deleteFarmaco`): post-dispatch, rebuild plan inline da dati freschi bypassando `stateRef`.
-
-**Modifica attesa.**
-1. Dopo `dispatch APPLY_CAMBIO_PROFILO` (payload spread con profilo aggiornato), invocare `rebuildPlanFromFresh({profilo: nuovoProfilo})` o equivalente generalizzazione dell'helper che accetti `{profilo?, farmaci?, orari?}` con fallback a `stateRef` per i non forniti.
-2. Se `rebuildPlanFromFresh` va generalizzato: documentare come rifattorizzazione positiva del helper, non deviazione negativa. Eventuale nuova §6.102 (o §6.103 se CP5 ne ha già aperta una) se shape dell'helper cambia visibilmente.
-
-**Test.** 1 nuovo test in `actions.profili.test.js`:
-- `updateProfilo: rebuildPlan usa profilo fresco non stateRef stale`
-
-**Δ test atteso:** +1.
-
-**Commit:** `Sessione 8d-A-continue CP6 §6.95: updateProfilo proactive rebuildPlanFromFresh (coherence defence)`
-
----
-
-#### **CP7 — CP browser + Changelog + commit finale**
-
-**Browser checklist (ridotta, solo user-visible changes CP4-CP6):**
-1. `/config/profili` delete profilo con form dirty → ConfirmModal shared + focus-trap attivo (CP5).
-2. `/config/farmaci` create farmaco con solo Nome → tap Annulla → UnsavedChangesModal appare (CP4).
-3. `/config/profili` update profilo attivo (es. cambio durata_intervallo) → plan `/oggi` si rigenera correttamente (CP6 coherence defence).
-
-**Changelog bump.**
-- Front-matter: v2.5.31 → **v2.5.32**, Ultima modifica = data sessione.
-- Nuova entry v2.5.32 con summary per CP + §6.NN consumate + Δ test finale.
-- Nuova **§22.14** stato post-Sessione 8d-A-continue.
-- §7 roadmap: riga 8d-A-continue → ✅ **Completo**. Riga 8d-A parziale resta come record storico.
-- §11 sostituita con prompt **Sessione 8d-B** (analisi-first: §6.81 design review + §6.96 impl CSS var+ResizeObserver già AMB-8d.B + §6.85 investigation strumentazione + §6.84 test router retrofit da §6.100).
-
-**Commit finale.**
-```
-git add PharmaTimer_Changelog_Fase2.md
-git commit -m "Changelog v2.5.32 (Sessione 8d-A-continue)"
-```
-
-Total commit sessione 8d-A-continue: **4** (CP4-CP6 + Changelog).
-
-### Note operative
-
+- **§6.107 priority gate**: se la re-investigation §6.96 fallisce di nuovo (rollback secondo + non-deterministico), chiudere §6.96 come "deferred to fase 9+ con calibrazione statica" — NON tentare un terzo fix in 8d-D. Il bug è low-priority (gap cosmetico 31px), non vale il debito tecnico accumulato.
+- **§6.85 e §6.84 hard timebox.** Se il timebox scade senza convergenza, archiviare con esito documentato. Già stati timeboxed in 8d originale e 8d-B; il terzo timebox è l'ultimo — chiusura senza fix è ammissibile per item con confidence bassa cronica.
+- **No CP §6.96 senza CP browser interleaved.** Il CP1 di 8d-B è chiuso verde unit test ma rotto in browser; questa volta verifica browser PRIMA di considerare CP1 chiuso.
+- **Pattern invariance.** Tutto come 8d-A / 8d-B. Niente §6.NN non tracciate per micro-decisioni self-evident.
 - Rispetto regole bash zsh interattiva (single-quoted echo, no apostrofi italiani) per tutti i comandi operativi.
-- Se emerge hotfix intra-sessione (pattern §6.82/§6.83/§6.95): commit separato drift-preventive (pattern 8b §6.70), non mescolare in commit CP.
-- Se la sessione si dimostra troppo densa dopo CP5-CP6: chiudere come **8d-A-continue parziale** e aprire **8d-A-continue-2** (pattern §6.99 + §22.13).
-- Nessun nuovo pattern architetturale atteso: tutti i retrofit seguono modelli già consolidati.
-- **Non tentare** estensione future flag React Router al test router `renderHelpers.jsx` — è scope 8d-B con analisi-first dedicata (§6.100).
 
 ### Checklist AMB da rispettare
 
-- **AMB-8d.D** (CP6): retrofit proattivo `updateProfilo`, non condizionale.
-- **AMB-8d.A** (fuori scope): non anticipare item tier C (§6.81, §6.96, §6.85, §6.84 test router) — sono 8d-B.
+- **AMB-8d.A** (§6.99 split 8d-A + 8d-B): superata e estesa con 8d-C; tutti i 5 item carryforward sono ratificabili in nuove AMB-8d-C.X.
+- **AMB-8d.B** (§6.96 approach CSS var + ResizeObserver): rolled back in 8d-B CP1; **da rivisitare** con eventuale nuova AMB-8d-C.A se l'approccio resta il preferito o cambia in §6.107.
+- **AMB-8d.E** (§6.85 investigation scope): timeboxed terzo round, nuova AMB-8d-C.D per definire timebox e criteri di archiviazione.
 
-### Contesto sessione precedente (8d-A parziale)
+### Contesto sessioni precedenti
 
 Commit code-side già presenti sul branch `step-8`:
-- `2d79055` CP1 §6.84 (app router future flags)
-- `98cb25f` CP2 §6.94 (noop bag +5)
-- `ace1ed2` CP3 §6.97 (regression guard)
 
-Non rifare questi CP. Baseline test post-CP3 = 307/307.
+- `2d79055` 8d-A CP1 §6.84 (Router future flags app-only)
+- `98cb25f` 8d-A CP2 §6.94 (defaultNoopActions completamento)
+- `ace1ed2` 8d-A CP3 §6.97 (DoseCard regression guard, §6.97 chiusa)
+- `30b01ce` 8d-A-continue CP4 §6.98 (FarmacoDrawer UnsavedChanges guard)
+- `f316e6c` 8d-A-continue CP5 §6.89+§6.92 (ProfiliTab retrofit ConfirmModal shared)
+- `264ab1c` 8d-A-continue CP6 §6.95 (updateProfilo proactive rebuildPlanFromFresh)
+- `67937e5` 8d-A-continue-2 CP1 §6.104 (path absolute Navigate/NavLink dentro /config/*)
+- `eac185a` 8d-B impl parziale (CP2+CP3+CP4 §6.105+§6.103+§6.81, CP1 §6.96 rolled back)
+
+Non rifare questi CP. Baseline test post-Sessione 8d-B = 313/313.
+
 
 ## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3 + 8-pre + 8a + 8b + 8c-parz + 8c-2
 
@@ -4594,3 +4815,297 @@ Target 8d-A-continue: 307 → 310-311 (+3 a +4). Commit attesi: 4 (CP4-CP6 + Cha
 5. Aprire **Sessione 8d-A-continue** (nuova conversazione Claude) con one-liner:
    `Esegui il prompt al §11 del Changelog (Sessione 8d-A-continue).`
 
+
+## 22.14 Stato post-Sessione 8d-A-continue parziale (CP4-CP6)
+
+Sessione 8d-A-continue aperta 24/04/2026 alle 21:53 circa come one-liner `Esegui il prompt al §11 del Changelog (Sessione 8d-A-continue)` consumando prompt §11 v2.5.31. Completati **CP0 sanity-light + CP4 §6.98 + CP5 §6.89+§6.92 + CP6 §6.95 (§6.102)** con 1 hotfix pre-commit intra-CP4. **CP7 NON eseguito** per blocker §6.104 scoperto in browser check.
+
+### Δ rispetto al prompt §11 v2.5.31
+
+| CP | Prompt | Eseguito | Δ test |
+|---|---|---|---|
+| **CP0** | 3 gate sanity | ✅ Tutti verdi (working tree pulito, 307/307 test, 3 commit 8d-A CP1-CP3 presenti) | — |
+| **CP4** | §6.98 FarmacoDrawer UnsavedChanges guard, +2 test | ✅ Refactor `handleAnnulla` split in `doAnnulla` (silent) + `handleAnnulla` (dirty-gated). 1 hotfix pre-commit (test selector `getByText` → `getByRole heading` per disambiguare h3 vs p con stesso fragment testuale). Commit `30b01ce`. | +2 (307 → 309) |
+| **CP5** | §6.89+§6.92 ProfiliTab retrofit, 0-1 test | ✅ Dead-code removal `ConfirmDeleteProfiloModal` (54 righe) + retrofit `<ConfirmModal>` shared, copy 1:1 preservata. Δ test 0 (adattamento 2 testid `confirm-delete-profilo` → `confirm-modal`). §6.92 auto-risolta (ConfirmModal shared monta `useModalA11y`). Commit `f316e6c`. | 0 (309 → 309) |
+| **CP6** | §6.95 proactive updateProfilo, +1 test | ✅ Generalizzato `rebuildPlanFromFresh` a `{profilo?, farmaci?, orari?}` (§6.102). `updateProfilo` usa `await rebuildPlanFromFresh({profilo: nuovoProfiloAttivo})` invece di `await rebuildPlan()`. Nuovo test (7) con `vi.mock` planBuilder verifica profilo fresco vs stateRef stale. Commit `264ab1c`. | +1 (309 → 310) |
+| **CP7** | Browser check + Changelog bump v2.5.32 | ❌ **Blocker §6.104**. Browser check tap tab Profili da `/config/farmaci` → URL `/config/farmaci/profili/impostazioni/impostazioni/...` → rate limit Chrome + `Maximum update depth exceeded`. Root cause pre-esistente CP1 §6.84 (`v7_relativeSplatPath: true` interaction con ConfigView/ConfigTabBar path relativi). Bump Changelog eseguito parzialmente (questa entry) come v2.5.32 parziale documenta fino a CP6 + §6.104. | — |
+
+### AMB consumate / congelate
+
+Nessuna nuova AMB aperta. AMB consumate:
+- **AMB-8d.D** (CP6): §6.95 retrofit `updateProfilo` proattivo ✅ applicato come generalizzazione helper §6.102.
+- **AMB-8c.I** (CP4): `useUnsavedChanges` hook API riconfermata — FarmacoDrawer usa `isDirty` memo locale (non `_isDirty` del hook) come source-of-truth per il guard (hook rimane usato solo per `setDirty` propagato a parent/ConfigView).
+
+### Deviazioni aperte/chiuse
+
+**Nuove §6.NN aperte (da docs in questo Changelog):**
+- **§6.102** — `rebuildPlanFromFresh` signature extension (CP6 AMB-8d.D impl).
+- **§6.103** — UnsavedChangesModal 2° consumer → candidate `useModalA11y` retrofit (CP4 emergenza docs-only, impl 8d-B tier C).
+- **§6.104** — ConfigView routing loop (interazione v7_relativeSplatPath ↔ ConfigView/ConfigTabBar v6-style path resolution). Pre-esistente CP1 §6.84. Fix scope 8d-A-continue-2.
+
+**§6.NN consumate/chiuse:**
+- **§6.98** — FarmacoDrawer UnsavedChanges guard (CP4). CHIUSA.
+- **§6.89** (2° parte) — ConfirmModal shared promozione consumer pieno in ProfiliTab (CP5). CHIUSA (era parziale da 8c-2 CP5).
+- **§6.92** — `useModalA11y` asimmetria ConfirmModal vs ConfirmDeleteProfiloModal (CP5). CHIUSA automaticamente via retrofit §6.89.
+
+### Rettifiche di riferimento inline (no §6.NN)
+
+Prompt §11 v2.5.31 presentava 2 imprecisioni minori, annotate nei commenti codice:
+1. **CP4 "Pattern di riferimento: ProfiliTab::handleClose (8b CP7, §6.86.3)"** — ProfiliTab non ha `handleClose` (solo `handleAnnulla` + `closeDrawer`). ProfiliTab.handleAnnulla fa silent restore + close, NON prompt-on-dirty. §6.86.3 è z-index bump UnsavedChangesModal. Precedente effettivo = ConfigView cross-tab guard (consumer 1 del modal).
+2. **CP6 "Dopo dispatch APPLY_CAMBIO_PROFILO"** — updateProfilo dispatcha `SET_PROFILO_ATTIVO`. APPLY_CAMBIO_PROFILO è in `cambiaProfilo` (flow diverso, usa `ricalcolaPianoDaProfilo` non `buildMultiDayPlan`).
+
+### Test delta finale
+
+**307 → 310** (+3 netti, target §11 v2.5.31 "310-311, +3 a +4" range centrato al minimo). 31 test files invariati (eventuale 32° test file per test router §6.100 deferred a 8d-B).
+
+### File toccati (code-side, già tracciati in §12)
+
+- `src/components/config/FarmaciTab.jsx` (+37 righe, refactor handleAnnulla + mount UnsavedChangesModal)
+- `src/components/config/FarmaciTab.test.jsx` (+56 righe, 2 test nuovi + hotfix selector)
+- `src/components/config/ProfiliTab.jsx` (-58 righe netti, dead-code removal + retrofit)
+- `src/components/config/ProfiliTab.test.jsx` (+2 righe, adattamento testid + commento)
+- `src/state/actions.js` (+28 righe, rebuildPlanFromFresh generalization + commenti)
+- `src/state/actions.profili.test.js` (+61 righe, vi.mock + test coherence)
+
+Totale: 6 file modificati, netto +126 righe code (prevalentemente commenti §6.102 verbosi per tracciabilità).
+
+### Blocker §6.104 — contesto per 8d-A-continue-2
+
+**Non-blocker per CP4/5/6 committati.** I 3 commit sono sani, test verdi, logica corretta. §6.104 isola il shell di navigazione Config (ConfigView + ConfigTabBar), i tab funzionano correttamente se raggiunti direttamente via URL o al primo load (default `/config/impostazioni`).
+
+**Workaround temporaneo scartato:** downgrade `v7_relativeSplatPath: false` in `src/main.jsx` ripristinerebbe v6 ma annullerebbe §6.84. Preservare §6.84, fix proper in 8d-A-continue-2 (path absolute o `useResolvedPath`).
+
+**Scope 8d-A-continue-2:** analisi-first (3 AMB: strategia fix, scope audit, test coverage) → impl → browser check completo (5 punti incluso regression §6.104) → bump v2.5.33.
+
+### Prossimi passi Mac-side
+
+1. Confermare `git log --oneline -5`:
+   - `264ab1c` Sessione 8d-A-continue CP6 §6.95: updateProfilo proactive rebuildPlanFromFresh (coherence defence)
+   - `f316e6c` Sessione 8d-A-continue CP5 §6.89+§6.92: ProfiliTab retrofit ConfirmModal shared + a11y
+   - `30b01ce` Sessione 8d-A-continue CP4 §6.98: FarmacoDrawer UnsavedChanges guard su handleAnnulla
+   - `44fd3fa` Changelog v2.5.31 (Sessione 8d-A parziale, CP1-CP3)
+   - `ace1ed2` Sessione 8d-A CP3 §6.97: DoseCard regression guard per relazione_pasto=indifferente (riscoped da fix a guard, bug non riproducibile)
+2. Working tree pulito post-commit CP6.
+3. Caricare il Changelog v2.5.32 nella KB Claude.ai (sostituisce il precedente).
+4. Aprire **Sessione 8d-A-continue-2** (nuova conversazione Claude) con one-liner:
+   `Esegui il prompt al §11 del Changelog (Sessione 8d-A-continue-2).`
+
+
+
+## 22.15 Stato post-Sessione 8d-A-continue-2
+
+Sessione 8d-A-continue-2 aperta 25/04/2026 come one-liner di ripresa post-pausa: `Riprendi Sessione 8d-A-continue-2 da Punto 4 CP7 browser check. Stato: CP1 committato (67937e5), Punti 1/2 PASS, Punto 3 skipped (§6.106), restano Punti 4/5 + Bonus + CP7b bump v2.5.33. Deviazioni intra-sessione da consolidare: §6.105, §6.106, nota audit §6.104.`
+
+La sessione era stata aperta in una conversazione precedente con il prompt §11 v2.5.32 (analisi-first §6.104), che aveva eseguito CP0 + Fase 1 AMB + CP1 fix + Punti browser 1-3. La pausa è avvenuta tra Punto 3 e Punto 4. La ripresa ha completato Punti 4/5 + Bonus + CP7b bump.
+
+### Δ rispetto al prompt §11 v2.5.32
+
+| Fase | Prompt | Eseguito | Δ test |
+|------|--------|----------|--------|
+| **CP0 sanity-light** | 3 gate (status, npm test, log grep) | ✅ Tutti verdi (310/310) | — |
+| **Fase 1 analisi-first** | 3 AMB (A/B/C) | ✅ Ratificate "Decidi tu" → scelte raccomandate (i path absolute, B audit esaustivo, C no test) | — |
+| **Fase 2 CP1 fix** | 1 commit ConfigView + ConfigTabBar | ✅ Commit `67937e5`. Test 310/310 invariati | 0 |
+| **Fase 3 CP browser** | 5 punti | ✅ 4/5 PASS + 1 skip giustificato (§6.106). +1 Bonus PASS. 1 caveat §6.105 su Punto 1 | — |
+| **Fase 4 CP7b** | bump v2.5.33 + §22.15 + §11 → 8d-B | ✅ Questo delivery | — |
+
+### AMB consumate / congelate
+
+Nessuna nuova AMB-8d-B aperta (saranno ratificate in apertura Sessione 8d-B). AMB-8d-A-continue-2 consumate:
+- **AMB-8d-A-continue-2.A** (strategia fix): path absolute ✅.
+- **AMB-8d-A-continue-2.B** (scope audit): audit esaustivo grep ✅. Esito: 2 file effettivamente coinvolti (ConfigView, ConfigTabBar).
+- **AMB-8d-A-continue-2.C** (test coverage): no test in-session, regression guard = browser check manuale ✅.
+
+### Deviazioni aperte/chiuse
+
+**Nuove §6.NN aperte:**
+- **§6.105** — ConfirmModal focus-restore non funziona su ProfiliTab (delete profilo non-attivo). Riproducibile mouse + keyboard. Fix scope **8d-B tier C** insieme a §6.103.
+- **§6.106** — CP7 Punto 3 skipped per ridondanza vs unit coverage `actions.profili.test.js` (test 7 da CP6 §6.95). Pattern documentato come decisione esplicita.
+
+**Note retroattive su §6.NN esistenti:**
+- **§6.104** — chiusa in v2.5.33. Aggiunta nota audit retroattiva (limitazione pattern grep `'NavLink to="[^/]'` su data-driven `to={var}`; estendere a `to={` per audit futuri).
+
+**Consumate:** §6.104 (chiusa).
+
+**Pending su 8d-B:** §6.81, §6.96 (AMB-8d.B → direct impl), §6.85 (AMB-8d.E investigation), §6.84 test router retrofit (§6.100), §6.103 useModalA11y UnsavedChangesModal, **§6.105** ConfirmModal focus-restore ProfiliTab (nuova).
+
+### File prodotti / modificati
+
+**Modificati (code, sul Mac):**
+- `src/components/config/ConfigView.jsx` — 2 `<Navigate to>` + 1 `navigate(...)` da relativi a path absolute (`/config/impostazioni`).
+- `src/components/config/ConfigTabBar.jsx` — 3 `<NavLink to>` da relativi a path absolute (`/config/<tab>`).
+
+**Modificati (docs, in KB):**
+- `PharmaTimer_Changelog_Fase2.md` — v2.5.32 → **v2.5.33** (questo delivery).
+
+**Nuovi:** nessuno.
+
+Totale: 2 file code modificati, 1 file docs aggiornato. Δ righe code stimato: ~6-8 righe (sostituzioni 1:1 di string literal nei JSX).
+
+### Scoperte operative
+
+1. **Pattern grep audit limit (annotata in §6.104).** I pattern `'Navigate to="[^/]'`, `'NavLink to="[^/]'`, `'navigate("[^/]"'` catturano solo string literal. Per coverage completa, aggiungere pattern `'to={'` per data-driven cases. Nel caso 8d-A-continue-2 il limit non ha causato falsi negativi (l'app non usa data-driven routing dentro `/config/*`), ma resta lezione per future audit.
+
+2. **Browser check Bonus efficace.** Il Bonus (cross-tab dirty state + UnsavedChangesModal + Scarta) ha confermato che il guard CP4 §6.98 funziona end-to-end anche fuori dal trigger originale (FarmacoDrawer close path): la combinazione cross-tab + dirty form in ImpostazioniTab attiva correttamente l'UnsavedChangesModal di ConfigView. Pattern di test consigliato per future modifiche al guard.
+
+3. **§6.105 emerge solo con focus-restore audit specifico.** Il bug a11y non è catturato dai test esistenti (i test ProfiliTab non asseriscono su `document.activeElement` post-dismiss). Sintomo solo riproducibile in browser con osservazione attiva del focus. Lesson: per a11y polish, il browser check è oggi l'unica guardia — investigare in 8d-B se aggiungere assertion `vi.fn()` su `triggerRef.current.focus()` come unit test guard.
+
+4. **Skip giustificato vs skip silente.** §6.106 stabilisce un precedente esplicito: quando un browser check item è già coperto da unit test che mockizza il path completo, lo skip va documentato come §6.NN dedicata, non lasciato come decisione silente. Pattern applicabile in future sessioni.
+
+5. **Console rumore "runtime.lastError".** Il pattern ripetuto `Unchecked runtime.lastError: The message port closed before a response was received` è generato da estensioni Chrome (password manager, ad-blocker, dev tools extensions) e non dall'applicazione. Identificabile perché compare anche su pagine non-React. Da ignorare in CP browser future.
+
+### Azioni sul Mac post-Sessione 8d-A-continue-2
+
+1. Verifica stato git pre-commit Changelog:
+   ```
+   echo 'Verifica stato pre-commit Changelog'
+   cd ~/Sviluppo/pharmatimer
+   git status
+   git --no-pager log --oneline -5
+   ```
+   Atteso: tree clean, HEAD `67937e5`.
+
+2. Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude.ai con la versione **v2.5.33** (questo delivery).
+
+3. Commit Changelog separato (solo se il repo lo traccia — verificare convenzione progetto: il Changelog vive in KB, il repo traccia solo codice):
+   ```
+   echo 'Commit Changelog v2.5.33 (opzionale, dipende da convenzione progetto)'
+   git add PharmaTimer_Changelog_Fase2.md 2>/dev/null && git commit -m 'Changelog v2.5.33 (Sessione 8d-A-continue-2)' || echo 'Changelog non tracciato in git, solo upload KB'
+   ```
+
+4. Verifica finale stato git:
+   ```
+   git --no-pager log --oneline -5
+   ```
+
+5. Aprire **Sessione 8d-B** (nuova conversazione Claude) con one-liner:
+   `Esegui il prompt al §11 del Changelog (Sessione 8d-B).`
+
+
+## 22.16 Stato post-Sessione 8d-B impl (parziale)
+
+**Data:** 25 aprile 2026
+**Baseline test pre-sessione:** 310/310 su 31 test files (§22.15 post-8d-A-continue-2).
+**Baseline test post-sessione:** **313/313 su 31 test files** (+3 netti: 1 da CP2 ProfiliTab + 1 da CP2 FarmaciTab + 1 da CP3 FarmaciTab).
+**Bump:** v2.5.33 → v2.5.34. Sessione **parziale**: 3 CP su 4 chiusi verdi (CP2/CP3/CP4), CP1 §6.96 ROLLED BACK in-session, 3 nuove deviazioni §6.107/108/109 deferred a 8d-C.
+
+### Scope consegnato
+
+Sessione 8d-B impl aperta come one-liner `Esegui il prompt al §11 del Changelog (Sessione 8d-B).` consumando prompt §11 v2.5.33. Eseguiti CP1 (rolled back), CP2, CP3, CP4 in sequenza con metodologia analisi-first ratificata in Fase 2 (6 AMB-8d-B.A÷F decise prima di scrivere codice). Scope ratificato: split 8d-B (A+B+E+F) + 8d-C (C+D), basato su confidence map item-per-item (§22.15 carryforward).
+
+### Esiti CP0
+
+| Gate | Scope | Esito |
+|------|-------|-------|
+| **Gate 1** | `git status` + `git log -1` | ✅ Tree clean su `step-8`. Ultimo commit `67937e5` Sessione 8d-A-continue-2. |
+| **Gate 2** | `npm test -- --run` | ✅ **310/310 su 31 test files** in 6.09s. 4 warning React Router stderr persistono (target §6.84/§6.100 deferred 8d-C). |
+| **Gate 3** | sanity commit 8d-A-continue-2 | ✅ 1 match `8d-A-continue-2`. Allineato baseline. |
+
+### CP completati
+
+| CP | §6.NN | AMB | Δ test | Note |
+|----|-------|-----|--------|------|
+| **CP1** | §6.96 | 8d.B | 0 | **ROLLED BACK in-session.** Sticky separator dinamico via CSS var `--app-header-height` + ResizeObserver. CP browser ha rivelato 2 bug concorrenti: CSS var mai settata (root cause hypothesis: `useEffect dep=[]` su componente con render condizionale early-return) + scroll bloccato sulla pagina `/oggi` (causa non diagnosticata). Rollback via `git checkout 67937e5`. Apertura **§6.107** carryforward 8d-C con 4 ipotesi di re-investigation. |
+| **CP2** | §6.105 | 8d-B.F | +2 | Diagnosi-first di 15 min ha rivelato API gap: `ConfirmModal` shared non propagava `triggerRef` ai consumer → `useModalA11y` cadeva sempre sul fallback `document.body`. Fix: prop `triggerRef` opt-in (default null per retrocompatibilità) propagata a `useModalA11y`. 3 consumer wirati: ProfiliTab delete profilo (`deleteTriggerRef` su button Elimina), FarmaciTab data_fine-past (`salvaTriggerRef` su button Salva), FarmaciTab delete farmaco (`deleteTriggerRef` su button Elimina drawer footer). 2 regression guard test: ProfiliTab + FarmaciTab — entrambi verdi. **CP browser:** FarmaciTab Punto 4 ✅, ProfiliTab Punto 3 ❌ (focus va su input Nome invece che button Elimina). Apertura **§6.109** carryforward 8d-C. |
+| **CP3** | §6.103 | 8d-B.E | +1 | Retrofit `useModalA11y` su `UnsavedChangesModal` (2° consumer arrival trigger gate). API estesa con `open` (gate visibilità + null-render, simmetria con `ConfirmModal`) e `triggerRef` opt-in (pattern §6.105). 2 call-site refactored: `ConfigView` (cross-tab guard) e `FarmaciTab` (drawer close path §6.98). 1 regression guard: Escape su `UnsavedChangesModal` chiama `onCancel` + drawer resta aperto. **CP browser:** Punti 5 e 6 ✅. |
+| **CP4** | §6.81 | 8d-B.A | 0 | Nuovo token semantico `subTabInactive` in `theme.js` (light `#6B6469` 5.50:1 / dark `#8B8893` 5.27:1 vs headerBg, AA-text ≥4.5:1 ✅). Calcolo contrast WCAG via formula relative luminance pre-applicato per scegliere il valore. Asimmetria semantica preservata vs `navInactive` (che resta come è per NavBar bottom: pattern weak-helper intenzionale). ConfigTabBar switched. **CP browser:** Punto 2 ⚠️ — fix sub-tab OK ma scope creep su NavBar bottom (Oggi/Log/Export poco visibili). Apertura **§6.108** carryforward 8d-C. |
+
+Target sessione: 310 → 313 (+3). Raggiunto. Commit code-side: 1 (CP2+CP3+CP4 atomic, CP1 escluso per rollback).
+
+### CP browser ridotto — 6 punti
+
+| Punto | Scope | Esito |
+|-------|-------|-------|
+| 1 | §6.96 sticky separator dinamico | ❌ scroll bloccato + CSS var vuota → rollback CP1 → §6.107 |
+| 2 | §6.81 sub-tab dark mode | ⚠️ sub-tab OK ma scope creep NavBar bottom → §6.108 |
+| 3 | §6.105 ProfiliTab focus-restore | ❌ focus va su input Nome (vs button Elimina atteso) → §6.109 |
+| 4 | §6.105 FarmaciTab focus-restore | ✅ focus su button Elimina come atteso |
+| 5 | §6.103 UnsavedChangesModal focus-trap + Escape | ✅ trap attivo, Escape chiama onCancel, drawer resta aperto |
+| 6 | §6.103 UnsavedChangesModal cross-tab | ✅ modal apre su tab change con dirty form, Escape annulla, drawer preservato |
+
+### Deviazioni §6.NN aperte / consumate / chiuse
+
+**Nuove (3 deferred a 8d-C):**
+
+- **§6.107** — CP1 §6.96 rolled back. Scroll regression + CSS var mai settata. Re-investigation con 4 ipotesi (useLayoutEffect, wrapper component, scroll lock root cause, fallback statico calibrato).
+- **§6.108** — Scope creep §6.81: NavBar bottom (Oggi/Log/Export/Config) ha lo stesso bug contrast del ConfigTabBar pre-fix (2.41 light, 2.05 dark). 3 opzioni di fix (riuso `subTabInactive`, lift `navInactive`, refactor token unificato).
+- **§6.109** — ProfiliTab post-CP2 focus restore va su `<input id="profilo-nome">` invece che button Elimina. Asimmetria diagnostica con FarmaciTab (architetturalmente identici, differenza solo nel JSX `<span>` wrapper §6.86.2 sul button Elimina ProfiliTab). 3 hypothesis residue, 4 step diagnostici proposti per 8d-C.
+
+**Consumate:**
+
+- **§6.103** (CP3) — completata AMB-8d-B.E retrofit `useModalA11y` su `UnsavedChangesModal` 2° consumer arrival.
+- **§6.105** (CP2) — completata AMB-8d-B.F per FarmaciTab (entrambi i ConfirmModal). ProfiliTab parziale, riapertura come §6.109.
+- **§6.81** (CP4) — completata AMB-8d-B.A per ConfigTabBar. NavBar bottom riapertura come §6.108.
+
+**Chiuse:** nessuna in questa sessione.
+
+**Pending su 8d-C:**
+
+- **§6.107** (re-investigation §6.96) — priorità alta (regressione scroll attiva con `top-[180px]` hardcoded e header reale 149px).
+- **§6.108** (estensione §6.81 a NavBar bottom) — priorità media.
+- **§6.109** (ProfiliTab focus restore) — priorità media.
+- **§6.85** (anomalia `nome_utente` azzerato) — investigation timeboxed (carryforward originale §11 v2.5.33, riconfermato).
+- **§6.84** (test router future flags retrofit) — bisezione hang timeboxed (carryforward originale §11 v2.5.33, riconfermato).
+
+### Scoperte
+
+1. **`useEffect(dep=[])` su componenti con render condizionale early-return è anti-pattern.** Quando il componente ha un early return `if (status==='idle') return <Loading />` precedente al return principale, l'`useEffect` con `dep=[]` esegue al primo mount (durante idle), trova il ref nullo, e non riesegue mai più al rerender che monta il target. Pattern fix: `useLayoutEffect(dep=[state.status])` oppure wrapper component dedicato montato solo dopo lo status check.
+
+2. **CP browser è discriminante per modifiche layout/scroll/sticky.** I test unit + jsdom + polyfill no-op non possono catturare regressioni di layout o scroll lock. CP1 §6.96 era 313/313 verde ma rotto in browser. Lesson: per modifiche su `position: sticky`, `top`, `overflow`, ResizeObserver, MutationObserver — CP browser obbligatorio prima di considerare il CP chiuso, non solo a fine sessione.
+
+3. **Diagnosi-first paga.** §6.105 era stata ipotizzata come "race condition in useModalA11y" o "blur indotto da setState". Il code-reading di 15 min in CP2 Fase A ha rivelato la root cause vera (API gap in `ConfirmModal` shared) senza alcuna strumentazione. Il timebox 30 min reinvestito in scope esteso (3 consumer atomic invece che ProfiliTab-only). Pattern §6.105: per bug a11y modal-related, **leggere il codice a partire dall'hook condiviso prima di assumere bug nei consumer**.
+
+4. **Falso negativo regression guard test §6.105.** I 2 test guard CP2 sono verdi in jsdom anche se in browser real ProfiliTab regredisce. Causa: `tabbableOptions: { displayCheck: 'none' }` in `useModalA11y` + interazione drawer-trap → modal-trap che jsdom non riproduce identicamente al browser. Lezione: i test guard a11y in jsdom sono **necessari ma non sufficienti**; CP browser obbligatorio per validare focus restore cross-trap.
+
+5. **Asimmetria token semantica giustificata.** `subTabInactive` (nuovo, 5.27:1) e `navInactive` (esistente, 2.05:1) coesistono nel theme. La scelta non è "uniformità design system" ma "semantica per consumer": ConfigTabBar è label-only, NavBar è icon+label dove l'inactive può essere weak. §6.108 contesta questa asimmetria — eventuale ricomposizione in 8d-C con tokens unificati.
+
+### File prodotti / modificati
+
+**Modificati (code) — committati nel commit `eac185a`:**
+
+- `src/components/shared/ConfirmModal.jsx` — prop `triggerRef` opt-in + doc API estesa (CP2).
+- `src/components/config/ProfiliTab.jsx` — `deleteTriggerRef` su button Elimina + propagazione (CP2).
+- `src/components/config/ProfiliTab.test.jsx` — +1 regression guard test §6.105 (CP2).
+- `src/components/config/FarmaciTab.jsx` — 2 ref (`deleteTriggerRef`, `salvaTriggerRef`) + propagazione 2 ConfirmModal + refactor call-site UnsavedChangesModal con `open` prop (CP2 + CP3).
+- `src/components/config/FarmaciTab.test.jsx` — +1 regression guard §6.105 (FarmaciTab) +1 regression guard §6.103 (UnsavedChangesModal Escape) (CP2 + CP3).
+- `src/components/config/UnsavedChangesModal.jsx` — retrofit `useModalA11y` + API `open`/`triggerRef` (CP3).
+- `src/components/config/ConfigView.jsx` — refactor call-site UnsavedChangesModal con `open` prop (CP3).
+- `src/utils/theme.js` — nuovo token `subTabInactive` light/dark (CP4).
+- `src/components/config/ConfigTabBar.jsx` — switch `navInactive` → `subTabInactive` (CP4).
+
+**Rolled back (code) — non committati, ripristinati a baseline `67937e5` via `git checkout`:**
+
+- `src/components/oggi/OggiView.jsx` (CP1 modifiche).
+- `src/test/setup.js` (CP1 polyfill ResizeObserver).
+
+**Modificati (docs):**
+
+- `PharmaTimer_Changelog_Fase2.md` — v2.5.33 → **v2.5.34** (questo delivery).
+
+**Nuovi:** nessuno.
+
+### Azioni sul Mac post-Sessione 8d-B parziale
+
+1. Stato git corrente: tree clean, commit top `eac185a` (CP2+CP3+CP4 atomic).
+
+2. **Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude.ai** con la versione **v2.5.34** (questo delivery).
+
+3. Commit Changelog separato (solo se il repo lo traccia — verificare convenzione progetto: il Changelog vive in KB, il repo traccia solo codice):
+   ```
+   cd ~/Sviluppo/pharmatimer
+   echo 'Commit Changelog v2.5.34 (opzionale, dipende da convenzione progetto)'
+   git add PharmaTimer_Changelog_Fase2.md 2>/dev/null && git commit -m 'Changelog v2.5.34 (Sessione 8d-B impl parziale)' || echo 'Changelog non tracciato in git, solo upload KB'
+   ```
+
+4. Verifica finale stato git:
+   ```
+   git --no-pager log --oneline -5
+   ```
+   Atteso (top 5):
+   - `<hash>` Changelog v2.5.34 (Sessione 8d-B impl parziale) — se Changelog tracciato in git
+   - `eac185a` Sessione 8d-B impl parziale (CP2+CP3+CP4, CP1 rolled back)
+   - `67937e5` Sessione 8d-A-continue-2 §6.104 (path absolute Navigate/NavLink dentro /config/*)
+   - `264ab1c` Sessione 8d-A-continue CP6 §6.95 (updateProfilo proactive rebuildPlanFromFresh)
+   - `f316e6c` Sessione 8d-A-continue CP5 §6.89+§6.92 (ProfiliTab retrofit ConfirmModal shared)
+
+5. Aprire **Sessione 8d-C** (nuova conversazione Claude) con one-liner:
+   `Esegui il prompt al §11 del Changelog (Sessione 8d-C).`
