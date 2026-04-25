@@ -1,8 +1,8 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 2.5.34
+**Versione:** 2.5.35
 **Data inizio fase:** 16 aprile 2026
-**Ultima modifica:** 25 aprile 2026
+**Ultima modifica:** 25 aprile 2026 (sera)
 **Ambito:** Sviluppo PWA React standalone con persistenza locale, preparata per futuro swap verso backend FastAPI+MariaDB.
 
 Questo documento raccoglie le decisioni architetturali, la struttura del progetto, le deviazioni dalla specifica e lo stato di avanzamento della Fase 2. È il **punto di riferimento unico** per ogni sessione di sviluppo: leggerlo prima di iniziare garantisce continuità senza dover rileggere l'intero storico chat.
@@ -537,6 +537,24 @@ Questo documento raccoglie le decisioni architetturali, la struttura del progett
 - Aggiornamento roadmap §7: step 7d-2 splittato in `7d-2p1 ✅ / 7d-2p2 ⏳`
 - Aggiornamento §12 con 8 file delta 7d-2 parte 1/2 (3 nuovi + 5 modificati, contando `reducer.js` una sola volta per le 2 case aggiunte)
 - Sostituito prompt §11 (Sessione 7d-2 esecutiva v2.5.16 consumata) con prompt **Sessione 7d-2 parte 2/2 esecutiva** (scope CP4→CP7 + CP browser; baseline 235; target 246 ±2; 7 AMB residue richiamate da v2.5.16 + 3 nuove parte-2/2 specific)
+
+**Changelog versione 2.5.35 (rispetto alla 2.5.34):**
+- Sessione **8d-C impl** completata 25/04/2026 (sera): 5 CP eseguiti (CP1+CP3+CP4+CP5 chiusi con fix, CP2 archiviato post-diagnosi A/B). Baseline test **invariata 313/313 su 31 test files** (Δ test = 0, target conservativo AMB-K' "313 ±2" centrato esatto). Bump v2.5.34 → v2.5.35.
+- **Nota drift §6.69 pregresso su v2.5.34:** l'entry "Changelog versione 2.5.34 (rispetto alla 2.5.33):" è **assente** dall'elenco introduttivo (drift non rilevato al bump 8d-B impl parziale, analogo a v2.5.24 / v2.5.25 §22.7). **Non retrocorretto in 8d-C** per principio fatto-storico immutabile (§6.71): la nuova entry v2.5.35 si aggiunge senza recuperare il gap. Lo stato 8d-B è coperto da §22.16; questa nuova entry copre 8d-C.
+- **5 AMB-8d-C.A÷E ratificate inline** (modalità "decidi tu" su raccomandate di Fase 1 senza interazione Q&A iterativa): A §6.107 calibrazione statica `top-[149px]` (chiude §6.96), B §6.109 diagnosi A/B + fallback condizionale `requestAnimationFrame`, C §6.108 lift `navInactive` token (consigliata b vs a §11), D §6.85 strumentazione 30min + safety net `__pt.wipe()`, E §6.84 `onConsoleLog` filter vitest. Sessione **atomica 8d-C** (split 8d-D non necessario).
+- **CP1 §6.110** — fix calibrazione statica `top-[180px]` → `top-[149px]` in `OggiView.jsx` DATE SEPARATOR (149px = altezza header reale misurata 8d-B browser DevTools, validata empiricamente in CP1.4 con `getBoundingClientRect()`). Trade-off accettato: gap residuo possibile in build production senza DEV slider (commento §6.110 inline). **Chiude §6.96** (e §6.107: terzo tentativo dinamico evitato per debito tecnico). 1 file, 8 ins / 7 del.
+- **CP2 §6.111** — diagnosi A/B in browser `/config/profili` per §6.109 (focus restore wrong target ProfiliTab post-§6.105). Punto A baseline confermato bug riprodotto (`activeElement = INPUT id="profilo-nome"`). Punto B: span wrapper §6.86.2 rimosso live via DOM patch + retry → focus ancora errato → **h2 falsificata** (span NON è root cause). Hard-defer **8d-D** investigation strumentata (h1 drawer-trap re-grab o h3 mouse-no-focus). 0 file modificati, 0 commit.
+- **CP3 §6.112** — lift `navInactive` token in `theme.js` per chiudere §6.108 (NavBar bottom contrast sub-AA-ui). Calcolo contrast WCAG inline (`Python relative luminance`): light `#A8A29E` (2.41:1) → `#888286` (3.60:1), dark `#4A4854` (2.05:1) → `#73686D` (3.43:1). Pattern weak-helper iOS-like preservato (gerarchia `subTabInactive` 5.27/5.50:1 > `navInactive` 3.43/3.60:1 > `navActive` 4.94/7.20:1 attivo). **Chiude §6.108**. 1 file, 9 ins / 1 del.
+- **CP4 §6.113** — safety net `__pt.wipe()` in `devCheck.js`. Diagnosi-first ha rivelato che `__pt.wipe = wipeDatabase` (Console-accessible, no confirm) + `db.delete()` senza reload = root cause plausibile dell'incident §6.85 (toggle tema rapido post-wipe → `tema='light'` riscritto su DB ricreato, `nome_utente=''` mai più scritto). Skip strumentazione (diagnosi convergente). Fix: wrap `__pt.wipe` con `window.confirm` + `window.location.reload()` post-wipe. **Chiude §6.85** (archiviazione: anomalia non riprodotta in 30min, root cause plausibile bloccata da safety net, terzo timebox scaduto). 1 file, 22 ins / 1 del.
+- **CP5 §6.114** — `onConsoleLog` filter in `vitest.config.js` per §6.84 test router warning persistenti (4 stderr emit ridotti a **0**, full suite 313/313 in 6.29s, no overhead). Workaround non-invasivo, no-op naturale al futuro upgrade `react-router-dom` 7.x. Alternative scartate: bisezione hang (costo), `act()` wrapper (rischio §6.100), upgrade RR7 (scope). **Chiude §6.84** (parte test router). 1 file, 16 ins.
+- **5 nuove §6.110-§6.114** introdotte in §6 + 4 §6.NN chiuse (§6.96, §6.108, §6.85, §6.84) + 1 hard-defer 8d-D (§6.111 = §6.109 unresolved).
+- **CP browser interleaved:** CP1.4 (5/5 punti, P5 non applicabile) + CP3.4 (4/4 punti) + CP4.4 (smoke 4/4). Vincolo §11 v2.5.34 "no CP §6.96 senza CP browser interleaved" rispettato.
+- **Tempo effettivo:** ~80min vs vincolo §11 medio-alto stimato 4h+. Risparmio grazie a (D) shortcut §6.107, h2 falsification rapida §6.109 (~10min), diagnosi-grep convergente §6.85 (skip strumentazione), filter API noto §6.84.
+- 4 commit Mac-side branch `step-8`: `0283567` CP1, `3406e33` CP3, `af147e0` CP4, `db30fae` CP5 (CP2 zero-commit).
+- Nuova **§22.17** "Stato post-Sessione 8d-C impl" con file prodotti, esiti CP gate-by-gate, scoperte (h2 falsification, drift §6.69 pregresso v2.5.34, diagnosi grep > strumentazione live).
+- Aggiornamento roadmap §7: nuova riga **8d-C ✅ Completo**, riga 8d-B parziale resta come record storico.
+- Nessuna modifica a §12 (4 file codice toccati: `OggiView.jsx`, `theme.js`, `devCheck.js`, `vitest.config.js` — tutti già tracciati in §12).
+- **§11 sostituita** con stub **Sessione 8d-D analisi-first** (scope: §6.111 investigation strumentata h1/h3 + eventuale fix `useModalA11y` pause/resume) **OPPURE** stub **Step 9 analisi-first** (notifiche locali + fix dominio §6.18 cross-midnight via §6.26) — decisione di Roberto in apertura prossima sessione.
 
 ---
 
@@ -2449,6 +2467,275 @@ Raccomandazione provvisoria: (a) per minimizzare cambi al modello tokens. Decisi
 
 ---
 
+## 6.110 — CP1 8d-C: sticky separator calibrazione statica `top-[149px]` (chiude §6.96 e §6.107)
+
+**Sessione:** 8d-C (25 aprile 2026 sera, CP1).
+
+**Stato:** ✅ **CHIUSA**. §6.96 e §6.107 chiuse contestualmente.
+
+**Contesto.** Dopo il rollback CP1 8d-B (§6.107) del tentativo dinamico (CSS var `--app-header-height` + `ResizeObserver` → 2 bug concorrenti: scroll lock + var mai settata), AMB-8d-C.A ha ratificato la calibrazione statica come scelta pragmatica:
+
+- (D) `top-[149px]` hardcoded — header reale misurato post-mount in 8d-B browser DevTools (`document.querySelector('.sticky.top-0').getBoundingClientRect().height`).
+- Vincolo §11 v2.5.34: "se la re-investigation §6.96 fallisce di nuovo, chiudere come deferred fase 9+; il bug è low-priority (gap cosmetico 31px), non vale il debito tecnico". (D) rispetta il vincolo evitando il terzo tentativo dinamico.
+
+**Implementazione.** 1 file (`src/components/oggi/OggiView.jsx`), 8 ins / 7 del:
+- `className="sticky top-[180px] ..."` → `className="sticky top-[149px] ..."` sul `<div>` DATE SEPARATOR.
+- Commento storico 7d-1 sostituito con commento §6.110 (riferimenti §6.96/§6.107, motivazione "residual gap acceptable in production senza DEV slider").
+
+**Validazione CP1.4 browser (5 punti):**
+
+| Punto | Scope | Esito |
+|-------|-------|-------|
+| 1 | Scroll regression (CRITICO post-8d-B) | ✅ Scroll funziona normalmente (modifica statica = zero ResizeObserver) |
+| 2 | Misura header reale | ✅ 149px esatti (`getBoundingClientRect().height`) |
+| 3 | Gap visivo separator vs base header | ✅ 0px (`top: 149` = `header.height: 149`) |
+| 4 | Visibility durante scroll | ✅ Pill "OGGI · ..." resta visibile e ancorato senza overlap |
+| 5 | DEV slider toggle off | ⚠️ Non applicabile (DEV slider è render incondizionato in dev mode, non controlla via `simulatedNow`). Production-like residual gap accettato per documentazione. |
+
+**Trade-off accettati:**
+- Build production senza DEV slider avrà header più corto (probabile <149px) → gap residuo visibile sotto header. Documentato come trade-off pre-§6.96 identico, gap cosmetico minore del bug pre-fix.
+- Reflow header futuro (es. aggiunta toolbar, modifiche layout 8e+) richiederà ricalibrazione manuale del numero. Nessun ResizeObserver = nessuna auto-correzione.
+
+**Lezione operativa.** Il vincolo §11 "no terzo tentativo per regressioni a bassa priorità" ha protetto efficacemente da debito tecnico ulteriore. Pattern di chiusura: documentare la scelta statica con riferimenti completi alle 2 entry storiche (§6.96 originale + §6.107 rollback) per tracciabilità.
+
+**Classificazione.** Layout polish, scelta pragmatica post-rollback, chiusura definitiva entry storica.
+
+**Commit.** `0283567` su branch `step-8`.
+
+---
+
+## 6.111 — CP2 8d-C: §6.109 h2 falsificata empiricamente, hard-defer 8d-D
+
+**Sessione:** 8d-C (25 aprile 2026 sera, CP2).
+
+**Stato:** APERTA, hard-defer 8d-D.
+
+**Contesto.** AMB-8d-C.B prescriveva diagnosi A/B controllata in browser per testare h2 (`<span>` wrapper §6.86.2 interferisce con focus-trap library `tabbable` list). Eseguita senza modificare file su disco, con DOM patch live via DevTools Console.
+
+**Procedura A/B (CP2.2).**
+
+1. **Punto A (baseline):** in `/config/profili`, tap profilo non-attivo → tap "Elimina" → ConfirmModal apre → tap "Annulla" → check `document.activeElement`. Esito: `{tag: 'INPUT', id: 'profilo-nome', text: null}`. Bug §6.109 riprodotto. Confermato 2 volte di seguito (deterministico).
+
+2. **Punto B (span rimosso):** drawer aperto, esecuzione DOM patch:
+   ```js
+   const target = [...document.querySelectorAll('button')].filter(b => b.textContent.trim() === 'Elimina').pop();
+   const span = target.parentElement; // <span title=...>
+   span.parentElement.insertBefore(target, span);
+   span.remove();
+   ```
+   Output: `OK button moved out of span; new parent: DIV.flex gap-2`. Stesso scenario tap Elimina → tap Annulla → check `activeElement`. Esito: `{tag: 'INPUT', id: 'profilo-nome', text: null}` — **focus ancora errato**.
+
+**Conclusione.** **h2 FALSIFICATA.** Lo `<span>` wrapper §6.86.2 NON è la root cause. Restano:
+
+- **h1 (drawer focus-trap re-imprigiona).** Pattern stack di trap nidificati che `focus-trap-react` non gestisce automaticamente. Quando ConfirmModal teardown rilascia il suo trap, il drawer-level trap ri-attiva e re-imprigiona al primo tabbable interno (`<input id="profilo-nome">`).
+- **h3 (mouse-no-focus + drawer trap intercept).** Safari/macOS mouse click su button non trasferisce focus; `triggerRef.current` punta al button corretto, ma drawer trap intercetta il `focus()` programmatico e lo redirige.
+
+Entrambe richiedono refactor `useModalA11y` con `pause`/`resume` esplicito sul drawer trap durante modal lifecycle, oppure wrapper `requestAnimationFrame` per outlast il re-grab del drawer trap. Scope dedicato 8d-D (sessione investigation + impl ad hoc).
+
+**Asimmetria FarmaciTab vs ProfiliTab.** FarmaciTab (CP2 8d-B) funziona correttamente con stesso pattern `useModalA11y` + `triggerRef`. Differenza non più attribuibile allo span (h2 falsa). Possibile differenza: ordine di mount/unmount dei drawer trap, o numero di tabbable interni del drawer (FarmaciTab drawer ha più campi tra cui il button Elimina è "centrale", ProfiliTab drawer ha pochi campi e `profilo-nome` è il primo tabbable). Da investigare in 8d-D.
+
+**Falso negativo regression guard.** I test guard CP2 8d-B (`(c) Escape su ConfirmModal delete restituisce focus al button Elimina`) sono verdi sia per FarmaciTab che ProfiliTab in jsdom, ma in browser real solo FarmaciTab funziona. jsdom + `focus-trap` library con `displayCheck: 'none'` non riproduce il browser real cross-trap interaction. Lezione: i guard a11y in jsdom sono necessari ma non sufficienti — CP browser obbligatorio per validate focus restore.
+
+**Stato pratico ProfiliTab.** Focus va a target prevedibile (`<input id="profilo-nome">`, primo tabbable del drawer) invece che button Elimina atteso. Non blocker funzionale (delete funziona, modal chiude); regressione a11y minore (focus visibile su elemento diverso da quello atteso).
+
+**Carryforward 8d-D scope:**
+
+1. **Investigation strumentata** in browser con DevTools logging multi-frame: capture `document.activeElement` a ogni transition (pre-modal-open, post-modal-mount, pre-dismiss, post-trap-deactivate, +1 frame, +2 frame, +5 frame).
+2. **Test mirato h1 vs h3:** disabilitare drawer trap temporaneamente (rimozione `useModalA11y` da ProfiliTab drawer) — se focus va corretto, h1 confermato; se ancora errato, h3 confermato.
+3. **Decisione fix:** (a) `requestAnimationFrame` in `useModalA11y.onDeactivate` (1-2 righe, hack tattico, retrocompatibile); (b) refactor con stack `pause`/`resume` (architettonicamente corretto, scope sessione dedicato).
+4. **Estensione test guard:** `waitFor` multi-tick per catturare il pattern in jsdom anche se attualmente passa per ragione sbagliata.
+
+**Classificazione.** Tecnico (a11y), hard-defer 8d-D, priorità media.
+
+**Δ codice / Δ commit:** zero (diagnosi browser-only).
+
+---
+
+## 6.112 — CP3 8d-C: lift `navInactive` token a soglia AA-ui (chiude §6.108)
+
+**Sessione:** 8d-C (25 aprile 2026 sera, CP3).
+
+**Stato:** ✅ **CHIUSA**. §6.108 chiusa contestualmente.
+
+**Contesto.** §6.108 (scope creep §6.81 a NavBar bottom) aveva proposto 3 opzioni: (a) sostituire `navInactive` con `subTabInactive`, (b) lift `navInactive` valori, (c) refactor token unificato. AMB-8d-C.C ha ratificato (b) — divergente dalla raccomandazione provvisoria (a) del §11 v2.5.34 — per preservare gerarchia visiva semantica (NavBar bottom = livello primario con icon prominent + label helper, ConfigTabBar sub-tab = livello secondario label-only).
+
+**Calcolo contrast WCAG.** Eseguito in-session via Python (`relative luminance` formula, sRGB → linear). Risultati:
+
+| Ruolo | Light | Light ratio vs `#FAFAF7` | Dark | Dark ratio vs `#15141A` |
+|---|---|---|---|---|
+| `navActive` (riferimento active) | `#2563EB` | 4.94:1 ✅ | `#60A5FA` | 7.20:1 ✅ |
+| `subTabInactive` (8d-B §6.81, ConfigTabBar) | `#6B6469` | 5.50:1 ✅ | `#8B8893` | 5.27:1 ✅ |
+| `navInactive` PRE-fix | `#A8A29E` | **2.41:1 ❌** | `#4A4854` | **2.05:1 ❌** |
+| **`navInactive` POST-fix** | **`#888286`** | **3.60:1 ✅** | **`#73686D`** | **3.43:1 ✅** |
+
+**Gerarchia preservata:** `navActive > subTabInactive > navInactive > btnDisabled`. `subTabInactive` resta più leggibile (sub-tab in livello secondario "labels-only"); `navInactive` è weak-helper (NavBar bottom con icon dominante) ma sopra soglia AA-ui 3:1.
+
+**Implementazione.** 1 file (`src/utils/theme.js`), 9 ins / 1 del:
+
+```js
+// 8d-C (§6.112): lift navInactive contrast da sub-AA-ui a >=3:1.
+// Originale 2.05:1 (dark) / 2.41:1 (light) vs headerBg failava AA-ui 3:1.
+// Lift a 3.43:1 (dark) / 3.60:1 (light): preserva pattern weak-helper
+// iOS-like (icon prominent, label helper) ma garantisce leggibilita
+// minima. Resta sotto subTabInactive (5.27/5.50) per gerarchia visiva
+// ConfigTabBar > NavBar bottom.
+//   light #888286 -> 3.60:1 vs #FAFAF7
+//   dark  #73686D -> 3.43:1 vs #15141A
+navInactive: dk ? '#73686D' : '#888286',
+```
+
+**Validazione CP3.4 browser (4 punti):**
+
+| Punto | Scope | Esito |
+|-------|-------|-------|
+| 1 | Leggibilità NavBar bottom dark mode | ✅ Tab inattivi chiaramente leggibili (vs "fantasma" pre-fix) |
+| 2 | Leggibilità NavBar bottom light mode | ✅ Tab inattivi chiaramente leggibili |
+| 3 | Gerarchia attivo > inattivo preservata | ✅ Tab attivo (icona blu `navActive`) resta visivamente dominante |
+| Bonus | Sub-tab Config > NavBar inactive (gerarchia secondaria) | ✅ Sub-tab `/config/profili` più leggibili dei NavBar inactive (subTab 5.27-5.50 > navInactive 3.43-3.60) |
+
+**Razionale divergenza dal §11 v2.5.34** (che raccomandava provvisoriamente opzione a):
+- (a) avrebbe collassato il pattern weak-helper deliberato di NavBar bottom (icon prominent + label helper) appiattendo NavBar e ConfigTabBar a stessa leggibilità.
+- (b) preserva differenziazione semantica: NavBar bottom resta "weak helper minimo AA" (3.5:1) vs ConfigTabBar "labels-only" (5.5:1). Roberto aveva contestato la non-leggibilità non l'asimmetria.
+- (c) refactor backward-incompatible scope sessione dedicata, non giustificato per problema risolto da 2-line lift.
+
+**Classificazione.** Design system / a11y, fix definitivo, chiusura entry storica.
+
+**Commit.** `3406e33` su branch `step-8`.
+
+---
+
+## 6.113 — CP4 8d-C: `__pt.wipe()` safety net (chiude §6.85 archiviazione)
+
+**Sessione:** 8d-C (25 aprile 2026 sera, CP4).
+
+**Stato:** ✅ **CHIUSA con archiviazione**. §6.85 chiusa contestualmente come "anomalia non riprodotta in 30min, root cause plausibile bloccata da safety net, terzo timebox scaduto".
+
+**Contesto.** §6.85 (anomalia `nome_utente='\'\''` osservata in 8a CP browser 4→5) era stata timeboxed 2 volte senza riproduzione. AMB-8d-C.D prescriveva 3° timebox 30min con strumentazione + safety net. Vincolo §11 v2.5.34: "il terzo timebox è l'ultimo — chiusura senza fix è ammissibile per item con confidence bassa cronica".
+
+**Diagnosi-first paga (revisione AMB-D in-session).** Skip strumentazione in favore di diagnosi grep-based:
+
+- `grep "__pt.wipe\|wipeDatabase"` ha rivelato che `__pt.wipe = wipeDatabase` è esposto in `src/data/devCheck.js:21` come Console-accessible **senza confirm prompt**.
+- Banner `devCheck.js:170` stampa esplicitamente in Console: `Try: __pt.counts() / __pt.inspect() / __pt.testRepo() / __pt.wipe()` — invito attivo a invocare `__pt.wipe()`.
+- `wipeDatabase` fa `await db.delete()` totale; commento nel codice esplicita: "Caller must reload the page afterwards so Dexie re-opens with a fresh schema and re-runs the seed". **Senza reload**, Dexie continua a operare su DB cancellato (comportamento indefinito).
+
+**Ricostruzione plausibile incident.**
+
+1. Roberto digita Nome `'Roberto test'` → `setSetting('nome_utente', 'Roberto test')` → IDB write OK (Punto 4 verified).
+2. Tra Punto 4 e Punto 5, evocazione accidentale di `__pt.wipe()` da Console (es. esplorazione dev helpers) → `db.delete()` totale, no reload → Dexie disallineato.
+3. Operazioni successive (toggle tema rapido = ipotesi 2 §6.85 originale) scrivono su DB ricreato silenziosamente da Dexie con schema nuovo. `tema='light'` viene re-scritto e sopravvive (ipotesi 2 spiegata).
+4. `nome_utente=''` (mai più scritto post-wipe; default seed è stringa vuota se ricreato).
+
+Match perfetto con osservazione §6.85: tema sopravvissuto + nome azzerato. Plausibilità altissima.
+
+**Fix (revisione AMB-D scope-extended in-session).** Wrap `__pt.wipe` con confirm prompt + auto-reload post-wipe:
+
+```js
+wipe: async () => {
+  const ok = window.confirm(
+    '__pt.wipe() drops the entire IndexedDB. Confirm?\n\n' +
+    'The page will reload automatically after wipe.'
+  );
+  if (!ok) {
+    console.log('[__pt.wipe] cancelled');
+    return;
+  }
+  await wipeDatabase();
+  console.log('[__pt.wipe] DONE. Reloading...');
+  window.location.reload();
+},
+```
+
+Migliorie rispetto alla versione pre-fix:
+1. Confirm obbligatorio prima del drop totale (safety net contro click accidentali in Console DevTools autocompletion).
+2. Reload automatico post-wipe (rispetta esplicitamente il vincolo del commento `wipeDatabase`, evita stato disallineato Dexie).
+
+**Validazione CP4.4 smoke (4 punti):**
+
+| Punto | Scope | Esito |
+|-------|-------|-------|
+| 1 | `__pt.wipe()` apre browser confirm | ✅ Popup appare con copy corretta |
+| 2 | Click "Annulla" non distrugge DB | ✅ `[__pt.wipe] cancelled` in Console, app continua |
+| 3 | Console log su cancel | ✅ Messaggio visibile |
+| 4 | Pagina NON ricarica su cancel | ✅ App stabile |
+
+**Implementazione.** 1 file (`src/data/devCheck.js`), 22 ins / 1 del.
+
+**Skip strumentazione (revisione AMB-D in-session).** La strumentazione (console.log temporaneo in reducer + repo) era prescritta per identificare il path di scrittura su `nome_utente`. Diagnosi grep-based ha reso l'investigation strumentata ridondante: il path probabile (`__pt.wipe()` accidentale + toggle tema) è ricostruibile dalla sola lettura del codice. Tempo risparmiato: ~25min (timebox 30min) reinvestito in CP5 §6.84 + CP6 bump.
+
+**Lezione operativa.** "Diagnosi-first paga" replica del pattern §6.105 (Sessione 8d-B CP2): leggere il codice prima di assumere bug runtime + strumentare. Per anomalie a confidence bassa cronica, il grep mirato batte la strumentazione live in costo/beneficio.
+
+**Classificazione.** Sicurezza dev tools / safety net, chiusura archiviazione entry storica.
+
+**Commit.** `af147e0` su branch `step-8`.
+
+---
+
+## 6.114 — CP5 8d-C: `onConsoleLog` filter vitest (chiude §6.84)
+
+**Sessione:** 8d-C (25 aprile 2026 sera, CP5).
+
+**Stato:** ✅ **CHIUSA**. §6.84 chiusa contestualmente (parte test router, completa la chiusura insieme a §6.100 app router).
+
+**Contesto.** §6.84 era parzialmente fixata in 8d-A CP1 (app router via `src/main.jsx` future flags) ma con scope ridotto: estensione al test router (`MemoryRouter` in `renderHelpers.jsx:153`) aveva causato hang deterministico full-suite >26min in 8d-A — rollback documentato in §6.100. I 4 warning React Router persistevano in stderr di ogni `npm test -- --run`.
+
+**Opzioni da §6.100:** (a) bisezione test colpevole, (b) `act()` wrapper attorno MemoryRouter, (c) `onConsoleLog` filter in vitest config, (d) upgrade `react-router-dom` 7.x. AMB-8d-C.E ha ratificato **(c)** come workaround non-invasivo, immediato, future-proof.
+
+**Implementazione.** 1 file (`vitest.config.js`), 16 ins:
+
+```js
+test: {
+  // ...esistente...
+  // 8d-C (§6.114, chiude §6.84): sopprime i 2 warning React Router
+  // future flag emessi dal MemoryRouter test (renderHelpers.jsx).
+  // L'estensione delle future flag al test router in 8d-A (sed su
+  // renderHelpers.jsx:153) causava hang deterministico >26min full
+  // suite (§6.100). Filter onConsoleLog e' workaround non-invasivo:
+  // i warning erano puro rumore stderr, nessuna info diagnostica
+  // utile. No-op naturale al futuro upgrade react-router-dom 7.x.
+  onConsoleLog(log, type) {
+    if (
+      type === 'stderr' &&
+      log.includes('React Router Future Flag Warning')
+    ) {
+      return false;
+    }
+    // undefined = default emit (no override)
+  },
+},
+```
+
+**Validazione CP5.3:**
+
+```
+$ npm test -- --run 2>&1 | grep -c 'React Router Future Flag Warning'
+0
+$ npm test -- --run | tail
+Test Files  31 passed (31)
+     Tests  313 passed (313)
+  Duration  6.29s
+```
+
+- Warning count: 4 → **0** (target raggiunto).
+- Test count: 313/313 invariato.
+- Durata: 6.29s (vs pre-fix ~6.19s, no overhead misurabile).
+
+**Razionale opzione (c).**
+
+- **Zero rischio hang** (vs (b) `act()` wrapper che avrebbe richiesto modifiche al test router stesso, riproducendo il rischio §6.100).
+- **No-op naturale al futuro upgrade RR7** (quando i future flag saranno default in `react-router-dom` 7.x, il filter non matcherà più nulla; nessuna rimozione necessaria).
+- **Costo zero diagnostic** (i warning erano rumore stderr senza info utile; il loro scopo è "guidare il developer al opt-in", non diagnostic test).
+
+**Alternative scartate:**
+- (a) **Bisezione hang.** Costo alto (~1h+) per identificare il test file colpevole; benefit basso (anche identificandolo, fix richiederebbe `act()` o future flag custom).
+- (b) **`act()` wrapper.** Rischio di reintrodurre hang §6.100; ortogonale al problema reale.
+- (d) **Upgrade RR7.** Fuori scope sessione (semver bump app-wide).
+
+**Classificazione.** Test infra / DX, fix workaround future-proof, chiusura entry storica.
+
+**Commit.** `db30fae` su branch `step-8`.
+
+---
+
 ## 7. Roadmap Fase 2 — avanzamento
 
 | Step | Contenuto | Stato | Note |
@@ -2484,7 +2771,8 @@ Raccomandazione provvisoria: (a) per minimizzare cambi al modello tokens. Decisi
 | **8d-A** (parziale) | Tier A+B pattern-based. **CP1-CP3 completati** (v2.5.31): §6.84 Router future flags app-only (§6.100), §6.94 noop bag +5 (AMB-8d.C), §6.97 DoseCard regression guard riscoped (§6.101 + chiusura §6.97). **CP4-CP7 deferred** a 8d-A-continue | ⚠️ **Parziale** | 306 → 307 test (+1 da CP3). 3 commit Mac-side: `2d79055`, `98cb25f`, `ace1ed2`. Bump v2.5.30 → v2.5.31 |
 | **8d-A-continue** (parziale) | Tier A+B CP residui pattern-based. **CP4-CP6 completati** (v2.5.32): §6.98 FarmacoDrawer UnsavedChanges guard, §6.89+§6.92 ProfiliTab retrofit ConfirmModal shared + a11y (auto-risolta), §6.95 updateProfilo proactive `rebuildPlanFromFresh` (§6.102 generalizzazione helper). **CP7 deferred** per blocker §6.104 (routing loop pre-esistente CP1 §6.84 interaction) | ⚠️ **Parziale** | 307 → 310 test (+3). 3 commit Mac-side: `30b01ce`, `f316e6c`, `264ab1c`. 3 nuove deviazioni: §6.102/§6.103/§6.104. Bump v2.5.31 → v2.5.32 |
 | **8d-A-continue-2** | Analisi-first §6.104 ConfigView routing fix (path absolute, AMB-A) + audit esaustivo (AMB-B) + browser check 5/5 (Punto 3 skip §6.106) + CP7 bump v2.5.32 → v2.5.33 | ✅ **Completo** | 310 → 310 test invariati (AMB-C no test in-session). 1 commit Mac-side: `67937e5` CP1 §6.104. 2 nuove deviazioni: §6.105 (ConfirmModal focus-restore ProfiliTab → 8d-B tier C), §6.106 (Punto 3 skip ridondanza). Audit nota retroattiva in §6.104 (pattern grep limit data-driven). Bump v2.5.32 → v2.5.33 |
-| **8d-B** | Tier C design-decision + investigation: §6.81 ConfigTabBar dark token, §6.96 sticky separator CSS var+ResizeObserver (AMB-8d.B), §6.85 `nome_utente` investigation con strumentazione logging (AMB-8d.E) | ⏳ **Pianificata** | Analisi-first separata richiesta. Target test TBD (baseline post-8d-A) |
+| **8d-B** | Tier C design-decision + investigation: §6.81 ConfigTabBar dark token, §6.96 sticky separator CSS var+ResizeObserver (AMB-8d.B), §6.85 `nome_utente` investigation con strumentazione logging (AMB-8d.E) | ⚠️ **Parziale** | CP1 §6.96 ROLLED BACK in-session (scroll lock + CSS var mai settata → §6.107). CP2 §6.105 fix +2, CP3 §6.103 retrofit +1, CP4 §6.81 fix 0 → 313/313 (+3). 1 commit `eac185a`. 3 nuove deviazioni §6.107/108/109 deferred a 8d-C. Bump v2.5.33 → v2.5.34 |
+| **8d-C** | Carryforward residuo 8d-B + 8d originale: §6.107 sticky separator re-investigation, §6.109 ProfiliTab focus restore, §6.108 NavBar bottom contrast, §6.85 nome_utente 3° timebox, §6.84 test router warning | ✅ **Completo** | 313 → 313 test invariati (Δ=0, target AMB-K' centrato). 4 commit Mac-side: `0283567` CP1 §6.110, `3406e33` CP3 §6.112, `af147e0` CP4 §6.113, `db30fae` CP5 §6.114. CP2 §6.111 zero-commit (h2 falsificata, hard-defer 8d-D). 5 nuove §6.110-§6.114, 4 chiuse (§6.96/§6.108/§6.85/§6.84). Bump v2.5.34 → v2.5.35 |
 | 9 | Notifiche locali (Notification API + scheduling) + **fix dominio §6.18 cross-midnight** (§6.26) | | |
 | 10 | Service worker attivo + manifest definitivo + icone | | |
 | 11 | Polish finale, QA, accessibilità estesa, gestione errori | | |
@@ -2600,83 +2888,71 @@ Chiarimenti risolti pre-Step 4b (AMB-1/2/3):
 ---
 
 
-## 11. Prossimo step — Sessione 8d-C — analisi-first obbligatoria
+## 11. Prossimo step — Sessione 8d-D OPPURE Step 9 — analisi-first
 
-**Stato baseline:** v2.5.34 (post-8d-B impl parziale). 313/313 test su 31 files. Commit top atteso `<hash>` Changelog v2.5.34, parent `eac185a` Sessione 8d-B impl parziale (CP2+CP3+CP4, CP1 rolled back).
+**Stato baseline:** v2.5.35 (post-8d-C impl). 313/313 test su 31 files. Commit top atteso `<hash>` Changelog v2.5.35, parent `db30fae` Sessione 8d-C CP5 §6.114.
 
-**Modalità:** **analisi-first obbligata**. NESSUN codice prima della Fase 2 (ratifica AMB-8d-C.A÷E) come in 8d-A, 8d-B.
+**Decisione apertura prossima sessione:** Roberto deve scegliere tra 2 alternative basate sul carryforward residuo di 8d:
 
-### Scope sessione
+### Opzione (A) — Sessione 8d-D analisi-first dedicata a §6.111
 
-5 candidate item, **carryforward da 8d-B + 8d originali**:
+**Scope unico:** investigation strumentata + fix `useModalA11y` per ProfiliTab focus restore (h1 drawer-trap re-grab vs h3 mouse-no-focus) post falsification h2 in 8d-C CP2. Item carryforward §6.111 (= §6.109 unresolved).
 
-| Pos | §6.NN | Tipo | Priorità | Costo stimato |
-|-----|-------|------|----------|---------------|
-| 1 | **§6.107** | re-investigation §6.96 (CP1 8d-B rolled back) | alta — regressione scroll attiva | 1-2h |
-| 2 | **§6.109** | ProfiliTab focus restore (CP2 8d-B parziale) | media | 30-90 min con esito incerto |
-| 3 | **§6.108** | scope-extension §6.81 a NavBar bottom | media | 30 min |
-| 4 | **§6.85** | investigation `nome_utente` azzerato | bassa | timeboxed 1h |
-| 5 | **§6.84** | test router future flags retrofit | bassa | timeboxed 45 min |
+**Costo stimato:** 1-2h. Confidence media (h1 più probabile di h3 a priori, ma fix richiede refactor `pause`/`resume` o `requestAnimationFrame` workaround).
 
-Densità sessione attesa: **medio-alta**, possibile split 8d-C / 8d-D se Fase 2 ratifica scope ≥4 item con confidence bassa.
+**Pro:** chiude completamente il debito 8d residuo prima di passare a Step 9.
 
-### CP0 sanity-light (3 gate — zero codice)
+**Contro:** è polish a11y minore (focus va comunque a target prevedibile, non blocker funzionale); proseguire investigation a11y prima di Step 9 (notifiche) ritarda funzionalità più visibile per utente.
 
-1. `git status`: working tree pulito su branch `step-8`. Ultimo commit atteso: `<hash>` Changelog v2.5.34 oppure `eac185a` Sessione 8d-B impl parziale.
-2. Full test suite: `npm test -- --run` → atteso **313/313 su 31 test files**. 4 righe warning React Router su stderr persistono (§6.84/§6.100 deferred — candidate fix in questa sessione).
-3. Verifica commit 8d-B presente: `git log --oneline | grep "8d-B impl parziale"` → atteso 1 match (`eac185a`).
+### Opzione (B) — Step 9 analisi-first (notifiche + fix dominio §6.18 cross-midnight)
 
-### Struttura sessione (analisi-first)
+**Scope:** Step 9 della roadmap §7 — implementazione Notification API + scheduling + fix dominio §6.18 cross-midnight (§6.26). §6.111 lasciato come pending soft-defer indefinito.
 
-**Fase 1 — Analisi item-per-item.** Per ciascuno dei 5 candidate, produci:
+**Costo stimato:** 4-8h split in più sotto-sessioni (analisi-first + impl + browser test).
 
-- Recap §6.NN dal Changelog (per §6.107 e §6.109 leggere le sezioni dedicate in §6 con ipotesi residue).
-- Trade-off scelte tecniche.
-- Stima costo (file toccati, test attesi, rischio regressione).
-- AMB-8d-C.X dedicata (X = lettera per item) con scelta raccomandata.
+**Pro:** funzionalità prioritaria utente (notifiche promemoria), fix dominio importante (§6.26 era documentato come consumer naturale di Step 9 dalla 7a).
 
-**Fase 2 — Triage AMB.** Ratifica AMB-8d-C.X + decisione split scope sessione (atomic vs parziale). Particolare attenzione a §6.107: se ipotesi A (`useLayoutEffect` con `dep=[state.status]`) non risolve il scroll lock, considerare hard-defer a 8d-D con scope investigativo dedicato.
+**Contro:** §6.111 resta aperto a tempo indefinito; eventuale regressione futura su a11y modal ProfiliTab non avrà fix mirato pronto.
 
-**Fase 3 — Implementazione (CP1÷CPn).** Solo dopo Fase 2 completata. Ordine consigliato per dipendenze + rischio:
+### Raccomandazione
 
-1. **§6.107** prima (priorità alta, regressione attiva).
-2. **§6.109** secondo (può essere parallela diagnostica con §6.107 se diverso CP).
-3. **§6.108** terzo (impl pura post-AMB).
-4. **§6.85** quarto (investigation timeboxed).
-5. **§6.84** ultimo (più rischioso per hang full suite).
+**Opzione (B) Step 9 analisi-first.** Razionale:
+1. §6.111 è non-blocker e prevedibile (focus va a primo tabbable input, non a body random).
+2. Step 9 sblocca valore utente concreto (notifiche).
+3. §6.26/§6.18 cross-midnight è fix dominio importante che attendeva Step 9 come consumer naturale.
+4. §6.111 rimanibile ad apertura Step 10/11 (polish finale) come item investigation isolata, senza perdita di contesto (§6.111 documenta tutto il contesto necessario).
 
-**Fase 4 — CP browser ridotto** OBBLIGATORIO interleaved post-CP1 §6.107 e post-CP2 §6.109 — non rinviare a fine sessione, dato il track record di regressioni invisibili in jsdom.
+### CP0 sanity-light (3 gate, applicabile a entrambe le opzioni)
 
-**Fase 5 — Bump Changelog v2.5.34 → v2.5.35** + nuova §22.17 + §11 sostituita con stub successivo (Sessione 8d-D se carryforward residuo, oppure Step 9 se 8d completo).
+1. `git status`: working tree pulito su branch `step-8`. Ultimo commit atteso `<hash>` Changelog v2.5.35 oppure `db30fae` Sessione 8d-C CP5 §6.114.
+2. Full test suite: `npm test -- --run` → atteso **313/313 su 31 test files**, **0 warning React Router** (post §6.114).
+3. Verifica commit 8d-C: `git log --oneline | grep "8d-C"` → atteso 4 match (CP1 `0283567`, CP3 `3406e33`, CP4 `af147e0`, CP5 `db30fae`).
 
-### Vincoli
+### Carryforward residuo dopo 8d-C
 
-- **§6.107 priority gate**: se la re-investigation §6.96 fallisce di nuovo (rollback secondo + non-deterministico), chiudere §6.96 come "deferred to fase 9+ con calibrazione statica" — NON tentare un terzo fix in 8d-D. Il bug è low-priority (gap cosmetico 31px), non vale il debito tecnico accumulato.
-- **§6.85 e §6.84 hard timebox.** Se il timebox scade senza convergenza, archiviare con esito documentato. Già stati timeboxed in 8d originale e 8d-B; il terzo timebox è l'ultimo — chiusura senza fix è ammissibile per item con confidence bassa cronica.
-- **No CP §6.96 senza CP browser interleaved.** Il CP1 di 8d-B è chiuso verde unit test ma rotto in browser; questa volta verifica browser PRIMA di considerare CP1 chiuso.
-- **Pattern invariance.** Tutto come 8d-A / 8d-B. Niente §6.NN non tracciate per micro-decisioni self-evident.
-- Rispetto regole bash zsh interattiva (single-quoted echo, no apostrofi italiani) per tutti i comandi operativi.
+**Pending (per qualsiasi opzione scelta):**
+- **§6.111** (= §6.109 unresolved). h2 falsificata, h1/h3 da investigare. Hard-defer 8d-D OPPURE soft-defer Step 10/11.
 
-### Checklist AMB da rispettare
+**Chiusi in 8d-C:** §6.96, §6.108, §6.85 (archiviazione), §6.84 (test router parte).
 
-- **AMB-8d.A** (§6.99 split 8d-A + 8d-B): superata e estesa con 8d-C; tutti i 5 item carryforward sono ratificabili in nuove AMB-8d-C.X.
-- **AMB-8d.B** (§6.96 approach CSS var + ResizeObserver): rolled back in 8d-B CP1; **da rivisitare** con eventuale nuova AMB-8d-C.A se l'approccio resta il preferito o cambia in §6.107.
-- **AMB-8d.E** (§6.85 investigation scope): timeboxed terzo round, nuova AMB-8d-C.D per definire timebox e criteri di archiviazione.
+**Carryforward Step 9 (da §7 roadmap):**
+- §6.18 cross-midnight (workaround §6.26 in Step 7, fix dominio in Step 9 come consumer naturale).
 
-### Contesto sessioni precedenti
+### Vincoli (qualsiasi opzione)
 
-Commit code-side già presenti sul branch `step-8`:
+- Pattern invariance metodologico Fase 2 (analisi-first → AMB ratificate → CP impl → CP browser).
+- Rispetto regole bash zsh interattiva (single-quoted echo, no apostrofi italiani).
+- Drift §6.69 procedurale: front-matter version + entry §1 sempre in lockstep.
+- Drift §6.69 pregresso v2.5.34 (entry §1 mancante) NON retrocorretto in 8d-C per principio fatto-storico immutabile (analogo §6.71 / v2.5.24); Roberto può recuperarlo manualmente in apertura Sessione 9 se ritiene utile per pulizia archivio.
 
-- `2d79055` 8d-A CP1 §6.84 (Router future flags app-only)
-- `98cb25f` 8d-A CP2 §6.94 (defaultNoopActions completamento)
-- `ace1ed2` 8d-A CP3 §6.97 (DoseCard regression guard, §6.97 chiusa)
-- `30b01ce` 8d-A-continue CP4 §6.98 (FarmacoDrawer UnsavedChanges guard)
-- `f316e6c` 8d-A-continue CP5 §6.89+§6.92 (ProfiliTab retrofit ConfirmModal shared)
-- `264ab1c` 8d-A-continue CP6 §6.95 (updateProfilo proactive rebuildPlanFromFresh)
-- `67937e5` 8d-A-continue-2 CP1 §6.104 (path absolute Navigate/NavLink dentro /config/*)
-- `eac185a` 8d-B impl parziale (CP2+CP3+CP4 §6.105+§6.103+§6.81, CP1 §6.96 rolled back)
+### Apertura sessione
 
-Non rifare questi CP. Baseline test post-Sessione 8d-B = 313/313.
+Una volta scelta opzione (A) o (B), aprire nuova conversazione Claude con one-liner:
+
+- (A): `Apri Sessione 8d-D analisi-first per §6.111 (carryforward 8d-C).`
+- (B): `Apri Step 9 analisi-first (notifiche + fix dominio §6.18 cross-midnight).`
+
+Il prompt naturale (non one-liner §11 esecutivo) serve perché entrambe le opzioni sono analisi-first: produrranno AMB ratificate prima di scrivere codice. Il §11 esecutivo verrà scritto al chiusura analisi-first.
 
 
 ## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3 + 8-pre + 8a + 8b + 8c-parz + 8c-2
@@ -5109,3 +5385,140 @@ Target sessione: 310 → 313 (+3). Raggiunto. Commit code-side: 1 (CP2+CP3+CP4 a
 
 5. Aprire **Sessione 8d-C** (nuova conversazione Claude) con one-liner:
    `Esegui il prompt al §11 del Changelog (Sessione 8d-C).`
+
+## 22.17 Stato post-Sessione 8d-C impl
+
+**Data:** 25 aprile 2026 (sera).
+**Baseline test pre-sessione:** 313/313 su 31 test files (§22.16 post-8d-B impl parziale).
+**Baseline test post-sessione:** **313/313 su 31 test files** (Δ=0, target conservativo AMB-K' "313 ±2" centrato esatto).
+**Bump:** v2.5.34 → v2.5.35.
+**Esito:** ✅ **Completo** (5 CP eseguiti: CP1+CP3+CP4+CP5 chiusi con fix, CP2 archiviato post-diagnosi A/B).
+
+### Scope consegnato
+
+Sessione 8d-C impl aperta come one-liner `Esegui il prompt al §11 del Changelog (Sessione 8d-C)` consumando prompt §11 v2.5.34. Eseguita Fase 1 analisi item-per-item su 5 candidate, ratifica AMB-8d-C.A÷E in un singolo turno ("decidi tu" in Fase 2), Fase 3 impl CP1-CP5, Fase 4 CP browser interleaved post-CP1/CP3/CP4, Fase 5 bump.
+
+### Esiti CP0
+
+| Gate | Scope | Esito |
+|------|-------|-------|
+| **Gate 1** | `git status` + `git log -3` | ✅ Tree clean su `step-8`. Top: `193b727` Changelog v2.5.34, parent `eac185a`. |
+| **Gate 2** | `npm test -- --run` | ✅ **313/313 su 31 test files** in 6.19s. 4 warning React Router stderr persistenti (target CP5 §6.84). |
+| **Gate 3** | sanity commit 8d-B impl parziale | ✅ 1 match `eac185a`. |
+
+### AMB-8d-C.A÷E ratificate
+
+| ID | Decisione | Razionale |
+|----|-----------|-----------|
+| **A** | §6.107 calibrazione statica `top-[149px]` (chiude §6.96) | Vincolo §11: no terzo tentativo dinamico per regressione bassa priorità |
+| **B** | §6.109 diagnosi A/B + fix `requestAnimationFrame` condizionale | Test empirico h2 prima di refactor `useModalA11y` |
+| **C** | §6.108 lift `navInactive` token (b vs raccomandazione provvisoria a §11) | Preserva pattern weak-helper iOS-like + risolve AA-ui |
+| **D** | §6.85 strumentazione 30min + safety net `__pt.wipe()` | Terzo timebox finale, archiviazione ammissibile |
+| **E** | §6.84 `onConsoleLog` filter vitest | Workaround zero-rischio vs §6.100 hang, future-proof |
+
+Decisione split: **sessione atomica 8d-C** (no split 8d-D upfront; §6.109 hard-defer 8d-D solo se h2 falsificata in CP2).
+
+### CP completati
+
+| CP | §6.NN | AMB | Δ test | Note |
+|----|-------|-----|--------|------|
+| **CP1** | §6.110 (chiude §6.96 e §6.107) | A | 0 | Calibrazione statica `top-[180px]` → `top-[149px]` in OggiView.jsx DATE SEPARATOR. CP browser 5/5 (P1 scroll OK, P2 header=149px, P3 gap=0px, P4 visibility OK, P5 N/A dev mode). 1 commit `0283567`. |
+| **CP2** | §6.111 (= §6.109 unresolved, hard-defer 8d-D) | B | 0 | Diagnosi A/B browser-only via DOM patch live. Punto A: bug riprodotto (`activeElement = INPUT id="profilo-nome"`). Punto B: span rimosso → focus ancora errato → **h2 falsificata**. h1 (drawer-trap re-grab) o h3 (mouse-no-focus) da investigare 8d-D. Zero modifiche file, zero commit. |
+| **CP3** | §6.112 (chiude §6.108) | C | 0 | Lift `navInactive` light `#A8A29E` → `#888286` (3.60:1) e dark `#4A4854` → `#73686D` (3.43:1). Calcolo WCAG inline (`Python relative luminance`). CP browser 4/4 (dark/light/gerarchia/bonus subTab). 1 commit `3406e33`. |
+| **CP4** | §6.113 (chiude §6.85 archiviazione) | D | 0 | Skip strumentazione (diagnosi grep convergente: `__pt.wipe = wipeDatabase` Console-accessible no confirm). Wrap `__pt.wipe` con `window.confirm` + auto-reload post-wipe in `devCheck.js`. Smoke 4/4. 1 commit `af147e0`. |
+| **CP5** | §6.114 (chiude §6.84) | E | 0 | `onConsoleLog` filter in `vitest.config.js` sopprime 4 warning RR future flag stderr → 0. 313/313 invariati 6.29s no overhead. 1 commit `db30fae`. |
+
+Target sessione: 313 → 313 (±2). Centrato.
+
+### CP browser interleaved
+
+Vincolo §11 v2.5.34 esplicito: "no CP §6.96 senza CP browser interleaved" + "track record 8d-B regressioni invisibili in jsdom". Eseguiti tutti i CP browser **prima** del commit del CP corrispondente:
+
+- **CP1.4** (post-§6.110): 5 punti, scroll OK + header=149 misurato + gap=0px + visibility OK + DEV slider toggle N/A.
+- **CP3.4** (post-§6.112): 4 punti, leggibilità dark + light + gerarchia + bonus subTab.
+- **CP4.4** (post-§6.113): 4 punti smoke confirm prompt.
+
+Pattern consolidato: il CP browser è blocker per il commit, non check post-hoc.
+
+### Deviazioni §6.NN aperte / consumate / chiuse
+
+**Nuove (5):**
+- **§6.110** — sticky separator calibrazione statica `top-[149px]` (CP1, chiude §6.96 e §6.107).
+- **§6.111** — h2 falsificata empiricamente per §6.109, hard-defer 8d-D investigation strumentata (CP2).
+- **§6.112** — lift `navInactive` token a soglia AA-ui (CP3, chiude §6.108).
+- **§6.113** — `__pt.wipe()` safety net + auto-reload (CP4, chiude §6.85 archiviazione).
+- **§6.114** — `onConsoleLog` filter vitest sopprime warning RR future flag (CP5, chiude §6.84 parte test router).
+
+**Chiuse:** §6.96, §6.107 (chiusa contestualmente in §6.110), §6.108, §6.85 (archiviazione), §6.84.
+
+**Consumate:** §6.109 → assorbita in §6.111 carryforward 8d-D.
+
+**Pending su 8d-D (se opzione A) OPPURE soft-defer Step 10/11 (se opzione B):**
+- **§6.111** = §6.109 unresolved. Investigation strumentata h1/h3.
+
+### Scoperte operative
+
+1. **Diagnosi-first paga, replay del pattern §6.105 (8d-B CP2).** §6.85 era stata timeboxed 2 volte senza riproduzione. AMB-8d-C.D prescriveva strumentazione 30min. Diagnosi grep-based ha rivelato root cause in <5min (`__pt.wipe = wipeDatabase` Console-accessible no confirm). Skip strumentazione + fix safety net diretto. Tempo risparmiato: ~25min reinvestito in CP5 + bump. **Lezione:** per anomalie a confidence bassa cronica, leggere il codice prima di assumere bug runtime + strumentare.
+
+2. **h2 falsification rapida via DOM patch live.** §6.109 aveva 3 hypothesis residue. AMB-8d-C.B prescriveva diagnosi A/B via `git stash`/branch temporaneo. Approccio alternativo browser-only via DOM patch (`span.parentElement.insertBefore(target, span); span.remove();`) ha falsificato h2 in <10min senza modifiche a file. **Lezione:** per test ipotesi DOM-related, DOM patch live è più veloce di branch + rebuild + retest.
+
+3. **Drift §6.69 pregresso v2.5.34.** L'entry "Changelog versione 2.5.34" è **assente** dall'elenco introduttivo §1 (front-matter dichiara v2.5.34 ma manca il bullet summary). Drift §6.69 non rilevato al bump 8d-B impl parziale. **Non retrocorretto in 8d-C** per principio fatto-storico immutabile (§6.71 / v2.5.24 analoghi). Gap visibile come traccia in §1 (jump da v2.5.33 a v2.5.35). Roberto può recuperarlo in apertura Sessione 9 se ritiene utile per pulizia archivio.
+
+4. **CP browser interleaved + vincolo §11 esplicito = regressione zero.** §6.107 (8d-B CP1) era 313/313 verde unit ma rotto in browser (scroll lock + var mai settata). CP1 8d-C ha rispettato vincolo §11 "verifica browser PRIMA del commit": il commit è avvenuto solo dopo CP1.4 5/5. Pattern di sicurezza confermato: per modifiche layout/scroll/sticky, CP browser PRE-commit obbligatorio.
+
+5. **Calcolo contrast WCAG inline via Python.** Per §6.112 (lift `navInactive`), il calcolo dei valori candidati e validazione contrast è stato eseguito in-session con script Python (`relative luminance` formula sRGB → linear). Pattern utile per future modifiche al theme: fornire i valori esatti con ratio numerico anziché stime visive. Lo script può essere conservato come utility in skill personale "WCAG contrast calc" per riuso.
+
+### File prodotti / modificati
+
+**Modificati (code) — committati:**
+
+- `src/components/oggi/OggiView.jsx` — `top-[180px]` → `top-[149px]` + commento §6.110 (CP1, commit `0283567`, 8 ins / 7 del).
+- `src/utils/theme.js` — `navInactive` light `#888286` + dark `#73686D` + commento §6.112 (CP3, commit `3406e33`, 9 ins / 1 del).
+- `src/data/devCheck.js` — wrap `__pt.wipe` con confirm + auto-reload + commento §6.113 (CP4, commit `af147e0`, 22 ins / 1 del).
+- `vitest.config.js` — `onConsoleLog` filter + commento §6.114 (CP5, commit `db30fae`, 16 ins).
+
+**Modificati (docs):**
+
+- `PharmaTimer_Changelog_Fase2.md` — v2.5.34 → **v2.5.35** (questo delivery).
+
+**Nuovi:** nessuno.
+
+### Limitazioni note
+
+1. **§6.110 trade-off statico.** Build production senza DEV slider avrà header più corto (probabile ~120-130px invece di 149) → gap residuo visibile. Documentato come acceptable in commento §6.110. Reflow header futuro (Step 8e+ o Step 11 polish) richiederà ricalibrazione manuale.
+
+2. **§6.111 ProfiliTab a11y minore.** Focus restore va a `<input id="profilo-nome">` invece che button Elimina atteso. Non blocker funzionale (delete completo, modal chiude). Investigation strumentata 8d-D (opzione A) o soft-defer Step 10/11 (opzione B).
+
+3. **§6.114 filter copre solo warning React Router future flag.** Future warning di altre librerie (es. React 18→19 deprecation) **non sono filtrati**. Pattern: aggiungere solo le condizioni richieste, evitare filter generic.
+
+### Azioni sul Mac post-Sessione 8d-C
+
+1. Stato git corrente: tree clean, top `db30fae` Sessione 8d-C CP5 §6.114 (parent: `af147e0` CP4 §6.113).
+
+2. **Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude.ai** con la versione **v2.5.35** (questo delivery).
+
+3. Commit Changelog separato (solo se il repo lo traccia — convenzione progetto: KB-only, repo tracks code only):
+   ```
+   echo 'Commit Changelog v2.5.35 (opzionale, dipende da convenzione progetto)'
+   git add PharmaTimer_Changelog_Fase2.md 2>/dev/null && git commit -m 'Changelog v2.5.35 (Sessione 8d-C impl)' || echo 'Changelog non tracciato in git, solo upload KB'
+   ```
+
+4. Verifica finale stato git:
+   ```
+   git --no-pager log --oneline -8
+   ```
+   Atteso top 8:
+   - `<hash>` Changelog v2.5.35 (Sessione 8d-C impl) — se tracked
+   - `db30fae` Sessione 8d-C CP5 §6.114
+   - `af147e0` Sessione 8d-C CP4 §6.113
+   - `3406e33` Sessione 8d-C CP3 §6.112
+   - `0283567` Sessione 8d-C CP1 §6.110
+   - `193b727` Changelog v2.5.34
+   - `eac185a` Sessione 8d-B impl parziale
+   - `67937e5` Sessione 8d-A-continue-2 §6.104
+
+5. **Decisione Roberto in apertura prossima sessione:** opzione (A) Sessione 8d-D analisi-first (§6.111) oppure (B) Step 9 analisi-first (notifiche + §6.18). Riferimento §11 v2.5.35 per dettagli + raccomandazione.
+
+6. Aprire prossima sessione (nuova conversazione Claude) con prompt naturale:
+   - (A): `Apri Sessione 8d-D analisi-first per §6.111 (carryforward 8d-C).`
+   - (B): `Apri Step 9 analisi-first (notifiche + fix dominio §6.18 cross-midnight).`
