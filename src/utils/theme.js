@@ -116,6 +116,16 @@ export function createThemeTokens(dark) {
     sliderFill: '#3B82F6',
     navActive: dk ? '#60A5FA' : '#2563EB',
     navInactive: dk ? '#4A4854' : '#A8A29E',
+    // 8d-B CP4 (§6.81 / AMB-8d-B.A): dedicated token for top sub-tab bar
+    // (ConfigTabBar). The shared `navInactive` sits at 2.05:1 (dark) /
+    // 2.41:1 (light) vs headerBg, below WCAG AA UI threshold (3:1).
+    // It stays as-is for the bottom NavBar where weak-inactive is the
+    // intended pattern. Sub-tabs need readable inactive labels:
+    //   light #6B6469 → 5.50:1 vs #FAFAF7 (AA-text ≥4.5:1 ✅)
+    //   dark  #8B8893 → 5.27:1 vs #15141A (AA-text ≥4.5:1 ✅)
+    // Both stay safely below the active state contrast (4.94 light /
+    // 7.20 dark) to preserve the active>inactive visual hierarchy.
+    subTabInactive: dk ? '#8B8893' : '#6B6469',
     modalCloseBtn: dk ? '#252430' : '#F5F5F1',
     modalAlertBg: dk ? '#3D1111' : '#FEF2F2',
     modalAlertBd: dk ? '#7F1D1D' : '#FECACA',

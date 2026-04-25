@@ -24,6 +24,12 @@
 //   danger        boolean  — if true, primary button in t.red (destructive).
 //   onConfirm     () => void
 //   onCancel      () => void — also wired to Escape (via useModalA11y).
+//   triggerRef    ref|null — 8d-B CP2 (§6.105): ref to the element that
+//                            opened the modal. Forwarded to useModalA11y
+//                            for restore-focus on dismiss. Optional;
+//                            consumers without a stable trigger can omit
+//                            (focus falls back to document.body, the
+//                            pre-§6.105 behaviour).
 //
 // No backdrop-click dismiss (buttons-only) — destructive/blocking flows
 // require explicit user action. Z-index 60 to stack above the FarmacoDrawer
@@ -43,6 +49,7 @@ export default function ConfirmModal({
   danger = false,
   onConfirm,
   onCancel,
+  triggerRef = null,
 }) {
   const { tokens: t } = useTheme();
   const titleId = useId();
@@ -53,6 +60,7 @@ export default function ConfirmModal({
     isOpen: open,
     onClose: onCancel,
     labelId: titleId,
+    triggerRef,
   });
 
   if (!open) return null;

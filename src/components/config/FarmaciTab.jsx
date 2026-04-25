@@ -467,8 +467,14 @@ function FarmacoDrawer({
   // discard it (drawer stays open, dirty preserved). On confirm we
   // pass it to the appropriate thunk.
   const [dataFineConfirmOpen, setDataFineConfirmOpen] = useState(false);
+  // 8d-B CP2 (§6.105): ref al button Salva (drawer footer). useModalA11y
+  // restore-focus nel ConfirmModal data_fine-past torna sul button Salva
+  // che ha originato l'interceptor. Senza ref il focus cade su body.
+  const salvaTriggerRef = useRef(null);
   const [dataFinePendingPayload, setDataFinePendingPayload] = useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  // 8d-B CP2 (§6.105): ref al button Elimina (drawer footer, edit mode).
+  const deleteTriggerRef = useRef(null);
   // §6.98: unsaved-changes guard on close path (dirty-gated).
   const [unsavedConfirmOpen, setUnsavedConfirmOpen] = useState(false);
   // Submit-lock so rapid taps / Enter chord cannot fire the thunk twice.
@@ -900,6 +906,7 @@ function FarmacoDrawer({
         <footer className="flex flex-col gap-2 mt-4">
           {mode === 'edit' && (
             <button
+              ref={deleteTriggerRef}
               type="button"
               onClick={() => setDeleteConfirmOpen(true)}
               disabled={submitting}
@@ -928,6 +935,7 @@ function FarmacoDrawer({
               Annulla
             </button>
             <button
+              ref={salvaTriggerRef}
               type="button"
               onClick={handleSalva}
               disabled={!canSave || submitting}
@@ -943,6 +951,7 @@ function FarmacoDrawer({
       {/* --- ConfirmModal: data_fine nel passato (§6.68) ------------ */}
       <ConfirmModal
         open={dataFineConfirmOpen}
+        triggerRef={salvaTriggerRef}
         title="Data fine nel passato"
         body={
           <p>
@@ -961,6 +970,7 @@ function FarmacoDrawer({
       {/* --- ConfirmModal: delete soft (§6.67) ---------------------- */}
       <ConfirmModal
         open={deleteConfirmOpen}
+        triggerRef={deleteTriggerRef}
         title="Elimina farmaco?"
         body={
           <p>
@@ -978,15 +988,14 @@ function FarmacoDrawer({
       />
 
       {/* --- UnsavedChangesModal: close path guard (§6.98) ---------- */}
-      {unsavedConfirmOpen && (
-        <UnsavedChangesModal
-          onCancel={() => setUnsavedConfirmOpen(false)}
-          onDiscard={() => {
-            setUnsavedConfirmOpen(false);
-            doAnnulla();
-          }}
-        />
-      )}
+      <UnsavedChangesModal
+        open={unsavedConfirmOpen}
+        onCancel={() => setUnsavedConfirmOpen(false)}
+        onDiscard={() => {
+          setUnsavedConfirmOpen(false);
+          doAnnulla();
+        }}
+      />
     </div>
   );
 }

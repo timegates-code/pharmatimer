@@ -89,12 +89,11 @@ export default function ConfigView() {
         />
         <Route path="*" element={<Navigate to="/config/impostazioni" replace />} />
       </Routes>
-      {pendingNavTo !== null && (
-        <UnsavedChangesModal
-          onCancel={handleCancel}
-          onDiscard={handleDiscard}
-        />
-      )}
+      <UnsavedChangesModal
+        open={pendingNavTo !== null}
+        onCancel={handleCancel}
+        onDiscard={handleDiscard}
+      />
     </div>
   );
 }

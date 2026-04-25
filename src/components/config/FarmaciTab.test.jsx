@@ -9,7 +9,7 @@
 // ============================================================
 
 import { describe, it, expect, vi } from 'vitest';
-import { screen, within, fireEvent } from '@testing-library/react';
+import { screen, within, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProvider } from '../../test/renderHelpers.jsx';
 import FarmaciTab from './FarmaciTab.jsx';
@@ -323,6 +323,32 @@ describe('FarmaciTab — CP5 delete + data_fine-past', () => {
     // Drawer chiuso.
     expect(screen.queryByTestId('farmaco-drawer')).not.toBeInTheDocument();
   });
+
+  // 8d-B CP2 regression guard (§6.105): tap Elimina drawer footer apre
+  // ConfirmModal, Escape lo chiude, focus deve tornare al button
+  // Elimina drawer footer. Pre-fix il focus cadeva su document.body.
+  // Cross-consumer parity con ProfiliTab equivalente.
+  it('(c) Escape su ConfirmModal delete restituisce focus al button Elimina drawer (§6.105)', async () => {
+    const user = userEvent.setup();
+    renderWithProvider(<FarmaciTab />, {
+      stateOverrides: { farmaci: buildFarmaci() },
+      actions: { deleteFarmaco: vi.fn().mockResolvedValue({ ok: true }) },
+    });
+
+    await user.click(
+      within(screen.getByTestId('farmaco-card-1')).getByRole('button')
+    );
+    const drawer = screen.getByTestId('farmaco-drawer');
+    const eliminaBtn = within(drawer).getByRole('button', { name: /^elimina$/i });
+
+    await user.click(eliminaBtn);
+    const confirm = screen.getByTestId('confirm-modal');
+    await waitFor(() => expect(confirm.contains(document.activeElement)).toBe(true));
+
+    fireEvent.keyDown(document.activeElement, { key: 'Escape' });
+
+    await waitFor(() => expect(document.activeElement).toBe(eliminaBtn));
+  });
 });
 
 // ============================================================
@@ -384,4 +410,36 @@ describe('FarmaciTab — 8d-A-continue §6.98 UnsavedChanges guard su close', ()
       screen.queryByRole('heading', { name: /modifiche non salvate/i }),
     ).not.toBeInTheDocument();
   });
+
+  // 8d-B CP3 regression guard (§6.103): Escape su UnsavedChangesModal
+  // chiude il modal via useModalA11y onDeactivate → onCancel callback.
+  // Pre-retrofit il modal non aveva focus-trap né Escape-to-close.
+  it('Escape su UnsavedChangesModal chiama onCancel (§6.103)', async () => {
+    const user = userEvent.setup();
+    renderWithProvider(<FarmaciTab />, {
+      stateOverrides: { farmaci: buildFarmaci() },
+    });
+
+    // Open drawer in create mode + dirty il form.
+    await user.click(screen.getByRole('button', { name: /nuovo farmaco/i }));
+    const drawer = screen.getByTestId('farmaco-drawer');
+    const nomeInput = within(drawer).getByLabelText('Nome');
+    await user.type(nomeInput, 'Test');
+
+    // Tap Annulla → UnsavedChangesModal apre.
+    await user.click(within(drawer).getByRole('button', { name: /^annulla$/i }));
+    const modal = screen.getByTestId('unsaved-changes-modal');
+    // Focus-trap ha portato focus dentro il modal.
+    await waitFor(() => expect(modal.contains(document.activeElement)).toBe(true));
+
+    // Escape → onCancel → modal chiuso, drawer ancora aperto (guard non scartato).
+    fireEvent.keyDown(document.activeElement, { key: 'Escape' });
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('unsaved-changes-modal')).not.toBeInTheDocument()
+    );
+    // Drawer ancora aperto: Escape annulla la chiusura, non la conferma.
+    expect(screen.getByTestId('farmaco-drawer')).toBeInTheDocument();
+  });
+
 });

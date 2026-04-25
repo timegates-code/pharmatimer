@@ -12,9 +12,16 @@ import { useTheme } from '../../hooks/useTheme.js';
 //     icone per le sub-tab Config)
 //   - 3 tab letterali AMB-A: Profili / Farmaci / Impostazioni
 //
-// Token reuse (nessun nuovo token — §11 CP3 "solo se mancano"):
+// Token usage:
 //   - headerBg / headerBorder : sfondo + bordo inferiore della bar
-//   - navActive / navInactive : colore label e underline active
+//   - navActive               : colore label e underline tab attiva
+//   - subTabInactive          : colore label tab inattiva
+//
+// 8d-B CP4 (§6.81 / AMB-8d-B.A): switched from `navInactive` to dedicated
+// `subTabInactive` token. The shared `navInactive` sits below WCAG AA UI
+// 3:1 contrast threshold against headerBg in both modes (2.05 dark /
+// 2.41 light). NavBar bottom keeps `navInactive` (different design
+// pattern: icon-prominent + weak-label helper).
 //
 // Absolute paths (`to="/config/profili"` etc.): §6.104 fix
 // (Sessione 8d-A-continue-2). Sotto `v7_relativeSplatPath: true`
@@ -52,7 +59,7 @@ export default function ConfigTabBar({ onTabClick } = {}) {
           onClick={(e) => onTabClick?.(tab.to, e)}
           className="text-sm font-medium pb-1 outline-none"
           style={({ isActive }) => ({
-            color: isActive ? t.navActive : t.navInactive,
+            color: isActive ? t.navActive : t.subTabInactive,
             borderBottom: isActive
               ? `2px solid ${t.navActive}`
               : '2px solid transparent',

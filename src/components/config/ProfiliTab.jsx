@@ -233,6 +233,11 @@ function ProfiloDrawer({ mode, editingId, onClose, setDirty, triggerRef, theme: 
 
   const [form, setForm] = useState(initial);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  // 8d-B CP2 (§6.105): ref to the Elimina button so ConfirmModal restores
+  // focus there on dismiss (Annulla / Escape / backdrop). Without this
+  // ref, useModalA11y falls back to document.body — observed regression
+  // in CP7 browser check 8d-A-continue-2 Punto 1.
+  const deleteTriggerRef = useRef(null);
 
   const profiloAttuale =
     mode === 'edit' && editingId != null
@@ -465,6 +470,7 @@ function ProfiloDrawer({ mode, editingId, onClose, setDirty, triggerRef, theme: 
                 }
               >
                 <button
+                  ref={deleteTriggerRef}
                   type="button"
                   disabled={isProfiloAttivo}
                   onClick={() => setDeleteConfirmOpen(true)}
@@ -490,6 +496,7 @@ function ProfiloDrawer({ mode, editingId, onClose, setDirty, triggerRef, theme: 
             + restore-focus), which the inline predecessor lacked. */}
         <ConfirmModal
           open={deleteConfirmOpen}
+          triggerRef={deleteTriggerRef}
           title="Elimina profilo?"
           body={
             <p>

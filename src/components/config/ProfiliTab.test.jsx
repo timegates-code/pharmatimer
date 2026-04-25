@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, it, expect, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { screen, within, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProvider } from '../../test/renderHelpers.jsx';
 import ProfiliTab from './ProfiliTab.jsx';
@@ -154,5 +154,31 @@ describe('ProfiliTab — CP4 elimina profilo (non-attivo)', () => {
     await user.click(within(confirm).getByRole('button', { name: 'Elimina profilo' }));
     expect(deleteProfilo).toHaveBeenCalledTimes(1);
     expect(deleteProfilo).toHaveBeenCalledWith(2);
+  });
+
+  // 8d-B CP2 regression guard (§6.105): tap Elimina apre ConfirmModal,
+  // Escape lo chiude, focus deve tornare al button Elimina che lo ha
+  // originato. Pre-fix il focus cadeva su document.body perché
+  // ConfirmModal non riceveva triggerRef.
+  it('Escape su ConfirmModal restituisce il focus al button Elimina (§6.105)', async () => {
+    const user = userEvent.setup();
+    renderWithProvider(<ProfiliTab />, {
+      stateOverrides: { profili: buildProfili() },
+      actions: { deleteProfilo: vi.fn().mockResolvedValue({ ok: true }) },
+    });
+
+    await user.click(within(screen.getByTestId('profilo-card-2')).getByRole('button'));
+    const drawer = await screen.findByTestId('profilo-drawer');
+    const eliminaBtn = within(drawer).getByRole('button', { name: 'Elimina' });
+
+    await user.click(eliminaBtn);
+    const confirm = await screen.findByTestId('confirm-modal');
+    // Sanity: focus-trap ha portato focus dentro il modal.
+    await waitFor(() => expect(confirm.contains(document.activeElement)).toBe(true));
+
+    // Escape → onCancel via useModalA11y → restore focus a triggerRef.
+    fireEvent.keyDown(document.activeElement, { key: 'Escape' });
+
+    await waitFor(() => expect(document.activeElement).toBe(eliminaBtn));
   });
 });
