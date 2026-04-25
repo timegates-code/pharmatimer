@@ -15,5 +15,21 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.js'],
     globals: false,
     include: ['src/**/*.{test,spec}.{js,jsx,ts,tsx}'],
+    // 8d-C (§6.114, chiude §6.84): sopprime i 2 warning React Router
+    // future flag emessi dal MemoryRouter test (renderHelpers.jsx).
+    // L'estensione delle future flag al test router in 8d-A (sed su
+    // renderHelpers.jsx:153) causava hang deterministico >26min full
+    // suite (§6.100). Filter onConsoleLog e' workaround non-invasivo:
+    // i warning erano puro rumore stderr, nessuna info diagnostica
+    // utile. No-op naturale al futuro upgrade react-router-dom 7.x.
+    onConsoleLog(log, type) {
+      if (
+        type === 'stderr' &&
+        log.includes('React Router Future Flag Warning')
+      ) {
+        return false;
+      }
+      // undefined = default emit (no override)
+    },
   },
 });
