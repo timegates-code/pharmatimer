@@ -63,13 +63,16 @@ describe('DoseCard (read-only)', () => {
     expect(screen.getByText('+30 min')).toBeInTheDocument();
   });
 
-  it('shows the "⚠ orario: domani" badge when entry.dateStr is past todayDateStr (§6.116)', () => {
-    // 9-A §6.116: badge gates on isEntryFutureDate(entry, todayDateStr) —
-    // tear-down of the §6.26 isCrossMidnightRecalc workaround. The Card
-    // takes a `todayDateStr` prop (§6.116a) propagated from OggiView.
-    const futureEntry = { ...plan[0], dateStr: '2026-04-20' };
+  it('shows the "⚠ orario: domani" badge on a cross-midnight recalc (§6.116/§6.118)', () => {
+    // 9-A §6.118: badge gates on isCrossMidnightRecalc(entry) — ISO date
+    // compare on ora_ricalcolata vs entry.dateStr. The §6.18 case is:
+    // entry planned for 2026-04-19 but recalculated to 2026-04-20T07:30.
+    const crossEntry = {
+      ...plan[0],
+      ora_ricalcolata: '2026-04-20T07:30',
+    };
     renderWithProvider(
-      <DoseCard entry={futureEntry} state="in_attesa" todayDateStr="2026-04-19" />,
+      <DoseCard entry={crossEntry} state="in_attesa" />,
       { stateOverrides: THEME_LIGHT }
     );
     expect(screen.getByText('⚠ orario: domani')).toBeInTheDocument();

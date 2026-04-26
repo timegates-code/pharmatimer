@@ -53,18 +53,23 @@
 //     preserved on all primary backgrounds; documented degrade on dark
 //     `gapBg`/`redBg` (§theme.js comment at token definition).
 //
-// 9-A CP4 (AMB-9.D, §6.116a + §6.116b):
-//   - §6.116a: passes `todayDateStr={today}` to every DoseCard so the
-//     "⚠ orario: domani" badge can gate on `isEntryFutureDate(entry,
-//     todayDateStr)`. The §6.26 cross-midnight workaround is torn down
-//     (see DoseCard header).
+// 9-A CP4 (AMB-9.D, §6.116b + §6.118):
 //   - §6.116b (consumer drift): the gap-spacing calculation between
 //     consecutive cards within a momento group used direct string
 //     comparison on `entry.ora_ricalcolata || entry.ora_prevista`.
 //     Post-CP3 ora_ricalcolata is ISO 'YYYY-MM-DDTHH:MM', so that mixed
 //     ISO/HH:MM compare always returned !== when only one side had a
-//     recalc. Now we extract HH:MM via parseIsoDateTime when ricalcolata
-//     is set, falling back to ora_prevista (already HH:MM).
+//     recalc. Now we extract HH:MM via the `entryHHMM` helper.
+//   - §6.116a (REVERTED in §6.118): the first iteration introduced a
+//     `todayDateStr={today}` prop pass to DoseCard so the cross-midnight
+//     badge could gate on `entry.dateStr > todayDateStr`. CP browser
+//     punto 2 showed the gate had inverted semantics — fired on dose-
+//     naturali-di-domani and missed the §6.18 case. The Card now uses
+//     `isCrossMidnightRecalc(entry)` directly, no prop needed.
+//   - §6.119 (deferred): the underlying §6.18 visual mis-placement (a
+//     recalc that crosses midnight still attaches to entry.dateStr=today
+//     rather than getting bumped to tomorrow's plan slot) persists. The
+//     badge is the UI mitigation; full fix scheduled post-9-A or 9-B.
 // ============================================================
 
 import { useEffect, useMemo, useState } from 'react';
@@ -510,7 +515,6 @@ export default function OggiView() {
                           <DoseCard
                             entry={entry}
                             state={getCardState(entry, now)}
-                            todayDateStr={today}
                             isFlashing={flashingKeys.has(entry.key)}
                             onPresa={() => actions.presa(entry.key)}
                             onUndo={() => actions.annullaUltima()}

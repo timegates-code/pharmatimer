@@ -72,18 +72,28 @@
 //     of §6.47 (dashed-underline affordance on the residual badge) is
 //     explicitly out of CP6 scope (prompt §11 v2.5.18).
 //
-// Sessione 9-A CP4 (AMB-9.D, §6.116 + §6.116a + §6.116b):
+// Sessione 9-A CP4 (AMB-9.D, §6.116 + §6.116b + §6.118):
 //   - §6.18 closed at the domain layer (CP3): ora_ricalcolata is now an
 //     ISO datetime 'YYYY-MM-DDTHH:MM'. The Card extracts the HH:MM
 //     portion for displayTime and the date portion for calcolaDelta's
-//     dataEffettiva via parseIsoDateTime — addDays + isCrossMidnightRecalc
-//     workaround pair removed.
-//   - §6.116: tear-down of the §6.26 cross-midnight workaround. The
-//     "⚠ orario: domani" badge now gates on `isEntryFutureDate(entry,
-//     todayDateStr)`, which compares entry.dateStr directly.
-//   - §6.116a: new optional prop `todayDateStr` propagates from OggiView
-//     (passes `now.dateStr`). When absent, the future-date badge never
-//     mounts (defensive; preserves 7b-1 test fixtures that don't supply it).
+//     dataEffettiva via parseIsoDateTime — pre-9-A addDays +
+//     isCrossMidnightRecalc workaround pair removed.
+//   - §6.116: tear-down of the §6.26 cross-midnight HH:MM heuristic
+//     workaround. Replaced with an ISO-aware detector.
+//   - §6.116a (REVERTED in §6.118): had introduced a `todayDateStr` prop
+//     wired through OggiView. CP browser punto 2 showed the gate
+//     `entry.dateStr > todayDateStr` had inverted semantics: it FIRED on
+//     dose-naturali di domani (correctly placed already, badge redundant)
+//     and MISSED the §6.18 case (entry.dateStr stays "today" while
+//     ora_ricalcolata points to tomorrow). Prop removed.
+//   - §6.118 (current): badge gates on `isCrossMidnightRecalc(entry)` —
+//     ISO-aware compare on the recalc's own date prefix vs the entry's
+//     planning date. No external arg needed; the Card is self-sufficient.
+//   - §6.119 (deferred, NOT closed by CP4): the underlying §6.18 visual
+//     bug persists at the planBuilder layer — a recalc that crosses
+//     midnight still attaches to the original entry.dateStr=today rather
+//     than entry.dateStr=tomorrow. The badge is the UI mitigation; the
+//     full fix (entry.dateStr bump) is scheduled for post-9-A or 9-B.
 //
 // Reads:
 //   - Theme tokens via `useTheme()` (same pattern as NavBar / DevTimeSlider).
@@ -101,7 +111,7 @@ import { Badge } from '../shared/Badge.jsx';
 import { TapBadge } from '../shared/TapBadge.jsx';
 import { IconCheck, IconX, IconPause, IconEdit } from '../shared/Icons.jsx';
 import { calcolaDelta, parseIsoDateTime } from '../../utils/time.js';
-import { isEntryFutureDate, formatDelta, formatGapLabel } from '../../utils/uiState.js';
+import { isCrossMidnightRecalc, formatDelta, formatGapLabel } from '../../utils/uiState.js';
 import { TOLLERANZA_MIN } from '../../domain/constants.js';
 
 // ---------- meal-relation helpers (1:1 port from v5 mockup) ----------
@@ -169,7 +179,6 @@ function formatPresaValue(abs) {
  * @param {{
  *   entry: import('../../domain/types.js').PlanEntry,
  *   state: 'presa'|'prossima'|'in_attesa'|'in_ritardo'|'saltata'|'sospesa',
- *   todayDateStr?: string | null,
  *   isFlashing?: boolean,
  *   onPresa?: (entry: import('../../domain/types.js').PlanEntry) => void,
  *   onUndo?:  (entry: import('../../domain/types.js').PlanEntry) => void,
@@ -181,11 +190,6 @@ function formatPresaValue(abs) {
  *   isLastPreso?: boolean,
  * }} props
  *
- * `todayDateStr` is the 'YYYY-MM-DD' reference date used to gate the
- * "⚠ orario: domani" badge via `isEntryFutureDate` (§6.116a). When omitted,
- * the badge never mounts — preserves 7b-1 test fixtures that render DoseCard
- * without supplying it. OggiView always passes `now.dateStr`.
- *
  * All `on*` props are OPTIONAL by contract. Existing 7b-1 tests that render
  * DoseCard without any handler must keep passing. When a handler is absent,
  * the corresponding affordance is NOT mounted (no "ghost" button with a
@@ -194,7 +198,6 @@ function formatPresaValue(abs) {
 export function DoseCard({
   entry,
   state,
-  todayDateStr = null,
   isFlashing = false,
   onPresa,
   onUndo,
@@ -235,7 +238,9 @@ export function DoseCard({
   const recalcHHMM = recalcParsed?.hhmm ?? null;
   const isRecalc = recalcHHMM !== null;
   const isTimeDifferent = isRecalc && recalcHHMM !== entry.ora_prevista;
-  const isFutureDate = isEntryFutureDate(entry, todayDateStr);
+  // §6.118: ISO-aware cross-midnight detector. Reads only the entry — no
+  // external "today" arg needed (§6.116a was reverted as wrongly-scoped).
+  const crossMidnight = isCrossMidnightRecalc(entry);
 
   const displayTime = recalcHHMM || entry.ora_prevista;
 
@@ -455,7 +460,7 @@ export function DoseCard({
             border={t.recalcBd}
           />
         )}
-        {isFutureDate && !isDone && (
+        {crossMidnight && !isDone && (
           <Badge
             label="⚠ orario: domani"
             bg={t.warnBg}

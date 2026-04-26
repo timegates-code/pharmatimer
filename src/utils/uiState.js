@@ -6,10 +6,11 @@
 //   (ora_ricalcolata fallback ora_prevista). See Changelog §5.3 + §6.9.
 //   §6.116b (9-A): extracts HH:MM from ora_ricalcolata ISO via local
 //   `effHHMM` before feeding `timeToMinutes`.
-// - `isEntryFutureDate(entry, todayDateStr)` – flags an entry whose dateStr
-//   falls past today (lex-compare 'YYYY-MM-DD'). Replaces the §6.26 workaround
-//   detector `isCrossMidnightRecalc` removed in 9-A CP4 §6.116. The Card
+// - `isCrossMidnightRecalc(entry)` – flags an entry whose ora_ricalcolata
+//   ISO date is past entry.dateStr. Replaces the pre-9-A HH:MM heuristic
+//   (60-min backwards delta) with a precise ISO date comparison. The Card
 //   surfaces the "⚠ orario: domani" badge when this returns true.
+//   §6.116/§6.118 (9-A): see DoseCard header for the full design path.
 // - `formatDelta/formatDuration/formatGapLabel/formatDateLabel` – ports 1:1
 //   from v5 mockup lines 34-68.
 // - `groupEntriesByDayAndMomento(entries)` – hybrid grouping helper for
@@ -20,10 +21,10 @@
 // caller, whose shape matches `resolveNow` in utils/now.js ({dateStr, minutes}).
 // AMB-7a.F: format helpers must not change behaviour — only the file moves.
 //
-// 9-A note (§6.18 closure): `ora_ricalcolata` is now an ISO datetime
-// 'YYYY-MM-DDTHH:MM' (stored by recalc.js post-CP3, propagated opaque by
-// planBuilder per §6.23 esteso). Local helper `effHHMM` extracts the HH:MM
-// portion for any consumer that needs minutes-of-day arithmetic.
+// 9-A note (§6.18 closure, ISO domain layer): `ora_ricalcolata` is now an
+// ISO datetime 'YYYY-MM-DDTHH:MM' (stored by recalc.js post-CP3, propagated
+// opaque by planBuilder per §6.23 esteso). Local helper `effHHMM` extracts
+// the HH:MM portion for any consumer that needs minutes-of-day arithmetic.
 // ============================================================
 
 import { timeToMinutes, parseIsoDateTime } from './time.js';
@@ -77,23 +78,28 @@ export function getCardState(entry, now) {
 }
 
 /**
- * Detect whether an entry's `dateStr` falls past `todayDateStr`. Both args
- * are 'YYYY-MM-DD'; lexicographic compare is chronological for that format.
+ * Detect whether an entry has a recalculation that crosses midnight: i.e.
+ * `ora_ricalcolata` (ISO 'YYYY-MM-DDTHH:MM') has a date portion strictly
+ * greater than `entry.dateStr`. Lex compare on 'YYYY-MM-DD' is chronological.
  *
- * Post-9-A replacement of `isCrossMidnightRecalc` (§6.26 workaround): the
- * underlying §6.18 bug is fixed at the domain layer (CP3 ISO propagation),
- * so the Card just reads `entry.dateStr` directly. Tear-down & rationale:
- * §6.116, AMB-9.D.
+ * 9-A history (§6.116 + §6.118):
+ *   - Pre-9-A: HH:MM heuristic detector (`< ora_prevista − 60min` wraparound).
+ *   - CP4 §6.116 first iteration: replaced by `isEntryFutureDate(entry,
+ *     todayDateStr)` — wrong semantics, missed the §6.18 case where
+ *     entry.dateStr stays "today" but ora_ricalcolata points to tomorrow.
+ *     Discovered in CP browser punto 2.
+ *   - CP4 §6.118 fix: ISO-aware compare on the recalc's own date prefix vs
+ *     the entry's planning date. Catches §6.18 exactly; no external
+ *     "today" arg needed.
  *
- * Defensive: returns false when either argument is falsy.
+ * Defensive: returns false when entry is missing or has no ora_ricalcolata.
  *
  * @param {import('../domain/types.js').PlanEntry} entry
- * @param {string} todayDateStr  'YYYY-MM-DD'
  * @returns {boolean}
  */
-export function isEntryFutureDate(entry, todayDateStr) {
-  if (!entry || !todayDateStr) return false;
-  return entry.dateStr > todayDateStr;
+export function isCrossMidnightRecalc(entry) {
+  if (!entry?.ora_ricalcolata) return false;
+  return parseIsoDateTime(entry.ora_ricalcolata).dateStr > entry.dateStr;
 }
 
 // ============================================================

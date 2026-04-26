@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   getCardState,
-  isEntryFutureDate,
+  isCrossMidnightRecalc,
   formatDelta,
   formatDuration,
   formatGapLabel,
@@ -99,32 +99,31 @@ describe('getCardState', () => {
   });
 });
 
-describe('isEntryFutureDate', () => {
-  // §6.116 — replaces isCrossMidnightRecalc detector (§6.26 tear-down).
+describe('isCrossMidnightRecalc', () => {
+  // §6.116 + §6.118: ISO-aware detector. Replaces both the pre-9-A HH:MM
+  // heuristic and the CP4-first-iteration `isEntryFutureDate(entry,
+  // todayDateStr)` helper that had inverted semantics.
 
-  it('returns false when entry.dateStr equals todayDateStr', () => {
+  it('returns false when ora_ricalcolata ISO date matches entry.dateStr (same-day recalc)', () => {
     expect(
-      isEntryFutureDate(
-        { dateStr: '2026-04-19' },
-        '2026-04-19'
+      isCrossMidnightRecalc(
+        mkEntry({ dateStr: '2026-04-26', ora_ricalcolata: '2026-04-26T20:00' })
       )
     ).toBe(false);
   });
 
-  it('returns true when entry.dateStr is past todayDateStr (tomorrow)', () => {
+  it('returns true when ora_ricalcolata ISO date is past entry.dateStr (cross-midnight)', () => {
     expect(
-      isEntryFutureDate(
-        { dateStr: '2026-04-20' },
-        '2026-04-19'
+      isCrossMidnightRecalc(
+        mkEntry({ dateStr: '2026-04-26', ora_ricalcolata: '2026-04-27T07:30' })
       )
     ).toBe(true);
   });
 
-  it('returns false when entry.dateStr is before todayDateStr (yesterday)', () => {
+  it('returns false when ora_ricalcolata is null', () => {
     expect(
-      isEntryFutureDate(
-        { dateStr: '2026-04-18' },
-        '2026-04-19'
+      isCrossMidnightRecalc(
+        mkEntry({ dateStr: '2026-04-26', ora_ricalcolata: null })
       )
     ).toBe(false);
   });
