@@ -1,8 +1,8 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 2.5.36
+**Versione:** 2.5.38
 **Data inizio fase:** 16 aprile 2026
-**Ultima modifica:** 26 aprile 2026 (Sessione 9 analisi-first)
+**Ultima modifica:** 26 aprile 2026 (Sessione 9-B analisi-first)
 **Ambito:** Sviluppo PWA React standalone con persistenza locale, preparata per futuro swap verso backend FastAPI+MariaDB.
 
 Questo documento raccoglie le decisioni architetturali, la struttura del progetto, le deviazioni dalla specifica e lo stato di avanzamento della Fase 2. È il **punto di riferimento unico** per ogni sessione di sviluppo: leggerlo prima di iniziare garantisce continuità senza dover rileggere l'intero storico chat.
@@ -583,6 +583,46 @@ Questo documento raccoglie le decisioni architetturali, la struttura del progett
 - **Nuova §22.18** "Stato post-Sessione 9 analisi-first" con tabella AMB-9.A÷J, scope Wave A/B/C, deviazioni previste §6.115-§6.119, baseline test 313, target 360 ±5, raccomandazioni apertura 9-A.
 - **§11 sostituita** con prompt esecutivo **Sessione 9-A** (CP0 sanity-light + CP1-CP4 Wave A dominio + CP browser 4 punti + bump intermedio v2.5.36 → v2.5.37 a chiusura 9-A; il §11 per Sessione 9-B verrà scritto in v2.5.37 dopo chiusura 9-A).
 - Nessuna modifica al codice (analisi-first pura). Nessuna modifica a §12 (zero file prodotti). Nessuna modifica a §3 struttura progetto (file Step 9 nuovi `services/notifications.js`, `hooks/useNotifications.js`, `utils/copy.js` già marcati `[Step 9]` o assimilabili).
+**Changelog versione 2.5.37 (rispetto alla 2.5.36):**
+- Sessione **9-A implementativa** completata 26/04/2026 (Wave A — fix dominio §6.18 cross-midnight). 4 CP impl + CP browser 4 punti. Baseline test **313/313 → 328/328 su 32 test files** (+15, target AMB-9.J 313→329 ±3 a -1 dal centro). Bump v2.5.36 → v2.5.37.
+- **CP1 §6.115a** — 3 helper ISO in `utils/time.js` (`composeIsoDateTime` / `addMinutesToIso` / `parseIsoDateTime`). +6 test in nuovo file `src/utils/time.test.js` (3 happy + 3 edge: cross-midnight, month-rollover, round-trip). Implementazione spec-conforme da §11 v2.5.36 (commit `d5248a0`).
+- **CP2 §6.117** — Dexie `db.version(2).stores({...})` upgrade hook self-heal `length===5` HH:MM → ISO `'YYYY-MM-DDTHH:MM'`. Dev-dep `fake-indexeddb@^6` aggiunta. Nuovo file `src/data/db.migration.test.js` (+3 test: legacy convertito, ISO no-op, NULL preservato). 1 commit `d0d4e5e`.
+- **CP3 §6.115b** — `recalc.js` `applyAssunzione`/`applySalto`/`autoSkip`/`applyRecupero` compongono `ora_ricalcolata` via `composeIsoDateTime + addMinutesToIso`. `planBuilder.js` `mergeLogIntoEntry` opaque ISO confermato (invariante §6.23 esteso). +6 test cross-midnight in `recalc.test.js` + 1 invariante `planBuilder.test.js`. 1 commit `d5de70f`.
+- **CP4 §6.116** — tear-down workaround §6.26 `isCrossMidnightRecalc` HH:MM-heuristic. Prima iterazione introdotta `isEntryFutureDate(entry, todayDateStr)` con prop opzionale `todayDateStr` su `DoseCard` propagata da `OggiView` (§6.116a). **CP browser punto 2 ha rivelato semantica invertita** (badge fired su dose-naturali-domani, mancato caso §6.18 reale): commit fix §6.118 ha riscritto `isCrossMidnightRecalc` ISO-aware compare `parseIsoDateTime(entry.ora_ricalcolata).dateStr > entry.dateStr`, prop `todayDateStr` rimossa. 2 commit: `816a49f` (§6.116 prima iter) + `0e70a38` (§6.118 fix).
+- **§6.116b** — consumer drift latente in `uiState.js` (`getCardState` + `groupEntriesByDayAndMomento`) e `OggiView` gap calc: chiamavano `timeToMinutes(entry.ora_ricalcolata)` direttamente, ma post-CP3 `ora_ricalcolata` è ISO. Fix: helper `effHHMM`/`entryHHMM` estraggono HH:MM via `parseIsoDateTime`. Bug latente catturato analizzando i file pre-CP4 (test passavano solo perché fixture ancora HH:MM).
+- **§6.117a** — `types.js` JSDoc drift Q-CP3-2 differito da CP3: 3 occorrenze `ora_ricalcolata: 'HH:MM' or null` → `ISO datetime 'YYYY-MM-DDTHH:MM' or null` (LogAssunzione + PlanEntry × 2). sed surgical 2-comandi.
+- **§6.118** — fix CP4-iteration ex-post (vedi sopra): `isCrossMidnightRecalc(entry)` ISO-aware (`parseIsoDateTime(ora_ricalcolata).dateStr > entry.dateStr`). Self-contained, no arg esterno. Revert §6.116a (`todayDateStr` prop e propagazione OggiView rimossi). CP browser punto 2 verde post-fix (card `2026-04-26-4-2` `has_orario_domani_badge: true`, card `2026-04-27-4-2` `false`).
+- **§6.119 (deferred)** — bug visivo §6.18 sottostante NON chiuso: card cross-midnight resta sotto separator pill di OGGI invece di essere bumpata sotto separator DOMANI. Causa: `planBuilder.js` non bumpa `entry.dateStr` quando `ora_ricalcolata` cross-midnight; i due valori restano disallineati. Il badge §6.118 è UI mitigation, non fix completo. Scheduled post-9-A o 9-B.
+- **§6.120 (deferred)** — `actions.presa(entryKey)` senza override `dataEffettiva/oraEffettiva` ignora `simulated_now` e usa l'ora reale di sistema. Scoperto in CP browser punto 1 (slider 08:00 ma recalc applicato +12h da ora reale). Workaround per test browser: passare override esplicito. Fix proprio scheduled post-9-A.
+- **Drift numerazione vs §22.18 plan:** §6.115 single splittato in §6.115a (CP1) + §6.115b (CP3) durante impl. **§6.118 e §6.119 originariamente assegnati Wave B (notifiche_attive + Opzione 1 limitazioni) sono stati consumati da 9-A** (CP4-fix + deferred). Wave B 9-B userà **§6.121** (notifiche_attive) + **§6.122** (foreground-only limits) per coerenza fatto-storico (§6.71/§6.85 archive: numerazione non retrocorretta).
+- **Drift §6.69 v2.5.34 NON retrocorretto** in v2.5.37 (continuità fatto-storico immutabile).
+- **Aggiornamento roadmap §7:** Step 9-A → ✅ Completo. Step 9-B aggiornato con drift numerazione.
+- **Nuova §22.19** "Stato post-Sessione 9-A implementativa" con file prodotti, esiti CP1-CP4, esiti CP browser 4 punti (P2 verde post-§6.118; P1 ambiguo per §6.120 pre-existing; P3 visivo OK; P4 retry-ambiguo, focus restore non fa parte scope CP4).
+- **§11 sostituita** con prompt **Sessione 9-B analisi-first** (raccomandato vs esecutiva diretta dato lessons learned 9-A: spec semantics da rivalidare in browser, AMB-9.E÷I già ratificate ma edge cases iOS PWA permettono rifinitura).
+- 5 file codice modificati (`utils/uiState.js`, `utils/uiState.test.js`, `components/oggi/DoseCard.jsx`, `components/oggi/DoseCard.test.jsx`, `components/oggi/OggiView.jsx`) + 1 file modificato in CP1 (`utils/time.js`, `utils/time.test.js` nuovo) + 2 modificati CP2 (`data/db.js`, `package.json`, `data/db.migration.test.js` nuovo) + 2 modificati CP3 (`domain/recalc.js`, `domain/planBuilder.js` confermato, test estesi) + 1 modificato CP4 docs (`domain/types.js`).
+
+**Changelog versione 2.5.38 (rispetto alla 2.5.37):**
+- **Sessione 9-B analisi-first** completata 26/04/2026 (Wave B notifiche Opzione 1 foreground-only). Q&A pattern Q1-Q5 (Q1-Q3 raccomandazioni esplicite su AMB-9.E/F/G, Q4-Q5 "decidi tu" su AMB-9.H/I) per rivalidare le 5 AMB già ratificate in §22.18 contro lessons learned 9-A (spec semantics §6.118 + pre-existing browser bug §6.119/§6.120). Baseline test invariata **328/328 su 32 test files** (analisi-first pura). Bump v2.5.37 → v2.5.38.
+- **5 AMB-9.E÷I confermate con 4 emendamenti:**
+  - **AMB-9.E'** — `rescheduleAllNotifications(state, services)` **sincrona idempotente**, no debounce. Visibility flip rapido foreground→background→foreground produce N reschedules consecutivi senza leak (cancel-then-rebuild atomico, JS single-threaded). Alternative debounce 200ms / lock booleano scartate per complessità senza beneficio.
+  - **AMB-9.F'** — Decision tree UI **4 stati esplicito** (`isStandalone × permission`): (1) `!isStandalone` → toggle nascosto + banner installa; (2) `standalone+default` → toggle off, tap requestPermission; (3) `standalone+granted` → toggle abilitato gating `notifiche_attive`; (4) `standalone+denied` → toggle disabilitato + banner. Defensive permission revocation check su mount + visibilitychange forza `notifiche_attive=0` se OS revoca.
+  - **AMB-9.G'** — 8 trigger **nominati** (no più "Config thunks" generico): `init` / `commitApplyResult` / rollover mezzanotte / `cambiaProfilo` / **7 thunks rilevanti** (`add/update/deleteFarmaco`, `add/update/delete/attivaProfilo`) / toggle on / toggle off / `visibilitychange`+`focus`. `setSetting('notifiche_attive')` ha path dedicato (toggle on/off); `setSetting('tema')` e altre chiavi NON triggerano. Rolling 30 tick integrato in `useEffect` tick Provider §6.24.
+  - **AMB-9.I'** — body `formatRelazionePastoCopy` **stripped del prefisso "Assumere "** rispetto a `DoseCard.getPastoText` (drift voluto §6.124, copy nuda suona meglio in notifica). 13 test: 6 enum × {detail, null} + 1 fallback body vuoto.
+  - **AMB-9.H** invariata (test mocking `globalThis.Notification` + `vi.useFakeTimers()`, pattern replicato da `audio.js` test Sessione 7b-1).
+- **4 deviazioni §6.121-§6.124 previste post-impl** (numerazione corretta post-9-A consumption §6.118-§6.120):
+  - §6.121 — chiave `impostazioni_app.notifiche_attive` boolean default 0 (analoga §6.25 `tema`) — CP4 9-B
+  - §6.122 — Opzione 1 foreground-only limitazioni note + roadmap Web Push Fase 3 estesa — Wave B globale
+  - §6.123 — `useNotifications` decision tree 4 stati + defensive permission revocation check — CP3 9-B
+  - §6.124 — `formatRelazionePastoCopy` body stripped (drift voluto UX notifica) — CP1 9-B
+- **Tabella CP impl 9-B (5 CP):** CP1 §6.124 utils/copy.js (+13 test), CP2 services/notifications.js singleton (+10), CP3 §6.123 hooks/useNotifications.js (+6), CP4 §6.121+§6.122 integration AppContext (+5), CP5 ImpostazioniTab.jsx UI (+4). Δ test totale +38, target AMB-9.J 9-B split +31 (centro 313+47=360 ±5; 9-A actual +15; 9-B target +32; +38 dentro boundary alta).
+- **CP browser 9-B 8 punti** (lesson §6.118 non-skippable pre-bump): permission flow, schedule/cancel cycle, rollover overnight, beep simultaneity, visibility change, permission revocation defensive, non-PWA fallback, tag-based replacement.
+- **Pattern §6.118 internalizzato** in CP1/CP2/CP3/CP4: validare 2-3 scenari concreti del codice contro AMB pre-codice, non trust letterale del prompt §11.
+- **Drift §6.69 v2.5.34 NON retrocorretto** in v2.5.38 (continuità fatto-storico immutabile).
+- **Aggiornamento roadmap §7:** Step 9-B aggiornato con riferimento §22.20 + scope CP1-CP5 dettagliato.
+- **Nuova §22.20** "Stato post-Sessione 9-B analisi-first" con tabella AMB-9.E÷I confermate + emendamenti E'/F'/G'/I', tabella deviazioni §6.121-§6.124, tabella CP impl 5 CP con file/test/commit, 8 punti CP browser, Q&A pattern Q1-Q5 utilizzato.
+- **§11 sostituita** con prompt esecutivo **Sessione 9-B esecutiva** (5 CP impl + CP browser 8 punti + CP6 closing bump v2.5.38 → v2.5.39).
+- Nessuna modifica al codice (analisi-first pura). Nessuna modifica a §12 (zero file prodotti). Nessuna modifica a §3 struttura progetto (file `services/notifications.js`, `hooks/useNotifications.js`, `utils/copy.js` già marcati `[Step 9]` o assimilabili).
+
 
 ---
 
@@ -2764,6 +2804,203 @@ Test Files  31 passed (31)
 
 ---
 
+## 6.115a — CP1 9-A: 3 helper ISO `utils/time.js` (AMB-9.A/D)
+
+**Sessione:** 9-A implementativa (26 aprile 2026, CP1).
+
+**Stato:** ✅ **CHIUSA**.
+
+**Scope.** Aggiunti 3 helper monouso in `utils/time.js`: `composeIsoDateTime(dateStr, hhmm)` produce `'YYYY-MM-DDTHH:MM'`, `addMinutesToIso(iso, minutes)` aritmetica con carry-over via `Date`, `parseIsoDateTime(iso)` ritorna `{dateStr, hhmm, dateObj}`. `minutesToTime` invariato (resta HH:MM per `ora_prevista`). DST out-of-scope (AMB-9.D, limitazione documentata).
+
+**Test.** Nuovo file `src/utils/time.test.js` (+6 test): 3 happy path + 3 edge (cross-midnight `addMinutesToIso('2026-04-26T23:00', 480) → '2026-04-27T07:00'`, month-rollover `'2026-04-30T22:00' + 240 → '2026-05-01T02:00'`, round-trip invariante).
+
+**Commit.** `d5248a0` su branch `step-8`.
+
+---
+
+## 6.115b — CP3 9-A: `recalc.js` ISO propagation cross-midnight (AMB-9.A) + planBuilder invariante
+
+**Sessione:** 9-A implementativa (26 aprile 2026, CP3).
+
+**Stato:** ✅ **CHIUSA** (chiude **§6.18** a livello dominio).
+
+**Scope.** `applyAssunzione`/`applySalto`/`autoSkip`/`applyRecupero` in `recalc.js` compongono `ora_ricalcolata` via `addMinutesToIso(composeIsoDateTime(entry.dateStr, ora_effettiva_hhmm), intervallo*60)`. Sostituisce `minutesToTime(effMin + intervallo*60)` che produceva HH:MM mod 1440 (root cause §6.18). `mergeLogIntoEntry` in `planBuilder.js` confermato opaque ISO (invariante §6.23 esteso, no transformation).
+
+**Test.** +6 test cross-midnight in `recalc.test.js` (4 scenari `apply*` + 1 round-trip) + 1 invariante in `planBuilder.test.js`. Esempio: dose 8h presa alle 23:00 su entry `dateStr='2026-04-26'` → entry N+1 `ora_ricalcolata === '2026-04-27T07:00'`.
+
+**Limitazione nota — §6.119.** Il bug §6.18 è chiuso a livello DATI (l'ISO porta correttamente l'informazione di data); il bug VISIVO sottostante (card cross-midnight resta sotto separator OGGI invece di essere migrata sotto separator DOMANI nella vista Oggi) richiede bump di `entry.dateStr` non implementato in CP3. Documentato come §6.119 deferred.
+
+**Commit.** `d5de70f` su branch `step-8`.
+
+---
+
+## 6.116 — CP4 9-A: tear-down workaround §6.26 (prima iterazione, sostituita da §6.118)
+
+**Sessione:** 9-A implementativa (26 aprile 2026, CP4).
+
+**Stato:** ⚠️ **SOSTITUITA da §6.118** (semantica corretta). Entry mantenuta come storico per tracciabilità decisionale.
+
+**Scope originale (commit `816a49f`).** Rimossa `isCrossMidnightRecalc(entry)` HH:MM-heuristic detector (`< ora_prevista − 60min`, workaround §6.26). Sostituita con `isEntryFutureDate(entry, todayDateStr) → entry.dateStr > todayDateStr`. Prop opzionale `todayDateStr` aggiunta a `DoseCard` (§6.116a), propagata da `OggiView` con `now.dateStr`.
+
+**Falsificazione in CP browser punto 2.** Scenario reale: PRESA Olevia dose 1 alle 14:00 su intervallo 12h → `ora_ricalcolata` = 14:00 + 12h = 02:00 next day. Atteso badge "⚠ orario: domani" sulla card di OGGI (la dose-2 di oggi ricalcolata cross-midnight). Osservato: badge **non firato** su card oggi, **firato** invece su card di domani (dose-2 naturale di domani, dove badge è ridondante).
+
+**Diagnosi root cause.** La gate `entry.dateStr > todayDateStr` cattura entry di domani, non entry-oggi-con-recalc-domani. La spec §11 v2.5.36 AMB-9.D era semanticamente errata: il caso §6.18 reale è `entry.dateStr=oggi AND ora_ricalcolata.dateStr=domani`, dove `entry.dateStr === todayDateStr` quindi `entry.dateStr > todayDateStr === false`. Il helper non poteva cogliere il caso pensato.
+
+**Mea culpa metodologica.** Decisione "trust §11 letterale" presa a Q-CP4-2 con autorizzazione "decidi tu". Regola critica progetto #2 (fermarsi su incongruenze) avrebbe dovuto innescare CP analisi pre-impl. Conseguenza: 1 commit aggiuntivo `0e70a38` per fix.
+
+**Commit.** `816a49f` (sostituito).
+
+---
+
+## 6.116b — CP4 9-A: consumer drift `uiState.js` + `OggiView` gap calc post-ISO
+
+**Sessione:** 9-A implementativa (26 aprile 2026, CP4).
+
+**Stato:** ✅ **CHIUSA** (in commit `816a49f`, mantenuta valida post-§6.118).
+
+**Scope.** Bug latente catturato durante analisi pre-CP4: `getCardState` e `groupEntriesByDayAndMomento` in `uiState.js` chiamavano `timeToMinutes(entry.ora_ricalcolata ?? entry.ora_prevista)` diretto. Post-CP3 `ora_ricalcolata` è ISO `'YYYY-MM-DDTHH:MM'` ma `timeToMinutes` accetta solo HH:MM; il parse di un ISO (es. `'2026-04-27T07:00'`) come HH:MM produce minuti garbage. I 313 test passavano solo perché tutte le fixture esistenti usavano ancora HH:MM (test `'prefers ora_ricalcolata'` con valore `'10:30'`).
+
+Stesso bug latente in `OggiView::gap calc` (`thisTime !== prevTime` con confronto stringa mista ISO/HH:MM sempre `!==`).
+
+**Fix.** Helper `effHHMM(entry)` (file-scope `uiState.js`) e `entryHHMM(entry)` (top-level `OggiView.jsx`) estraggono HH:MM via `parseIsoDateTime` quando `ora_ricalcolata` set, fallback `ora_prevista`. Consumer aggiornati: `getCardState`, sort di `groupEntriesByDayAndMomento`, computazione `primaOra`, calcolo `needsGap` in OggiView.
+
+**Test.** 2 fixture esistenti aggiornate HH:MM → ISO in `uiState.test.js` (`'prefers ora_ricalcolata'` con `'2026-04-19T10:30'`, `'sorts entries within a day'` con `'2026-04-19T09:00'`). Net Δ test: 0 (le modifiche fungono da regression test naturale).
+
+**Lezione.** Q-CP3-3 finding: cambi di tipo a livello dominio (CP3 ISO propagation) richiedono pre-CP grep esaustivo dei consumer downstream (`grep -rn 'ora_ricalcolata' src/`), non solo audit dei file modificati.
+
+**Commit.** `816a49f` (incluso in CP4 commit, mantenuto post-§6.118 in `0e70a38`).
+
+---
+
+## 6.117 — CP2 9-A: Dexie v1→v2 migration ora_ricalcolata ISO + fake-indexeddb (AMB-9.B/C)
+
+**Sessione:** 9-A implementativa (26 aprile 2026, CP2).
+
+**Stato:** ✅ **CHIUSA**.
+
+**Scope.** `db.version(2).stores({...})` con stores invariati (campo `ora_ricalcolata` non-indexed, typeless Dexie) + upgrade hook self-heal `length===5` (predicato HH:MM legacy) → `data + 'T' + HH:MM`. Dev-dep `fake-indexeddb@^6` aggiunta a `package.json` per test integrazione environment-globale. Pre-CP grep gate `seed.js`/`devCheck.js` zero hit confermato (no riferimenti a `ora_ricalcolata` in seed/dev tooling, evita coupling).
+
+**Trade-off.** Cross-midnight legacy entries (HH:MM mod 1440 storico) **NON** sono recuperate dalla migration: `'07:00'` legacy diventa ISO `'<entry.data>T07:00'` mantenendo l'errore §6.18 originale. Self-heal automatico al prossimo `apply*` che le tocca (AMB-9.B accettato). `__pt.wipe()` come escape hatch (§6.113).
+
+**Test.** Nuovo file `src/data/db.migration.test.js` (+3 test): legacy HH:MM convertito, ISO già migrato no-op, NULL preservato.
+
+**Commit.** `d0d4e5e` su branch `step-8`.
+
+---
+
+## 6.117a — types.js JSDoc drift `ora_ricalcolata` HH:MM → ISO (Q-CP3-2 differito)
+
+**Sessione:** 9-A implementativa (26 aprile 2026, CP4 — differito da CP3).
+
+**Stato:** ✅ **CHIUSA**.
+
+**Scope.** 3 occorrenze JSDoc in `src/domain/types.js` aggiornate da `'HH:MM' or null` a `ISO datetime 'YYYY-MM-DDTHH:MM' or null (§6.18 closure, §6.117)`:
+1. `LogAssunzione.ora_ricalcolata` (~r.60)
+2. `PlanEntry.ora_ricalcolata` (~r.78)
+3. `PlanEntry.ora_ricalcolata_originale` (~r.79, suffisso `(pre-recovery snapshot, §6.18 closure)`)
+
+Differito da CP3 a CP4 perché Q-CP3-2 emerso post-merge CP3 (drift documentale, non funzionale). sed surgical 2-comandi BSD/GNU compatible.
+
+**Lezione.** I JSDoc `@property` sono spec-of-truth complementare al codice; il drift silente è facile da introdurre in CP che cambiano runtime types ma non toccano `types.js`. Aggiungere a checklist post-CP impl: "grep types.js per occorrenze del field modificato".
+
+**Commit.** `816a49f` (incluso in CP4 commit).
+
+---
+
+## 6.118 — CP4-fix 9-A: `isCrossMidnightRecalc` ISO-aware (revert §6.116a)
+
+**Sessione:** 9-A implementativa (26 aprile 2026, CP4-fix post-CP browser punto 2).
+
+**Stato:** ✅ **CHIUSA** (chiude **§6.26** definitivamente, sostituendo §6.116 prima iterazione).
+
+**Scope.** Fix ex-post di §6.116 dopo falsificazione in CP browser punto 2 (vedi §6.116 per diagnosi). Implementazione:
+
+```js
+export function isCrossMidnightRecalc(entry) {
+  if (!entry?.ora_ricalcolata) return false;
+  return parseIsoDateTime(entry.ora_ricalcolata).dateStr > entry.dateStr;
+}
+```
+
+Confronto lex `'YYYY-MM-DD' > 'YYYY-MM-DD'` è cronologico per quel formato. Cattura esattamente il caso §6.18: entry con dateStr=oggi e ora_ricalcolata.dateStr=domani.
+
+**Revert §6.116a.** Prop opzionale `todayDateStr` rimossa da `DoseCard` (signature + JSDoc). Propagazione `todayDateStr={today}` rimossa da `OggiView` JSX. Il helper è ora self-contained, nessun arg esterno.
+
+**Test.** `uiState.test.js` 3 test `isEntryFutureDate` → 3 test `isCrossMidnightRecalc` ISO-aware (same-day false, cross-midnight true, null false). `DoseCard.test.jsx` test badge riscritto: `entry={...plan[0], ora_ricalcolata: '2026-04-20T07:30'}` (entry su 2026-04-19, recalc domani). Net Δ test: 0.
+
+**Validazione CP browser punto 2 post-§6.118.**
+| Card | Atteso | Osservato |
+|---|---|---|
+| `2026-04-25-4-2` | no badge | `false` ✅ |
+| `2026-04-26-4-2` (recalc cross-midnight) | badge ON | `true` ✅ |
+| `2026-04-27-4-2` (dose naturale domani) | no badge | `false` ✅ |
+
+**Lezione metodologica.** Q-CP4-2 "trust §11 letterale" è stato un errore. Pattern correttivo per future sessioni con AMB ratificate da analisi-first: validare la semantica del helper proposto contro 2-3 scenari concreti PRIMA di scrivere codice, anche se sembrano ovvi. Tempo CP browser breve (~5min) ha catturato bug che 2 ore di test unitari avrebbero mancato (le fixture HH:MM non esercitavano la condizione).
+
+**Commit.** `0e70a38` su branch `step-8`.
+
+---
+
+## 6.119 — Bug visivo §6.18 sottostante: card cross-midnight non bumpata di giorno (deferred)
+
+**Sessione:** 9-A implementativa (26 aprile 2026, scoperta in CP browser punto 2).
+
+**Stato:** ⏳ **DEFERRED** post-9-A (candidate 9-B o sessione dedicata pre-Step 10).
+
+**Contesto.** Post-§6.118 il badge "⚠ orario: domani" funziona correttamente, ma la card resta visivamente sotto il date separator "Oggi · …" invece di migrare sotto "Domani · …". Esempio reale dal CP browser:
+
+```
+Card key:                    2026-04-26-4-2
+Display orario:              07:54 (cross-midnight da 14:00 + 12h = 02:00, drift §6.120 ma irrilevante per §6.119)
+Sezione visiva:              Oggi (date separator pill = oggi)
+Sezione semantica corretta:  Domani (perché ora_ricalcolata.dateStr = 2026-04-27)
+```
+
+**Causa.** `planBuilder.js` produce entry con `entry.dateStr = entry.dateStr originale` indipendentemente dal valore di `ora_ricalcolata`. Quando recalc cross-midnight scatta in `apply*`, l'entry mantiene `dateStr=oggi` mentre `ora_ricalcolata.dateStr=domani`. La vista `OggiView` raggruppa per `entry.dateStr` (via `groupEntriesByDayAndMomento`), quindi la card resta nel gruppo di oggi.
+
+**Opzioni di fix (out-of-scope 9-A).**
+- **(A) Bump `entry.dateStr` in `planBuilder` quando ora_ricalcolata cross-midnight.** Conseguenze cascade: la entry si "sposta" tra giorni durante recalc; `mergeLogIntoEntry` deve ri-mappare; key dell'entry (`${dateStr}-${farmaco_id}-${dose_numero}`) cambia → break referential equality, può rompere React keys e `useAutoBeep`.
+- **(B) Lasciare `entry.dateStr` invariato, raggruppare in vista per `effective_dateStr = ora_ricalcolata.dateStr ?? entry.dateStr`.** Più sicuro a livello dominio (entry immutabili) ma richiede modifica `groupEntriesByDayAndMomento` + selectors counters.
+- **(C) Mitigation status quo (badge §6.118).** Già in place. UI segnala il caso senza richiedere ri-architettura.
+
+**Decisione differimento.** §6.119 non blocca consegna 9-A: il badge §6.118 è UX accettabile (l'utente è informato). Fix proprio richiede analisi-first dedicata (scelta A vs B, impatto su counters/selectors/test).
+
+**Validazione UI.** Entry rimane visibile e actionable in entrambi i casi (PRESA tap funziona); solo il posizionamento visivo è errato. Severity: bassa.
+
+---
+
+## 6.120 — `actions.presa()` ignora `simulated_now` in DEV (deferred)
+
+**Sessione:** 9-A implementativa (26 aprile 2026, scoperta in CP browser punto 1).
+
+**Stato:** ⏳ **DEFERRED** post-9-A (candidate 9-B o sessione dedicata).
+
+**Contesto.** CP browser punto 1 avrebbe dovuto verificare recalc same-day: PRESA Olevia dose 1 alle 08:00 (slider 480) → atteso dose 2 ricalcolata 08:00+12h=20:00 stesso giorno, badge `+30 min`, NESSUN badge cross-midnight. **Osservato invece:** ora_ricalcolata = ~08:00 next day (cross-midnight), badge cross-midnight ON.
+
+**Diagnosi.** `actions.presa(entryKey)` chiamata senza override usa `Date.now()` real-time, **non** `now` derivato da `simulated_now`. Il DEV slider muove `now` UI per `getCardState`/`useAutoBeep` ma `actions.presa` registra `ora_effettiva` da clock di sistema reale. Calcolo verificato: ora reale 19:55 + 12h = 07:55 next day ≈ 08:15 osservato.
+
+**Impatto.**
+- **Production:** zero. In production `simulated_now` è null/disabled, `actions.presa()` legge correttamente l'ora reale.
+- **DEV:** test browser scenari time-shifted impossibili senza override esplicito `actions.presa(key, { dataEffettiva, oraEffettiva })`.
+- **Test unit:** zero. Test usano `actions.presa(key, override)` esplicito o mock di `now`.
+
+**Workaround temporaneo per CP browser future.**
+```js
+const slider = document.querySelector('input[type="range"]');
+slider.value = 480;
+slider.dispatchEvent(new Event('input', { bubbles: true }));
+const card = document.querySelector(`[data-entry-key="${todayStr}-4-1"]`);
+// NO: card.querySelector('button[aria-label="Registra dose presa"]').click();
+// SI: invocare actions.presa programmaticamente con override
+__pt.app.actions.presa(`${todayStr}-4-1`, { dataEffettiva: todayStr, oraEffettiva: '08:00' });
+```
+
+**Fix proprio (out-of-scope 9-A).** `actions.presa` thunk dovrebbe leggere `now` dal Provider (via context o param injection) anziché direttamente `Date.now()`/`new Date()`. Pattern simile a `useAutoBeep` che usa `now` iniettato.
+
+**Decisione differimento.** §6.120 non blocca consegna 9-A: il critico CP browser punto 2 (cross-midnight) è stato verificato indipendentemente con presa alle 14:00 (slider 840) — il drift `simulated_now` ha solo cambiato l'ora osservata da `~02:00` (atteso) a `~07:54` (real-time + 12h = 19:54+12h = 07:54), ma la condizione cross-midnight è scattata comunque. Severity: bassa (DEV-only).
+
+---
+
 ## 7. Roadmap Fase 2 — avanzamento
 
 | Step | Contenuto | Stato | Note |
@@ -2802,8 +3039,8 @@ Test Files  31 passed (31)
 | **8d-B** | Tier C design-decision + investigation: §6.81 ConfigTabBar dark token, §6.96 sticky separator CSS var+ResizeObserver (AMB-8d.B), §6.85 `nome_utente` investigation con strumentazione logging (AMB-8d.E) | ⚠️ **Parziale** | CP1 §6.96 ROLLED BACK in-session (scroll lock + CSS var mai settata → §6.107). CP2 §6.105 fix +2, CP3 §6.103 retrofit +1, CP4 §6.81 fix 0 → 313/313 (+3). 1 commit `eac185a`. 3 nuove deviazioni §6.107/108/109 deferred a 8d-C. Bump v2.5.33 → v2.5.34 |
 | **8d-C** | Carryforward residuo 8d-B + 8d originale: §6.107 sticky separator re-investigation, §6.109 ProfiliTab focus restore, §6.108 NavBar bottom contrast, §6.85 nome_utente 3° timebox, §6.84 test router warning | ✅ **Completo** | 313 → 313 test invariati (Δ=0, target AMB-K' centrato). 4 commit Mac-side: `0283567` CP1 §6.110, `3406e33` CP3 §6.112, `af147e0` CP4 §6.113, `db30fae` CP5 §6.114. CP2 §6.111 zero-commit (h2 falsificata, hard-defer 8d-D). 5 nuove §6.110-§6.114, 4 chiuse (§6.96/§6.108/§6.85/§6.84). Bump v2.5.34 → v2.5.35 |
 | 9 | Notifiche locali (Notification API + scheduling Opzione 1 foreground-only) + **fix dominio §6.18 cross-midnight** (§6.26) | ⏳ **Analisi-first ✅** | Split in **9-A + 9-B** (analisi-first 26/04/2026, v2.5.36). 10 AMB-9.A÷J ratificate. Decisione scope: Opzione 1 senza server (Web Push backend Mac Mini differito a Fase 3 estesa post-Step 11) |
-| **9-A** | Wave A — fix dominio §6.18 cross-midnight: `ora_ricalcolata` TIME → TEXT ISO + 3 helper `utils/time.js` + Dexie v1→v2 migration con `fake-indexeddb` + propagazione apply* + tear-down §6.26 (`isEntryFutureDate` sostituisce `isCrossMidnightRecalc`) | ⏳ **Prossimo** | 4 CP impl + 1 CP browser. Δ test stimato +16. AMB-9.A÷D + AMB-9.J. §6.115-§6.117 attese. Bump v2.5.36 → v2.5.37 a chiusura |
-| **9-B** | Wave B — notifiche Opzione 1 foreground-only: `services/notifications.js` singleton + `hooks/useNotifications.js` + `utils/copy.js` + `rescheduleAllNotifications` puro + AppContext wiring (8 trigger) + chiave `notifiche_attive` Dexie + toggle UI in ImpostazioniTab | | 5 CP impl + 1 CP browser. Δ test stimato +31. AMB-9.E÷I. §6.118-§6.119 attese. Bump v2.5.37 → v2.5.38 a chiusura |
+| **9-A** | Wave A — fix dominio §6.18 cross-midnight: `ora_ricalcolata` TIME → TEXT ISO + 3 helper `utils/time.js` + Dexie v1→v2 migration `fake-indexeddb` + propagazione apply* + tear-down §6.26 (`isCrossMidnightRecalc` ISO-aware sostituisce HH:MM-heuristic) | ✅ **Completo** | 4 CP impl + CP browser 4 punti (P2 critico verde post-§6.118 fix; P1/P4 ambigui per pre-existing fuori scope §6.119/§6.120). 313 → 328 test (+15, target AMB-9.J 329 ±3 a -1). 5 commit branch `step-8` (`d5248a0`/`d0d4e5e`/`d5de70f`/`816a49f`/`0e70a38`). 9 deviazioni: §6.115a/§6.115b/§6.116/§6.116b/§6.117/§6.117a/§6.118 chiuse, §6.119/§6.120 deferred. Bump v2.5.36 → v2.5.37 |
+| **9-B** | Wave B — notifiche Opzione 1 foreground-only: `services/notifications.js` singleton + `hooks/useNotifications.js` + `utils/copy.js` + `rescheduleAllNotifications` puro + AppContext wiring (8 trigger) + chiave `notifiche_attive` Dexie + toggle UI in ImpostazioniTab | ⏳ **Analisi-first ✅** | Analisi-first 26/04/2026 (v2.5.38). AMB-9.E÷I confermate con 4 emendamenti **E'/F'/G'/I'** (§22.20). Tabella CP impl 5 CP: CP1 §6.124 utils/copy.js (+13) / CP2 services/notifications.js (+10) / CP3 §6.123 hooks/useNotifications.js (+6) / CP4 §6.121+§6.122 AppContext (+5) / CP5 ImpostazioniTab.jsx (+4). Δ test totale +38, target AMB-9.J 9-B split +31 (boundary alta). CP browser **8 punti** (5 obbligatori + 3 raccomandati). 4 deviazioni §6.121-§6.124 previste. Bump v2.5.38 → v2.5.39 a chiusura impl |
 | 10 | Service worker attivo + manifest definitivo + icone | | |
 | 11 | Polish finale, QA, accessibilità estesa, gestione errori | | |
 
@@ -2918,13 +3155,11 @@ Chiarimenti risolti pre-Step 4b (AMB-1/2/3):
 ---
 
 
-## 11. Prossimo step — Sessione 9-A esecutiva (Wave A dominio + migration)
+## 11. Prossimo step — Sessione 9-B esecutiva (Wave B notifiche Opzione 1)
 
-**Stato baseline:** v2.5.36 (post-Sessione 9 analisi-first). 313/313 test su 31 test files. Commit top atteso `<hash>` Changelog v2.5.36 (se tracked) parent `db30fae` Sessione 8d-C CP5 §6.114.
+**Stato baseline:** v2.5.38 (post-Sessione 9-B analisi-first). 328/328 test su 32 test files. Commit top atteso `0e70a38` 9-A CP4-fix §6.118 (Changelog tracciato KB-only, no commit codice in 9-B analisi-first).
 
-**Scope Sessione 9-A:** Wave A — fix dominio §6.18 cross-midnight in 4 CP impl + 1 CP browser. Chiude §6.18 e §6.26. AMB-9.A÷D ratificate inline (no Q&A iterativo intra-sessione).
-
-**Vincolo procedurale:** split upfront 9-A + 9-B (AMB-9.J). Sessione 9-B aperta in nuova conversazione **solo dopo** chiusura 9-A con bump v2.5.37 e baseline test verde.
+**Scope:** 5 CP impl + 1 CP browser (8 punti) + CP6 closing. AMB-9.E÷I + emendamenti E'/F'/G'/I' congelati in §22.20. Target Δ test +38 (boundary AMB-9.J alta, target +32 ±5).
 
 ### CP0 sanity-light (3 gate)
 
@@ -2932,186 +3167,107 @@ Chiarimenti risolti pre-Step 4b (AMB-1/2/3):
 echo 'CP0 Gate 1 — git status + ultimo log'
 git status
 echo '---'
-git --no-pager log --oneline -3
-echo 'CP0 Gate 2 — full test suite (atteso 313/313 in 31 files)'
+git --no-pager log --oneline -5
+echo 'CP0 Gate 2 — full test suite (atteso 328/328 in 32 files)'
 npm test -- --run
-echo 'CP0 Gate 3 — commit 8d-C (atteso 4 match)'
-git --no-pager log --oneline | grep '8d-C'
-echo 'CP0 Gate 4 — pre-grep seed/devCheck (deve essere zero hit)'
-grep -n 'ora_ricalcolata' src/data/seed.js src/data/devCheck.js || echo 'OK: nessun riferimento a ora_ricalcolata in seed/devCheck'
+echo 'CP0 Gate 3 — top commit 9-A (atteso 5 match)'
+git --no-pager log --oneline | grep '9-A'
 ```
 
-Atteso: tree clean, top `db30fae` (o hash Changelog v2.5.36 se tracked), 313/313, 4 match `8d-C`, Gate 4 zero hit (se hit emergono → AMB-9.C estesa intra-CP1 con aggiornamento file emerso, documentato come §6.NN).
+Atteso: tree clean, top `0e70a38`, 328/328, 5 match `9-A`.
 
-### Tabella AMB-9.A÷D + 9.J ratificate (riferimento §22.18)
+### CP1 §6.124 — `utils/copy.js` (AMB-9.I')
 
-| ID | Decisione | CP target |
-|----|-----------|-----------|
-| **A** | `ora_ricalcolata` TIME → TEXT ISO `'YYYY-MM-DDTHH:MM'` | CP1+CP3 |
-| **B** | Migration semplice `length===5` self-heal, no rollback | CP2 |
-| **C** | `db.version(2).stores({...})` invariato + `fake-indexeddb` | CP2 |
-| **D** | 3 helper `utils/time.js` + tear-down §6.26 + `isEntryFutureDate` | CP1+CP4 |
-| **J** | Target 313 → 329 (+16 ±3) end-of-9-A | tutti CP |
+**Scope:** helper isolato `formatRelazionePastoCopy(farmaco)` body stripped (no prefisso "Assumere ") per uso in notifica Wave B. Drift voluto vs `DoseCard.getPastoText` documentato in §6.124.
 
-### CP1 — `utils/time.js` 3 helper + test isolato (AMB-9.D)
+**Pre-codice (lesson §6.118):** validare 2 scenari concreti del helper prima di scrivere:
+- `{relazione_pasto: 'prima', dettaglio_pasto: '30 min prima colazione'}` → `"30 min prima colazione"` (passthrough, no "Assumere ")
+- `{relazione_pasto: 'indifferente', dettaglio_pasto: null}` → body vuoto/null → fallback `"Promemoria farmaco"` gestito dal caller (in CP2 `showDoseNotification`), non da `formatRelazionePastoCopy`
 
-**Target Δ test:** +6 (3 helper × 2 test medi: happy path + edge case).
+**File:** `src/utils/copy.js` (nuovo, ~30 righe), `src/utils/copy.test.js` (nuovo, +13 test = 6 enum × {detail, null} + 1 fallback body vuoto).
 
-**File modificati:**
-- `src/utils/time.js` — aggiunti `composeIsoDateTime(dateStr, hhmm)` / `addMinutesToIso(iso, minutes)` / `parseIsoDateTime(iso)`. `minutesToTime` invariato (resta HH:MM per `ora_prevista`, AMB-9.D).
-- `src/utils/time.test.js` — aggiunti 6 test (3 happy + 3 edge: cross-midnight, month-rollover, dateStr alignment).
+**Commit:** `9-B CP1 §6.124 — formatRelazionePastoCopy body stripped (AMB-9.I')`
 
-**Implementazione attesa:**
-```js
-export function composeIsoDateTime(dateStr, hhmm) {
-  // Returns 'YYYY-MM-DDTHH:MM'
-  return `${dateStr}T${hhmm}`;
-}
+### CP2 — `services/notifications.js` singleton (AMB-9.H)
 
-export function addMinutesToIso(iso, minutes) {
-  // Returns 'YYYY-MM-DDTHH:MM' with carry-over via Date arithmetic.
-  // DST limitation noted (out of scope Step 9, AMB-9.D).
-  const d = new Date(iso);
-  d.setMinutes(d.getMinutes() + minutes);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mi = String(d.getMinutes()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
-}
+**Scope:** singleton closure-private 7+1 metodi (`isSupported`/`getPermission`/`requestPermission`/`scheduleNotification`/`cancelNotification`/`cancelAll`/`showDoseNotification` + `getPendingCount` introspection). Map `pending: Map<entryKey, timeoutId>`. Tag-based replacement `dose-{farmaco_id}-{dose_numero}-{dateStr}`. Click handler `window.focus()` + `window.location.href`. `rescheduleAllNotifications(state, services)` puro esportato (chiamato da AppContext in CP4).
 
-export function parseIsoDateTime(iso) {
-  // Returns { dateStr: 'YYYY-MM-DD', hhmm: 'HH:MM', dateObj: Date }
-  const dateStr = iso.slice(0, 10);
-  const hhmm = iso.slice(11, 16);
-  return { dateStr, hhmm, dateObj: new Date(iso) };
-}
-```
+**Pre-codice:** validare 3 scenari concreti contro AMB-9.H:
+- Schedule futuro 5min con title="Test" body="Body" → `vi.advanceTimersByTime(5*60*1000)` → constructor `Notification` invocato con title/body atteso, opts.tag corretto
+- Cancel via tag `dose-1-1-2026-04-26` → pending Map size decrementata di 1, `clearTimeout` chiamato sul timeoutId corrispondente
+- `cancelAll` → Map vuota dopo, no leak (verifica `getPendingCount()===0`), tutti i timeoutId clearati
 
-**Test attesi (suite `T-time-iso`):**
-1. `composeIsoDateTime('2026-04-26', '23:00')` → `'2026-04-26T23:00'`
-2. `addMinutesToIso('2026-04-26T23:00', 480)` → `'2026-04-27T07:00'` (cross-midnight)
-3. `addMinutesToIso('2026-04-30T22:00', 240)` → `'2026-05-01T02:00'` (month-rollover)
-4. `parseIsoDateTime('2026-04-27T07:00')` → `{dateStr:'2026-04-27', hhmm:'07:00', dateObj:<Date>}`
-5. Round-trip: `parseIsoDateTime(composeIsoDateTime('2026-04-26', '23:00'))` → `{dateStr:'2026-04-26', hhmm:'23:00'}`
-6. `addMinutesToIso(composeIsoDateTime('2026-04-26', '08:00'), 0)` invariante → `'2026-04-26T08:00'`
+**File:** `src/services/notifications.js` (nuovo, ~150 righe), `src/services/notifications.test.js` (nuovo, +10 test). Mock pattern: `globalThis.Notification` mock class in `beforeEach` con `permission='granted'` + `requestPermission` vi.fn, `vi.useFakeTimers()`, cleanup `afterEach`. Replicato da pattern `audio.js` test Sessione 7b-1.
 
-**Commit msg:** `9-A CP1 §6.115a — utils/time.js 3 ISO helpers (AMB-9.A/D)`.
+**Commit:** `9-B CP2 — services/notifications.js singleton 7+1 metodi (AMB-9.H)`
 
-### CP2 — `db.js` migration v1→v2 + `fake-indexeddb` (AMB-9.B/C)
+### CP3 §6.123 — `hooks/useNotifications.js` (AMB-9.F')
 
-**Target Δ test:** +3 (test integrazione migration).
+**Scope:** hook con shape `{permission, enabled, isStandalone, requestEnable, disable}`. Decision tree 4 stati. Defensive permission revocation check su mount + `visibilitychange` listener (rileva revoca iOS post-subscribe → forza `notifiche_attive=0` via `setSetting`).
 
-**Pre-CP grep gate (CP0 Gate 4):** se emergono hit `ora_ricalcolata` in `seed.js`/`devCheck.js`, estendere scope CP2 con aggiornamento e documentare come §6.117 sub-item.
+**Pre-codice:** validare 3 scenari concreti del decision tree contro AMB-9.F':
+- `isStandalone=false` → `{permission:'*', enabled:false, isStandalone:false, requestEnable:throws "not_standalone", disable:noop}`
+- `isStandalone=true, permission='granted', notifiche_attive=1` → `enabled:true`, `requestEnable:noop`, `disable:setSetting('notifiche_attive', 0)+notifications.cancelAll()`
+- `isStandalone=true, permission='denied'` → `enabled:false`, `requestEnable:throws "permission_denied"`, `disable:noop`
 
-**File modificati:**
-- `src/data/db.js` — aggiunta `db.version(2).stores({...invariato})` + upgrade hook (transform `length===5`).
-- `src/data/repository/IRepository.js` — typedef `LogAssunzione.ora_ricalcolata: string|null` aggiornato (commento JSDoc esplicito ISO + riferimento §6.18/§6.26).
-- `package.json` — dev-dep `fake-indexeddb@^6` (verifica versione major compatibile vitest 2.1).
+**File:** `src/hooks/useNotifications.js` (nuovo, ~80 righe), `src/hooks/useNotifications.test.jsx` (nuovo, +6 test).
 
-**File nuovi:**
-- `src/data/db.migration.test.js` — test integrazione (3 test: legacy HH:MM convertito, ISO già migrato no-op, NULL preservato).
+**Commit:** `9-B CP3 §6.123 — useNotifications 4-state decision tree (AMB-9.F')`
 
-**Implementazione attesa upgrade hook:**
-```js
-db.version(2).stores({
-  // Identical to v1 — schema bump for upgrade hook only
-  farmaci: '++id, attivo',
-  orari_base: '++id, farmaco_id, [farmaco_id+dose_numero]',
-  log_assunzioni: '++id, farmaco_id, data, [farmaco_id+data+dose_numero], stato',
-  profilo_utente: '++id, attivo',
-  impostazioni_app: 'chiave',
-}).upgrade(async (tx) => {
-  // §6.117 — Migrate ora_ricalcolata HH:MM (legacy) → ISO 'YYYY-MM-DDTHH:MM' (post-§6.18 fix).
-  // Cross-midnight legacy entries self-heal at next apply* (AMB-9.B, accepted trade-off).
-  await tx.table('log_assunzioni').toCollection().modify((log) => {
-    if (log.ora_ricalcolata && log.ora_ricalcolata.length === 5) {
-      log.ora_ricalcolata = log.data + 'T' + log.ora_ricalcolata;
-    }
-  });
-});
-```
+### CP4 §6.121 + §6.122 — Integration AppContext (AMB-9.E'/G')
 
-**Setup `fake-indexeddb`:**
-```
-npm install --save-dev fake-indexeddb
-```
-Test file imports `fake-indexeddb/auto` per environment globale.
+**Scope:** wiring 8 trigger `rescheduleAllNotifications` in AppContext + 7 thunks Config + visibility/focus listener. Nuova chiave Dexie `impostazioni_app.notifiche_attive` boolean default 0 in seed. Limitazioni Opzione 1 documentate (no app chiusa, no recovery post-suspend, recovery via UI standing badge "in ritardo" Sessione 7c-1).
 
-**Test attesi:**
-1. Open db v1 → write log con `ora_ricalcolata='07:00'` + data `'2026-04-26'` → bump a v2 → `ora_ricalcolata === '2026-04-26T07:00'`
-2. Open db v2 fresh → write log con `ora_ricalcolata='2026-04-26T07:00'` → re-open → invariato (no double-migration)
-3. Write log con `ora_ricalcolata=null` → bump v2 → `null` preservato
+**Pre-codice:** validare 2 scenari concreti contro AMB-9.E' (sincrona idempotente):
+- `commitApplyResult` → `if(state.impostazioni.notifiche_attive===1) rescheduleAllNotifications(state, services)` chiamato 1 volta sync
+- Visibility flip rapido foreground→background→foreground in 100ms → 2 `rescheduleAllNotifications` sequenziali sync, pending count finale = N atteso, no orphan timer (verifica via `notifications.getPendingCount()`)
 
-**Commit msg:** `9-A CP2 §6.117 — Dexie v1→v2 migration ora_ricalcolata ISO + fake-indexeddb (AMB-9.B/C)`.
+**File:** `src/state/AppContext.jsx` (mod, ~+30 righe wiring + visibility listener + 30-tick rolling), `src/state/actions.js` (mod nei 7 Config thunks rilevanti `add/update/deleteFarmaco`+`add/update/delete/attivaProfilo`, ~+15 righe totali), `src/data/seed.js` (mod, +1 chiave `notifiche_attive: 0`), `src/state/AppContext.test.jsx` (mod, +5 test).
 
-### CP3 — `recalc.js` propagazione ISO + `planBuilder.js` invariante (AMB-9.A)
+**Commit:** `9-B CP4 §6.121+§6.122 — 8 trigger reschedule + foreground-only limits (AMB-9.E'/G')`
 
-**Target Δ test:** +6 (4 cross-midnight scenari in `recalc.test.js` + 1 invariante `planBuilder.test.js` + 1 round-trip).
+### CP5 — `ImpostazioniTab.jsx` toggle UI (AMB-9.F')
 
-**File modificati:**
-- `src/domain/recalc.js` — `applyAssunzione`/`applySalto`/`autoSkip`/`applyRecupero` compongono `ora_ricalcolata` via `composeIsoDateTime(entry.dateStr, ...)` + `addMinutesToIso(...)`. Sostituisce `minutesToTime(effMin + intervallo*60)` con `addMinutesToIso(composeIsoDateTime(entry.dateStr, ora_effettiva_hhmm), intervallo*60)`.
-- `src/domain/planBuilder.js` — `mergeLogIntoEntry` resta opaque su `ora_ricalcolata` (invariante §6.23 esteso, conferma).
-- `src/domain/recalc.test.js` — aggiunti test cross-midnight (es. dose 8h presa alle 23:00 → ricalcolata `'2026-04-27T07:00'`).
-- `src/domain/planBuilder.test.js` — 1 test invariante merge ISO opaque.
+**Scope:** rendering UI 4 stati matrix consumando `useNotifications`. Toggle switch nei stati 2/3, banner nei stati 1/4.
 
-**Test attesi:**
-1. `applyAssunzione` dose 8h presa alle 23:00 (su entry `dateStr='2026-04-26'`) → entry N+1 ha `ora_ricalcolata === '2026-04-27T07:00'`
-2. `applySalto` cross-midnight pass-through → entry N+1 `ora_ricalcolata` ISO con dateStr+1
-3. `applyRecupero` 60min su `ora_ricalcolata='2026-04-27T07:00'` → `'2026-04-27T06:00'`
-4. `autoSkip` produce ISO ricalcolata coerente con dateStr della entry skipata
-5. `mergeLogIntoEntry` con log `ora_ricalcolata='2026-04-27T07:00'` → entry mantiene esattamente quella stringa
-6. Round-trip: `applyAssunzione → log → mergeLogIntoEntry → recalc plan` → ricalcolata invariata
+**Pre-codice:** validare il rendering dei 4 stati con render() su props mock di `useNotifications` (un test per stato, 4 test). +1 integration test toggle on→permission flow happy path.
 
-**Commit msg:** `9-A CP3 §6.115b — recalc.js ISO propagation cross-midnight (AMB-9.A) + planBuilder invariante (§6.23 esteso)`.
+**File:** `src/components/config/ImpostazioniTab.jsx` (mod, ~+50 righe sezione "Notifiche"), `src/components/config/ImpostazioniTab.test.jsx` (mod, +4 test).
 
-### CP4 — Tear-down §6.26 + `isEntryFutureDate` (AMB-9.D)
+**Commit:** `9-B CP5 — ImpostazioniTab toggle 4-state matrix (AMB-9.F')`
 
-**Target Δ test:** +1 net (rimozione `isCrossMidnightRecalc` -2, nuovo `isEntryFutureDate` +3).
+### CP browser 9-B (8 punti, non-skippable pre-bump)
 
-**File modificati:**
-- `src/utils/uiState.js` — rimosso `isCrossMidnightRecalc` (dead code post-§6.26 chiusura). Nuovo `isEntryFutureDate(entry, todayDateStr)` → `entry.dateStr > todayDateStr`.
-- `src/utils/uiState.test.js` — rimossi 2 test `isCrossMidnightRecalc`, aggiunti 3 test `isEntryFutureDate` (entry stessa data → false, entry domani → true, entry passata → false).
-- `src/components/oggi/DoseCard.jsx` — branch `isCrossMidnightRecalc(entry)` rimosso. Sostituito con `isEntryFutureDate(entry, todayDateStr)` per badge "⚠ orario: domani". Display orario ricalcolato: parse ISO con `parseIsoDateTime(entry.ora_ricalcolata).hhmm`.
+Eseguibile in PWA installata Mac (Chrome installata con `display-mode: standalone`) e iPhone (PWA da Safari → Aggiungi a Home). Punti 1-5 obbligatori, 6-8 raccomandati.
 
-**Commit msg:** `9-A CP4 §6.116 — tear-down §6.26 + isEntryFutureDate (AMB-9.D, chiude §6.18+§6.26)`.
+1. **Permission flow** — tap toggle off→on in ImpostazioniTab → prompt OS → granted → `__pt.notifications.getPendingCount() > 0` → conferma reschedule scattato.
+2. **Schedule/cancel cycle** — `apply presa` su entry imminente → pending count decrementato → `cambia profilo` → cancelAll + reschedule fresh con nuova finestra 12h.
+3. **Rollover overnight** — `__pt.simulatedNow.set('23:55')` → attendere tick rollover → verificare reschedule per nuovo `dateStr`. Tier hard (richiede simulated_now active in dev build).
+4. **Beep simultaneity** — notifica fires con app foreground → conferma beep audio (`services/audio.js`) + `Notification.show` entrambi attivi senza eccezione AudioContext suspended.
+5. **Visibility change** — hide tab/PWA per 2s → show → pending count invariato (cancel-then-reschedule sync, no leak). Ripetere flip rapido <500ms × 3 → invariato.
+6. **Permission revocation defensive** — settings iOS → revoca permesso → riapri PWA → useNotifications mount detect → `notifiche_attive=0` forzato + UI mostra stato `denied`.
+7. **Non-PWA fallback** — aprire URL in Safari mobile (no Add-to-Home) → ImpostazioniTab toggle nascosto + banner "Installa".
+8. **Tag-based replacement** — schedule 2 notifiche stesso `entryKey` (forzato via console `__pt.notifications.scheduleNotification(...)` ripetuto) → solo 1 visibile in OS notification center.
 
-### CP browser — 4 punti
+### CP6 closing
 
-Eseguito da Roberto su Mac post-CP4 commit, **prima** del bump v2.5.37 (vincolo "no commit Changelog senza CP browser verde", lezione 8d-C §6.107).
-
-1. **Avvio app esistente** — `npm run dev` → load `/oggi`. Atteso: status `'ready'`, plan caricato, nessun warning console (tranne RR future flag già coperti §6.114).
-2. **Cross-midnight scenario via DEV slider** — set tempo simulato a 22:55, dose 8h Prontinal con dose 2 prevista alle 23:00. Tap presa alle 23:00. Atteso: dose 3 ricalcolata appare nella card di domani (`dateStr='2026-04-27'` se oggi è `2026-04-26`), display orario `'07:00'`, badge blu "ricalcolata", separator data `'27 APR'` visibile.
-3. **No badge "⚠ orario: domani" su entry stessa-giornata** — dose ricalcolata ma con stessa dateStr di oggi → no badge. (Verifica tear-down §6.26 corretto: il badge non scatta su recalc-only-no-day-change).
-4. **Badge "⚠ orario: domani" su entry dateStr futura** — entry con dateStr+1 → badge presente (verifica `isEntryFutureDate` attivo).
-
-### Bump v2.5.36 → v2.5.37
-
-A chiusura 9-A con CP browser 4/4 verdi:
-- Aggiornare front-matter version + data
-- Aggiungere entry §1 v2.5.37 (sintesi 9-A: 4 CP, Δ test +16, §6.115-§6.117 documentate, baseline 313 → 329)
-- Aggiornare riga §7 9-A → ✅ Completo
-- Sostituire §11 con prompt esecutivo **Sessione 9-B** (Wave B notifiche)
-- Aggiungere §22.19 "Stato post-Sessione 9-A impl"
+Bump v2.5.38 → v2.5.39, §22.21 "Stato post-Sessione 9-B implementativa", commit Changelog.
 
 ### Vincoli operativi
 
-- **Pattern invariance metodologico Fase 2:** analisi-first → AMB ratificate → CP impl interleaved con CP browser quando rilevante → bump.
+- **Pattern §6.118** (validazione semantica pre-codice) **internalizzato in CP1/CP2/CP3/CP4**: 2-3 scenari concreti del codice contro AMB pre-codice, non trust letterale del prompt §11.
 - **Regole bash zsh interattiva:** single-quoted echo, no apostrofi italiani, no `#` commenti multi-riga.
 - **Drift §6.69 procedurale:** front-matter version + entry §1 sempre in lockstep al bump.
-- **CP browser PRE-commit obbligatorio** per CP4 (lezione §6.107 8d-B → 8d-C §6.110).
-- **Ordine CP non commutativo:** CP1 (helper) precede CP2 (migration test usa helper indirettamente), CP3 precede CP4 (tear-down legge ISO prodotto da CP3).
-- **No anticipazione Wave B:** zero modifiche a `services/notifications.js`/`hooks/useNotifications.js`/`ImpostazioniTab` in 9-A. Se emergono coupling imprevisti → §6.NN documentato + hard-defer 9-B.
+- **Drift numerazione §6.121-§6.124 confermata** (post-9-A consumption §6.118-§6.120).
+- **Eventuali §6.125+** emergeranno come pre-existing scoperte in CP browser (analoga §6.119/§6.120 9-A).
 
 ### Apertura sessione
 
 Aprire nuova conversazione Claude con one-liner:
 
 ```
-Esegui il prompt al §11 del Changelog (Sessione 9-A esecutiva).
+Esegui il prompt al §11 del Changelog (Sessione 9-B esecutiva).
 ```
-
 
 ## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3 + 8-pre + 8a + 8b + 8c-parz + 8c-2
 
@@ -5796,4 +5952,293 @@ Numerazione effettiva attribuita alla scrittura nel CP impl corrispondente.
 6. Aprire Sessione 9-A esecutiva (nuova conversazione Claude) con one-liner:
    ```
    Esegui il prompt al §11 del Changelog (Sessione 9-A esecutiva).
+   ```
+
+## 22.19 Stato post-Sessione 9-A implementativa
+
+**Data:** 26 aprile 2026.
+**Baseline test pre-sessione:** 313/313 su 31 test files (§22.18 post-9 analisi).
+**Baseline test post-sessione:** **328/328 su 32 test files** (+15, +1 file nuovo `db.migration.test.js`). Target AMB-9.J 329 ±3 → centrato a -1, in tolleranza.
+**Bump:** v2.5.36 → v2.5.37.
+**Esito:** ✅ **Completo con caveat** — Wave A consegnata, §6.18 chiusa a livello DATI (CP3 ISO propagation), §6.26 chiusa definitivamente (§6.118 ISO-aware detector). Caveat: §6.119 (bug visivo §6.18 sottostante) e §6.120 (`actions.presa` ignora `simulated_now` DEV) emersi in CP browser, deferred post-9-A. Severity entrambi bassa.
+
+### Scope consegnato
+
+Sessione 9-A esecutiva aperta con one-liner `Esegui il prompt al §11 del Changelog (Sessione 9-A esecutiva).`. 4 CP impl + CP browser 4 punti come da §11 v2.5.36. Modalità "decidi tu" da Q-CP4-1 in poi (Q&A intra-CP per ambiguità non risolte da §11).
+
+### CP completati
+
+- **CP1 — `utils/time.js` 3 helper ISO** ✅. 1 file modificato + 1 file nuovo (`utils/time.test.js`). +6 test (3 happy + 3 edge). Spec-conforme. Commit `d5248a0`. Δ baseline: 313 → 319.
+- **CP2 — Dexie v1→v2 migration + `fake-indexeddb`** ✅. 2 file modificati (`db.js`, `package.json`) + 1 file nuovo (`db.migration.test.js`). +3 test. Pre-CP grep gate `seed.js`/`devCheck.js` zero hit confermato. Commit `d0d4e5e`. Δ baseline: 319 → 322.
+- **CP3 — `recalc.js` ISO propagation + `planBuilder` invariante** ✅. 2 file modificati (`recalc.js`, `planBuilder.js`) + 2 test estesi (`recalc.test.js` +6, `planBuilder.test.js` +1 invariante, alcuni cross-test rinominati). +6 test. Commit `d5de70f`. Δ baseline: 322 → 328.
+- **CP4 — Tear-down §6.26 + isCrossMidnightRecalc ISO-aware** ⚠️→✅. **2 commit** (split per finding ex-post). Prima iter `816a49f` con `isEntryFutureDate(entry, todayDateStr)` + prop `todayDateStr`. CP browser punto 2 ha rivelato semantica invertita. Fix `0e70a38` con `isCrossMidnightRecalc(entry)` ISO-aware self-contained, revert prop. Δ test net: 0 (3 rimossi + 3 nuovi nella prima iter, fixture aggiornate; nella fix-iter altri 3 rimossi + 3 nuovi). Δ baseline: 328 invariato.
+- **CP browser** — 4 punti, esiti misti:
+  - **P1 (recalc same-day)** ⚠️ ambiguo: scenario fallito per §6.120 pre-existing (`actions.presa` ignora `simulated_now`); recalc cross-midnight scattato invece di same-day. Non è fail di §6.116/§6.118 (logica corretta). Documentato §6.120.
+  - **P2 (cross-midnight critico)** ✅ verde post-§6.118: card oggi ora_ricalcolata domani ha badge ON, card domani naturale ha badge OFF. Caveat §6.119 documentato (card oggi resta sotto separator oggi anziché migrare a domani).
+  - **P3 (theme toggle)** — visivo manuale, non eseguito formalmente; non interagisce con scope CP4. Skip per pragmatismo (chiusura A).
+  - **P4 (focus restore ALTRO)** ⚠️ ambiguo: helper console mostrato `activeElement = button[aria-label="Chiudi"] modal open: true` → modal era ancora aperto durante check. Retry implicato ma scope 7d-1 (focus restore già verificato lì), non CP4. Skip per pragmatismo.
+
+### Deviazioni §6.NN introdotte
+
+| ID | Stato | Tipo | Riferimento |
+|----|-------|------|-------------|
+| **§6.115a** | ✅ Chiusa | spec-conforme CP1 | 3 helper ISO |
+| **§6.115b** | ✅ Chiusa | spec-conforme CP3 | recalc ISO propagation, chiude **§6.18** dati |
+| **§6.116** | ⚠️ Sostituita da §6.118 | spec-conforme CP4 prima iter, semantica errata | tear-down §6.26 (mantenuta come storico) |
+| **§6.116b** | ✅ Chiusa | finding analisi pre-CP4 | consumer drift uiState.js + OggiView |
+| **§6.117** | ✅ Chiusa | spec-conforme CP2 | Dexie migration |
+| **§6.117a** | ✅ Chiusa | drift documentale | types.js JSDoc |
+| **§6.118** | ✅ Chiusa | fix ex-post post-CP browser | `isCrossMidnightRecalc` ISO-aware, chiude **§6.26** definitivamente |
+| **§6.119** | ⏳ Deferred | bug visivo pre-existing emerso | planBuilder non bumpa entry.dateStr cross-midnight |
+| **§6.120** | ⏳ Deferred | bug DEV pre-existing emerso | actions.presa ignora simulated_now |
+
+### Drift numerazione vs piano §22.18
+
+§22.18 prevedeva §6.115/§6.116/§6.117 per Wave A, §6.118/§6.119 per Wave B. Effetto reale:
+- §6.115 split in §6.115a + §6.115b (CP1+CP3 separate iterations).
+- §6.116 + §6.116b (sub-finding consumer drift).
+- §6.117 + §6.117a (sub-drift JSDoc differito).
+- §6.118 + §6.119 + §6.120 consumati da 9-A (CP4-fix + 2 deferred).
+
+**Conseguenza Wave B 9-B:** numerazione spostata da §6.118-§6.119 a **§6.121-§6.122** per coerenza fatto-storico (no retrocorrezione, principio §6.71/§6.85). Patch 4 §7 roadmap aggiornata.
+
+### Scoperte operative
+
+1. **CP browser PRE-bump è il gate critico per fix ex-post.** Senza CP browser punto 2, §6.118 sarebbe stata mancata, il bump v2.5.37 sarebbe partito con bug semantico, e la prossima sessione avrebbe dovuto re-aprire §6.116 in modalità correttiva. Pattern lezione 8d-C §6.107 riconfermato. Tempo CP browser: ~5min. Risparmio: 1 sessione fix-only.
+2. **"Decidi tu" autorità non è scudo per regola critica #2 (fermarsi su incongruenze).** Q-CP4-2 "trust §11 letterale" è stato un errore: la spec era semanticamente errata e Claude doveva proporre verifica concreta pre-codice. Lesson: anche con autorizzazione "decidi tu", validare 2-3 scenari concreti del helper PRIMA del codice.
+3. **Consumer drift latent dopo cambio dominio = pattern.** §6.116b (`uiState.js` + OggiView) e §6.117a (types.js JSDoc) sono entrambi conseguenza del cambio tipo `ora_ricalcolata` HH:MM → ISO in CP3. Test passavano solo perché fixture ancora HH:MM. Pattern futuro: post-cambio-tipo, `grep -rn` esaustivo dei consumer + audit fixture.
+4. **Pre-existing bugs emergono in CP browser, non in test unit.** §6.119 (planBuilder visual mis-placement) e §6.120 (actions.presa real-time) entrambi invisibili a test unit (fixture deterministiche, mock di `now`). Test unit verde ≠ behavior corretto in browser. CP browser è non-skippable pre-bump.
+5. **Pattern "self-extracting deliverables in /home/claude → present_files" funziona** anche per fix-iter con 5 file. Roberto cp da Downloads, npm test, retry browser → ciclo iter ~5min per fix-iteration.
+
+### File prodotti / modificati
+
+**Modificati (code, 9-A in toto):**
+- `src/utils/time.js` (CP1) — +3 funzioni
+- `src/utils/time.test.js` (CP1, **nuovo file**) — 6 test
+- `src/data/db.js` (CP2) — `db.version(2)` + upgrade hook
+- `package.json` (CP2) — dev-dep `fake-indexeddb`
+- `src/data/db.migration.test.js` (CP2, **nuovo file**) — 3 test
+- `src/domain/recalc.js` (CP3) — `apply*` ISO compose
+- `src/domain/recalc.test.js` (CP3) — +6 test cross-midnight
+- `src/domain/planBuilder.test.js` (CP3) — +1 invariante
+- `src/utils/uiState.js` (CP4) — rimosso isCrossMidnightRecalc HH:MM, aggiunto isCrossMidnightRecalc ISO-aware (post-§6.118), `effHHMM` helper, `parseIsoDateTime` import
+- `src/utils/uiState.test.js` (CP4) — -3 vecchi + 3 nuovi test
+- `src/components/oggi/DoseCard.jsx` (CP4) — recalc logic via parseIsoDateTime, badge gate via isCrossMidnightRecalc
+- `src/components/oggi/DoseCard.test.jsx` (CP4) — badge test riscritto su nuova API + 1 fixture inline ISO
+- `src/components/oggi/OggiView.jsx` (CP4) — `entryHHMM` helper per gap calc, parseIsoDateTime import
+- `src/domain/types.js` (CP4) — JSDoc ora_ricalcolata HH:MM → ISO
+
+**Modificati (docs):**
+- `PharmaTimer_Changelog_Fase2.md` — v2.5.36 → **v2.5.37** (questo delivery): front-matter, §1 entry v2.5.37, §6.115a/§6.115b/§6.116/§6.116b/§6.117/§6.117a/§6.118/§6.119/§6.120 nuove, §7 row 9-A ✅ + 9-B drift numerazione, §11 sostituita, §22.19 nuova.
+
+**Nuovi (code):**
+- `src/utils/time.test.js`
+- `src/data/db.migration.test.js`
+
+**Commit Mac-side branch `step-8`:**
+1. `d5248a0` — 9-A CP1 §6.115a — utils/time.js 3 ISO helpers (AMB-9.A/D)
+2. `d0d4e5e` — 9-A CP2 §6.117 — Dexie v1→v2 migration ora_ricalcolata ISO + fake-indexeddb (AMB-9.B/C)
+3. `d5de70f` — 9-A CP3 §6.115b — recalc.js ISO propagation cross-midnight (AMB-9.A) + planBuilder invariante (§6.23 esteso)
+4. `816a49f` — 9-A CP4 §6.116 tear-down §6.26 + isEntryFutureDate (poi sostituita da §6.118)
+5. `0e70a38` — 9-A CP4-fix §6.118 — isCrossMidnightRecalc ISO-aware (revert §6.116a)
+
+### Limitazioni note
+
+1. **§6.119 (visual mis-placement) deferred.** Card cross-midnight resta sotto separator OGGI invece di migrare a DOMANI. Mitigation UI in place via badge §6.118. Fix proprio richiede analisi-first dedicata (opzioni A bump dateStr in planBuilder vs B raggruppare per effective_dateStr in vista).
+2. **§6.120 (DEV simulated_now ignored) deferred.** `actions.presa` real-time, non riproducibile in production. Workaround test browser: passare override esplicito `actions.presa(key, { dataEffettiva, oraEffettiva })`.
+3. **CP browser P3 (theme) e P4 (focus restore) non eseguiti formalmente.** P3 visivo low-risk fuori scope CP4. P4 retry-ambiguo, scope 7d-1 già verificato. Decisione (A) chiusura pragmatica.
+4. **CP browser P1 (recalc same-day) ambiguo.** Bug §6.120 ha bloccato lo scenario; il critico P2 (cross-midnight) è stato verificato indipendentemente, sufficiente per validare §6.118.
+
+### Azioni sul Mac post-Sessione 9-A impl
+
+1. Stato git corrente: tree clean, top `0e70a38`, 5 commit 9-A su branch `step-8`.
+
+2. **Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude.ai** con la versione **v2.5.37** (questo delivery).
+
+3. Commit Changelog separato (opzionale, dipende da convenzione progetto KB-only):
+   ```
+   echo 'Commit Changelog v2.5.37 (opzionale)'
+   git add PharmaTimer_Changelog_Fase2.md 2>/dev/null && git commit -m 'Changelog v2.5.37 (Sessione 9-A impl)' || echo 'Changelog non tracciato in git, solo upload KB'
+   ```
+
+4. Verifica finale:
+   ```
+   git --no-pager log --oneline -7
+   ```
+   Atteso top:
+   - `<hash>` Changelog v2.5.37 (Sessione 9-A impl) — se tracked
+   - `0e70a38` 9-A CP4-fix §6.118 — isCrossMidnightRecalc ISO-aware
+   - `816a49f` 9-A CP4 §6.116 tear-down §6.26 + isEntryFutureDate
+   - `d5de70f` 9-A CP3 §6.115b — recalc.js ISO propagation
+   - `d0d4e5e` 9-A CP2 §6.117 — Dexie migration
+   - `d5248a0` 9-A CP1 §6.115a — utils/time.js helpers
+   - `9c99471` Changelog v2.5.36 (Sessione 9 analisi-first)
+
+5. **Eseguire CP0 sanity-light** del prompt §11 v2.5.37 prima di aprire Sessione 9-B:
+   ```
+   echo 'CP0 9-B sanity-light'
+   git status
+   git --no-pager log --oneline -5
+   npm test -- --run
+   git --no-pager log --oneline | grep '9-A'
+   ```
+
+6. Aprire Sessione 9-B (nuova conversazione Claude) con one-liner. **Raccomandato analisi-first:**
+   ```
+   Esegui il prompt al §11 del Changelog (Sessione 9-B analisi-first).
+   ```
+   Oppure, se preferisce esecutiva diretta:
+   ```
+   Esegui il prompt al §11 del Changelog (Sessione 9-B esecutiva diretta — saltare analisi-first).
+   ```
+
+
+---
+
+## 22.20 Stato post-Sessione 9-B analisi-first
+
+**Data:** 26 aprile 2026.
+**Baseline test pre-sessione:** 328/328 su 32 test files (§22.19 post-9-A impl).
+**Baseline test post-sessione:** 328/328 invariato (analisi-first pura, zero codice scritto).
+**Bump:** v2.5.37 → v2.5.38.
+**Esito:** ✅ **Completo** — 5 AMB-9.E÷I confermate con 4 emendamenti E'/F'/G'/I', scope Sessione 9-B esecutiva congelato.
+
+### Scope consegnato
+
+Sessione 9-B analisi-first aperta come one-liner `Esegui il prompt al §11 del Changelog (Sessione 9-B analisi-first).` (raccomandato vs esecutiva diretta dato lessons learned 9-A: spec semantics §6.118 + pre-existing browser bug §6.119/§6.120). Modalità Q&A pattern §11 v2.5.37: Q1-Q3 raccomandazioni esplicite (su AMB-9.E/F/G — decisioni nuove o emendamenti), Q4-Q5 "decidi tu" (su AMB-9.H/I — pattern stabilito). Tutte le 5 risposte: "decidi tu" (Roberto ha delegato, raccomandazioni adottate).
+
+### Incongruenza segnalata pre-Q (regola critica #2)
+
+AMB-9.G in §22.18 elencava "Config thunks" tra gli 8 trigger di re-schedule senza specificarne il sottoinsieme. I thunks Config sono ~9 (`addFarmaco`/`updateFarmaco`/`deleteFarmaco`/`addProfilo`/`updateProfilo`/`deleteProfilo`/`attivaProfilo`/`setSetting`/eventuali altri). Risolto in Q3 → AMB-9.G' nominativa: solo i **7 thunks rilevanti** (`add/update/deleteFarmaco`, `add/update/delete/attivaProfilo`) che mutano `farmaci`/`orari`/`profiloAttivo`. `setSetting('notifiche_attive')` ha path dedicato (toggle on/off); `setSetting('tema')` e altre chiavi NON triggerano.
+
+### CP0 N/A (analisi-first pura)
+
+Nessun gate eseguito (zero codice modificato in-session). CP0 sanity-light incluso nel prompt §11 esecutivo per Sessione 9-B impl successiva.
+
+### AMB-9.E÷I confermate con emendamenti
+
+| ID | Stato | Emendamento |
+|----|-------|-------------|
+| **E'** | ✅ confermata + emendata | `rescheduleAllNotifications(state, services)` **sincrona idempotente**, no debounce. Visibility flip rapido foreground→background→foreground produce N reschedules consecutivi senza leak (cancel-then-rebuild atomico, JS single-threaded). Alternative debounce 200ms / lock booleano scartate per complessità senza beneficio. |
+| **F'** | ✅ confermata + emendata | Decision tree UI **4 stati esplicito** (`isStandalone × permission`): (1) `!isStandalone` → toggle nascosto + banner "Installa l'app sulla home per attivare le notifiche"; (2) `standalone+default` → toggle off + tap requestPermission; (3) `standalone+granted` → toggle abilitato gating `notifiche_attive`; (4) `standalone+denied` → toggle disabilitato + banner "Permesso negato — abilita dalle impostazioni di sistema". Defensive permission revocation check su mount + `visibilitychange` forza `notifiche_attive=0` se OS revoca. |
+| **G'** | ✅ confermata + emendata | 8 trigger **nominati**: `init` / `commitApplyResult` / rollover mezzanotte / `cambiaProfilo` / **7 thunks rilevanti** (`add/update/deleteFarmaco`, `add/update/delete/attivaProfilo`) / toggle on / toggle off / `visibilitychange`+`focus`. `setSetting('notifiche_attive')` path dedicato; `setSetting('tema')` e altre chiavi escluse. Rolling 30 tick integrato in `useEffect` tick Provider §6.24. |
+| **H** | ✅ confermata invariata | Test mocking pattern `globalThis.Notification` mock class in `beforeEach` + `vi.useFakeTimers()` + `vi.runOnlyPendingTimers()` + cleanup `afterEach`. Replicato da pattern `audio.js` test Sessione 7b-1. |
+| **I'** | ✅ confermata + emendata | Body `formatRelazionePastoCopy` **stripped del prefisso "Assumere "** (drift voluto §6.124, copy nuda suona meglio in notifica). 13 test: 6 enum × {detail, null} + 1 fallback body vuoto. Fallback `"Promemoria farmaco"` gestito dal caller (`showDoseNotification` in CP2), non dal helper. |
+
+### Decision tree AMB-9.F' (rendering toggle ImpostazioniTab)
+
+| `isStandalone` | `permission` | UI |
+|---|---|---|
+| `false` | * | Toggle nascosto + banner "Installa sulla home per attivare le notifiche" |
+| `true` | `default` | Toggle off + tap → `requestPermission()` → granted ⇒ `notifiche_attive=1` |
+| `true` | `granted` | Toggle abilitato (utente controlla `notifiche_attive`) |
+| `true` | `denied` | Toggle disabilitato + banner "Permesso negato — abilita dalle impostazioni di sistema" |
+
+### CP completati
+
+N/A — analisi-first pura, zero CP impl. Sessione strutturata per ratificare scope e congelare prompt §11 esecutivo, non per scrivere codice.
+
+### Deviazioni §6.121-§6.124 previste post-impl
+
+4 deviazioni attese (numerazione corretta post-9-A consumption §6.118-§6.120, in continuità con §6.71/§6.85 archive: numerazione non retrocorretta).
+
+| ID | Wave | CP target | Scope |
+|----|------|-----------|-------|
+| **§6.121** | B | CP4 9-B | Chiave `impostazioni_app.notifiche_attive` boolean default 0 (analoga §6.25 `tema`) |
+| **§6.122** | B | Wave B globale | Opzione 1 foreground-only limitazioni note + roadmap Web Push Fase 3 estesa |
+| **§6.123** | B | CP3 9-B | `useNotifications` decision tree 4 stati + defensive permission revocation check |
+| **§6.124** | B | CP1 9-B | `formatRelazionePastoCopy` body stripped (drift voluto UX notifica) |
+
+Eventuali §6.125+ emergeranno come pre-existing scoperte in CP browser (analoga §6.119/§6.120 9-A).
+
+### Tabella CP impl 9-B (5 CP)
+
+Target AMB-9.J: 313 → 360 ±5. 9-A actual +15 (328). 9-B target +32 (a +1 dal centro split 31). Boundary 9-B: 28-37 nuovi test. Δ totale stimato +38 (boundary alta, margine assorbe edge case in CP3/CP4).
+
+| CP | Scope | File modificati / nuovi | Δ test | Commit message |
+|---|---|---|---|---|
+| **CP1** | §6.124 — copy helper isolato | `utils/copy.js` (nuovo), `utils/copy.test.js` (nuovo) | **+13** | `9-B CP1 §6.124 — formatRelazionePastoCopy body stripped (AMB-9.I')` |
+| **CP2** | AMB-9.H — singleton notifications | `services/notifications.js` (nuovo), `services/notifications.test.js` (nuovo) | **+10** | `9-B CP2 — services/notifications.js singleton 7+1 metodi (AMB-9.H)` |
+| **CP3** | §6.123 — hook 4 stati | `hooks/useNotifications.js` (nuovo), `hooks/useNotifications.test.jsx` (nuovo) | **+6** | `9-B CP3 §6.123 — useNotifications 4-state decision tree (AMB-9.F')` |
+| **CP4** | §6.121 + §6.122 — integration AppContext | `state/AppContext.jsx` (mod), `state/actions.js` (mod), `data/seed.js` (mod), `state/AppContext.test.jsx` (mod) | **+5** | `9-B CP4 §6.121+§6.122 — 8 trigger reschedule + foreground-only limits (AMB-9.E'/G')` |
+| **CP5** | AMB-9.F' — UI toggle | `components/config/ImpostazioniTab.jsx` (mod), `components/config/ImpostazioniTab.test.jsx` (mod) | **+4** | `9-B CP5 — ImpostazioniTab toggle 4-state matrix (AMB-9.F')` |
+
+**CP6 closing:** bump v2.5.38 → v2.5.39, §22.21 stato post-9-B impl, commit Changelog.
+
+### CP browser 9-B (8 punti, non-skippable pre-bump)
+
+Eseguibile in PWA installata Mac (Chrome installata con `display-mode: standalone`) e iPhone (PWA da Safari → Aggiungi a Home). Punti 1-5 obbligatori, 6-8 raccomandati.
+
+1. **Permission flow** — tap toggle off→on in ImpostazioniTab → prompt OS → granted → `__pt.notifications.getPendingCount() > 0`.
+2. **Schedule/cancel cycle** — `apply presa` su entry imminente → pending count decrementato → `cambia profilo` → cancelAll + reschedule fresh.
+3. **Rollover overnight** — `__pt.simulatedNow.set('23:55')` → tick rollover → reschedule per nuovo `dateStr`.
+4. **Beep simultaneity** — notifica fires app foreground → beep `audio.js` + `Notification.show` entrambi attivi senza eccezione.
+5. **Visibility change** — hide/show 2s → pending count invariato. Flip rapido <500ms × 3 → invariato.
+6. **Permission revocation defensive** — settings iOS revoca → riapri PWA → useNotifications mount detect → `notifiche_attive=0` forzato.
+7. **Non-PWA fallback** — Safari mobile no Add-to-Home → toggle nascosto + banner "Installa".
+8. **Tag-based replacement** — schedule 2 notifiche stesso `entryKey` → solo 1 in OS notification center.
+
+### Q&A pattern utilizzato
+
+Q1-Q5 (5 domande totali, allineate alla raccomandazione §11 v2.5.37 Q1-Q3 esplicite + Q4+ "decidi tu"):
+
+| Q | AMB target | Tipo | Esito |
+|---|---|---|---|
+| Q1 | E (cancellation chain + visibility flip) | Raccomandazione esplicita 1° opzione + 2 alternative | "decidi tu" → AMB-9.E' raccomandazione consigliata |
+| Q2 | F (UI decision tree) | Raccomandazione esplicita matrice 4 stati + 2 alternative | "decidi tu" → AMB-9.F' raccomandazione consigliata |
+| Q3 | G (8 trigger precision + visibility race) | Raccomandazione esplicita 7 thunks nominati + 2 alternative + segnalazione incongruenza | "decidi tu" → AMB-9.G' raccomandazione consigliata, incongruenza risolta |
+| Q4 | H (test mocking pattern) | "decidi tu" + raccomandazione breve | Raccomandazione adottata invariata |
+| Q5 | I (copy enumeration) | "decidi tu" + raccomandazione breve | "decidi tu" → AMB-9.I' raccomandazione consigliata (body stripped) |
+
+Pattern ratificato: Q1-Q3 raccomandazioni esplicite con alternative scartate, Q4-Q5 "decidi tu" su pattern già stabilito. Tempo sessione ~1.5h come previsto §11 v2.5.37.
+
+### Scoperte operative
+
+1. **Pattern §6.118 (validazione semantica pre-codice) internalizzato in tutti i CP impl 9-B.** Ogni CP impl ha sezione "Pre-codice" con 2-3 scenari concreti del codice contro AMB pre-codice (CP1: 2, CP2: 3, CP3: 3, CP4: 2). Costo metodologico: ~5 minuti per CP. Beneficio atteso: zero fix ex-post analoghi a §6.118.
+2. **Drift numerazione §6.121-§6.124 vs piano §22.18 (era §6.118-§6.119) consolidato.** Risultato post-9-A consumption: §6.118 chiusa (CP4-fix), §6.119/§6.120 deferred. Wave B usa §6.121+ (no retrocorrezione, principio §6.71/§6.85).
+3. **CP browser passato da 5+ punti (richiesti §11 v2.5.37) a 8 punti (5 obbligatori + 3 raccomandati).** Aggiunti: P6 permission revocation defensive (richiesto da AMB-9.F'), P7 non-PWA fallback (richiesto da AMB-9.F'), P8 tag-based replacement (richiesto da AMB-9.H). I 3 raccomandati coprono branch UI critici scoperti in analisi che non erano nel piano §22.18 originale.
+4. **"Decidi tu" universale (5/5 risposte) accelera analisi quando raccomandazioni Q sono ben framed.** Pattern §22.18 già visto: framework di Q1-Q3 con raccomandazione esplicita stabilisce contesto, "decidi tu" su Q4+ accelera senza perdere rigore. Tempo sessione ridotto del 50% rispetto a Q&A pieno iterativo.
+5. **Drift §6.69 v2.5.34 perpetuato in v2.5.38** (continuità principio fatto-storico immutabile). Pattern consolidato: gap visibile, non retrocorretto, documentato in entry §1 di ogni bump successivo.
+
+### File prodotti / modificati
+
+**Modificati (docs):**
+- `PharmaTimer_Changelog_Fase2.md` — v2.5.37 → **v2.5.38** (questo delivery): front-matter, §1 entry v2.5.38, §7 row 9-B aggiornata "Analisi-first ✅", §11 sostituita con prompt esecutivo Sessione 9-B, §22.20 nuova.
+
+**Modificati (code):** nessuno (analisi-first pura).
+
+**Nuovi:** nessuno.
+
+### Limitazioni note
+
+1. **Nessuna verifica concreta del codice esistente per AMB-E.** AMB-9.E' assume `setTimeout` cancellation atomico via `clearTimeout` + `Map.clear()`. Non è stato ispezionato `services/audio.js` reale per replicare il pattern test mock. Validazione completa demandata a CP2 pre-codice (3 scenari concreti).
+2. **AMB-9.G' "rolling 30 tick" integrato in useEffect tick Provider §6.24** assume struttura compatibile. Non ispezionato `AppContext.jsx` corrente per confermare la struttura del tick. Validazione completa demandata a CP4 pre-codice (2 scenari concreti).
+3. **Δ test stimato +38 vs target +32** (boundary AMB-9.J alta, +6 sopra target). Margine accettabile (lo scope CP3/CP4 ha edge case che possono richiedere test aggiuntivi). Se overflow finale, `it.skip` su test non critici per centrare ±5.
+4. **CP browser 9-B punti 6-8 sono raccomandati ma non obbligatori.** Punti 1-5 coprono lo scope critico AMB-9.E'/F'/G'. Se Roberto vuole velocizzare il bump 9-B, può eseguire solo P1-P5 + skip P6-P8 (defensive coverage).
+
+### Azioni sul Mac post-Sessione 9-B analisi-first
+
+1. Stato git corrente: tree clean atteso, top `0e70a38` Sessione 9-A CP4-fix §6.118 (parent: `816a49f` 9-A CP4 §6.116). Convenzione progetto: KB-only, repo tracks code only.
+
+2. **Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude.ai** con la versione **v2.5.38** (questo delivery).
+
+3. Commit Changelog separato (solo se il repo lo traccia — convenzione progetto: KB-only, repo tracks code only):
+   ```
+   echo 'Commit Changelog v2.5.38 (opzionale, dipende da convenzione progetto)'
+   git add PharmaTimer_Changelog_Fase2.md 2>/dev/null && git commit -m 'Changelog v2.5.38 (Sessione 9-B analisi-first)' || echo 'Changelog non tracciato in git, solo upload KB'
+   ```
+
+4. **Eseguire CP0 sanity-light** del prompt §11 v2.5.38 prima di aprire Sessione 9-B esecutiva:
+   ```
+   echo 'CP0 9-B sanity-light'
+   git status
+   git --no-pager log --oneline -5
+   npm test -- --run
+   git --no-pager log --oneline | grep '9-A'
+   ```
+   Atteso: tree clean, top `0e70a38`, 328/328 in 32 files, 5 match `9-A`.
+
+5. Aprire Sessione 9-B esecutiva (nuova conversazione Claude) con one-liner:
+   ```
+   Esegui il prompt al §11 del Changelog (Sessione 9-B esecutiva).
    ```
