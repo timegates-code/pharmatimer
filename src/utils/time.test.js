@@ -8,6 +8,9 @@ import {
   formatDelta,
   formatDuration,
   formatGapLabel,
+  composeIsoDateTime,
+  addMinutesToIso,
+  parseIsoDateTime,
 } from './time.js';
 
 describe('timeToMinutes / minutesToTime — round-trip', () => {
@@ -146,5 +149,41 @@ describe('calcolaDelta — DATETIME-based, no wraparound', () => {
         oraEffettiva: '08:00',
       })
     ).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ISO datetime helpers — Sessione 9-A (§6.115a, AMB-9.A/D).
+// Suite T-time-iso: 6 test (3 helper × 2 — happy path + edge case).
+// ---------------------------------------------------------------------------
+
+describe('composeIsoDateTime / addMinutesToIso / parseIsoDateTime — ISO datetime helpers (Sessione 9-A)', () => {
+  it('composeIsoDateTime dovrebbe produrre "YYYY-MM-DDTHH:MM" senza timezone', () => {
+    expect(composeIsoDateTime('2026-04-26', '23:00')).toBe('2026-04-26T23:00');
+  });
+
+  it('addMinutesToIso dovrebbe gestire cross-midnight (480 min da 23:00)', () => {
+    expect(addMinutesToIso('2026-04-26T23:00', 480)).toBe('2026-04-27T07:00');
+  });
+
+  it('addMinutesToIso dovrebbe gestire month-rollover (240 min da 22:00 ultimo del mese)', () => {
+    expect(addMinutesToIso('2026-04-30T22:00', 240)).toBe('2026-05-01T02:00');
+  });
+
+  it('parseIsoDateTime dovrebbe ritornare dateStr, hhmm, e Date object', () => {
+    const result = parseIsoDateTime('2026-04-27T07:00');
+    expect(result.dateStr).toBe('2026-04-27');
+    expect(result.hhmm).toBe('07:00');
+    expect(result.dateObj).toBeInstanceOf(Date);
+  });
+
+  it('round-trip: parseIsoDateTime(composeIsoDateTime(...)) preserva dateStr e hhmm', () => {
+    const result = parseIsoDateTime(composeIsoDateTime('2026-04-26', '23:00'));
+    expect(result.dateStr).toBe('2026-04-26');
+    expect(result.hhmm).toBe('23:00');
+  });
+
+  it('addMinutesToIso(iso, 0) dovrebbe essere identità', () => {
+    expect(addMinutesToIso(composeIsoDateTime('2026-04-26', '08:00'), 0)).toBe('2026-04-26T08:00');
   });
 });

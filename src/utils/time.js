@@ -120,3 +120,52 @@ export function formatDateLabel(dateStr, refDate) {
   if (diff === 1) return `Domani · ${wk} ${dm}`;
   return `${wk} ${dm}`;
 }
+
+// ---------------------------------------------------------------------------
+// ISO datetime helpers — Sessione 9-A (§6.115a, AMB-9.A/D, fix §6.18 cross-midnight).
+// Used for `ora_ricalcolata` which now holds 'YYYY-MM-DDTHH:MM' instead of 'HH:MM'.
+// `ora_prevista` remains HH:MM (never crosses midnight by construction, AMB-9.D).
+// ---------------------------------------------------------------------------
+
+/**
+ * Compose ISO datetime string from date and HH:MM. No timezone info — local datetime.
+ * @param {string} dateStr 'YYYY-MM-DD'
+ * @param {string} hhmm    'HH:MM'
+ * @returns {string} 'YYYY-MM-DDTHH:MM'
+ */
+export function composeIsoDateTime(dateStr, hhmm) {
+  return `${dateStr}T${hhmm}`;
+}
+
+/**
+ * Add minutes to an ISO datetime string with carry-over via Date arithmetic.
+ * Handles cross-midnight, month-rollover, year-rollover automatically.
+ * DST limitation: shifts spanning a DST transition may drift by ±1h
+ * (out of scope Step 9, AMB-9.D — DST occurs 2 nights/year).
+ *
+ * @param {string} iso     'YYYY-MM-DDTHH:MM'
+ * @param {number} minutes integer, may be negative
+ * @returns {string} 'YYYY-MM-DDTHH:MM'
+ */
+export function addMinutesToIso(iso, minutes) {
+  const d = new Date(iso);
+  d.setMinutes(d.getMinutes() + minutes);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+}
+
+/**
+ * Parse an ISO datetime string into its parts.
+ *
+ * @param {string} iso 'YYYY-MM-DDTHH:MM'
+ * @returns {{ dateStr: string, hhmm: string, dateObj: Date }}
+ */
+export function parseIsoDateTime(iso) {
+  const dateStr = iso.slice(0, 10);
+  const hhmm = iso.slice(11, 16);
+  return { dateStr, hhmm, dateObj: new Date(iso) };
+}
