@@ -22,11 +22,11 @@ import Dexie from "dexie";
 //   does not index booleans directly).
 
 export const DB_NAME = "pharmatimer";
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 export const db = new Dexie(DB_NAME);
 
-db.version(DB_VERSION).stores({
+db.version(1).stores({
   // PK id, indexes: attivo (for "active meds" queries)
   farmaci: "++id, attivo",
 
@@ -43,6 +43,35 @@ db.version(DB_VERSION).stores({
 
   // Key/value settings. PK is the key itself (string).
   impostazioni_app: "chiave"
+});
+
+// ============================================================
+// Schema v2 — Sessione 9-A (§6.117, AMB-9.B/C)
+// ------------------------------------------------------------
+// Stores are byte-identical to v1; the version bump exists solely
+// to trigger the upgrade hook below, which migrates the type of
+// `log_assunzioni.ora_ricalcolata` from HH:MM to ISO 'YYYY-MM-DDTHH:MM'.
+// Rationale: cross-midnight recalcs (§6.18) need a date-aware string.
+// AMB-9.B accepts a simple `length === 5` heuristic to detect legacy
+// values and rebuilds ISO by prepending the row's `data` field.
+// Cross-midnight legacy entries self-heal at the next apply* call
+// (no rollback strategy; `__pt.wipe()` is the documented escape hatch
+// per §6.113).
+// ============================================================
+db.version(2).stores({
+  // Identical to v1 — schema bump exists for upgrade hook only
+  farmaci: "++id, attivo",
+  orari_base: "++id, farmaco_id, [farmaco_id+dose_numero]",
+  log_assunzioni: "++id, data, farmaco_id, [farmaco_id+data]",
+  profilo_utente: "++id, attivo",
+  impostazioni_app: "chiave"
+}).upgrade(async (tx) => {
+  // §6.117 — Migrate ora_ricalcolata HH:MM (legacy) → ISO 'YYYY-MM-DDTHH:MM'.
+  await tx.table("log_assunzioni").toCollection().modify((log) => {
+    if (log.ora_ricalcolata && log.ora_ricalcolata.length === 5) {
+      log.ora_ricalcolata = log.data + "T" + log.ora_ricalcolata;
+    }
+  });
 });
 
 // ============================================================

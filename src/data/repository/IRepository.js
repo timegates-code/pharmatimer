@@ -63,7 +63,7 @@
  * @property {string} ora_prevista         HH:MM
  * @property {string|null} [ora_effettiva] HH:MM or null
  * @property {number|null} [delta_minuti]
- * @property {string|null} [ora_ricalcolata]
+ * @property {string|null} [ora_ricalcolata] ISO 'YYYY-MM-DDTHH:MM' (post-§6.18 fix Sessione 9-A; was HH:MM in schema v1, migrated by §6.117 upgrade hook in v2)
  * @property {number} gap_minuti
  * @property {number} recupero_minuti
  * @property {"prevista"|"presa"|"saltata"|"sospesa"|"ricalcolata"} stato

@@ -162,7 +162,7 @@ export function installDevCheck() {
       const dummy = await repo.upsertLog(1, today, 99, {
         ora_prevista: "23:59",
         stato: "ricalcolata",
-        ora_ricalcolata: "23:30",
+        ora_ricalcolata: `${today}T23:30`,
       });
       assert(dummy.id, "dummy log created");
 
