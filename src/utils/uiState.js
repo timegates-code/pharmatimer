@@ -4,21 +4,45 @@
 // - `getCardState(entry, now)` – one of 6 visual states, derived from entry.stato
 //   and the diff between `now` and the effective scheduled time
 //   (ora_ricalcolata fallback ora_prevista). See Changelog §5.3 + §6.9.
-// - `isCrossMidnightRecalc(entry)` – workaround detector for §6.18 / §6.26:
-//   flags an entry whose ora_ricalcolata wrapped past midnight without a
-//   dateStr bump (Card will show a "⚠ orario: domani" badge in 7b).
+//   §6.116b (9-A): extracts HH:MM from ora_ricalcolata ISO via local
+//   `effHHMM` before feeding `timeToMinutes`.
+// - `isEntryFutureDate(entry, todayDateStr)` – flags an entry whose dateStr
+//   falls past today (lex-compare 'YYYY-MM-DD'). Replaces the §6.26 workaround
+//   detector `isCrossMidnightRecalc` removed in 9-A CP4 §6.116. The Card
+//   surfaces the "⚠ orario: domani" badge when this returns true.
 // - `formatDelta/formatDuration/formatGapLabel/formatDateLabel` – ports 1:1
 //   from v5 mockup lines 34-68.
 // - `groupEntriesByDayAndMomento(entries)` – hybrid grouping helper for
 //   Spec §5.4 and mockup gap layout (Sessione 7b-1, AMB-7b.G / §6.29).
+//   §6.116b (9-A): time-sort and `primaOra` use `effHHMM` for ISO normalisation.
 //
 // AMB-7a.E: getCardState never calls `new Date()`; `now` is supplied by the
 // caller, whose shape matches `resolveNow` in utils/now.js ({dateStr, minutes}).
 // AMB-7a.F: format helpers must not change behaviour — only the file moves.
+//
+// 9-A note (§6.18 closure): `ora_ricalcolata` is now an ISO datetime
+// 'YYYY-MM-DDTHH:MM' (stored by recalc.js post-CP3, propagated opaque by
+// planBuilder per §6.23 esteso). Local helper `effHHMM` extracts the HH:MM
+// portion for any consumer that needs minutes-of-day arithmetic.
 // ============================================================
 
-import { timeToMinutes } from './time.js';
+import { timeToMinutes, parseIsoDateTime } from './time.js';
 import { TOLLERANZA_MIN } from '../domain/constants.js';
+
+/**
+ * Return the entry's effective time as 'HH:MM'. Reads ora_ricalcolata when
+ * set (ISO 'YYYY-MM-DDTHH:MM' post-9-A) and falls back to ora_prevista
+ * (always 'HH:MM'). Internal helper — not exported. (§6.116b)
+ *
+ * @param {import('../domain/types.js').PlanEntry} entry
+ * @returns {string}  'HH:MM'
+ */
+function effHHMM(entry) {
+  if (entry.ora_ricalcolata) {
+    return parseIsoDateTime(entry.ora_ricalcolata).hhmm;
+  }
+  return entry.ora_prevista;
+}
 
 /**
  * Resolve the visual card state for an entry given the current "now".
@@ -30,7 +54,7 @@ import { TOLLERANZA_MIN } from '../domain/constants.js';
  *   4. entry.dateStr !== now.dateStr → 'in_attesa'
  *      (other-day entries never become 'in_ritardo'; reviewing history ≠ acting)
  *   5. Otherwise compute diff = doseMin - now.minutes where
- *      doseMin = timeToMinutes(entry.ora_ricalcolata ?? entry.ora_prevista):
+ *      doseMin = timeToMinutes(effHHMM(entry)):
  *        diff < -TOLLERANZA_MIN       → 'in_ritardo'
  *        diff >  30                   → 'in_attesa'
  *        otherwise (within tolerance or ≤30 min ahead) → 'prossima'
@@ -45,8 +69,7 @@ export function getCardState(entry, now) {
   if (entry.stato === 'sospesa') return 'sospesa';
   if (entry.dateStr !== now.dateStr) return 'in_attesa';
 
-  const effTime = entry.ora_ricalcolata ?? entry.ora_prevista;
-  const doseMin = timeToMinutes(effTime);
+  const doseMin = timeToMinutes(effHHMM(entry));
   const diff = doseMin - now.minutes;
   if (diff < -TOLLERANZA_MIN) return 'in_ritardo';
   if (diff > 30) return 'in_attesa';
@@ -54,20 +77,23 @@ export function getCardState(entry, now) {
 }
 
 /**
- * Detect the cross-midnight recalc bug (§6.18). Returns true when the
- * recalculated time appears more than 60 minutes BEFORE the planned one:
- * this indicates a wraparound (e.g. 23:00 recalculated to 07:00 next day,
- * stored as "07:00" on the original dateStr).
+ * Detect whether an entry's `dateStr` falls past `todayDateStr`. Both args
+ * are 'YYYY-MM-DD'; lexicographic compare is chronological for that format.
  *
- * 60 minutes is the empirical tolerance: no legitimate recovery should
- * shift the scheduled time by more than an hour backwards.
+ * Post-9-A replacement of `isCrossMidnightRecalc` (§6.26 workaround): the
+ * underlying §6.18 bug is fixed at the domain layer (CP3 ISO propagation),
+ * so the Card just reads `entry.dateStr` directly. Tear-down & rationale:
+ * §6.116, AMB-9.D.
+ *
+ * Defensive: returns false when either argument is falsy.
  *
  * @param {import('../domain/types.js').PlanEntry} entry
+ * @param {string} todayDateStr  'YYYY-MM-DD'
  * @returns {boolean}
  */
-export function isCrossMidnightRecalc(entry) {
-  if (entry.ora_ricalcolata == null) return false;
-  return timeToMinutes(entry.ora_ricalcolata) < timeToMinutes(entry.ora_prevista) - 60;
+export function isEntryFutureDate(entry, todayDateStr) {
+  if (!entry || !todayDateStr) return false;
+  return entry.dateStr > todayDateStr;
 }
 
 // ============================================================
@@ -152,8 +178,9 @@ export function formatDateLabel(dateStr, refDateStr) {
  * Ordering:
  *   - Days are sorted by dateStr ASC.
  *   - Within a day, entries are sorted by effective time ASC, where effective
- *     time = ora_ricalcolata ?? ora_prevista (matches the sort used by Card
- *     rendering and by selectCountersForDay for prossimoIn).
+ *     time = `effHHMM(entry)` (= ora_ricalcolata HH:MM portion when set,
+ *     ora_prevista otherwise). This matches the sort used by Card rendering
+ *     and by `selectCountersForDay` for prossimoIn.
  *
  * Grouping rule (§6.29):
  *   A new group opens whenever `orario.descrizione_momento` differs from the
@@ -166,9 +193,9 @@ export function formatDateLabel(dateStr, refDateStr) {
  * normalised to `null` when absent. Consecutive nulls collapse into a single
  * group, mirroring any other shared value.
  *
- * `primaOra` is the effective time of the group's first entry (formatted as
- * 'HH:MM' since that is the stored form). Consumers use it directly in the
- * "ORE HH:MM — DESCRIZIONE_MOMENTO" header.
+ * `primaOra` is the effective time of the group's first entry as 'HH:MM'
+ * (extracted from ora_ricalcolata ISO when set — §6.116b). Consumers use it
+ * directly in the "ORE HH:MM — DESCRIZIONE_MOMENTO" header.
  *
  * The helper is pure: it returns a fresh structure and never mutates `entries`.
  *
@@ -202,8 +229,8 @@ export function groupEntriesByDayAndMomento(entries) {
 
   for (const dateStr of sortedDateKeys) {
     const sorted = byDate.get(dateStr).slice().sort((a, b) => {
-      const am = timeToMinutes(a.ora_ricalcolata ?? a.ora_prevista);
-      const bm = timeToMinutes(b.ora_ricalcolata ?? b.ora_prevista);
+      const am = timeToMinutes(effHHMM(a));
+      const bm = timeToMinutes(effHHMM(b));
       return am - bm;
     });
 
@@ -216,7 +243,7 @@ export function groupEntriesByDayAndMomento(entries) {
       if (momento !== lastMomento) {
         current = {
           descrizioneMomento: momento,
-          primaOra: e.ora_ricalcolata ?? e.ora_prevista,
+          primaOra: effHHMM(e),
           entries: [e],
         };
         groups.push(current);

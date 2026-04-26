@@ -1,5 +1,5 @@
 // ============================================================
-// OggiView — vista principale (Sessione 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1).
+// OggiView — vista principale (Sessione 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 9-A).
 //
 // 7b-1 foundation: header + counters + multi-day grouping + DoseCard
 // read-only + DEV slider + auto-beep.
@@ -44,11 +44,6 @@
 //   - Tiny drop shadow `0 1px 2px rgba(0,0,0,0.1)` visually separates the
 //     pinned pill from the content scrolling underneath.
 //
-// Scope 7d polish remaining (explicitly NOT wired here):
-//   - §6.39 renderHelpers wrapper refactor (CP5 this session)
-//   - §6.45/§6.46/§6.47/§6.49/§6.40/§6.41 → 7d-2
-//   - §6.26 cross-midnight warning elevation → Step 9
-//
 // 7d-2 CP7 wiring (AMB-7d-2p3.G / §6.46+§G):
 //   - CSS promoted from top-level `CARD_AND_SLIDER_CSS` const to factory
 //     `buildCss(t)`. Consumer uses `useMemo(() => buildCss(t), [t])` so
@@ -57,6 +52,19 @@
 //     dark #60A5FA) instead of the 7d-1 hardcoded #3B82F6. AA contrast
 //     preserved on all primary backgrounds; documented degrade on dark
 //     `gapBg`/`redBg` (§theme.js comment at token definition).
+//
+// 9-A CP4 (AMB-9.D, §6.116a + §6.116b):
+//   - §6.116a: passes `todayDateStr={today}` to every DoseCard so the
+//     "⚠ orario: domani" badge can gate on `isEntryFutureDate(entry,
+//     todayDateStr)`. The §6.26 cross-midnight workaround is torn down
+//     (see DoseCard header).
+//   - §6.116b (consumer drift): the gap-spacing calculation between
+//     consecutive cards within a momento group used direct string
+//     comparison on `entry.ora_ricalcolata || entry.ora_prevista`.
+//     Post-CP3 ora_ricalcolata is ISO 'YYYY-MM-DDTHH:MM', so that mixed
+//     ISO/HH:MM compare always returned !== when only one side had a
+//     recalc. Now we extract HH:MM via parseIsoDateTime when ricalcolata
+//     is set, falling back to ora_prevista (already HH:MM).
 // ============================================================
 
 import { useEffect, useMemo, useState } from 'react';
@@ -75,7 +83,7 @@ import {
   formatDateLabel,
   formatDuration,
 } from '../../utils/uiState.js';
-import { minutesToTime } from '../../utils/time.js';
+import { minutesToTime, parseIsoDateTime } from '../../utils/time.js';
 import { playBeep } from '../../services/audio.js';
 import { DoseCard } from './DoseCard.jsx';
 import { DevTimeSlider } from './DevTimeSlider.jsx';
@@ -88,6 +96,18 @@ import { RecuperoModal } from './modals/RecuperoModal.jsx';
 import { UndoModal } from './modals/UndoModal.jsx';
 
 const IS_DEV = import.meta.env.DEV;
+
+// 9-A §6.116b: extract effective HH:MM from a plan entry. Inlined here
+// (also implemented file-scope inside utils/uiState.js as `effHHMM`) so
+// OggiView can compare consecutive entries' visible times for the gap
+// spacing rule (§6.29) without depending on the sort path inside
+// groupEntriesByDayAndMomento.
+function entryHHMM(entry) {
+  if (entry.ora_ricalcolata) {
+    return parseIsoDateTime(entry.ora_ricalcolata).hhmm;
+  }
+  return entry.ora_prevista;
+}
 
 // Inline CSS: keyframes consumed by DoseCard via className + inline style +
 // slider thumb styling. `pulse-border` is used by the DoseCard check button
@@ -475,11 +495,14 @@ export default function OggiView() {
                     </div>
                     {group.entries.map((entry, eIdx) => {
                       // Gap +12px on time change within the same momento (§6.29).
-                      const thisTime = entry.ora_ricalcolata || entry.ora_prevista;
+                      // 9-A §6.116b: extract HH:MM via entryHHMM helper —
+                      // ora_ricalcolata is now ISO 'YYYY-MM-DDTHH:MM' (CP3),
+                      // so direct string compare across mixed ISO/HH:MM
+                      // values would always return !== when only one side
+                      // had a recalc.
+                      const thisTime = entryHHMM(entry);
                       const prevEntry = eIdx > 0 ? group.entries[eIdx - 1] : null;
-                      const prevTime = prevEntry
-                        ? prevEntry.ora_ricalcolata || prevEntry.ora_prevista
-                        : null;
+                      const prevTime = prevEntry ? entryHHMM(prevEntry) : null;
                       const needsGap = prevTime !== null && thisTime !== prevTime;
                       const marginTop = eIdx === 0 ? 0 : needsGap ? 12 : 4;
                       return (
@@ -487,6 +510,7 @@ export default function OggiView() {
                           <DoseCard
                             entry={entry}
                             state={getCardState(entry, now)}
+                            todayDateStr={today}
                             isFlashing={flashingKeys.has(entry.key)}
                             onPresa={() => actions.presa(entry.key)}
                             onUndo={() => actions.annullaUltima()}

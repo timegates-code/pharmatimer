@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   getCardState,
-  isCrossMidnightRecalc,
+  isEntryFutureDate,
   formatDelta,
   formatDuration,
   formatGapLabel,
@@ -11,6 +11,8 @@ import {
 } from './uiState.js';
 
 // Minimal entry factory — only the fields uiState reads from.
+// Note (9-A): `ora_ricalcolata` shape is now ISO 'YYYY-MM-DDTHH:MM' (§6.18 fix
+// CP3 + §6.117a typedef). HH:MM is reserved for `ora_prevista`.
 function mkEntry(over = {}) {
   return {
     key: 'x',
@@ -75,9 +77,14 @@ describe('getCardState', () => {
     expect(getCardState(mkEntry({ ora_prevista: '09:44' }), now)).toBe('in_ritardo');
   });
 
-  it('prefers ora_ricalcolata over ora_prevista when present', () => {
+  it('prefers ora_ricalcolata (ISO) over ora_prevista when present', () => {
+    // §6.116b: ora_ricalcolata is now ISO 'YYYY-MM-DDTHH:MM'; getCardState
+    // must extract HH:MM before feeding timeToMinutes.
     expect(
-      getCardState(mkEntry({ ora_prevista: '09:00', ora_ricalcolata: '10:30' }), now)
+      getCardState(
+        mkEntry({ ora_prevista: '09:00', ora_ricalcolata: '2026-04-19T10:30' }),
+        now
+      )
     ).toBe('prossima');
   });
 
@@ -85,29 +92,40 @@ describe('getCardState', () => {
     // ricalcolata + ora_ricalcolata past tolerance → in_ritardo
     expect(
       getCardState(
-        mkEntry({ stato: 'ricalcolata', ora_prevista: '08:00', ora_ricalcolata: '09:00' }),
+        mkEntry({ stato: 'ricalcolata', ora_prevista: '08:00', ora_ricalcolata: '2026-04-19T09:00' }),
         now
       )
     ).toBe('in_ritardo');
   });
 });
 
-describe('isCrossMidnightRecalc', () => {
-  it('returns true when ora_ricalcolata wraps past midnight', () => {
-    expect(
-      isCrossMidnightRecalc({ ora_prevista: '23:00', ora_ricalcolata: '07:00' })
-    ).toBe(true);
-  });
+describe('isEntryFutureDate', () => {
+  // §6.116 — replaces isCrossMidnightRecalc detector (§6.26 tear-down).
 
-  it('returns false for a normal forward recalc within the same day', () => {
+  it('returns false when entry.dateStr equals todayDateStr', () => {
     expect(
-      isCrossMidnightRecalc({ ora_prevista: '16:00', ora_ricalcolata: '16:30' })
+      isEntryFutureDate(
+        { dateStr: '2026-04-19' },
+        '2026-04-19'
+      )
     ).toBe(false);
   });
 
-  it('returns false when ora_ricalcolata is null', () => {
+  it('returns true when entry.dateStr is past todayDateStr (tomorrow)', () => {
     expect(
-      isCrossMidnightRecalc({ ora_prevista: '10:00', ora_ricalcolata: null })
+      isEntryFutureDate(
+        { dateStr: '2026-04-20' },
+        '2026-04-19'
+      )
+    ).toBe(true);
+  });
+
+  it('returns false when entry.dateStr is before todayDateStr (yesterday)', () => {
+    expect(
+      isEntryFutureDate(
+        { dateStr: '2026-04-18' },
+        '2026-04-19'
+      )
     ).toBe(false);
   });
 });
@@ -167,15 +185,18 @@ describe('groupEntriesByDayAndMomento', () => {
     expect(out.map(d => d.dateStr)).toEqual(['2026-04-19', '2026-04-20']);
   });
 
-  it('sorts entries within a day by effective time, using ora_ricalcolata when set', () => {
+  it('sorts entries within a day by effective time, using ora_ricalcolata (ISO) when set', () => {
+    // §6.116b: ora_ricalcolata is ISO 'YYYY-MM-DDTHH:MM'; sort must extract HH:MM.
     // "a" is scheduled at 15:00 but recalculated to 09:00 → must appear before "b" (12:00).
     const entries = [
       mkEntry({ key: 'b', ora_prevista: '12:00' }),
-      mkEntry({ key: 'a', ora_prevista: '15:00', ora_ricalcolata: '09:00' }),
+      mkEntry({ key: 'a', ora_prevista: '15:00', ora_ricalcolata: '2026-04-19T09:00' }),
     ];
     const out = groupEntriesByDayAndMomento(entries);
     expect(out).toHaveLength(1);
     expect(out[0].groups[0].entries.map(e => e.key)).toEqual(['a', 'b']);
+    // primaOra must be HH:MM (extracted from ISO), not the raw ISO string.
+    expect(out[0].groups[0].primaOra).toBe('09:00');
   });
 
   it('opens a new group whenever descrizione_momento changes', () => {

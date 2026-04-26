@@ -51,23 +51,25 @@ describe('DoseCard (read-only)', () => {
 
   it('shows a recalc diff badge formatted by calcolaDelta + formatDelta when ora_ricalcolata differs', () => {
     // plan[1]: 16:00 → 16:30, same dateStr → calcolaDelta = +30 minutes.
+    // 9-A §6.117a: ora_ricalcolata is now ISO 'YYYY-MM-DDTHH:MM'. The fixture
+    // from buildTestPlan still emits HH:MM for legacy compat with other test
+    // files; we override here inline (§6.116c follow-up: align buildTestPlan
+    // at source if other suites surface failures post-CP4).
+    const isoEntry = { ...plan[1], ora_ricalcolata: '2026-04-19T16:30' };
     renderWithProvider(
-      <DoseCard entry={plan[1]} state="in_attesa" />,
+      <DoseCard entry={isoEntry} state="in_attesa" />,
       { stateOverrides: THEME_LIGHT }
     );
     expect(screen.getByText('+30 min')).toBeInTheDocument();
   });
 
-  it('shows the "⚠ orario: domani" badge on a cross-midnight recalc (§6.26 workaround)', () => {
-    // ora_prevista 23:00, ora_ricalcolata 07:00 → recalc "before" planned
-    // by more than 60 min → isCrossMidnightRecalc = true.
-    const crossEntry = {
-      ...plan[0],
-      ora_prevista: '23:00',
-      ora_ricalcolata: '07:00',
-    };
+  it('shows the "⚠ orario: domani" badge when entry.dateStr is past todayDateStr (§6.116)', () => {
+    // 9-A §6.116: badge gates on isEntryFutureDate(entry, todayDateStr) —
+    // tear-down of the §6.26 isCrossMidnightRecalc workaround. The Card
+    // takes a `todayDateStr` prop (§6.116a) propagated from OggiView.
+    const futureEntry = { ...plan[0], dateStr: '2026-04-20' };
     renderWithProvider(
-      <DoseCard entry={crossEntry} state="in_attesa" />,
+      <DoseCard entry={futureEntry} state="in_attesa" todayDateStr="2026-04-19" />,
       { stateOverrides: THEME_LIGHT }
     );
     expect(screen.getByText('⚠ orario: domani')).toBeInTheDocument();

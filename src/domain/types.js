@@ -57,7 +57,7 @@
  * @property {string} ora_prevista                  - 'HH:MM'.
  * @property {string|null} ora_effettiva            - ISO datetime 'YYYY-MM-DDTHH:MM:SS' or null.
  * @property {number|null} delta_minuti             - Positive = late, negative = early.
- * @property {string|null} ora_ricalcolata          - 'HH:MM' or null.
+ * @property {string|null} ora_ricalcolata          - ISO datetime 'YYYY-MM-DDTHH:MM' or null (§6.18 closure, §6.117).
  * @property {number} gap_minuti                    - Accumulated gap not yet recovered.
  * @property {number} recupero_minuti               - Recovery minutes applied to this dose.
  * @property {'prevista'|'presa'|'saltata'|'sospesa'|'ricalcolata'} stato
@@ -74,8 +74,8 @@
  * @property {Farmaco} farmaco
  * @property {OrarioBase} orario
  * @property {string} ora_prevista                  - 'HH:MM' computed from active profile + offset.
- * @property {string|null} ora_ricalcolata          - 'HH:MM' or null.
- * @property {string|null} ora_ricalcolata_originale - 'HH:MM' or null (pre-recovery snapshot).
+ * @property {string|null} ora_ricalcolata          - ISO datetime 'YYYY-MM-DDTHH:MM' or null (§6.18 closure, §6.117).
+ * @property {string|null} ora_ricalcolata_originale - ISO datetime 'YYYY-MM-DDTHH:MM' or null (pre-recovery snapshot, §6.18 closure).
  * @property {string|null} ora_effettiva            - ISO datetime or null.
  * @property {number|null} delta_minuti
  * @property {number} gap_minuti

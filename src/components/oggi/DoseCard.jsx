@@ -72,24 +72,23 @@
 //     of §6.47 (dashed-underline affordance on the residual badge) is
 //     explicitly out of CP6 scope (prompt §11 v2.5.18).
 //
+// Sessione 9-A CP4 (AMB-9.D, §6.116 + §6.116a + §6.116b):
+//   - §6.18 closed at the domain layer (CP3): ora_ricalcolata is now an
+//     ISO datetime 'YYYY-MM-DDTHH:MM'. The Card extracts the HH:MM
+//     portion for displayTime and the date portion for calcolaDelta's
+//     dataEffettiva via parseIsoDateTime — addDays + isCrossMidnightRecalc
+//     workaround pair removed.
+//   - §6.116: tear-down of the §6.26 cross-midnight workaround. The
+//     "⚠ orario: domani" badge now gates on `isEntryFutureDate(entry,
+//     todayDateStr)`, which compares entry.dateStr directly.
+//   - §6.116a: new optional prop `todayDateStr` propagates from OggiView
+//     (passes `now.dateStr`). When absent, the future-date badge never
+//     mounts (defensive; preserves 7b-1 test fixtures that don't supply it).
+//
 // Reads:
 //   - Theme tokens via `useTheme()` (same pattern as NavBar / DevTimeSlider).
 //   - Enum-aligned token keys from CP1 rename (§6.28): cardBg/cardBorder
 //     now index as {presa, prossima, in_attesa, in_ritardo, saltata, sospesa}.
-//
-// Recalc diff (§6.11 / AMB-7b.L):
-//   The mockup used a `±720 minutes` wrap-around. That masks a real bug
-//   (§6.18) when an interval pushes a dose past midnight. We now compute
-//   the diff via the DATETIME-based `calcolaDelta` from utils/time, and
-//   we stamp the "effective" date as `addDays(entry.dateStr, 1)` only when
-//   `isCrossMidnightRecalc(entry)` flags a backwards wrap. The domain fix
-//   remains deferred to Step 9 (§6.26 workaround).
-//
-// Cross-midnight badge (§6.26 / AMB-7b.L):
-//   When `isCrossMidnightRecalc(entry)` is true, the Card surfaces a
-//   "⚠ orario: domani" badge next to the other info badges so the user
-//   knows the recalculated time belongs to the following day even if the
-//   entry.dateStr still references today.
 //
 // pulse-border keyframe:
 //   The `pulse-border 2s infinite` animation on the check button is defined
@@ -101,8 +100,8 @@ import { useTheme } from '../../hooks/useTheme.js';
 import { Badge } from '../shared/Badge.jsx';
 import { TapBadge } from '../shared/TapBadge.jsx';
 import { IconCheck, IconX, IconPause, IconEdit } from '../shared/Icons.jsx';
-import { calcolaDelta, addDays } from '../../utils/time.js';
-import { isCrossMidnightRecalc, formatDelta, formatGapLabel } from '../../utils/uiState.js';
+import { calcolaDelta, parseIsoDateTime } from '../../utils/time.js';
+import { isEntryFutureDate, formatDelta, formatGapLabel } from '../../utils/uiState.js';
 import { TOLLERANZA_MIN } from '../../domain/constants.js';
 
 // ---------- meal-relation helpers (1:1 port from v5 mockup) ----------
@@ -142,7 +141,9 @@ function getPastoText(f) {
 
 /**
  * Accept either 'HH:MM' or ISO datetime 'YYYY-MM-DDTHH:MM:SS' (per types.js).
- * Returns HH:MM for display.
+ * Returns HH:MM for display. Used for `entry.ora_effettiva` (ISO with seconds).
+ * For `entry.ora_ricalcolata` (ISO without seconds, post-§6.117a) prefer the
+ * already-parsed `recalcParsed.hhmm`.
  */
 function extractHHMM(s) {
   if (!s) return '';
@@ -168,6 +169,7 @@ function formatPresaValue(abs) {
  * @param {{
  *   entry: import('../../domain/types.js').PlanEntry,
  *   state: 'presa'|'prossima'|'in_attesa'|'in_ritardo'|'saltata'|'sospesa',
+ *   todayDateStr?: string | null,
  *   isFlashing?: boolean,
  *   onPresa?: (entry: import('../../domain/types.js').PlanEntry) => void,
  *   onUndo?:  (entry: import('../../domain/types.js').PlanEntry) => void,
@@ -179,6 +181,11 @@ function formatPresaValue(abs) {
  *   isLastPreso?: boolean,
  * }} props
  *
+ * `todayDateStr` is the 'YYYY-MM-DD' reference date used to gate the
+ * "⚠ orario: domani" badge via `isEntryFutureDate` (§6.116a). When omitted,
+ * the badge never mounts — preserves 7b-1 test fixtures that render DoseCard
+ * without supplying it. OggiView always passes `now.dateStr`.
+ *
  * All `on*` props are OPTIONAL by contract. Existing 7b-1 tests that render
  * DoseCard without any handler must keep passing. When a handler is absent,
  * the corresponding affordance is NOT mounted (no "ghost" button with a
@@ -187,6 +194,7 @@ function formatPresaValue(abs) {
 export function DoseCard({
   entry,
   state,
+  todayDateStr = null,
   isFlashing = false,
   onPresa,
   onUndo,
@@ -217,7 +225,20 @@ export function DoseCard({
   const doseLabel = f.dosi_giornaliere > 1 ? ` · ${entry.orario.dose_numero}ª dose` : '';
   const freqLabel = f.tipo_frequenza === 'intervallo' ? ` · ogni ${f.intervallo_ore}h` : '';
   const pastoColor = getPastoColor(f.relazione_pasto, dark);
-  const displayTime = entry.ora_ricalcolata || entry.ora_prevista;
+
+  // §6.116/§6.116b (9-A): ora_ricalcolata is ISO 'YYYY-MM-DDTHH:MM' (CP3).
+  // Parse once for both displayTime (HH:MM portion) and recalcDiff
+  // (full date + HH:MM for cross-midnight-aware diff via calcolaDelta).
+  const recalcParsed = entry.ora_ricalcolata
+    ? parseIsoDateTime(entry.ora_ricalcolata)
+    : null;
+  const recalcHHMM = recalcParsed?.hhmm ?? null;
+  const isRecalc = recalcHHMM !== null;
+  const isTimeDifferent = isRecalc && recalcHHMM !== entry.ora_prevista;
+  const isFutureDate = isEntryFutureDate(entry, todayDateStr);
+
+  const displayTime = recalcHHMM || entry.ora_prevista;
+
   // 7d-2 CP6 (§6.47a): gap residuo = gap_minuti − recupero_minuti. When a
   // RecuperoModal application partially (or fully) covers the gap, the badge
   // label reflects what's left. The `?? 0` fallbacks keep the expression
@@ -225,19 +246,16 @@ export function DoseCard({
   // existed (defensive — types.js always produces numbers).
   const gapResiduo = (entry.gap_minuti ?? 0) - (entry.recupero_minuti ?? 0);
 
-  // Recalculation diff via domain helper (§6.11). The wrap-around of the
-  // mockup is replaced by an explicit date bump when §6.26 flags the bug.
-  const isRecalc = !!entry.ora_ricalcolata;
-  const isTimeDifferent = isRecalc && entry.ora_ricalcolata !== entry.ora_prevista;
-  const crossMidnight = isCrossMidnightRecalc(entry);
+  // Recalculation diff via domain helper (§6.11). Date portion is read
+  // directly from the parsed ora_ricalcolata ISO (§6.116: no more
+  // crossMidnight / addDays branching).
   let recalcDiff = null;
   if (isTimeDifferent) {
-    const dataEffettiva = crossMidnight ? addDays(entry.dateStr, 1) : entry.dateStr;
     recalcDiff = calcolaDelta({
       dataPrevista: entry.dateStr,
       oraPrevista: entry.ora_prevista,
-      dataEffettiva,
-      oraEffettiva: entry.ora_ricalcolata,
+      dataEffettiva: recalcParsed.dateStr,
+      oraEffettiva: recalcHHMM,
     });
   }
 
@@ -437,7 +455,7 @@ export function DoseCard({
             border={t.recalcBd}
           />
         )}
-        {crossMidnight && !isDone && (
+        {isFutureDate && !isDone && (
           <Badge
             label="⚠ orario: domani"
             bg={t.warnBg}
