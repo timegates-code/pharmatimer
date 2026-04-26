@@ -1,8 +1,8 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 2.5.35
+**Versione:** 2.5.36
 **Data inizio fase:** 16 aprile 2026
-**Ultima modifica:** 25 aprile 2026 (sera)
+**Ultima modifica:** 26 aprile 2026 (Sessione 9 analisi-first)
 **Ambito:** Sviluppo PWA React standalone con persistenza locale, preparata per futuro swap verso backend FastAPI+MariaDB.
 
 Questo documento raccoglie le decisioni architetturali, la struttura del progetto, le deviazioni dalla specifica e lo stato di avanzamento della Fase 2. È il **punto di riferimento unico** per ogni sessione di sviluppo: leggerlo prima di iniziare garantisce continuità senza dover rileggere l'intero storico chat.
@@ -555,6 +555,34 @@ Questo documento raccoglie le decisioni architetturali, la struttura del progett
 - Aggiornamento roadmap §7: nuova riga **8d-C ✅ Completo**, riga 8d-B parziale resta come record storico.
 - Nessuna modifica a §12 (4 file codice toccati: `OggiView.jsx`, `theme.js`, `devCheck.js`, `vitest.config.js` — tutti già tracciati in §12).
 - **§11 sostituita** con stub **Sessione 8d-D analisi-first** (scope: §6.111 investigation strumentata h1/h3 + eventuale fix `useModalA11y` pause/resume) **OPPURE** stub **Step 9 analisi-first** (notifiche locali + fix dominio §6.18 cross-midnight via §6.26) — decisione di Roberto in apertura prossima sessione.
+
+**Changelog versione 2.5.36 (rispetto alla 2.5.35):**
+- **Sessione 9 analisi-first** completata 26/04/2026: ratificate **10 AMB-9.A÷J** copertura completa Step 9 (Wave A fix dominio §6.18 cross-midnight + Wave B notifiche Opzione 1 foreground-only + Wave C closing). Modalità Q&A iterativa (Q1→Q10) con "decidi tu" da Q2 in poi.
+- **Decisione strategica scope Step 9:** confermato **Opzione 1 foreground-only** (`setTimeout` main thread, no SW push, no backend Mac Mini) per consegna iPhone+Android senza server. Web Push backend-driven differito a **Fase 3 estesa post-Step 11** (~9-15 sessioni). TimestampTrigger Android non implementato per uniformità messaging iOS+Android (entrambi Opzione 1).
+- **Wave A — Fix dominio §6.18 cross-midnight** (4 AMB):
+  - **AMB-9.A** — `ora_ricalcolata` cambia tipo TIME → TEXT formato ISO `'YYYY-MM-DDTHH:MM'`, `ora_prevista` invariato (resta HH:MM, non va mai cross-midnight per costruzione).
+  - **AMB-9.B** — stesso nome campo `ora_ricalcolata` (typeless Dexie su campo non-indexed), migration semplice predicato `length === 5` con self-heal cross-midnight legacy al prossimo `apply*`, no rollback automatico (`__pt.wipe()` come escape hatch §6.113).
+  - **AMB-9.C** — `db.version(2).stores({...})` invariato + upgrade hook + dev-dep `fake-indexeddb` per test integrazione + grep gate `seed.js`/`devCheck.js` in apertura CP impl Wave A.
+  - **AMB-9.D** — 3 helper monouso in `utils/time.js` (`composeIsoDateTime`, `addMinutesToIso`, `parseIsoDateTime`), `new Date(iso)` interno deterministico (DST documentato come limitazione nota fuori scope Step 9), tear-down §6.26 + nuovo helper `isEntryFutureDate(entry, todayDateStr)`. §6.18 e §6.26 chiuse contestualmente nel CP impl Wave A.
+- **Wave B — Notifiche Opzione 1 foreground-only** (5 AMB):
+  - **AMB-9.E** — `setTimeout` main thread, riuso `services/audio.js` (Sessione 7b-1) per beep simultaneo se app foreground, limitazioni note documentate in nuova §6.NN (no app chiusa, no recovery post-suspend, recovery via UI standing badge "in ritardo" Sessione 7c-1).
+  - **AMB-9.F** — toggle esplicito in `ImpostazioniTab` (Sessione 8a), nuova chiave `impostazioni_app.notifiche_attive` boolean default 0 (analoga §6.25 `tema`), hook `useNotifications` con `{permission, enabled, isStandalone, requestEnable, disable}`, vincolo `display-mode: standalone` uniforme iOS+Android (no notifiche da browser, sempre PWA installata).
+  - **AMB-9.G** — 8 trigger re-schedule (`init` / `commitApplyResult` / rollover / `cambiaProfilo` / Config thunks / toggle on / toggle off / `visibilitychange`+`focus`), window cap 12h, rolling re-schedule ogni 30 tick (~30min) integrato nel tick Provider esistente (§6.24).
+  - **AMB-9.H** — singleton closure-private in `services/notifications.js` 7+1 metodi (`isSupported`/`getPermission`/`requestPermission`/`scheduleNotification`/`cancelNotification`/`cancelAll`/`showDoseNotification` + `getPendingCount` introspection), Map `pending: Map<entryKey, timeoutId>`, payload tag-based `dose-{farmaco_id}-{dose_numero}-{dateStr}` per OS replacement, click handler `window.focus()` + `window.location.href` (limite full-reload accettabile, migration cleanup Fase 3), funzione `rescheduleAllNotifications(state, services)` puro esportato chiamato da AppContext, test isolato con mock `globalThis.Notification` + `vi.useFakeTimers()`.
+  - **AMB-9.I** — title `farmaco.nome`, body via nuovo helper `formatRelazionePastoCopy(farmaco)` in nuovo file `utils/copy.js` con fallback `"Promemoria farmaco"` se body vuoto (caso `indifferente` senza `dettaglio_pasto`), defensive `Notification.permission !== 'granted'` check (rileva revoche iOS post-subscribe), beep best-effort con catch silenzioso (DOMException AudioContext suspended), notifica sempre emessa (OS decide visibility: iOS sopprime in foreground tipicamente, Android heads-up).
+- **Wave C — Closing** (1 AMB):
+  - **AMB-9.J** — target test 313 → **360 ±5** (boundary 355–365), split upfront **9-A** (Wave A: dominio + migration, 4 CP impl + 1 CP browser) + **9-B** (Wave B: notifiche + UI, 5 CP impl + 1 CP browser), no adaptive split intra-sessione (lezione 8d).
+- **§6.NN previste post-impl** (numerazione effettiva attribuita alla scrittura, in continuità con §6.114 ultima 8d-C):
+  - §6.115 — `ora_ricalcolata` ISO datetime (chiude §6.18) — CP1+CP3 Wave A.
+  - §6.116 — tear-down workaround §6.26 + helper `isEntryFutureDate` (chiude §6.26) — CP4 Wave A.
+  - §6.117 — Dexie v1→v2 migration + dev-dep `fake-indexeddb` — CP2 Wave A.
+  - §6.118 — chiave `impostazioni_app.notifiche_attive` (analoga §6.25 `tema`) — CP4 Wave B.
+  - §6.119 — Opzione 1 foreground-only limitazioni note + roadmap Web Push Fase 3 estesa — Wave B globale.
+- **Drift §6.69 v2.5.34 NON retrocorretto** in v2.5.36 (continuità principio fatto-storico immutabile, §6.71/§6.85 archive). Gap visibile come jump v2.5.33 → v2.5.35 → v2.5.36 nel sommario §1.
+- **Aggiornamento roadmap §7:** Step 9 split in **9-A** ⏳ prossimo (Wave A dominio + migration) + **9-B** ⏳ (Wave B notifiche + UI, post-9-A).
+- **Nuova §22.18** "Stato post-Sessione 9 analisi-first" con tabella AMB-9.A÷J, scope Wave A/B/C, deviazioni previste §6.115-§6.119, baseline test 313, target 360 ±5, raccomandazioni apertura 9-A.
+- **§11 sostituita** con prompt esecutivo **Sessione 9-A** (CP0 sanity-light + CP1-CP4 Wave A dominio + CP browser 4 punti + bump intermedio v2.5.36 → v2.5.37 a chiusura 9-A; il §11 per Sessione 9-B verrà scritto in v2.5.37 dopo chiusura 9-A).
+- Nessuna modifica al codice (analisi-first pura). Nessuna modifica a §12 (zero file prodotti). Nessuna modifica a §3 struttura progetto (file Step 9 nuovi `services/notifications.js`, `hooks/useNotifications.js`, `utils/copy.js` già marcati `[Step 9]` o assimilabili).
 
 ---
 
@@ -2773,7 +2801,9 @@ Test Files  31 passed (31)
 | **8d-A-continue-2** | Analisi-first §6.104 ConfigView routing fix (path absolute, AMB-A) + audit esaustivo (AMB-B) + browser check 5/5 (Punto 3 skip §6.106) + CP7 bump v2.5.32 → v2.5.33 | ✅ **Completo** | 310 → 310 test invariati (AMB-C no test in-session). 1 commit Mac-side: `67937e5` CP1 §6.104. 2 nuove deviazioni: §6.105 (ConfirmModal focus-restore ProfiliTab → 8d-B tier C), §6.106 (Punto 3 skip ridondanza). Audit nota retroattiva in §6.104 (pattern grep limit data-driven). Bump v2.5.32 → v2.5.33 |
 | **8d-B** | Tier C design-decision + investigation: §6.81 ConfigTabBar dark token, §6.96 sticky separator CSS var+ResizeObserver (AMB-8d.B), §6.85 `nome_utente` investigation con strumentazione logging (AMB-8d.E) | ⚠️ **Parziale** | CP1 §6.96 ROLLED BACK in-session (scroll lock + CSS var mai settata → §6.107). CP2 §6.105 fix +2, CP3 §6.103 retrofit +1, CP4 §6.81 fix 0 → 313/313 (+3). 1 commit `eac185a`. 3 nuove deviazioni §6.107/108/109 deferred a 8d-C. Bump v2.5.33 → v2.5.34 |
 | **8d-C** | Carryforward residuo 8d-B + 8d originale: §6.107 sticky separator re-investigation, §6.109 ProfiliTab focus restore, §6.108 NavBar bottom contrast, §6.85 nome_utente 3° timebox, §6.84 test router warning | ✅ **Completo** | 313 → 313 test invariati (Δ=0, target AMB-K' centrato). 4 commit Mac-side: `0283567` CP1 §6.110, `3406e33` CP3 §6.112, `af147e0` CP4 §6.113, `db30fae` CP5 §6.114. CP2 §6.111 zero-commit (h2 falsificata, hard-defer 8d-D). 5 nuove §6.110-§6.114, 4 chiuse (§6.96/§6.108/§6.85/§6.84). Bump v2.5.34 → v2.5.35 |
-| 9 | Notifiche locali (Notification API + scheduling) + **fix dominio §6.18 cross-midnight** (§6.26) | | |
+| 9 | Notifiche locali (Notification API + scheduling Opzione 1 foreground-only) + **fix dominio §6.18 cross-midnight** (§6.26) | ⏳ **Analisi-first ✅** | Split in **9-A + 9-B** (analisi-first 26/04/2026, v2.5.36). 10 AMB-9.A÷J ratificate. Decisione scope: Opzione 1 senza server (Web Push backend Mac Mini differito a Fase 3 estesa post-Step 11) |
+| **9-A** | Wave A — fix dominio §6.18 cross-midnight: `ora_ricalcolata` TIME → TEXT ISO + 3 helper `utils/time.js` + Dexie v1→v2 migration con `fake-indexeddb` + propagazione apply* + tear-down §6.26 (`isEntryFutureDate` sostituisce `isCrossMidnightRecalc`) | ⏳ **Prossimo** | 4 CP impl + 1 CP browser. Δ test stimato +16. AMB-9.A÷D + AMB-9.J. §6.115-§6.117 attese. Bump v2.5.36 → v2.5.37 a chiusura |
+| **9-B** | Wave B — notifiche Opzione 1 foreground-only: `services/notifications.js` singleton + `hooks/useNotifications.js` + `utils/copy.js` + `rescheduleAllNotifications` puro + AppContext wiring (8 trigger) + chiave `notifiche_attive` Dexie + toggle UI in ImpostazioniTab | | 5 CP impl + 1 CP browser. Δ test stimato +31. AMB-9.E÷I. §6.118-§6.119 attese. Bump v2.5.37 → v2.5.38 a chiusura |
 | 10 | Service worker attivo + manifest definitivo + icone | | |
 | 11 | Polish finale, QA, accessibilità estesa, gestione errori | | |
 
@@ -2888,71 +2918,199 @@ Chiarimenti risolti pre-Step 4b (AMB-1/2/3):
 ---
 
 
-## 11. Prossimo step — Sessione 8d-D OPPURE Step 9 — analisi-first
+## 11. Prossimo step — Sessione 9-A esecutiva (Wave A dominio + migration)
 
-**Stato baseline:** v2.5.35 (post-8d-C impl). 313/313 test su 31 files. Commit top atteso `<hash>` Changelog v2.5.35, parent `db30fae` Sessione 8d-C CP5 §6.114.
+**Stato baseline:** v2.5.36 (post-Sessione 9 analisi-first). 313/313 test su 31 test files. Commit top atteso `<hash>` Changelog v2.5.36 (se tracked) parent `db30fae` Sessione 8d-C CP5 §6.114.
 
-**Decisione apertura prossima sessione:** Roberto deve scegliere tra 2 alternative basate sul carryforward residuo di 8d:
+**Scope Sessione 9-A:** Wave A — fix dominio §6.18 cross-midnight in 4 CP impl + 1 CP browser. Chiude §6.18 e §6.26. AMB-9.A÷D ratificate inline (no Q&A iterativo intra-sessione).
 
-### Opzione (A) — Sessione 8d-D analisi-first dedicata a §6.111
+**Vincolo procedurale:** split upfront 9-A + 9-B (AMB-9.J). Sessione 9-B aperta in nuova conversazione **solo dopo** chiusura 9-A con bump v2.5.37 e baseline test verde.
 
-**Scope unico:** investigation strumentata + fix `useModalA11y` per ProfiliTab focus restore (h1 drawer-trap re-grab vs h3 mouse-no-focus) post falsification h2 in 8d-C CP2. Item carryforward §6.111 (= §6.109 unresolved).
+### CP0 sanity-light (3 gate)
 
-**Costo stimato:** 1-2h. Confidence media (h1 più probabile di h3 a priori, ma fix richiede refactor `pause`/`resume` o `requestAnimationFrame` workaround).
+```
+echo 'CP0 Gate 1 — git status + ultimo log'
+git status
+echo '---'
+git --no-pager log --oneline -3
+echo 'CP0 Gate 2 — full test suite (atteso 313/313 in 31 files)'
+npm test -- --run
+echo 'CP0 Gate 3 — commit 8d-C (atteso 4 match)'
+git --no-pager log --oneline | grep '8d-C'
+echo 'CP0 Gate 4 — pre-grep seed/devCheck (deve essere zero hit)'
+grep -n 'ora_ricalcolata' src/data/seed.js src/data/devCheck.js || echo 'OK: nessun riferimento a ora_ricalcolata in seed/devCheck'
+```
 
-**Pro:** chiude completamente il debito 8d residuo prima di passare a Step 9.
+Atteso: tree clean, top `db30fae` (o hash Changelog v2.5.36 se tracked), 313/313, 4 match `8d-C`, Gate 4 zero hit (se hit emergono → AMB-9.C estesa intra-CP1 con aggiornamento file emerso, documentato come §6.NN).
 
-**Contro:** è polish a11y minore (focus va comunque a target prevedibile, non blocker funzionale); proseguire investigation a11y prima di Step 9 (notifiche) ritarda funzionalità più visibile per utente.
+### Tabella AMB-9.A÷D + 9.J ratificate (riferimento §22.18)
 
-### Opzione (B) — Step 9 analisi-first (notifiche + fix dominio §6.18 cross-midnight)
+| ID | Decisione | CP target |
+|----|-----------|-----------|
+| **A** | `ora_ricalcolata` TIME → TEXT ISO `'YYYY-MM-DDTHH:MM'` | CP1+CP3 |
+| **B** | Migration semplice `length===5` self-heal, no rollback | CP2 |
+| **C** | `db.version(2).stores({...})` invariato + `fake-indexeddb` | CP2 |
+| **D** | 3 helper `utils/time.js` + tear-down §6.26 + `isEntryFutureDate` | CP1+CP4 |
+| **J** | Target 313 → 329 (+16 ±3) end-of-9-A | tutti CP |
 
-**Scope:** Step 9 della roadmap §7 — implementazione Notification API + scheduling + fix dominio §6.18 cross-midnight (§6.26). §6.111 lasciato come pending soft-defer indefinito.
+### CP1 — `utils/time.js` 3 helper + test isolato (AMB-9.D)
 
-**Costo stimato:** 4-8h split in più sotto-sessioni (analisi-first + impl + browser test).
+**Target Δ test:** +6 (3 helper × 2 test medi: happy path + edge case).
 
-**Pro:** funzionalità prioritaria utente (notifiche promemoria), fix dominio importante (§6.26 era documentato come consumer naturale di Step 9 dalla 7a).
+**File modificati:**
+- `src/utils/time.js` — aggiunti `composeIsoDateTime(dateStr, hhmm)` / `addMinutesToIso(iso, minutes)` / `parseIsoDateTime(iso)`. `minutesToTime` invariato (resta HH:MM per `ora_prevista`, AMB-9.D).
+- `src/utils/time.test.js` — aggiunti 6 test (3 happy + 3 edge: cross-midnight, month-rollover, dateStr alignment).
 
-**Contro:** §6.111 resta aperto a tempo indefinito; eventuale regressione futura su a11y modal ProfiliTab non avrà fix mirato pronto.
+**Implementazione attesa:**
+```js
+export function composeIsoDateTime(dateStr, hhmm) {
+  // Returns 'YYYY-MM-DDTHH:MM'
+  return `${dateStr}T${hhmm}`;
+}
 
-### Raccomandazione
+export function addMinutesToIso(iso, minutes) {
+  // Returns 'YYYY-MM-DDTHH:MM' with carry-over via Date arithmetic.
+  // DST limitation noted (out of scope Step 9, AMB-9.D).
+  const d = new Date(iso);
+  d.setMinutes(d.getMinutes() + minutes);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+}
 
-**Opzione (B) Step 9 analisi-first.** Razionale:
-1. §6.111 è non-blocker e prevedibile (focus va a primo tabbable input, non a body random).
-2. Step 9 sblocca valore utente concreto (notifiche).
-3. §6.26/§6.18 cross-midnight è fix dominio importante che attendeva Step 9 come consumer naturale.
-4. §6.111 rimanibile ad apertura Step 10/11 (polish finale) come item investigation isolata, senza perdita di contesto (§6.111 documenta tutto il contesto necessario).
+export function parseIsoDateTime(iso) {
+  // Returns { dateStr: 'YYYY-MM-DD', hhmm: 'HH:MM', dateObj: Date }
+  const dateStr = iso.slice(0, 10);
+  const hhmm = iso.slice(11, 16);
+  return { dateStr, hhmm, dateObj: new Date(iso) };
+}
+```
 
-### CP0 sanity-light (3 gate, applicabile a entrambe le opzioni)
+**Test attesi (suite `T-time-iso`):**
+1. `composeIsoDateTime('2026-04-26', '23:00')` → `'2026-04-26T23:00'`
+2. `addMinutesToIso('2026-04-26T23:00', 480)` → `'2026-04-27T07:00'` (cross-midnight)
+3. `addMinutesToIso('2026-04-30T22:00', 240)` → `'2026-05-01T02:00'` (month-rollover)
+4. `parseIsoDateTime('2026-04-27T07:00')` → `{dateStr:'2026-04-27', hhmm:'07:00', dateObj:<Date>}`
+5. Round-trip: `parseIsoDateTime(composeIsoDateTime('2026-04-26', '23:00'))` → `{dateStr:'2026-04-26', hhmm:'23:00'}`
+6. `addMinutesToIso(composeIsoDateTime('2026-04-26', '08:00'), 0)` invariante → `'2026-04-26T08:00'`
 
-1. `git status`: working tree pulito su branch `step-8`. Ultimo commit atteso `<hash>` Changelog v2.5.35 oppure `db30fae` Sessione 8d-C CP5 §6.114.
-2. Full test suite: `npm test -- --run` → atteso **313/313 su 31 test files**, **0 warning React Router** (post §6.114).
-3. Verifica commit 8d-C: `git log --oneline | grep "8d-C"` → atteso 4 match (CP1 `0283567`, CP3 `3406e33`, CP4 `af147e0`, CP5 `db30fae`).
+**Commit msg:** `9-A CP1 §6.115a — utils/time.js 3 ISO helpers (AMB-9.A/D)`.
 
-### Carryforward residuo dopo 8d-C
+### CP2 — `db.js` migration v1→v2 + `fake-indexeddb` (AMB-9.B/C)
 
-**Pending (per qualsiasi opzione scelta):**
-- **§6.111** (= §6.109 unresolved). h2 falsificata, h1/h3 da investigare. Hard-defer 8d-D OPPURE soft-defer Step 10/11.
+**Target Δ test:** +3 (test integrazione migration).
 
-**Chiusi in 8d-C:** §6.96, §6.108, §6.85 (archiviazione), §6.84 (test router parte).
+**Pre-CP grep gate (CP0 Gate 4):** se emergono hit `ora_ricalcolata` in `seed.js`/`devCheck.js`, estendere scope CP2 con aggiornamento e documentare come §6.117 sub-item.
 
-**Carryforward Step 9 (da §7 roadmap):**
-- §6.18 cross-midnight (workaround §6.26 in Step 7, fix dominio in Step 9 come consumer naturale).
+**File modificati:**
+- `src/data/db.js` — aggiunta `db.version(2).stores({...invariato})` + upgrade hook (transform `length===5`).
+- `src/data/repository/IRepository.js` — typedef `LogAssunzione.ora_ricalcolata: string|null` aggiornato (commento JSDoc esplicito ISO + riferimento §6.18/§6.26).
+- `package.json` — dev-dep `fake-indexeddb@^6` (verifica versione major compatibile vitest 2.1).
 
-### Vincoli (qualsiasi opzione)
+**File nuovi:**
+- `src/data/db.migration.test.js` — test integrazione (3 test: legacy HH:MM convertito, ISO già migrato no-op, NULL preservato).
 
-- Pattern invariance metodologico Fase 2 (analisi-first → AMB ratificate → CP impl → CP browser).
-- Rispetto regole bash zsh interattiva (single-quoted echo, no apostrofi italiani).
-- Drift §6.69 procedurale: front-matter version + entry §1 sempre in lockstep.
-- Drift §6.69 pregresso v2.5.34 (entry §1 mancante) NON retrocorretto in 8d-C per principio fatto-storico immutabile (analogo §6.71 / v2.5.24); Roberto può recuperarlo manualmente in apertura Sessione 9 se ritiene utile per pulizia archivio.
+**Implementazione attesa upgrade hook:**
+```js
+db.version(2).stores({
+  // Identical to v1 — schema bump for upgrade hook only
+  farmaci: '++id, attivo',
+  orari_base: '++id, farmaco_id, [farmaco_id+dose_numero]',
+  log_assunzioni: '++id, farmaco_id, data, [farmaco_id+data+dose_numero], stato',
+  profilo_utente: '++id, attivo',
+  impostazioni_app: 'chiave',
+}).upgrade(async (tx) => {
+  // §6.117 — Migrate ora_ricalcolata HH:MM (legacy) → ISO 'YYYY-MM-DDTHH:MM' (post-§6.18 fix).
+  // Cross-midnight legacy entries self-heal at next apply* (AMB-9.B, accepted trade-off).
+  await tx.table('log_assunzioni').toCollection().modify((log) => {
+    if (log.ora_ricalcolata && log.ora_ricalcolata.length === 5) {
+      log.ora_ricalcolata = log.data + 'T' + log.ora_ricalcolata;
+    }
+  });
+});
+```
+
+**Setup `fake-indexeddb`:**
+```
+npm install --save-dev fake-indexeddb
+```
+Test file imports `fake-indexeddb/auto` per environment globale.
+
+**Test attesi:**
+1. Open db v1 → write log con `ora_ricalcolata='07:00'` + data `'2026-04-26'` → bump a v2 → `ora_ricalcolata === '2026-04-26T07:00'`
+2. Open db v2 fresh → write log con `ora_ricalcolata='2026-04-26T07:00'` → re-open → invariato (no double-migration)
+3. Write log con `ora_ricalcolata=null` → bump v2 → `null` preservato
+
+**Commit msg:** `9-A CP2 §6.117 — Dexie v1→v2 migration ora_ricalcolata ISO + fake-indexeddb (AMB-9.B/C)`.
+
+### CP3 — `recalc.js` propagazione ISO + `planBuilder.js` invariante (AMB-9.A)
+
+**Target Δ test:** +6 (4 cross-midnight scenari in `recalc.test.js` + 1 invariante `planBuilder.test.js` + 1 round-trip).
+
+**File modificati:**
+- `src/domain/recalc.js` — `applyAssunzione`/`applySalto`/`autoSkip`/`applyRecupero` compongono `ora_ricalcolata` via `composeIsoDateTime(entry.dateStr, ...)` + `addMinutesToIso(...)`. Sostituisce `minutesToTime(effMin + intervallo*60)` con `addMinutesToIso(composeIsoDateTime(entry.dateStr, ora_effettiva_hhmm), intervallo*60)`.
+- `src/domain/planBuilder.js` — `mergeLogIntoEntry` resta opaque su `ora_ricalcolata` (invariante §6.23 esteso, conferma).
+- `src/domain/recalc.test.js` — aggiunti test cross-midnight (es. dose 8h presa alle 23:00 → ricalcolata `'2026-04-27T07:00'`).
+- `src/domain/planBuilder.test.js` — 1 test invariante merge ISO opaque.
+
+**Test attesi:**
+1. `applyAssunzione` dose 8h presa alle 23:00 (su entry `dateStr='2026-04-26'`) → entry N+1 ha `ora_ricalcolata === '2026-04-27T07:00'`
+2. `applySalto` cross-midnight pass-through → entry N+1 `ora_ricalcolata` ISO con dateStr+1
+3. `applyRecupero` 60min su `ora_ricalcolata='2026-04-27T07:00'` → `'2026-04-27T06:00'`
+4. `autoSkip` produce ISO ricalcolata coerente con dateStr della entry skipata
+5. `mergeLogIntoEntry` con log `ora_ricalcolata='2026-04-27T07:00'` → entry mantiene esattamente quella stringa
+6. Round-trip: `applyAssunzione → log → mergeLogIntoEntry → recalc plan` → ricalcolata invariata
+
+**Commit msg:** `9-A CP3 §6.115b — recalc.js ISO propagation cross-midnight (AMB-9.A) + planBuilder invariante (§6.23 esteso)`.
+
+### CP4 — Tear-down §6.26 + `isEntryFutureDate` (AMB-9.D)
+
+**Target Δ test:** +1 net (rimozione `isCrossMidnightRecalc` -2, nuovo `isEntryFutureDate` +3).
+
+**File modificati:**
+- `src/utils/uiState.js` — rimosso `isCrossMidnightRecalc` (dead code post-§6.26 chiusura). Nuovo `isEntryFutureDate(entry, todayDateStr)` → `entry.dateStr > todayDateStr`.
+- `src/utils/uiState.test.js` — rimossi 2 test `isCrossMidnightRecalc`, aggiunti 3 test `isEntryFutureDate` (entry stessa data → false, entry domani → true, entry passata → false).
+- `src/components/oggi/DoseCard.jsx` — branch `isCrossMidnightRecalc(entry)` rimosso. Sostituito con `isEntryFutureDate(entry, todayDateStr)` per badge "⚠ orario: domani". Display orario ricalcolato: parse ISO con `parseIsoDateTime(entry.ora_ricalcolata).hhmm`.
+
+**Commit msg:** `9-A CP4 §6.116 — tear-down §6.26 + isEntryFutureDate (AMB-9.D, chiude §6.18+§6.26)`.
+
+### CP browser — 4 punti
+
+Eseguito da Roberto su Mac post-CP4 commit, **prima** del bump v2.5.37 (vincolo "no commit Changelog senza CP browser verde", lezione 8d-C §6.107).
+
+1. **Avvio app esistente** — `npm run dev` → load `/oggi`. Atteso: status `'ready'`, plan caricato, nessun warning console (tranne RR future flag già coperti §6.114).
+2. **Cross-midnight scenario via DEV slider** — set tempo simulato a 22:55, dose 8h Prontinal con dose 2 prevista alle 23:00. Tap presa alle 23:00. Atteso: dose 3 ricalcolata appare nella card di domani (`dateStr='2026-04-27'` se oggi è `2026-04-26`), display orario `'07:00'`, badge blu "ricalcolata", separator data `'27 APR'` visibile.
+3. **No badge "⚠ orario: domani" su entry stessa-giornata** — dose ricalcolata ma con stessa dateStr di oggi → no badge. (Verifica tear-down §6.26 corretto: il badge non scatta su recalc-only-no-day-change).
+4. **Badge "⚠ orario: domani" su entry dateStr futura** — entry con dateStr+1 → badge presente (verifica `isEntryFutureDate` attivo).
+
+### Bump v2.5.36 → v2.5.37
+
+A chiusura 9-A con CP browser 4/4 verdi:
+- Aggiornare front-matter version + data
+- Aggiungere entry §1 v2.5.37 (sintesi 9-A: 4 CP, Δ test +16, §6.115-§6.117 documentate, baseline 313 → 329)
+- Aggiornare riga §7 9-A → ✅ Completo
+- Sostituire §11 con prompt esecutivo **Sessione 9-B** (Wave B notifiche)
+- Aggiungere §22.19 "Stato post-Sessione 9-A impl"
+
+### Vincoli operativi
+
+- **Pattern invariance metodologico Fase 2:** analisi-first → AMB ratificate → CP impl interleaved con CP browser quando rilevante → bump.
+- **Regole bash zsh interattiva:** single-quoted echo, no apostrofi italiani, no `#` commenti multi-riga.
+- **Drift §6.69 procedurale:** front-matter version + entry §1 sempre in lockstep al bump.
+- **CP browser PRE-commit obbligatorio** per CP4 (lezione §6.107 8d-B → 8d-C §6.110).
+- **Ordine CP non commutativo:** CP1 (helper) precede CP2 (migration test usa helper indirettamente), CP3 precede CP4 (tear-down legge ISO prodotto da CP3).
+- **No anticipazione Wave B:** zero modifiche a `services/notifications.js`/`hooks/useNotifications.js`/`ImpostazioniTab` in 9-A. Se emergono coupling imprevisti → §6.NN documentato + hard-defer 9-B.
 
 ### Apertura sessione
 
-Una volta scelta opzione (A) o (B), aprire nuova conversazione Claude con one-liner:
+Aprire nuova conversazione Claude con one-liner:
 
-- (A): `Apri Sessione 8d-D analisi-first per §6.111 (carryforward 8d-C).`
-- (B): `Apri Step 9 analisi-first (notifiche + fix dominio §6.18 cross-midnight).`
-
-Il prompt naturale (non one-liner §11 esecutivo) serve perché entrambe le opzioni sono analisi-first: produrranno AMB ratificate prima di scrivere codice. Il §11 esecutivo verrà scritto al chiusura analisi-first.
+```
+Esegui il prompt al §11 del Changelog (Sessione 9-A esecutiva).
+```
 
 
 ## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3 + 8-pre + 8a + 8b + 8c-parz + 8c-2
@@ -5522,3 +5680,120 @@ Pattern consolidato: il CP browser è blocker per il commit, non check post-hoc.
 6. Aprire prossima sessione (nuova conversazione Claude) con prompt naturale:
    - (A): `Apri Sessione 8d-D analisi-first per §6.111 (carryforward 8d-C).`
    - (B): `Apri Step 9 analisi-first (notifiche + fix dominio §6.18 cross-midnight).`
+
+## 22.18 Stato post-Sessione 9 analisi-first
+
+**Data:** 26 aprile 2026.
+**Baseline test pre-sessione:** 313/313 su 31 test files (§22.17 post-8d-C impl).
+**Baseline test post-sessione:** 313/313 invariato (analisi-first pura, zero codice scritto).
+**Bump:** v2.5.35 → v2.5.36.
+**Esito:** ✅ **Completo** — 10 AMB-9.A÷J ratificate, scope Step 9 congelato.
+
+### Scope consegnato
+
+Sessione 9 analisi-first aperta come prompt naturale `Apri Step 9 analisi-first (notifiche + fix dominio §6.18 cross-midnight).` (Opzione B raccomandata in §11 v2.5.35). Modalità Q&A iterativa con "decidi tu" da Q2 in poi (Q1 raccomandazione esplicita, Q2-Q10 delegate). 3 Wave (A dominio, B notifiche, C closing) ratificate in 10 AMB.
+
+### Decisione strategica scope
+
+Discussione approfondita su trade-off backend vs no-backend per notifiche iOS:
+- **Vincolo iOS PWA installata:** `setTimeout` foreground-only, `TimestampTrigger` non disponibile (Chromium-only), Web Push richiede backend persistente.
+- **Vincolo Mac Mini disponibile:** Web Push tecnicamente fattibile (Mac Mini emette push uscente HTTPS → APN → iPhone ovunque), ma costo 9-15 sessioni aggiuntive (fusion Step 9 + Fase 3).
+- **Decisione:** Opzione 1 foreground-only per consegna Step 9 senza server, Web Push backend differito a **Fase 3 estesa post-Step 11** come scope autonomo. iPhone+Android entrambi a livello foreground-only (uniformità messaging).
+- **Stima sessioni residue:** Step 9 (5-9 sessioni totali con 9-A + 9-B + Step 10 + Step 11), poi Fase 3 estesa opzionale (9-15 sessioni per Web Push completo).
+
+### CP0 N/A (analisi-first pura)
+
+Nessun gate eseguito (zero codice modificato in-session).
+
+### AMB-9.A÷J ratificate
+
+| ID | Wave | Decisione |
+|----|------|-----------|
+| **A** | A | `ora_ricalcolata` TIME → TEXT ISO `'YYYY-MM-DDTHH:MM'`, `ora_prevista` invariato HH:MM |
+| **B** | A | Stesso nome campo, migration `length===5` self-heal, no rollback (`__pt.wipe()` escape hatch §6.113) |
+| **C** | A | `db.version(2).stores({...})` invariato + `fake-indexeddb` test integrazione + grep gate seed/devCheck |
+| **D** | A | 3 helper `utils/time.js` (`composeIsoDateTime`/`addMinutesToIso`/`parseIsoDateTime`), `new Date(iso)` interno, DST documentato fuori scope, tear-down §6.26 + `isEntryFutureDate` |
+| **E** | B | `setTimeout` main thread, riuso `services/audio.js` per beep, limitazioni note documentate |
+| **F** | B | Toggle `ImpostazioniTab` + chiave `notifiche_attive` boolean + hook `useNotifications` + vincolo `display-mode: standalone` uniforme |
+| **G** | B | 8 trigger re-schedule (init/commit/rollover/profilo/Config/toggle on/off/visibility+focus), window cap 12h, rolling 30 tick |
+| **H** | B | Singleton `services/notifications.js` 7+1 metodi + Map closure-private + tag-based + click `window.location` + `rescheduleAllNotifications` puro + test isolato |
+| **I** | B | Title `farmaco.nome`, body `formatRelazionePastoCopy` in nuovo `utils/copy.js`, fallback `"Promemoria farmaco"`, defensive permission check, beep best-effort, notifica sempre OS-decides |
+| **J** | C | Target +47 (313→360 ±5), split upfront 9-A (+16) + 9-B (+31), 4+5 CP impl + 2 CP browser totali |
+
+### CP completati
+
+N/A — analisi-first pura, zero CP impl. Sessione strutturata per ratificare scope, non per scrivere codice.
+
+### Deviazioni §6.NN previste post-impl
+
+5 deviazioni attese in continuità con §6.114 ultima 8d-C:
+
+| ID | Wave | CP target | Scope |
+|----|------|-----------|-------|
+| **§6.115** | A | CP1+CP3 9-A | `ora_ricalcolata` ISO datetime — chiude §6.18 |
+| **§6.116** | A | CP4 9-A | Tear-down workaround §6.26 + `isEntryFutureDate` — chiude §6.26 |
+| **§6.117** | A | CP2 9-A | Dexie v1→v2 migration + dev-dep `fake-indexeddb` |
+| **§6.118** | B | CP4 9-B | Chiave `impostazioni_app.notifiche_attive` (analoga §6.25 `tema`) |
+| **§6.119** | B | Wave B globale | Opzione 1 foreground-only limitazioni note + roadmap Web Push Fase 3 estesa |
+
+Numerazione effettiva attribuita alla scrittura nel CP impl corrispondente.
+
+### Scoperte operative
+
+1. **Discussione strategia notifiche iOS è il driver di scope di tutta la fase 2-finale.** L'analisi tecnica ha rivelato che il vincolo iOS WebKit (no `TimestampTrigger`) impone scelta binaria: o foreground-only (Opzione 1) o backend Web Push (Opzione 3). Non c'è "compromesso ragionevole intermedio" che valga la pena per iOS.
+2. **Mac Mini disponibile NON cambia la decisione di Step 9, ma sblocca Fase 3 estesa.** Avere il backend pronto rende il pivot Web Push molto più realistico in seguito (vs partire da zero).
+3. **Pattern "decidi tu" da Q2 in poi è efficace** quando le raccomandazioni Q1 stabiliscono il framework decisionale. Roberto ha delegato 9 risposte su 10, tutte raccomandate accettate inline. Tempo sessione ridotto del 50% rispetto a Q&A iterativo pieno.
+4. **Drift §6.69 v2.5.34 perpetuato** in v2.5.36 (continuità principio fatto-storico immutabile). Pattern consolidato: gap visibile, non retrocorretto, documentato in entry §1 di ogni bump successivo.
+5. **Split upfront 9-A + 9-B (vs split adattivo 8d → 8d-A...8d-C-continue-2)** ratificato come pattern da seguire (lezione 8d). Costo metodologico: +1 bump intermedio v2.5.37; beneficio: dimensionamento prevedibile, no overflow context.
+
+### File prodotti / modificati
+
+**Modificati (docs):**
+- `PharmaTimer_Changelog_Fase2.md` — v2.5.35 → **v2.5.36** (questo delivery): front-matter, §1 entry v2.5.36, §7 row Step 9 split 9-A+9-B, §11 sostituita con prompt esecutivo Sessione 9-A, §22.18 nuova.
+
+**Modificati (code):** nessuno (analisi-first pura).
+
+**Nuovi:** nessuno.
+
+### Limitazioni note
+
+1. **Fase 3 estesa Web Push backend NON pianificata in dettaglio.** Stima 9-15 sessioni è ordine di grandezza, da raffinare con analisi-first dedicata post-Step 11 quando il contesto è fresco.
+2. **TimestampTrigger Android non implementato.** Coverage Android pieno (notifiche app chiusa) sacrificata per uniformità iOS+Android Opzione 1. Recovery via Fase 3 estesa che porterebbe entrambe a Web Push.
+3. **DST handling in `addMinutesToIso`** documentato come fuori scope. Probabilità impatto reale per uso Roberto: trascurabile (DST 2 notti/anno, dose alle 02:30 caso raro).
+4. **§6.111 ProfiliTab focus restore** soft-defer Step 11 confermato (out of scope Step 9, conferma raccomandazione §11 v2.5.35).
+
+### Azioni sul Mac post-Sessione 9 analisi-first
+
+1. Stato git corrente: tree clean, top `db30fae` Sessione 8d-C CP5 §6.114 (parent: `af147e0` CP4 §6.113).
+
+2. **Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude.ai** con la versione **v2.5.36** (questo delivery).
+
+3. Commit Changelog separato (solo se il repo lo traccia — convenzione progetto: KB-only, repo tracks code only):
+   ```
+   echo 'Commit Changelog v2.5.36 (opzionale, dipende da convenzione progetto)'
+   git add PharmaTimer_Changelog_Fase2.md 2>/dev/null && git commit -m 'Changelog v2.5.36 (Sessione 9 analisi-first)' || echo 'Changelog non tracciato in git, solo upload KB'
+   ```
+
+4. Verifica finale stato git:
+   ```
+   git --no-pager log --oneline -3
+   ```
+   Atteso top:
+   - `<hash>` Changelog v2.5.36 (Sessione 9 analisi-first) — se tracked
+   - `db30fae` Sessione 8d-C CP5 §6.114
+   - `af147e0` Sessione 8d-C CP4 §6.113
+
+5. **Eseguire CP0 sanity-light** del prompt §11 v2.5.36 prima di aprire Sessione 9-A:
+   ```
+   echo 'CP0 9-A sanity-light'
+   git status
+   git --no-pager log --oneline -3
+   npm test -- --run
+   git --no-pager log --oneline | grep '8d-C'
+   grep -n 'ora_ricalcolata' src/data/seed.js src/data/devCheck.js || echo 'OK: zero hit ora_ricalcolata in seed/devCheck'
+   ```
+
+6. Aprire Sessione 9-A esecutiva (nuova conversazione Claude) con one-liner:
+   ```
+   Esegui il prompt al §11 del Changelog (Sessione 9-A esecutiva).
+   ```
