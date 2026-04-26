@@ -15,9 +15,11 @@
  * is not a contract.
  *
  * See Changelog Fase 2 §6.8–6.16 for design decisions.
+ * Sessione 9-A (§6.115b): `ora_ricalcolata` carries an ISO datetime
+ * 'YYYY-MM-DDTHH:MM' instead of bare HH:MM, fixing §6.18 cross-midnight.
  */
 
-import { timeToMinutes, minutesToTime, calcolaDelta } from '../utils/time.js';
+import { calcolaDelta, composeIsoDateTime, addMinutesToIso } from '../utils/time.js';
 import { SOGLIA_PROMPT_RECUPERO } from './constants.js';
 import { DomainError } from './errors.js';
 import { computeOraPrevista } from './orarioResolver.js';
@@ -273,7 +275,9 @@ function autoSkip(plan, farmacoId, dateStr, targetDoseNumero) {
  *     → stato='saltata' (via autoSkip; gap NOT summed onto target)
  *   - if tipo_frequenza='intervallo' and next dose exists (same-day
  *     dose_numero+1, or cross-day first day with dose_numero=1):
- *       * ora_ricalcolata = oraEffettiva + intervallo_ore (wraps via minutesToTime)
+ *       * ora_ricalcolata = composeIsoDateTime(dataEffettiva, oraEffettiva)
+ *         + intervallo_ore minuti via addMinutesToIso (ISO 'YYYY-MM-DDTHH:MM',
+ *         carry-over across midnight handled by Date arithmetic — §6.115b)
  *       * ora_ricalcolata_originale = same
  *       * stato='ricalcolata'
  *       * gap_minuti = (target.gap_minuti before presa) - (target.recupero_minuti before presa) + delta
@@ -288,10 +292,12 @@ function autoSkip(plan, farmacoId, dateStr, targetDoseNumero) {
  * INVARIANT (logWrites): every entry modified produces one LogAssunzione.
  * Ordering in logWrites: [skipped...] + [target] + [next-dose if modified].
  *
- * KNOWN LIMITATION: if ora_ricalcolata of the next dose wraps past midnight
- * (e.g. 23:00 + 8h = 07:00) while entry.dateStr stays on the original day,
- * the string '07:00' is stored without an explicit date bump. Matches v5
- * mockup behaviour. To be addressed in a later step (not in 4b scope).
+ * CROSS-MIDNIGHT (Sessione 9-A, §6.115b): when the recalculated time of
+ * N+1 falls on the next calendar day (e.g. 23:00 + 8h), `ora_ricalcolata`
+ * stores the full ISO 'YYYY-MM-DDTHH:MM'. The entry's `dateStr` itself is
+ * not moved — entries are pre-allocated per day by buildMultiDayPlan; only
+ * the ricalcolata datetime is shifted forward. UI consumers parse the ISO
+ * via parseIsoDateTime to display the HH:MM and detect cross-day overflow.
  *
  * @param {import('./types.js').Plan} plan
  * @param {import('./types.js').AssunzioneInput} input
@@ -353,8 +359,10 @@ export function applyAssunzione(plan, input) {
       target.orario.dose_numero
     );
     if (nextDose && nextDose.stato !== 'presa') {
-      const effMin = timeToMinutes(oraEffettiva);
-      const newRicalc = minutesToTime(effMin + target.farmaco.intervallo_ore * 60);
+      // §6.115b — Compose ISO from effective datetime, shift by intervallo.
+      // addMinutesToIso handles cross-midnight carry-over.
+      const effIso = composeIsoDateTime(dataEffettiva, oraEffettiva);
+      const newRicalc = addMinutesToIso(effIso, target.farmaco.intervallo_ore * 60);
       const newGap = gapBefore - recuperoBefore + delta;
 
       const { plan: p2, entry: nextPatched } = patchEntry(p, nextDose.key, {
@@ -386,6 +394,7 @@ export function applyAssunzione(plan, input) {
  *
  * Effect (on valid input):
  *   ora_ricalcolata = ora_ricalcolata_originale - recuperoMinuti
+ *     (computed via addMinutesToIso, ISO 'YYYY-MM-DDTHH:MM' — §6.115b)
  *   recupero_minuti = recuperoMinuti
  * gap_minuti and gap_originale are left untouched (the residual gap is computed
  * at the moment the dose is actually taken — see spec sez. 4.3).
@@ -421,7 +430,7 @@ export function applyRecupero(plan, entryKey, recuperoMinuti) {
   }
 
   const baseTime = target.ora_ricalcolata_originale || target.ora_ricalcolata;
-  const newOraRicalc = minutesToTime(timeToMinutes(baseTime) - recuperoMinuti);
+  const newOraRicalc = addMinutesToIso(baseTime, -recuperoMinuti);
 
   const { plan: newPlan, entry: patched } = patchEntry(plan, entryKey, {
     ora_ricalcolata: newOraRicalc,

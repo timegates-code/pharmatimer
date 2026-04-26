@@ -182,8 +182,8 @@ describe('T07 — applySalto farmaco a intervallo (pass-through gap)', () => {
     // the preceding dose was taken late and propagated the gap here).
     entry1 = makeEntry(farmaco, orario1, '2026-04-16', '08:00', {
       stato: 'ricalcolata',
-      ora_ricalcolata: '17:00',
-      ora_ricalcolata_originale: '17:00',
+      ora_ricalcolata: '2026-04-16T17:00',
+      ora_ricalcolata_originale: '2026-04-16T17:00',
       gap_minuti: 60,
       gap_originale: 60,
     });
@@ -348,8 +348,8 @@ describe('T04 — applyAssunzione farmaco a intervallo (ricalcolo N+1)', () => {
     });
     const d2 = result.plan.find((e) => e.key === entry2.key);
     expect(d2.stato).toBe('ricalcolata');
-    expect(d2.ora_ricalcolata).toBe('18:00');
-    expect(d2.ora_ricalcolata_originale).toBe('18:00');
+    expect(d2.ora_ricalcolata).toBe('2026-04-16T18:00');
+    expect(d2.ora_ricalcolata_originale).toBe('2026-04-16T18:00');
     expect(d2.gap_minuti).toBe(120);
     expect(d2.gap_originale).toBe(120);
     expect(d2.recupero_minuti).toBe(0);
@@ -429,7 +429,7 @@ describe('T05 — applyAssunzione con auto-skip', () => {
     });
     const d3 = result.plan.find((e) => e.key === entry3.key);
     expect(d3.stato).toBe('ricalcolata');
-    expect(d3.ora_ricalcolata).toBe('00:00');
+    expect(d3.ora_ricalcolata).toBe('2026-04-17T00:00');
     expect(d3.gap_minuti).toBe(0);
     expect(d3.dose_prec_saltata).toBe(true);
   });
@@ -477,7 +477,7 @@ describe('T06 — applyAssunzione cross-day', () => {
     });
     const next = result.plan.find((e) => e.key === e17_d1.key);
     expect(next.stato).toBe('ricalcolata');
-    expect(next.ora_ricalcolata).toBe('07:30');
+    expect(next.ora_ricalcolata).toBe('2026-04-17T07:30');
     expect(next.dateStr).toBe('2026-04-17');
   });
 
@@ -513,8 +513,8 @@ describe('T10 — applyRecupero', () => {
     // Dose 2 già ricalcolata a 18:00 con gap=120 (scenario post-T04)
     entryRicalc = makeEntry(farmaco, orario2, '2026-04-16', '16:00', {
       stato: 'ricalcolata',
-      ora_ricalcolata: '18:00',
-      ora_ricalcolata_originale: '18:00',
+      ora_ricalcolata: '2026-04-16T18:00',
+      ora_ricalcolata_originale: '2026-04-16T18:00',
       gap_minuti: 120,
       gap_originale: 120,
       recupero_minuti: 0,
@@ -528,7 +528,7 @@ describe('T10 — applyRecupero', () => {
     it('dovrebbe anticipare ora_ricalcolata a 17:00 con recupero=60 e lasciare gap invariato', () => {
       const result = applyRecupero(plan, entryRicalc.key, 60);
       const updated = result.plan.find((e) => e.key === entryRicalc.key);
-      expect(updated.ora_ricalcolata).toBe('17:00');
+      expect(updated.ora_ricalcolata).toBe('2026-04-16T17:00');
       expect(updated.recupero_minuti).toBe(60);
       expect(updated.gap_minuti).toBe(120);
       expect(updated.gap_originale).toBe(120);
@@ -622,8 +622,8 @@ describe('Immutabilità — il plan originale non viene mutato', () => {
     // Serve un plan con una dose ricalcolata per testare applyRecupero.
     const ricalcEntry = makeEntry(farmaco, orario2, '2026-04-16', '16:00', {
       stato: 'ricalcolata',
-      ora_ricalcolata: '18:00',
-      ora_ricalcolata_originale: '18:00',
+      ora_ricalcolata: '2026-04-16T18:00',
+      ora_ricalcolata_originale: '2026-04-16T18:00',
       gap_minuti: 120,
       gap_originale: 120,
     });
@@ -660,8 +660,8 @@ describe('T11 — applyAnnullaAssunzione ripristina dose e N+1', () => {
     });
     const e2 = makeEntry(farmaco, orario2, '2026-04-16', '16:00', {
       stato: 'ricalcolata',
-      ora_ricalcolata: '17:00',        // post-recupero 60
-      ora_ricalcolata_originale: '18:00',
+      ora_ricalcolata: '2026-04-16T17:00',        // post-recupero 60
+      ora_ricalcolata_originale: '2026-04-16T18:00',
       gap_minuti: 120,
       gap_originale: 120,
       recupero_minuti: 60,
@@ -855,8 +855,8 @@ describe('ricalcolaPianoDaProfilo — invariante reset su ricalcolata (AMB-3 #2)
     const orario = makeOrario(1, 2, 0, 'cena'); // cena → 20:30 std, 21:30 nottambulo
     const entry = makeEntry(farmaco, orario, '2026-04-16', '20:30', {
       stato: 'ricalcolata',
-      ora_ricalcolata: '18:00',
-      ora_ricalcolata_originale: '18:00',
+      ora_ricalcolata: '2026-04-16T18:00',
+      ora_ricalcolata_originale: '2026-04-16T18:00',
       gap_minuti: 120,
       gap_originale: 120,
       recupero_minuti: 60,
@@ -911,8 +911,8 @@ describe('CP4 — branch coverage', () => {
     // Dose 1 'ricalcolata' (scenario: una catena era già in corso).
     const e1 = makeEntry(farmaco, o1, '2026-04-16', '08:00', {
       stato: 'ricalcolata',
-      ora_ricalcolata: '09:00',
-      ora_ricalcolata_originale: '09:00',
+      ora_ricalcolata: '2026-04-16T09:00',
+      ora_ricalcolata_originale: '2026-04-16T09:00',
       gap_minuti: 60,
       gap_originale: 60,
     });
@@ -943,7 +943,7 @@ describe('CP4 — branch coverage', () => {
     // ora_ricalcolata_originale null, solo ora_ricalcolata valorizzato.
     const entry = makeEntry(farmaco, orario, '2026-04-16', '16:00', {
       stato: 'ricalcolata',
-      ora_ricalcolata: '18:00',
+      ora_ricalcolata: '2026-04-16T18:00',
       ora_ricalcolata_originale: null,
       gap_minuti: 60,
       gap_originale: 60,
@@ -952,7 +952,7 @@ describe('CP4 — branch coverage', () => {
     const result = applyRecupero(plan, entry.key, 30);
     const updated = result.plan.find((e) => e.key === entry.key);
     // 18:00 - 30min = 17:30 (fallback su ora_ricalcolata)
-    expect(updated.ora_ricalcolata).toBe('17:30');
+    expect(updated.ora_ricalcolata).toBe('2026-04-16T17:30');
     expect(updated.recupero_minuti).toBe(30);
   });
 
@@ -970,8 +970,8 @@ describe('CP4 — branch coverage', () => {
       stato: 'presa',
       ora_effettiva: '2026-04-16T18:00:00',
       delta_minuti: 0,
-      ora_ricalcolata: '18:00',
-      ora_ricalcolata_originale: '18:00',
+      ora_ricalcolata: '2026-04-16T18:00',
+      ora_ricalcolata_originale: '2026-04-16T18:00',
       gap_minuti: 0,
       gap_originale: 0,
     });
@@ -1017,13 +1017,13 @@ describe('T13 — applyRipristino: sospesa → attiva', () => {
 
   it('dovrebbe ripristinare target a ricalcolata se ora_ricalcolata è valorizzata', () => {
     const planRic = [
-      { ...entry1, stato: 'sospesa', ora_ricalcolata: '09:00', ora_ricalcolata_originale: '09:00', gap_minuti: 60 },
+      { ...entry1, stato: 'sospesa', ora_ricalcolata: '2026-04-16T09:00', ora_ricalcolata_originale: '2026-04-16T09:00', gap_minuti: 60 },
       entry2,
     ];
     const result = applyRipristino(planRic, entry1.key, 'attiva');
     const updated = result.plan.find((e) => e.key === entry1.key);
     expect(updated.stato).toBe('ricalcolata');
-    expect(updated.ora_ricalcolata).toBe('09:00');
+    expect(updated.ora_ricalcolata).toBe('2026-04-16T09:00');
     expect(updated.gap_minuti).toBe(60);
   });
 
@@ -1253,5 +1253,110 @@ describe('T13 — applyRipristino: immutabilità', () => {
     const snapshot = structuredClone(plan);
     applyRipristino(plan, e1.key, 'sospesa');
     expect(plan).toEqual(snapshot);
+  });
+});
+
+// ============================================================
+// CP3 §6.115b — recalc ISO propagation cross-midnight (Sessione 9-A)
+// ============================================================
+
+describe('CP3 §6.115b — recalc cross-midnight ISO propagation (Sessione 9-A)', () => {
+  let farmaco, orario1, orario2, e1, e2;
+
+  beforeEach(() => {
+    farmaco = makeFarmaco({
+      id: 1,
+      tipo_frequenza: 'intervallo',
+      intervallo_ore: 8,
+      intervallo_minimo_ore: 4,
+      dosi_giornaliere: 3,
+    });
+    orario1 = makeOrario(1, 1);
+    orario2 = makeOrario(1, 1); // same dose_numero per cross-day same farmaco
+  });
+
+  it('applyAssunzione: dose 8h presa alle 23:00 il 26 → N+1 ricalcolata 2026-04-27T07:00', () => {
+    // Setup: dose 1 il 26/4 alle 23:00 + dose 1 il 27/4 alle 07:00 (cross-day pattern T06).
+    const e26 = makeEntry(farmaco, makeOrario(1, 1), '2026-04-26', '23:00');
+    const e27 = makeEntry(farmaco, makeOrario(1, 1), '2026-04-27', '07:00');
+    const plan = [e26, e27];
+    const result = applyAssunzione(plan, {
+      entryKey: e26.key,
+      dataEffettiva: '2026-04-26',
+      oraEffettiva: '23:00',
+    });
+    const next = result.plan.find((e) => e.key === e27.key);
+    expect(next.stato).toBe('ricalcolata');
+    expect(next.ora_ricalcolata).toBe('2026-04-27T07:00');
+    expect(next.ora_ricalcolata_originale).toBe('2026-04-27T07:00');
+    // Entry's own dateStr resta 2026-04-27 (entry pre-allocata): solo ora_ricalcolata e ISO.
+    expect(next.dateStr).toBe('2026-04-27');
+  });
+
+  it('applySalto: pass-through preserva ora_ricalcolata ISO cross-midnight su target saltata', () => {
+    // Setup: target gia 'ricalcolata' con ora_ricalcolata cross-midnight (es. 2026-04-27T07:00).
+    const target = makeEntry(farmaco, makeOrario(1, 1), '2026-04-26', '23:00', {
+      stato: 'ricalcolata',
+      ora_ricalcolata: '2026-04-27T07:00',
+      ora_ricalcolata_originale: '2026-04-27T07:00',
+      gap_minuti: 60,
+      gap_originale: 60,
+    });
+    const next = makeEntry(farmaco, makeOrario(1, 2), '2026-04-26', '07:00');
+    const plan = [target, next];
+    const result = applySalto(plan, target.key);
+    // Target diventa saltata, ma la sua ora_ricalcolata (fatto storico) resta ISO invariata.
+    const updatedTarget = result.plan.find((e) => e.key === target.key);
+    expect(updatedTarget.stato).toBe('saltata');
+    expect(updatedTarget.ora_ricalcolata).toBe('2026-04-27T07:00');
+    // Il log scritto per target preserva la stringa ISO.
+    const targetLog = result.logWrites.find(
+      (l) => l.farmaco_id === 1 && l.dose_numero === 1 && l.data === '2026-04-26'
+    );
+    expect(targetLog.ora_ricalcolata).toBe('2026-04-27T07:00');
+  });
+
+  it('applyRecupero: 60min su ora_ricalcolata=2026-04-27T07:00 → 2026-04-27T06:00', () => {
+    const target = makeEntry(farmaco, makeOrario(1, 1), '2026-04-27', '07:00', {
+      stato: 'ricalcolata',
+      ora_ricalcolata: '2026-04-27T07:00',
+      ora_ricalcolata_originale: '2026-04-27T07:00',
+      gap_minuti: 120,
+      gap_originale: 120,
+    });
+    const plan = [target];
+    const result = applyRecupero(plan, target.key, 60);
+    const updated = result.plan.find((e) => e.key === target.key);
+    expect(updated.ora_ricalcolata).toBe('2026-04-27T06:00');
+    expect(updated.recupero_minuti).toBe(60);
+  });
+
+  it('autoSkip: preserva ora_ricalcolata ISO cross-midnight come fatto storico su entry skipata', () => {
+    // Scenario: dose 1 era 'ricalcolata' con ora_ricalcolata cross-midnight (2026-04-27T05:00,
+    // venuta da una catena precedente). User prende dose 2 alle 16:00 → autoSkip marca dose 1 saltata
+    // ma il fatto storico ora_ricalcolata resta nella entry skipata (e nel log).
+    const e1 = makeEntry(farmaco, makeOrario(1, 1), '2026-04-26', '08:00', {
+      stato: 'ricalcolata',
+      ora_ricalcolata: '2026-04-27T05:00',
+      ora_ricalcolata_originale: '2026-04-27T05:00',
+      gap_minuti: 60,
+      gap_originale: 60,
+    });
+    const e2 = makeEntry(farmaco, makeOrario(1, 2), '2026-04-26', '16:00');
+    const plan = [e1, e2];
+    const result = applyAssunzione(plan, {
+      entryKey: e2.key,
+      dataEffettiva: '2026-04-26',
+      oraEffettiva: '16:00',
+    });
+    const skippedEntry = result.plan.find((e) => e.key === e1.key);
+    expect(skippedEntry.stato).toBe('saltata');
+    expect(skippedEntry.ora_ricalcolata).toBe('2026-04-27T05:00');
+    // Il log della saltata preserva la stringa ISO cross-midnight.
+    const skippedLog = result.logWrites.find(
+      (l) => l.farmaco_id === 1 && l.dose_numero === 1 && l.data === '2026-04-26'
+    );
+    expect(skippedLog.stato).toBe('saltata');
+    expect(skippedLog.ora_ricalcolata).toBe('2026-04-27T05:00');
   });
 });

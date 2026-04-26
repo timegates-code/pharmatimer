@@ -253,3 +253,102 @@ describe('buildMultiDayPlan — merge con log_assunzioni', () => {
     expect(plan.every((e) => e.stato === 'prevista')).toBe(true);
   });
 });
+
+// ============================================================
+// CP3 §6.115b — mergeLogIntoEntry invariante ISO opaque (Sessione 9-A)
+// ============================================================
+
+describe('CP3 §6.115b — mergeLogIntoEntry invariante ora_ricalcolata ISO opaque', () => {
+  it('dovrebbe preservare la stringa ISO ora_ricalcolata cross-midnight dal log alla entry (§6.23 esteso)', () => {
+    // mergeLogIntoEntry e' opaque su ora_ricalcolata: copia la stringa as-is.
+    // Verifichiamo che un log con ora_ricalcolata ISO cross-midnight 2026-04-27T07:00
+    // venga riportato byte-identical sulla entry generata da buildMultiDayPlan.
+    const farmaco = makeFarmaco({
+      id: 1,
+      tipo_frequenza: 'intervallo',
+      intervallo_ore: 8,
+      intervallo_minimo_ore: 4,
+      dosi_giornaliere: 1,
+    });
+    const orari = [makeOrario(1, 1, 0, 'cena')]; // 20:30 std
+    const logAssunzioni = [
+      {
+        farmaco_id: 1,
+        data: '2026-04-26',
+        dose_numero: 1,
+        ora_prevista: '20:30',
+        ora_effettiva: null,
+        delta_minuti: null,
+        ora_ricalcolata: '2026-04-27T07:00', // ISO cross-midnight
+        gap_minuti: 60,
+        recupero_minuti: 0,
+        stato: 'ricalcolata',
+        note: null,
+      },
+    ];
+    const ctx = {
+      profilo: profiloStandard,
+      farmaci: [farmaco],
+      orari,
+      logAssunzioni,
+      startDate: '2026-04-26',
+      numDays: 2,
+    };
+    const plan = buildMultiDayPlan(ctx);
+    const merged = plan.find(
+      (e) => e.farmaco.id === 1 && e.orario.dose_numero === 1 && e.dateStr === '2026-04-26'
+    );
+    expect(merged.stato).toBe('ricalcolata');
+    expect(merged.ora_ricalcolata).toBe('2026-04-27T07:00'); // byte-identical
+    expect(merged.gap_minuti).toBe(60);
+    // dateStr della entry resta 2026-04-26 (entry pre-allocata): cross-midnight si manifesta
+    // solo nella stringa ora_ricalcolata, non nel dateStr.
+    expect(merged.dateStr).toBe('2026-04-26');
+  });
+
+  it('round-trip: log scritto in formato ISO cross-midnight viene riletto invariato dopo buildMultiDayPlan', () => {
+    // Verifica end-to-end: log creato con stringa ISO 2026-04-27T05:30 sopravvive a un ciclo
+    // completo di build del piano e mantiene il valore esatto.
+    const farmaco = makeFarmaco({
+      id: 1,
+      tipo_frequenza: 'intervallo',
+      intervallo_ore: 8,
+      intervallo_minimo_ore: 4,
+      dosi_giornaliere: 1,
+    });
+    const orari = [makeOrario(1, 1, 0, 'cena')]; // 20:30 std
+    const isoRicalc = '2026-04-27T05:30';
+    const logAssunzioni = [
+      {
+        farmaco_id: 1,
+        data: '2026-04-26',
+        dose_numero: 1,
+        ora_prevista: '20:30',
+        ora_effettiva: null,
+        delta_minuti: null,
+        ora_ricalcolata: isoRicalc,
+        gap_minuti: 30,
+        recupero_minuti: 0,
+        stato: 'ricalcolata',
+        note: null,
+      },
+    ];
+    const ctx = {
+      profilo: profiloStandard,
+      farmaci: [farmaco],
+      orari,
+      logAssunzioni,
+      startDate: '2026-04-26',
+      numDays: 1,
+    };
+    // First build
+    const plan1 = buildMultiDayPlan(ctx);
+    const merged1 = plan1.find((e) => e.dateStr === '2026-04-26');
+    expect(merged1.ora_ricalcolata).toBe(isoRicalc);
+    // Second build (idempotency)
+    const plan2 = buildMultiDayPlan(ctx);
+    const merged2 = plan2.find((e) => e.dateStr === '2026-04-26');
+    expect(merged2.ora_ricalcolata).toBe(isoRicalc);
+    expect(merged2.ora_ricalcolata).toBe(merged1.ora_ricalcolata);
+  });
+});
