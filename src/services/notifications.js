@@ -107,7 +107,9 @@ export function createNotificationsService() {
   function showDoseNotification(entry, farmaco) {
     if (!entry || !farmaco) return;
     const dateStr = entry.dateStr;
-    const entryKey = `dose-${farmaco.id}-${entry.dose_numero}-${dateStr}`;
+    // §6.138 (Sessione 9-B parte 4/4 hotfix, est.): dose_numero anche
+    // nested sotto entry.orario (canonical shape, parallelo farmaco_id).
+    const entryKey = `dose-${farmaco.id}-${entry.orario?.dose_numero}-${dateStr}`;
     let fireAt;
     if (entry.ora_ricalcolata) {
       fireAt = new Date(entry.ora_ricalcolata).getTime();
@@ -169,7 +171,9 @@ export function rescheduleAllNotifications(state, services) {
   const entries = selectEntriesForDay(state, today);
   for (const entry of entries) {
     if (entry.stato !== 'prevista' && entry.stato !== 'ricalcolata') continue;
-    const farmaco = selectFarmacoById(state, entry.farmaco_id);
+    // §6.138 (Sessione 9-B parte 4/4 hotfix): entry shape canonico
+    // espone farmaco_id sotto entry.orario, non flat su entry.
+    const farmaco = selectFarmacoById(state, entry.orario?.farmaco_id);
     if (!farmaco) continue;
     services.showDoseNotification(entry, farmaco);
   }

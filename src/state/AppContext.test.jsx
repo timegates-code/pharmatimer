@@ -280,8 +280,7 @@ describe('AppProvider — CP4 wiring (Sessione 9-B parte 2/2 §6.126)', () => {
         {
           dateStr: today,
           stato: 'prevista',
-          farmaco_id: 7,
-          dose_numero: 1,
+          orario: { farmaco_id: 7, dose_numero: 1 },
           // Ora futura nello stesso giorno: setTimeout delay > 0,
           // così scheduleNotification non scatta no-op.
           ora_prevista: '23:55',

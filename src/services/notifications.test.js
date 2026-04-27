@@ -125,8 +125,7 @@ describe('notifications service', () => {
     const hh = String(new Date(fireAt).getHours()).padStart(2, '0');
     const mm = String(new Date(fireAt).getMinutes()).padStart(2, '0');
     const entry = {
-      farmaco_id: 7,
-      dose_numero: 2,
+      orario: { farmaco_id: 7, dose_numero: 2 },
       dateStr,
       ora_prevista: `${hh}:${mm}`,
       ora_ricalcolata: null,
@@ -156,8 +155,7 @@ describe('notifications service', () => {
     const hh = String(new Date(fireAt).getHours()).padStart(2, '0');
     const mm = String(new Date(fireAt).getMinutes()).padStart(2, '0');
     const entry = {
-      farmaco_id: 11,
-      dose_numero: 1,
+      orario: { farmaco_id: 11, dose_numero: 1 },
       dateStr,
       ora_prevista: `${hh}:${mm}`,
       ora_ricalcolata: null,
@@ -223,9 +221,9 @@ describe('rescheduleAllNotifications — CP4 fix §6.127 + §6.128', () => {
     const state = makeMockState({
       today: '2026-04-27',
       plan: [
-        { dateStr: '2026-04-27', stato: 'prevista', farmaco_id: 1, dose_numero: 1, ora_prevista: '12:00' },
-        { dateStr: '2026-04-26', stato: 'prevista', farmaco_id: 1, dose_numero: 1, ora_prevista: '12:00' }, // ieri, skip
-        { dateStr: '2026-04-28', stato: 'prevista', farmaco_id: 1, dose_numero: 1, ora_prevista: '12:00' }, // domani, skip
+        { dateStr: '2026-04-27', stato: 'prevista', orario: { farmaco_id: 1, dose_numero: 1 }, ora_prevista: '12:00' },
+        { dateStr: '2026-04-26', stato: 'prevista', orario: { farmaco_id: 1, dose_numero: 1 }, ora_prevista: '12:00' }, // ieri, skip
+        { dateStr: '2026-04-28', stato: 'prevista', orario: { farmaco_id: 1, dose_numero: 1 }, ora_prevista: '12:00' }, // domani, skip
       ],
       farmaci: [{ id: 1, nome: 'Test1', relazione_pasto: 'durante' }],
     });
@@ -241,7 +239,7 @@ describe('rescheduleAllNotifications — CP4 fix §6.127 + §6.128', () => {
     const state = makeMockState({
       today: '2026-04-27',
       plan: [
-        { dateStr: '2026-04-27', stato: 'prevista', farmaco_id: 42, dose_numero: 1, ora_prevista: '12:00' },
+        { dateStr: '2026-04-27', stato: 'prevista', orario: { farmaco_id: 42, dose_numero: 1 }, ora_prevista: '12:00' },
       ],
       // Array, NON dict. Pre-fix `farmaci[42]` avrebbe restituito undefined.
       farmaci: [
@@ -262,11 +260,11 @@ describe('rescheduleAllNotifications — CP4 fix §6.127 + §6.128', () => {
     const state = makeMockState({
       today: '2026-04-27',
       plan: [
-        { dateStr: '2026-04-27', stato: 'presa', farmaco_id: 1, dose_numero: 1, ora_prevista: '08:00' },
-        { dateStr: '2026-04-27', stato: 'saltata', farmaco_id: 1, dose_numero: 2, ora_prevista: '14:00' },
-        { dateStr: '2026-04-27', stato: 'sospesa', farmaco_id: 1, dose_numero: 3, ora_prevista: '20:00' },
-        { dateStr: '2026-04-27', stato: 'prevista', farmaco_id: 1, dose_numero: 4, ora_prevista: '22:00' },
-        { dateStr: '2026-04-27', stato: 'ricalcolata', farmaco_id: 1, dose_numero: 5, ora_prevista: '23:00', ora_ricalcolata: '2026-04-27T23:30' },
+        { dateStr: '2026-04-27', stato: 'presa', orario: { farmaco_id: 1, dose_numero: 1 }, ora_prevista: '08:00' },
+        { dateStr: '2026-04-27', stato: 'saltata', orario: { farmaco_id: 1, dose_numero: 2 }, ora_prevista: '14:00' },
+        { dateStr: '2026-04-27', stato: 'sospesa', orario: { farmaco_id: 1, dose_numero: 3 }, ora_prevista: '20:00' },
+        { dateStr: '2026-04-27', stato: 'prevista', orario: { farmaco_id: 1, dose_numero: 4 }, ora_prevista: '22:00' },
+        { dateStr: '2026-04-27', stato: 'ricalcolata', orario: { farmaco_id: 1, dose_numero: 5 }, ora_prevista: '23:00', ora_ricalcolata: '2026-04-27T23:30' },
       ],
       farmaci: [{ id: 1, nome: 'Test', relazione_pasto: 'indifferente' }],
     });
@@ -280,7 +278,7 @@ describe('rescheduleAllNotifications — CP4 fix §6.127 + §6.128', () => {
     const state = makeMockState({
       today: '2026-04-27',
       plan: [
-        { dateStr: '2026-04-27', stato: 'prevista', farmaco_id: 999, dose_numero: 1, ora_prevista: '12:00' },
+        { dateStr: '2026-04-27', stato: 'prevista', orario: { farmaco_id: 999, dose_numero: 1 }, ora_prevista: '12:00' },
       ],
       farmaci: [{ id: 1, nome: 'Other' }],
     });
@@ -294,7 +292,7 @@ describe('rescheduleAllNotifications — CP4 fix §6.127 + §6.128', () => {
     const state = makeMockState({
       today: '2026-04-27',
       plan: [
-        { dateStr: '2026-04-27', stato: 'prevista', farmaco_id: 1, dose_numero: 1, ora_prevista: '23:30' },
+        { dateStr: '2026-04-27', stato: 'prevista', orario: { farmaco_id: 1, dose_numero: 1 }, ora_prevista: '23:30' },
       ],
       farmaci: [{ id: 1, nome: 'Test', relazione_pasto: 'durante' }],
     });
