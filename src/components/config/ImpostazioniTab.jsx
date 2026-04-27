@@ -3,6 +3,7 @@ import { useAppContext } from '../../state/AppContext.jsx';
 import { selectImpostazione } from '../../state/selectors.js';
 import { db } from '../../data/db.js';
 import { useTheme } from '../../hooks/useTheme.js';
+import { useNotifications } from '../../hooks/useNotifications.js';
 
 // ============================================================
 // ImpostazioniTab — sezioni Config utente.
@@ -17,6 +18,12 @@ import { useTheme } from '../../hooks/useTheme.js';
 //     no dirty) e CP7 (useBlocker unsaved changes modal). In CP4
 //     dirty è visibile solo come gate del bottone Salva + hint
 //     inline "nome non può essere vuoto".
+//
+// Scope CP5 Sessione 9-B parte 3/3 (AMB-9.F'):
+//   - SezioneNotifiche: toggle 4-stati (isStandalone × permission)
+//     + banner per !isStandalone e permission denied.
+//   - Pending notifications count integrato in SezioneAvanzate (DEV)
+//     come 4° campo read-only diagnostic (Q-CP5.3).
 //
 // L'outer <section data-testid="config-tab-impostazioni"> è la
 // convenzione stabile CP2→CP6: i test routing in ConfigView.test.jsx
@@ -142,6 +149,110 @@ function SezioneTema() {
 }
 
 // ============================================================
+// SezioneNotifiche — toggle 4-stati Wave B (CP5 Sessione 9-B parte 3/3).
+// ============================================================
+//
+// Decision tree AMB-9.F' literal (§22.20 — fonte autoritativa, non §11
+// terminologia drift `not-supported|granted-off|granted-on`):
+//
+//   isStandalone × permission        UI rendered
+//   ─────────────────────────────────────────────────────────
+//   !isStandalone × *               banner "Installa sulla home"
+//   true × 'default'                toggle off, click → requestEnable
+//                                   + hint "Verrà chiesto il permesso"
+//   true × 'granted' × enabled=0    toggle off, click → requestEnable
+//   true × 'granted' × enabled=1    toggle on,  click → disable
+//                                   + hint "Avviso poco prima..."
+//   true × 'denied'                 toggle disabilitato + banner
+//                                   "Permesso negato — sistema"
+//
+// `useNotifications` (CP3 §6.123) collassa Notification API mancante su
+// permission='denied' (readPermission early-return). Quindi il prompt §11
+// `not-supported` non è uno stato esposto in JS — la UI mostra il banner
+// "Permesso negato" anche per browser legacy. Documentato come §6.133 in
+// CP6 closing.
+//
+// Toggle pattern: <button role="switch" aria-checked> per a11y standard
+// (no checkbox HTML — l'aspetto è tap-target tipo iOS/Android, non
+// form input). disabled=true per stato denied (aria-disabled implicito
+// via attributo HTML).
+//
+// Errori `requestEnable`/`disable` sono assorbiti silenziosi: la UI
+// si aggiorna automaticamente al re-render dell'hook (state cambia
+// via setSetting o defensive revocation check).
+
+function SezioneNotifiche() {
+  const { tokens: t } = useTheme();
+  const { isStandalone, permission, enabled, requestEnable, disable } = useNotifications();
+
+  const sectionStyle = 'py-4';
+
+  if (!isStandalone) {
+    return (
+      <fieldset className={sectionStyle}>
+        <legend className="text-sm font-medium mb-2">Notifiche</legend>
+        <p className="text-sm" style={{ color: t.textPrimary }}>
+          Installa PharmaTimer sulla schermata Home per ricevere le notifiche delle dosi.
+        </p>
+      </fieldset>
+    );
+  }
+
+  async function handleClick() {
+    try {
+      if (enabled) {
+        await disable();
+      } else {
+        await requestEnable();
+      }
+    } catch {
+      // Errori `not_standalone` / `permission_denied` sono assorbiti:
+      // lo stato dell'hook si auto-aggiorna al prossimo render.
+    }
+  }
+
+  const isDenied = permission === 'denied';
+  const showDefaultHint = permission === 'default' && !enabled;
+  const showActiveHint = enabled;
+
+  return (
+    <fieldset className={sectionStyle}>
+      <legend className="text-sm font-medium mb-2">Notifiche</legend>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={enabled}
+        disabled={isDenied}
+        onClick={handleClick}
+        className="px-4 py-2 rounded border disabled:opacity-50"
+        style={{
+          background: enabled ? t.tapBd : t.modalBg,
+          color: t.textPrimary,
+          borderColor: t.tapBd,
+        }}
+      >
+        Notifiche dosi
+      </button>
+      {isDenied && (
+        <p className="text-sm mt-2" style={{ color: t.textPrimary }}>
+          Permesso negato. Abilita le notifiche dalle impostazioni di sistema (Impostazioni → PharmaTimer → Notifiche).
+        </p>
+      )}
+      {showDefaultHint && (
+        <p className="text-sm mt-1" style={{ color: t.textPrimary }}>
+          Verrà chiesto il permesso di sistema.
+        </p>
+      )}
+      {showActiveHint && (
+        <p className="text-sm mt-1" style={{ color: t.textPrimary }}>
+          Avviso poco prima di ogni dose.
+        </p>
+      )}
+    </fieldset>
+  );
+}
+
+// ============================================================
 // SezioneAvanzate — DEV-only read-only diagnostic panel.
 // ============================================================
 //
@@ -150,25 +261,40 @@ function SezioneTema() {
 // stay oblivious of the environment check and testing just needs
 // vi.stubEnv.
 //
-// Fields (3, read-only):
-//   - Schema DB    : db.verno            (Dexie version, 1 on the
-//                                          current schema)
-//   - Ora simulata : state.simulatedNow  (HH:MM string or "(reale)"
-//                                          fallback when null)
-//   - Seed caricato: selectImpostazione(state, 'seed_loaded')
-//                    (Gate CP0 Esito A — marker 1 means seed applied,
-//                    null/absent means fresh install pre-seed; in DEV
-//                    this is useful to confirm fixtures are in place.)
+// Fields (4, read-only):
+//   - Schema DB         : db.verno            (Dexie version)
+//   - Ora simulata      : state.simulatedNow  (HH:MM string or "(reale)")
+//   - Seed caricato     : selectImpostazione(state, 'seed_loaded')
+//   - Notifiche pendenti: services.notifications.getPendingCount()
+//                         (CP5 Q-CP5.3, snapshot at mount; defensive
+//                          fallback 0 when services not in test stub
+//                          context — see renderHelpers.jsx)
 //
 // data-testid="sezione-avanzate" for the 2 CP6 tests (DEV visible /
 // PROD hidden); individual field testids not needed at this depth
 // (label match is enough and more resilient to copy changes).
 
 function SezioneAvanzate() {
-  const { state } = useAppContext();
+  const { state, services } = useAppContext();
   const { tokens: t } = useTheme();
   const seedLoaded = selectImpostazione(state, 'seed_loaded');
   const simNow = state.simulatedNow ?? '(reale)';
+  const [pendingCount, setPendingCount] = useState(0);
+
+  // Snapshot at mount; non-reactive (no refresh button — CP browser
+  // validates the count manually via __pt.notifications.getPendingCount()
+  // from DevTools Console). services?.notifications safe-navigation handles
+  // the test-stub context where services is not provided.
+  useEffect(() => {
+    const getCount = services?.notifications?.getPendingCount;
+    if (typeof getCount === 'function') {
+      try {
+        setPendingCount(getCount() ?? 0);
+      } catch {
+        setPendingCount(0);
+      }
+    }
+  }, [services]);
 
   return (
     <fieldset
@@ -184,6 +310,8 @@ function SezioneAvanzate() {
         <dd>{simNow}</dd>
         <dt>Seed caricato</dt>
         <dd>{seedLoaded === 1 ? 'sì' : 'no'}</dd>
+        <dt>Notifiche pendenti</dt>
+        <dd>{pendingCount}</dd>
       </dl>
     </fieldset>
   );
@@ -204,6 +332,7 @@ export default function ImpostazioniTab(props) {
       <h2 className="text-xl font-semibold mb-2">Impostazioni</h2>
       <SezioneNome dirty={dirty} setDirty={setDirty} />
       <SezioneTema />
+      <SezioneNotifiche />
       {import.meta.env.DEV && <SezioneAvanzate />}
     </section>
   );
