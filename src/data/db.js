@@ -76,9 +76,13 @@ db.version(2).stores({
 
 // ============================================================
 // Settings keys — centralized to avoid typos.
+// §6.129 (Sessione 9-B parte 2/2): NOTIFICHE_ATTIVE added for the
+// Wave B notifications toggle. Stored as 0/1 (not boolean) per the
+// IndexedDB indexability convention.
 // ============================================================
 export const SETTINGS_KEYS = {
   NOME_UTENTE: "nome_utente",
   SEED_LOADED: "seed_loaded",      // boolean: first-run seed already executed
-  SCHEMA_VERSION: "schema_version" // future-proofing for data migrations
+  SCHEMA_VERSION: "schema_version",// future-proofing for data migrations
+  NOTIFICHE_ATTIVE: "notifiche_attive" // 0/1: master switch for Wave B notifications (§6.129)
 };

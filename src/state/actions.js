@@ -25,6 +25,7 @@ import {
 } from '../domain/constants.js';
 import { selectToday, selectProfiloById } from './selectors.js';
 import { commitApplyResult } from './applyHelper.js';
+import { rescheduleAllNotifications } from '../services/notifications.js';
 
 // ------------------------------------------------------------
 // Internal helpers
@@ -78,14 +79,51 @@ function logRowToEntryKey(logRow) {
 // ------------------------------------------------------------
 
 /**
- * Build the action bag bound to the provider's dispatch/getState/repo.
+ * Default no-op services bag — used when callers (e.g. legacy tests)
+ * invoke `createActions` without the `services` parameter. The shape
+ * mirrors the production singleton from `services/notifications.js`
+ * but every method is a no-op. §6.126 (Sessione 9-B parte 2/2).
+ */
+function defaultNoopServices() {
+  return {
+    notifications: {
+      isSupported: () => false,
+      getPermission: () => 'default',
+      requestPermission: () => Promise.resolve('default'),
+      scheduleNotification: () => {},
+      cancelNotification: () => {},
+      cancelAll: () => {},
+      showDoseNotification: () => {},
+      getPendingCount: () => 0,
+    },
+  };
+}
+
+/**
+ * Build the action bag bound to the provider's dispatch/getState/repo/services.
  * @param {{
  *   dispatch: (a: {type: string, payload?: any}) => void,
  *   getState: () => import('./reducer.js').AppState,
  *   repo: any,
+ *   services?: { notifications: any },
  * }} deps
  */
-export function createActions({ dispatch, getState, repo }) {
+export function createActions({ dispatch, getState, repo, services = defaultNoopServices() }) {
+
+  // §6.126 — Centralised reschedule helper. Called from every thunk
+  // that mutates plan-relevant state (apply* dose actions, cambioProfilo,
+  // 7 thunks Config, setSetting toggle on). Gates on:
+  //   - state.status === 'ready' (otherwise plan/farmaci may be empty)
+  //   - state.impostazioni.notifiche_attive === 1 (master switch)
+  // AMB-9.E' (sincrona idempotente cancel-then-rebuild atomico): the
+  // helper executes synchronously inside the calling microtask, so
+  // back-to-back calls from rapid dispatches are safe.
+  function maybeReschedule(state) {
+    if (!state || state.status !== 'ready') return;
+    if (state.impostazioni?.notifiche_attive !== 1) return;
+    rescheduleAllNotifications(state, services.notifications);
+  }
+
 
   // ----------------------------------------------------------
   // init / rebuildPlan
@@ -170,6 +208,10 @@ export function createActions({ dispatch, getState, repo }) {
         type: 'SET_PRESO_STACK',
         payload: presaLogsInWindow.map(logRowToEntryKey),
       });
+
+      // §6.126 — Trigger 1 (init): reschedule notifications after a
+      // successful boot. No-op if notifiche_attive !== 1.
+      maybeReschedule(getState());
     } catch (err) {
       const code =
         err?.message === 'NO_ACTIVE_PROFILE' ? 'NO_ACTIVE_PROFILE' : 'INIT_FAILED';
@@ -223,41 +265,51 @@ export function createActions({ dispatch, getState, repo }) {
       dataEffettiva: override?.dataEffettiva ?? dateStr,
       oraEffettiva: override?.oraEffettiva ?? hhmm,
     };
-    return commitApplyResult({
+    const result = await commitApplyResult({
       dispatch, getState, repo,
       domainCall: (plan) => applyAssunzione(plan, input),
       pushPresoKey: entryKey,
     });
+    maybeReschedule(getState()); // §6.126 trigger 2.1
+    return result;
   }
 
   async function salta(entryKey, override = undefined) {
     // override reserved for API symmetry; applySalto does not consume it today.
     void override;
-    return commitApplyResult({
+    const result = await commitApplyResult({
       dispatch, getState, repo,
       domainCall: (plan) => applySalto(plan, entryKey),
     });
+    maybeReschedule(getState()); // §6.126 trigger 2.2
+    return result;
   }
 
   async function sospendi(entryKey) {
-    return commitApplyResult({
+    const result = await commitApplyResult({
       dispatch, getState, repo,
       domainCall: (plan) => applySospensione(plan, entryKey),
     });
+    maybeReschedule(getState()); // §6.126 trigger 2.3
+    return result;
   }
 
   async function recupero(entryKey, minuti) {
-    return commitApplyResult({
+    const result = await commitApplyResult({
       dispatch, getState, repo,
       domainCall: (plan) => applyRecupero(plan, entryKey, minuti),
     });
+    maybeReschedule(getState()); // §6.126 trigger 2.4
+    return result;
   }
 
   async function ripristina(entryKey, to) {
-    return commitApplyResult({
+    const result = await commitApplyResult({
       dispatch, getState, repo,
       domainCall: (plan) => applyRipristino(plan, entryKey, to),
     });
+    maybeReschedule(getState()); // §6.126 trigger 2.5
+    return result;
   }
 
   async function annullaUltima() {
@@ -270,11 +322,13 @@ export function createActions({ dispatch, getState, repo }) {
       return { ok: false };
     }
     const entryKey = stack[stack.length - 1];
-    return commitApplyResult({
+    const result = await commitApplyResult({
       dispatch, getState, repo,
       domainCall: (plan) => applyAnnullaAssunzione(plan, entryKey),
       popPresoKey: true,
     });
+    maybeReschedule(getState()); // §6.126 trigger 2.6
+    return result;
   }
 
   /**
@@ -298,6 +352,7 @@ export function createActions({ dispatch, getState, repo }) {
     if (result.ok) {
       dispatch({ type: 'REMOVE_PRESO_KEY', payload: entryKey });
     }
+    maybeReschedule(getState()); // §6.126 trigger 2.7
     return result;
   }
 
@@ -340,6 +395,7 @@ export function createActions({ dispatch, getState, repo }) {
           lastBuiltForDay: selectToday(getState()),
         },
       });
+      maybeReschedule(getState()); // §6.126 trigger 4 (cambioProfilo)
       return { ok: true };
     } catch (err) {
       dispatch({
@@ -377,6 +433,35 @@ export function createActions({ dispatch, getState, repo }) {
 
     try {
       await repo.setSetting(chiave, valore);
+
+      // §6.126 — Wave B notifications toggle dispatch.
+      // chiave === 'notifiche_attive' is the dedicated path (AMB-9.G'):
+      //   - valore === 1 → schedule all dose notifications now (trigger 6)
+      //   - valore === 0 → cancel all pending timers (trigger 7)
+      // Other settings (tema, nome_utente, ...) MUST NOT trigger reschedule
+      // — that scope was explicitly excluded from AMB-9.G'.
+      //
+      // §6.132 (CP4 hotfix Sessione 9-B parte 2/2): bypass
+      // maybeReschedule's gate. The optimistic dispatch above queued
+      // notifiche_attive=valore, but stateRef will not reflect that
+      // until React commits + the stateRef-tracking useEffect runs
+      // (one tick later). maybeReschedule reads stateRef.current and
+      // would see the pre-toggle value, failing its gate. We know the
+      // new value here from `valore`, so call reschedule directly.
+      // plan + farmaci are unchanged by the SET_IMPOSTAZIONE dispatch,
+      // so reading them via stateRef is safe even when stale.
+      // status==='ready' guard kept inline as defensive measure
+      // (the UI already gates setSetting on ready state).
+      if (chiave === 'notifiche_attive') {
+        if (valore === 1) {
+          const stateNow = getState();
+          if (stateNow.status === 'ready') {
+            rescheduleAllNotifications(stateNow, services.notifications);
+          }
+        } else {
+          services.notifications.cancelAll();
+        }
+      }
       return { ok: true };
     } catch (err) {
       // Rollback optimistic write. When the key didn't exist before we
@@ -429,6 +514,7 @@ export function createActions({ dispatch, getState, repo }) {
       const state = getState();
       const profiliAggiornati = [...state.profili, { ...toInsert, id }];
       dispatch({ type: 'SET_PROFILI', payload: profiliAggiornati });
+      maybeReschedule(getState()); // §6.126 trigger 5.1 (addProfilo)
       return { ok: true, id };
     } catch (err) {
       dispatch({
@@ -481,6 +567,7 @@ export function createActions({ dispatch, getState, repo }) {
         await rebuildPlanFromFresh({ profilo: nuovoProfiloAttivo });
       }
 
+      maybeReschedule(getState()); // §6.126 trigger 5.2 (updateProfilo)
       return { ok: true };
     } catch (err) {
       dispatch({
@@ -503,6 +590,7 @@ export function createActions({ dispatch, getState, repo }) {
       const state = getState();
       const profiliAggiornati = state.profili.filter((p) => p.id !== id);
       dispatch({ type: 'SET_PROFILI', payload: profiliAggiornati });
+      maybeReschedule(getState()); // §6.126 trigger 5.3 (deleteProfilo)
       return { ok: true };
     } catch (err) {
       dispatch({
@@ -604,6 +692,7 @@ export function createActions({ dispatch, getState, repo }) {
       dispatch({ type: 'SET_FARMACI', payload: farmaci });
       dispatch({ type: 'SET_ORARI', payload: orariAll });
       await rebuildPlanFromFresh({ farmaci, orari: orariAll });
+      maybeReschedule(getState()); // §6.126 trigger 5.4 (addFarmaco)
       return { ok: true, id: newId };
     } catch (err) {
       dispatch({
@@ -634,6 +723,7 @@ export function createActions({ dispatch, getState, repo }) {
       dispatch({ type: 'SET_FARMACI', payload: farmaci });
       dispatch({ type: 'SET_ORARI', payload: orariAll });
       await rebuildPlanFromFresh({ farmaci, orari: orariAll });
+      maybeReschedule(getState()); // §6.126 trigger 5.5 (updateFarmaco)
       return { ok: true };
     } catch (err) {
       dispatch({
@@ -659,6 +749,7 @@ export function createActions({ dispatch, getState, repo }) {
       dispatch({ type: 'SET_FARMACI', payload: farmaci });
       dispatch({ type: 'SET_ORARI', payload: orariAll });
       await rebuildPlanFromFresh({ farmaci, orari: orariAll });
+      maybeReschedule(getState()); // §6.126 trigger 5.6 (deleteFarmaco)
       return { ok: true };
     } catch (err) {
       dispatch({
@@ -696,6 +787,13 @@ export function createActions({ dispatch, getState, repo }) {
       return { ok: false };
     }
     await cambiaProfilo(profilo);
+    // §6.126 trigger 5.7 (attivaProfilo) — Q2=A: explicit reschedule
+    // here in addition to cambiaProfilo's own (trigger 4). The double
+    // call on the wrapper path is accepted by AMB-9.E' (sincrona
+    // idempotente cancel-then-rebuild atomico): two consecutive sync
+    // executions cannot leak timers (JS single-threaded; cancelAll
+    // empties the Map before each rebuild loop).
+    maybeReschedule(getState());
     return { ok: true };
   }
 

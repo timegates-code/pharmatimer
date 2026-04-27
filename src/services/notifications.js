@@ -13,13 +13,26 @@
 //  Q-CP2.5: beep audio.js NON gestito qui — orchestrato esternamente da
 //           useAutoBeep (Sessione 7b-1, hook reattivo). notifications.js fa
 //           solo Notification API + scheduling, no import audio.js.
-//  Q-CP2.6: rescheduleAllNotifications itera state.pianoOggi || [] e
-//           state.farmaci || {}. Nome chiave provvisorio, da confermare in CP4.
+//
+// CP4 Sessione 9-B parte 2/2 — corrections to CP2 provisional decisions:
+//  §6.127: rescheduleAllNotifications now uses selectEntriesForDay +
+//          selectToday (was: state.pianoOggi || []). State shape verified
+//          in CP4 pre-code: the canonical key is `state.plan` (multi-day),
+//          and the Oggi-day projection lives in `selectEntriesForDay`.
+//  §6.128: farmaco lookup via `selectFarmacoById(state, id)` (was:
+//          `state.farmaci[entry.farmaco_id]` with array-as-dict access bug).
+//          state.farmaci is a flat array; the dict access returned a
+//          farmaco only by accidental id-equals-index coincidence.
 //
 // Tag-based replacement: schedulare stesso entryKey cancella il timer precedente
 // (Q-CP2.3 + AMB-9.H). entryKey convenzione: dose-{farmaco_id}-{dose_numero}-{dateStr}.
 
 import { formatRelazionePastoCopy } from '../utils/copy';
+import {
+  selectToday,
+  selectEntriesForDay,
+  selectFarmacoById,
+} from '../state/selectors.js';
 
 /**
  * Factory: builds a fresh notifications service instance.
@@ -135,21 +148,28 @@ export const notifications = createNotificationsService();
  * (AMB-9.G': init, commitApplyResult, rollover, cambiaProfilo, 7 thunks
  *  config, toggle on/off, visibility/focus).
  *
+ * §6.127 (CP4): plan source is `selectEntriesForDay(state, selectToday(state))`.
+ *               The canonical state key is `state.plan` (multi-day); the
+ *               selector projects today-only entries.
+ * §6.128 (CP4): farmaco lookup via `selectFarmacoById(state, id)` (state.farmaci
+ *               is an array, not a dict — pre-CP4 dict-access was a silent bug).
+ *
  * Filters: stato ∈ {'prevista','ricalcolata'} (skips presa/saltata/sospesa).
  * Skips entries without a corresponding farmaco in state.farmaci.
  * Skips entries with fireAt <= now (handled by scheduleNotification no-op).
  *
- * @param {object} state — must expose pianoOggi: Array<entry> and farmaci: dict.
+ * @param {object} state — full AppState; must have `status === 'ready'`
+ *                         (caller in AppContext gates on this).
  * @param {object} services — notifications service (DI for testability).
  */
 export function rescheduleAllNotifications(state, services) {
   if (!state || !services) return;
   services.cancelAll();
-  const entries = state.pianoOggi || [];
-  const farmaci = state.farmaci || {};
+  const today = selectToday(state);
+  const entries = selectEntriesForDay(state, today);
   for (const entry of entries) {
     if (entry.stato !== 'prevista' && entry.stato !== 'ricalcolata') continue;
-    const farmaco = farmaci[entry.farmaco_id];
+    const farmaco = selectFarmacoById(state, entry.farmaco_id);
     if (!farmaco) continue;
     services.showDoseNotification(entry, farmaco);
   }

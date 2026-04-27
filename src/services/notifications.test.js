@@ -1,15 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createNotificationsService } from './notifications';
+import { createNotificationsService, rescheduleAllNotifications } from './notifications';
 
-// 10 test su API singleton (rescheduleAllNotifications testato in CP4 via
-// AppContext.test.jsx). Pattern mock replicato da services/audio.js (Sessione 7b-1):
+// 10 test su API singleton + 5 nuovi (CP4 §6.131) per rescheduleAllNotifications
+// fix §6.127/§6.128. Pattern mock replicato da services/audio.js (Sessione 7b-1):
 //  - globalThis.Notification mock class con permission='granted' + requestPermission vi.fn
 //  - vi.useFakeTimers()
 //  - cleanup afterEach (restore Notification + useRealTimers)
+//
+// Nota CP4: il blocco "rescheduleAllNotifications" testa la pure function
+// con stato sintetico; il wiring React (8 trigger AMB-9.G') è testato in
+// AppContext.test.jsx (integration).
 
 let MockNotification;
 let originalNotification;
-let originalLocationHref;
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -172,5 +175,131 @@ describe('notifications service', () => {
       body: 'Promemoria farmaco',
       tag: `dose-11-1-${dateStr}`,
     });
+  });
+});
+
+// ============================================================
+// CP4 §6.131 — rescheduleAllNotifications pure function tests.
+// Validano i fix §6.127 (selectEntriesForDay vs state.pianoOggi) e
+// §6.128 (selectFarmacoById vs state.farmaci[id] dict access).
+// State sintetico minimale: solo i campi richiesti dai 3 selettori
+// usati dalla funzione (selectToday, selectEntriesForDay,
+// selectFarmacoById) + impostazioni placeholder.
+// vi.setSystemTime fissa today='2026-04-27' per stabilità.
+// ============================================================
+
+function makeMockState({ today = '2026-04-27', plan = [], farmaci = [] } = {}) {
+  return {
+    status: 'ready',
+    plan,
+    farmaci,
+    impostazioni: { notifiche_attive: 1 },
+    simulatedNow: null,
+    profiloAttivo: null,
+    profili: [],
+    orari: [],
+    presoStack: [],
+    error: null,
+    lastBuiltForDay: today,
+    prompt: null,
+  };
+}
+
+function makeServiceMock() {
+  return {
+    cancelAll: vi.fn(),
+    showDoseNotification: vi.fn(),
+    isSupported: () => true,
+    getPermission: () => 'granted',
+  };
+}
+
+describe('rescheduleAllNotifications — CP4 fix §6.127 + §6.128', () => {
+  beforeEach(() => {
+    vi.setSystemTime(new Date('2026-04-27T08:00:00'));
+  });
+
+  it('§6.127: legge da state.plan via selectEntriesForDay (today filter)', () => {
+    const state = makeMockState({
+      today: '2026-04-27',
+      plan: [
+        { dateStr: '2026-04-27', stato: 'prevista', farmaco_id: 1, dose_numero: 1, ora_prevista: '12:00' },
+        { dateStr: '2026-04-26', stato: 'prevista', farmaco_id: 1, dose_numero: 1, ora_prevista: '12:00' }, // ieri, skip
+        { dateStr: '2026-04-28', stato: 'prevista', farmaco_id: 1, dose_numero: 1, ora_prevista: '12:00' }, // domani, skip
+      ],
+      farmaci: [{ id: 1, nome: 'Test1', relazione_pasto: 'durante' }],
+    });
+    const service = makeServiceMock();
+    rescheduleAllNotifications(state, service);
+    expect(service.cancelAll).toHaveBeenCalledTimes(1);
+    expect(service.showDoseNotification).toHaveBeenCalledTimes(1);
+    const callArgs = service.showDoseNotification.mock.calls[0];
+    expect(callArgs[0].dateStr).toBe('2026-04-27');
+  });
+
+  it('§6.128: legge state.farmaci come array (non come dict)', () => {
+    const state = makeMockState({
+      today: '2026-04-27',
+      plan: [
+        { dateStr: '2026-04-27', stato: 'prevista', farmaco_id: 42, dose_numero: 1, ora_prevista: '12:00' },
+      ],
+      // Array, NON dict. Pre-fix `farmaci[42]` avrebbe restituito undefined.
+      farmaci: [
+        { id: 1, nome: 'Wrong' },
+        { id: 42, nome: 'Correct' },
+        { id: 99, nome: 'Wrong2' },
+      ],
+    });
+    const service = makeServiceMock();
+    rescheduleAllNotifications(state, service);
+    expect(service.showDoseNotification).toHaveBeenCalledTimes(1);
+    const farmacoArg = service.showDoseNotification.mock.calls[0][1];
+    expect(farmacoArg.id).toBe(42);
+    expect(farmacoArg.nome).toBe('Correct');
+  });
+
+  it('skippa entries con stato non in {prevista,ricalcolata}', () => {
+    const state = makeMockState({
+      today: '2026-04-27',
+      plan: [
+        { dateStr: '2026-04-27', stato: 'presa', farmaco_id: 1, dose_numero: 1, ora_prevista: '08:00' },
+        { dateStr: '2026-04-27', stato: 'saltata', farmaco_id: 1, dose_numero: 2, ora_prevista: '14:00' },
+        { dateStr: '2026-04-27', stato: 'sospesa', farmaco_id: 1, dose_numero: 3, ora_prevista: '20:00' },
+        { dateStr: '2026-04-27', stato: 'prevista', farmaco_id: 1, dose_numero: 4, ora_prevista: '22:00' },
+        { dateStr: '2026-04-27', stato: 'ricalcolata', farmaco_id: 1, dose_numero: 5, ora_prevista: '23:00', ora_ricalcolata: '2026-04-27T23:30' },
+      ],
+      farmaci: [{ id: 1, nome: 'Test', relazione_pasto: 'indifferente' }],
+    });
+    const service = makeServiceMock();
+    rescheduleAllNotifications(state, service);
+    // Solo 'prevista' (dose 4) e 'ricalcolata' (dose 5) → 2 chiamate
+    expect(service.showDoseNotification).toHaveBeenCalledTimes(2);
+  });
+
+  it('skippa entries il cui farmaco_id non risolve in state.farmaci', () => {
+    const state = makeMockState({
+      today: '2026-04-27',
+      plan: [
+        { dateStr: '2026-04-27', stato: 'prevista', farmaco_id: 999, dose_numero: 1, ora_prevista: '12:00' },
+      ],
+      farmaci: [{ id: 1, nome: 'Other' }],
+    });
+    const service = makeServiceMock();
+    rescheduleAllNotifications(state, service);
+    expect(service.cancelAll).toHaveBeenCalledTimes(1);
+    expect(service.showDoseNotification).toHaveBeenCalledTimes(0);
+  });
+
+  it('integration: createNotificationsService + reschedule produce un timer pendente', () => {
+    const state = makeMockState({
+      today: '2026-04-27',
+      plan: [
+        { dateStr: '2026-04-27', stato: 'prevista', farmaco_id: 1, dose_numero: 1, ora_prevista: '23:30' },
+      ],
+      farmaci: [{ id: 1, nome: 'Test', relazione_pasto: 'durante' }],
+    });
+    const service = createNotificationsService();
+    rescheduleAllNotifications(state, service);
+    expect(service.getPendingCount()).toBe(1);
   });
 });

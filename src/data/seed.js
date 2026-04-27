@@ -138,9 +138,14 @@ export async function runSeedIfNeeded() {
       await db.farmaci.bulkAdd(FARMACI);
       await db.orari_base.bulkAdd(ORARI_BASE);
       await db.impostazioni_app.bulkPut([
-        { chiave: SETTINGS_KEYS.NOME_UTENTE,    valore: "" },
-        { chiave: SETTINGS_KEYS.SEED_LOADED,    valore: 1 },
-        { chiave: SETTINGS_KEYS.SCHEMA_VERSION, valore: 1 }
+        { chiave: SETTINGS_KEYS.NOME_UTENTE,      valore: "" },
+        { chiave: SETTINGS_KEYS.SEED_LOADED,      valore: 1 },
+        { chiave: SETTINGS_KEYS.SCHEMA_VERSION,   valore: 1 },
+        // §6.129 (Sessione 9-B parte 2/2): default OFF for Wave B notifications.
+        // Existing DBs (already seeded) do not get this row — selectImpostazione
+        // returns null when the key is absent and `notifiche_attive === 1` is
+        // false, so the toggle defaults to off without explicit migration.
+        { chiave: SETTINGS_KEYS.NOTIFICHE_ATTIVE, valore: 0 }
       ]);
     }
   );
