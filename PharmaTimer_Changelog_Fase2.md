@@ -1,8 +1,8 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 2.5.40-rc
+**Versione:** 2.5.40-rc.1
 **Data inizio fase:** 16 aprile 2026
-**Ultima modifica:** 27 aprile 2026 (Sessione 9-B parte 3/3 implementativa, CP browser deferred a parte 4/4)
+**Ultima modifica:** 27 aprile 2026 (Sessione 9-B parte 4/4 esecutiva, CP browser bloccato su limitazione architetturale, parte 5/5 split)
 **Ambito:** Sviluppo PWA React standalone con persistenza locale, preparata per futuro swap verso backend FastAPI+MariaDB.
 
 Questo documento raccoglie le decisioni architetturali, la struttura del progetto, le deviazioni dalla specifica e lo stato di avanzamento della Fase 2. È il **punto di riferimento unico** per ogni sessione di sviluppo: leggerlo prima di iniziare garantisce continuità senza dover rileggere l'intero storico chat.
@@ -600,6 +600,20 @@ Questo documento raccoglie le decisioni architetturali, la struttura del progett
 - **Nuova §22.19** "Stato post-Sessione 9-A implementativa" con file prodotti, esiti CP1-CP4, esiti CP browser 4 punti (P2 verde post-§6.118; P1 ambiguo per §6.120 pre-existing; P3 visivo OK; P4 retry-ambiguo, focus restore non fa parte scope CP4).
 - **§11 sostituita** con prompt **Sessione 9-B analisi-first** (raccomandato vs esecutiva diretta dato lessons learned 9-A: spec semantics da rivalidare in browser, AMB-9.E÷I già ratificate ma edge cases iOS PWA permettono rifinitura).
 - 5 file codice modificati (`utils/uiState.js`, `utils/uiState.test.js`, `components/oggi/DoseCard.jsx`, `components/oggi/DoseCard.test.jsx`, `components/oggi/OggiView.jsx`) + 1 file modificato in CP1 (`utils/time.js`, `utils/time.test.js` nuovo) + 2 modificati CP2 (`data/db.js`, `package.json`, `data/db.migration.test.js` nuovo) + 2 modificati CP3 (`domain/recalc.js`, `domain/planBuilder.js` confermato, test estesi) + 1 modificato CP4 docs (`domain/types.js`).
+
+**Changelog versione 2.5.40-rc.1 (rispetto alla 2.5.40-rc):**
+- **Sessione 9-B parte 4/4 esecutiva** completata 27/04/2026 con esito **misto**. Setup PWA install ✅, hotfix latente §6.138 ✅ (commit `fada4a6` figlio di `f856b46`, 371/371 test), CP browser P1-P5+P8 ❌ **bloccati su limitazione architetturale**. Decisione: **split a Sessione 9-B parte 5/5** dedicata (regola critica #5).
+- Bump intermedio v2.5.40-rc → **v2.5.40-rc.1** (release candidate progressiva, NO bump definitivo a v2.5.40 fino a CP browser parte 5/5 verde).
+- **§6.136 (closed)** — gate `if (!import.meta.env.DEV) return` in `AppContext.jsx:194` rimosso temporaneamente per esporre `__pt.notifications` in build production (necessario per tooling CP browser; il build prod stock non espone `__pt`). Patch applicata + revertata in stessa sessione (working tree pulito post-Step 21a). Pattern preservato per parte 5/5 ma da rieseguire ad-hoc (NON committato).
+- **§6.137 (closed)** — icone PWA placeholder 1×1 px (pre-esistenti, stub) sostituite con 3 PNG validi (192/512/512 con "P" stilizzata su `#15141A` theme_color, generati via Pillow nel sandbox + installer self-extracting bit-perfect SHA-1). Necessario per sbloccare Chrome "Install page as app". Patch applicata + revertata in stessa sessione (icone originali stub ripristinate via `.bak.cp-browser`).
+- **§6.138 (committed `fada4a6`)** — bug latente in `services/notifications.js`: `rescheduleAllNotifications` leggeva `entry.farmaco_id` flat e `showDoseNotification` leggeva `entry.dose_numero` flat, ma il canonical shape della plan entry (verificato runtime in PWA standalone via `__pt.app.getState().plan[10]`) annida entrambi sotto `entry.orario`. Fix: `entry.orario?.farmaco_id` + `entry.orario?.dose_numero`. CP4 §6.128 era incompleto (correggeva il dict-access bug ma non il path mismatch). 13 fixture allineate in `notifications.test.js` (11 single-line + 2 multi-line) + 1 fixture `AppContext.test.jsx`. Test 371/371 verde (Δ=0, fixture aligned in-place). **Validato unit, NON validato runtime** (P1 deferred per §6.141).
+- **§6.139 (deferred Wave-C)** — drift implementativo §6.133: la SezioneNotifiche di `ImpostazioniTab.jsx` rende lo stato `granted-on` come **button rettangolare grigio** (sembra disabilitato) anziché slider toggle 4-state come AMB-9.F' literal letterale prevedeva. Il prompt OS Chrome appare e il dispatch `notifiche_attive=1` funziona, ma l'affordance visiva è ambigua. UX da raffinare in Wave-C o sessione polish dedicata.
+- **§6.140 (deferred Wave-C)** — `actions.init()` non re-arma `rescheduleAllNotifications` al boot anche se `permission==='granted'` e `notifiche_attive===1` persistito. Forced reschedule manuale da Console funziona, ma init silente lascia `pending: 0` al cold start del browser. Probabilmente trigger 1 (init) gating su qualche pre-condizione non verificata (es. `services` non ancora iniettato nel context al primo dispatch). Da investigare in parte 5/5 oppure Wave-C.
+- **§6.141 (architecture, parte 5/5 blocker)** — **`simulatedNow` NON propaga ai `setTimeout` del singleton notifications**. Il filtro `delay = fireAt - Date.now()` in `scheduleNotification` usa **wall clock OS** (non resolveNow). Conseguenza: P1-P5 NON testabili a wall clock 21:00+ con piano demo statico (orari 07:00-20:30 tutti passati). Workaround possibili per parte 5/5: (a) `actions.scheduleTestDose(minutesFromNow)` thunk dedicato, (b) farmaco demo dinamico con `ora_prevista` 5 min reali nel futuro, (c) accettare CP browser eseguibile **solo nella finestra giornaliera 06:30-20:30** con istruzioni operative tempo-vincolate. Lascio scelta a sessione 9-B parte 5/5 analisi-first.
+- **§7 row 9-B** aggiornata: `Impl 4/5 ✅, CP browser deferred a parte 4/4` → `Impl 5/5 ✅ + hotfix §6.138, CP browser deferred a parte 5/5 per §6.141`. Aggiunto rif a `fada4a6` (hotfix).
+- **§11 sostituita** con prompt **Sessione 9-B parte 5/5 analisi-first** (raccomandata vs esecutiva diretta dato §6.141 architecture blocker richiede design pre-codice del workaround test-dose; CP browser P1-P5+P8 + CP6 closing definitivo).
+- **Nuova §22.23** "Stato post-Sessione 9-B parte 4/4 esecutiva (misto)" con scoperte runtime, esito CP browser, deviazioni introdotte, blockers identificati, hand-off a parte 5/5.
+- **Drift §6.69 v2.5.34 NON retrocorretto** in v2.5.40-rc.1 (continuità fatto-storico immutabile).
 
 **Changelog versione 2.5.40-rc (rispetto alla 2.5.39):**
 - **Sessione 9-B parte 2/2 implementativa** completata 27/04/2026 (CP4 AppContext wiring) e **Sessione 9-B parte 3/3 implementativa** stessa giornata (CP5 ImpostazioniTab UI). Entrambe portate al delivery 357/357 → 367/367 → **371/371** test su 35 test files. CP browser 8 punti deferred a Sessione 9-B parte 4/4 esecutiva (per dimensionamento sessione, regola critica #5).
@@ -3037,6 +3051,143 @@ __pt.app.actions.presa(`${todayStr}-4-1`, { dataEffettiva: todayStr, oraEffettiv
 
 ---
 
+## 6.136 — Gate `__pt` dev-only rimosso temporaneamente per CP browser PWA build (Sessione 9-B parte 4/4)
+
+**Tipo:** workaround sessione + revert in-session. **Stato:** chiusa post-revert.
+
+`AppContext.jsx:194` ha `if (!import.meta.env.DEV) return` come gate per esporre `window.__pt = {app, notifications}` (tooling CP browser). In build production il gate blocca l'esposizione, e §11 line 3209-3216 presupponeva implicitamente che il tooling fosse disponibile in PWA standalone (richiede build). Tensione architetturale: PWA install richiede build, tooling `__pt` richiede dev → incompatibili sotto `import.meta.env.DEV` come unico gate.
+
+**Decisione esecutiva 9-B parte 4/4:** rimuovere temporaneamente il gate (commento applicato `// §6.136 CP-BROWSER 9-B parte 4/4: gate disabled (REVERT pre-CP6)`), build production con `__pt` esposto, eseguire CP browser, **revertare pre-chiusura sessione**. Pattern: backup `.bak.cp-browser` simmetrico a `.bak.cpN` di §6.135 ma scope più ampio (working tree only, mai committed).
+
+**Esito:** patch applicata Step 7, revertata Step 21a. File `AppContext.jsx` su disco identico a pre-sessione (verifica: `grep -c '§6.136' src/state/AppContext.jsx → 0`).
+
+**Lessons learned:**
+- §11 line 3209-3216 va riformulato in parte 5/5 con esplicita procedura "patch + build + revert" come setup CP browser
+- Considerare in Wave-C un secondo gate dedicato (es. `import.meta.env.VITE_PT_TOOLING === '1'`) per evitare patch ad-hoc ricorrenti
+- L'opzione di abilitare `vite-plugin-pwa` in dev (`devOptions: { enabled: true }`) **NON** è alternativa equivalente: HMR + SW interagiscono male, e i CP browser ne risentono
+
+---
+
+## 6.137 — Icone PWA placeholder valide (Sessione 9-B parte 4/4)
+
+**Tipo:** asset patch + revert in-session. **Stato:** chiusa post-revert.
+
+Le 3 icone PNG in `public/icons/` (`icon-192.png`, `icon-512.png`, `icon-maskable-512.png`) erano **placeholder 1×1 px stub** (68 byte ciascuna), pre-esistenti dalla scaffolding iniziale e mai sostituite. Conseguenza: Chrome rifiuta install ("No supplied icon is at least 144 pixels square") nonostante manifest, SW e HTTPS context tutti OK. CP browser §11 line 3209 ("Chrome PWA Mac in standalone") implicitamente richiedeva install funzionante.
+
+**Decisione esecutiva 9-B parte 4/4:** generare al volo 3 PNG placeholder validi (theme_color `#15141A` solid + lettera "P" bianca stilizzata via Pillow nel sandbox), consegna via installer self-extracting con SHA-1 verification (pattern §6.135 esteso), backup `.bak.cp-browser` per revert. Asset di Fase 2 placeholder definitivi sono fuori scope (decisione design grafico differita a Wave-C o Fase 3).
+
+**Esito:** install PWA Chrome funzionante (verificato Step 9c-9d, "Install page as app..." in menu Chrome 147+), patch revertata Step 21a. Stub originali 1×1 px ripristinati (working tree pulito).
+
+**Lessons learned:**
+- L'install PWA è una pre-condizione del CP browser §11 da verificare al CP0 (non assumere sia disponibile out-of-box)
+- Generazione asset al volo via sandbox + installer self-extracting è pattern riproducibile per future situazioni
+- Da considerare in Wave-C: design icone PharmaTimer definitive con palette progetto + maskable safe-area corretta
+
+---
+
+## 6.138 — Bug latente: `entry.farmaco_id` / `entry.dose_numero` nested under `entry.orario` (Sessione 9-B parte 4/4 hotfix)
+
+**Tipo:** bug fix latente. **Stato:** **chiusa committed `fada4a6`** (figlio di `f856b46` Changelog v2.5.40-rc).
+
+**Bug scoperto durante CP browser P1:** dump runtime di `state.plan[10]` in PWA standalone ha rivelato che il canonical shape della plan entry annida `farmaco_id` e `dose_numero` sotto `entry.orario`, NON come properties flat su `entry`:
+
+```
+entry shape reale (runtime):
+{
+  key, dateStr, farmaco (object denormalizzato), 
+  orario: { farmaco_id, dose_numero, offset_minuti, ... },
+  ora_prevista, ora_ricalcolata, stato, ...
+}
+```
+
+`services/notifications.js` (CP4 §6.128) leggeva flat:
+- `rescheduleAllNotifications` riga ~191: `selectFarmacoById(state, entry.farmaco_id)` → `entry.farmaco_id === undefined` → tutti gli entry skippati → `pending: 0`
+- `showDoseNotification` riga ~119: `dose-${farmaco.id}-${entry.dose_numero}-${dateStr}` → entryKey con `undefined` interpolato
+
+CP4 §6.128 aveva corretto un bug di accesso `state.farmaci[id]` (array-as-dict) con `selectFarmacoById(state, entry.farmaco_id)`, mantenendo però il path errato `entry.farmaco_id`. Bug latente non scoperto da unit test perché le 13 fixture in `notifications.test.js` + `AppContext.test.jsx` usavano lo shape flat (replicava il bug).
+
+**Fix applicato (commit `fada4a6`):**
+- `services/notifications.js`: `entry.farmaco_id` → `entry.orario?.farmaco_id` (1 occorrenza, riga 174)
+- `services/notifications.js`: `entry.dose_numero` → `entry.orario?.dose_numero` (1 occorrenza, riga ~120 dentro `showDoseNotification`)
+- `services/notifications.test.js`: 13 fixture allineate (11 single-line via regex, 2 multi-line via regex distinto)
+- `state/AppContext.test.jsx`: 1 fixture multi-line allineata
+
+**Test:** 371/371 verde, Δ=0 (fixture aligned in-place, no new test).
+
+**Validazione runtime:** unit test verde, **PWA standalone NON validato a wall clock 21:00+** (P1 dipende da `pending > 0` ma alle 21:00 nessuna dose demo è ancora futura — vedi §6.141). Validation runtime deferred a parte 5/5.
+
+**Lessons learned:**
+- §6.128 dovrebbe aver verificato anche il **path** verso il farmaco_id, non solo l'accesso a `state.farmaci`. Pattern §6.118 (validate concrete scenario, not literal prompt) non applicato in profondità sufficiente per CP4.
+- Pattern di scoperta CP browser efficace: dump runtime entry shape con `JSON.stringify(state.plan[N], null, 2)` rivela mismatch shape immediatamente.
+- Quando si fixa bug latente con fixture pre-esistenti, **assumere che le fixture replichino il bug** e allinearle al shape canonico runtime — non al shape canonico "atteso".
+
+---
+
+## 6.139 — SezioneNotifiche button-style vs slider 4-state AMB-9.F' (deferred Wave-C)
+
+**Tipo:** drift implementativo UX. **Stato:** deferred Wave-C.
+
+Implementazione CP5 §6.133 della SezioneNotifiche in `ImpostazioniTab.jsx` rende lo stato `granted-on` come **button rettangolare grigio scuro** ("Notifiche dosi"), non come **slider/toggle 4-state** che AMB-9.F' literal §22.20 prescriveva. Il button è funzionale (tap → prompt OS → `notifiche_attive=1`) ma l'affordance visiva è ambigua: sembra disabilitato anche quando attivo, l'utente non distingue stati `(off, default, granted-off, granted-on)` a colpo d'occhio.
+
+Scoperto durante CP browser parte 4/4 P1 (Roberto: "A quale toggle UI visivamente 'on'?"). UX da raffinare con pattern slider/switch standard (es. iOS-style toggle, già usato nella stessa pagina per altre impostazioni boolean).
+
+**Tipologia:** drift letterale §6.133 (che già documentava drift terminologico §11 vs AMB-9.F'). §6.139 è il **drift visivo** complementare. AMB-9.F' literal vincolante è 4-state slider; §6.133 e §6.139 entrambe rappresentano divergenze accettate temporaneamente.
+
+**Risoluzione attesa:** Wave-C polish UX, oppure sessione dedicata "ImpostazioniTab notifiche redesign" se altre rifiniture si accumulano sulla stessa view.
+
+---
+
+## 6.140 — `actions.init()` non re-arma `rescheduleAllNotifications` al boot (deferred Wave-C)
+
+**Tipo:** bug minore + investigation pending. **Stato:** deferred Wave-C.
+
+Scoperta durante CP browser parte 4/4 P1: dopo PWA hard reload con `permission==='granted'` + `notifiche_attive===1` persistito a DB, lo stato post-init mostra `pending: 0`. Trigger 1 di §6.126/AMB-9.G' (init reschedule) NON arma i timer.
+
+**Workaround validato:** `await window.__pt.app.actions.rescheduleAllNotifications?.()` da Console produce reschedule funzionante (post-§6.138 fix).
+
+**Ipotesi cause:**
+- (a) `services` non ancora iniettato nel `actions` factory al primo dispatch di init (race condition con `useEffect` dell'AppProvider)
+- (b) Gate condizionale interno a `maybeReschedule` salta init se `permission !== requestPermissionResult` (improbabile, codice non lo prevede)
+- (c) Sequencing reducer: `init()` dispatch carica impostazioni DA DB DOPO il primo `maybeReschedule(getState())`, quindi `notifiche_attive` è ancora `undefined` al check del gate
+
+Va investigato in parte 5/5 o Wave-C con dump trace di `services` + `state.impostazioni.notifiche_attive` al momento del trigger 1 init.
+
+**Impact:** medio. UX: utente che chiude/riapre PWA con notifiche già attivate perde i timer fino a prossimo trigger (cambio profilo, edit farmaco, visibility change). Mitigazione naturale: trigger visibility/focus al primo show della PWA dovrebbe ri-armare entro 1 secondo.
+
+---
+
+## 6.141 — `simulatedNow` non propaga ai `setTimeout` del singleton notifications (parte 5/5 design blocker)
+
+**Tipo:** limitazione architetturale **scoperta**. **Stato:** **active blocker per CP browser P1-P5**.
+
+Architettura attuale del singleton `notifications`:
+- `scheduleNotification({fireAt, ...})` calcola `delay = fireAt - Date.now()` con `Date.now()` **wall clock OS-bound**
+- `setTimeout(callback, delay)` agganciato al wall clock browser
+- Il filtro `if (delay <= 0) return` (Q-CP2.3=A no-op silenzioso) rifiuta ogni dose con `fireAt <= wall clock now`
+
+Conseguenza: `actions.setSimulatedNow('06:30')` aggiorna `state.simulatedNow` (e quindi `selectToday`/`resolveNow`/UI), ma **NON sposta** `Date.now()` percepito dal singleton. Quindi a wall clock 21:00 con `simulatedNow='06:30'`:
+- UI mostra plan come fosse mattina (corretto)
+- `rescheduleAllNotifications` itera correttamente le 9 entries today (post-§6.138)
+- `scheduleNotification` però rifiuta tutte le 9 perché `fireAt 07:00 < wall clock 21:00`
+
+Il bug **non è** §6.138 né architetturale di `notifications.js` — è una **limitazione del simulatore di tempo** che non può fingere il futuro per i `setTimeout` reali del browser. È filosoficamente coerente: il simulatore è progettato per la UI, non per il time travel dei native API browser.
+
+**Conseguenza CP browser:** P1 (permission flow + schedule) richiede una **dose realmente futura nel wall clock del momento di esecuzione**. Con piano demo statico (orari 07:00-20:30), CP browser eseguibile solo nella finestra reale 06:30-20:30. Eseguendolo dopo le 20:30, `pending: 0` è il comportamento corretto (nessuna dose schedulabile), ma rende P1-P5 invalidanti vacuously.
+
+**Opzioni di workaround per parte 5/5 analisi-first:**
+
+| Opt | Descrizione | Pro | Contro |
+|-----|-------------|-----|--------|
+| **A** | Helper `actions.scheduleTestDose(minutesFromNow=5)` thunk dedicato, crea entry sintetica `dateStr=today` `ora_prevista=now+5min`, dispatch `ADD_PLAN_ENTRY`, trigger reschedule | Pulito, isolato, riutilizzabile per Wave-C smoke test runtime | Richiede nuovo thunk + 1 case reducer + test (~3-5 LOC + 2-3 test) |
+| **B** | Farmaco demo dinamico "TestNotif" con `ora_prevista` calcolato a `now + 5min` reali, aggiunto via `actions.addFarmaco`, scattenza naturalmente reschedule via §6.126 trigger 5.4 | Riusa flusso esistente, zero nuovo codice | Richiede UI tap o Console multi-step, pollusce DB demo |
+| **C** | Accept CP browser eseguibile **solo finestra 06:30-20:30** wall clock + istruzioni operative tempo-vincolate | Zero codice, zero design | Procedural fragile, non automatizzabile, P1-P5 ripetibili solo in finestra ristretta |
+
+Raccomandata in apertura parte 5/5: **opzione A** per qualità + riusabilità. Da congelare in analisi-first parte 5/5.
+
+**Risoluzione completa Wave-C / Fase 3:** Opzione 2 server-side (Web Push backend Mac Mini, già scheduled in §22.20 lessons learned 9-B) elimina il problema alla radice — il backend programma push notification a fireAt assoluto, senza dipendere da setTimeout client-side.
+
+---
+
 ## 7. Roadmap Fase 2 — avanzamento
 
 | Step | Contenuto | Stato | Note |
@@ -3076,7 +3227,7 @@ __pt.app.actions.presa(`${todayStr}-4-1`, { dataEffettiva: todayStr, oraEffettiv
 | **8d-C** | Carryforward residuo 8d-B + 8d originale: §6.107 sticky separator re-investigation, §6.109 ProfiliTab focus restore, §6.108 NavBar bottom contrast, §6.85 nome_utente 3° timebox, §6.84 test router warning | ✅ **Completo** | 313 → 313 test invariati (Δ=0, target AMB-K' centrato). 4 commit Mac-side: `0283567` CP1 §6.110, `3406e33` CP3 §6.112, `af147e0` CP4 §6.113, `db30fae` CP5 §6.114. CP2 §6.111 zero-commit (h2 falsificata, hard-defer 8d-D). 5 nuove §6.110-§6.114, 4 chiuse (§6.96/§6.108/§6.85/§6.84). Bump v2.5.34 → v2.5.35 |
 | 9 | Notifiche locali (Notification API + scheduling Opzione 1 foreground-only) + **fix dominio §6.18 cross-midnight** (§6.26) | ⏳ **Analisi-first ✅** | Split in **9-A + 9-B** (analisi-first 26/04/2026, v2.5.36). 10 AMB-9.A÷J ratificate. Decisione scope: Opzione 1 senza server (Web Push backend Mac Mini differito a Fase 3 estesa post-Step 11) |
 | **9-A** | Wave A — fix dominio §6.18 cross-midnight: `ora_ricalcolata` TIME → TEXT ISO + 3 helper `utils/time.js` + Dexie v1→v2 migration `fake-indexeddb` + propagazione apply* + tear-down §6.26 (`isCrossMidnightRecalc` ISO-aware sostituisce HH:MM-heuristic) | ✅ **Completo** | 4 CP impl + CP browser 4 punti (P2 critico verde post-§6.118 fix; P1/P4 ambigui per pre-existing fuori scope §6.119/§6.120). 313 → 328 test (+15, target AMB-9.J 329 ±3 a -1). 5 commit branch `step-8` (`d5248a0`/`d0d4e5e`/`d5de70f`/`816a49f`/`0e70a38`). 9 deviazioni: §6.115a/§6.115b/§6.116/§6.116b/§6.117/§6.117a/§6.118 chiuse, §6.119/§6.120 deferred. Bump v2.5.36 → v2.5.37 |
-| **9-B** | Wave B — notifiche Opzione 1 foreground-only: `services/notifications.js` singleton + `hooks/useNotifications.js` + `utils/copy.js` + `rescheduleAllNotifications` puro + AppContext wiring (8 trigger) + chiave `notifiche_attive` Dexie + toggle UI in ImpostazioniTab | ⏳ **Impl 4/5 ✅, CP browser deferred a parte 4/4** | Analisi-first ✅ 26/04/2026 (v2.5.38). Impl split in 3 parti: parte 1/2 ✅ 27/04/2026 v2.5.39 (CP1+CP2+CP3, 357/357 test, top `c158496`), parte 2/2 ✅ 27/04/2026 v2.5.40-rc (CP4 +10 test, top `530e983`, 8 deviazioni §6.125-§6.132), parte 3/3 ✅ 27/04/2026 v2.5.40-rc (CP5 +4 test, top `93c3d21`, 2 deviazioni §6.133-§6.134 + §6.135 infra). Stato: 371/371 test su 35 file. CP browser 6 punti (P1-P5+P8) deferred a parte 4/4 esecutiva, dimensionamento regola critica #5. Bump v2.5.40-rc → v2.5.40 a chiusura parte 4/4 |
+| **9-B** | Wave B — notifiche Opzione 1 foreground-only: `services/notifications.js` singleton + `hooks/useNotifications.js` + `utils/copy.js` + `rescheduleAllNotifications` puro + AppContext wiring (8 trigger) + chiave `notifiche_attive` Dexie + toggle UI in ImpostazioniTab | ⏳ **Impl 5/5 ✅ + hotfix §6.138 (commit `fada4a6`), CP browser deferred a parte 5/5** | Analisi-first ✅ 26/04/2026 (v2.5.38). Impl split in 3 parti: parte 1/2 ✅ 27/04/2026 v2.5.39 (CP1+CP2+CP3, 357/357 test, top `c158496`), parte 2/2 ✅ 27/04/2026 v2.5.40-rc (CP4 +10 test, top `530e983`, 8 deviazioni §6.125-§6.132), parte 3/3 ✅ 27/04/2026 v2.5.40-rc (CP5 +4 test, top `93c3d21`, 2 deviazioni §6.133-§6.134 + §6.135 infra). Stato: 371/371 test su 35 file. CP browser 6 punti (P1-P5+P8) deferred a parte 4/4 esecutiva, dimensionamento regola critica #5. Parte 4/4 esecutiva ✅ 27/04/2026 v2.5.40-rc.1 (setup PWA `§6.136`+`§6.137` revertati, hotfix §6.138 committed, P1 bloccato su §6.141 wall-clock setTimeout vs simulatedNow). Bump v2.5.40-rc.1 → v2.5.40 a chiusura parte 5/5 |
 | 10 | Service worker attivo + manifest definitivo + icone | | |
 | 11 | Polish finale, QA, accessibilità estesa, gestione errori | | |
 
@@ -3191,92 +3342,69 @@ Chiarimenti risolti pre-Step 4b (AMB-1/2/3):
 ---
 
 
-## 11. Prossimo step — Sessione 9-B parte 4/4 esecutiva (Wave B notifiche — CP browser + closing definitivo)
+## 11. Prossimo step — Sessione 9-B parte 5/5 analisi-first (CP browser unblocking + closing definitivo)
 
-**Stato baseline:** v2.5.40-rc (post-Sessione 9-B parte 3/3 CP5). 371/371 test su 35 test files. Commit top `93c3d21` 9-B CP5 §6.133-§6.134. Catena commit 9-B: parte 1/2 (`f7ab6d5` → `fd2ab9a` → `c158496`) → parte 2/2 (`530e983`) → parte 3/3 (`93c3d21` post-amend, era `00cf71a` con .bak.cp5 espunti). Backup `.bak.cp5` ancora su disco per rollback.
+**Stato baseline:** v2.5.40-rc.1 (post-Sessione 9-B parte 4/4 esecutiva). 371/371 test su 35 test files. Commit top `fada4a6` (hotfix §6.138). Catena: `93c3d21` CP5 → `f856b46` Changelog v2.5.40-rc → `fada4a6` hotfix §6.138. Backup `.bak.cp5` ancora su disco (Sessione 9-B parte 3/3 originale, espurgazione differita).
 
-**Scope:** CP browser 6 punti (P1-P5 + P8) + CP6 closing definitivo + bump v2.5.40-rc → **v2.5.40**. P6+P7 skippati per copertura unit test (vedi §6.133 contesto). iPhone PWA defer a Wave C se emergono regressioni iOS-specifiche.
+**Scope:** **analisi-first** per design workaround §6.141 (3 opzioni A/B/C in §6.141 §1), poi **esecutiva** dello stesso scope: CP browser P1-P5+P8 + CP6 closing definitivo + bump v2.5.40-rc.1 → **v2.5.40**.
 
-### CP0 sanity-light (4 gate)
+### Razionale modalità analisi-first
 
-1. `git status` clean (solo Changelog modificato, KB-only convention)
-2. `git --no-pager log -1 --oneline | grep -q '9-B CP5'` deve passare (top commit `93c3d21`)
-3. `npm test -- --run 2>&1 | tail -5` mostra 371/371 in 35 file
-4. `grep -E "§6\.13[3-5]" src/components/config/ImpostazioniTab.jsx src/components/config/ImpostazioniTab.test.jsx 2>/dev/null | wc -l` ≥ 3 (riferimenti CP5)
+§6.141 è blocker architetturale che richiede **decisione di design** prima del codice (3 opzioni con trade-off divergenti). La parte 4/4 esecutiva è fallita perché ha tentato CP browser senza pre-design del workaround test-dose. Pattern coerente con regola critica #1 (analisi prima dell'implementazione su task complesso) e §6.118 (validate concrete scenario, not literal prompt).
 
-### Setup PWA
+### Domande Q1-Q4 da fissare in apertura analisi-first
 
-- **Device:** Chrome PWA Mac in `display-mode: standalone`. Verifica dal Console: `window.matchMedia('(display-mode: standalone)').matches === true`.
-- **Pre-test reset stato:** prima di ogni punto, fai reset esplicito di `notifiche_attive` via `await window.__pt.app.actions.setSetting('notifiche_attive', 0)` se necessario, e usa Chrome → site settings → Notifications "Reset/Ask" per testare permission flow da capo.
-- **Tooling Console disponibile:**
-  - `window.__pt.app.getState()` — snapshot AppState completo
-  - `window.__pt.app.actions.<thunk>` — accesso thunks
-  - `window.__pt.notifications.getPendingCount()` — N timer pending nel singleton
-  - `window.__pt.notifications.cancelAll()` — cancel manuale
-  - `window.__pt.simulatedNow.set('HH:MM')` / `.clear()` — fake clock
+- **Q1 — Workaround §6.141:** A (consigliato `actions.scheduleTestDose`) / B (farmaco demo dinamico) / C (accept time-window only)?
+- **Q2 — Mitigazione §6.140 (init non re-arma):** investigation in-session o defer Wave-C? (raccomando defer, non bloccante)
+- **Q3 — UX §6.139 (button vs slider):** investigation in-session o defer Wave-C? (raccomando defer, fuori scope notifiche)
+- **Q4 — Setup ripetibile:** §6.136 + §6.137 patch+revert come parte stabile del CP browser setup, oppure refactor strutturale (es. `import.meta.env.VITE_PT_TOOLING`, gate `__pt` senza dipendere da DEV)?
 
-### CP browser 6 punti
+### Workflow proposto
 
-**Obbligatori (P1-P5):**
-
-1. **P1 — Permission flow:** cold start con `Notification.permission === 'default'` + `notifiche_attive=0`. Click toggle in Impostazioni → prompt OS → accept → `Notification.permission==='granted'` + `notifiche_attive===1` + `getPendingCount() > 0`.
-2. **P2 — Schedule/cancel cycle:** dose imminente schedulata. `actions.presa(entryKey)` → `getPendingCount()` decrementato. `actions.cambiaProfilo(profiloId)` → cancelAll + reschedule fresh per nuovo profilo.
-3. **P3 — Rollover midnight:** `__pt.simulatedNow.set('23:55')` → tick clock automatico → REBUILD_PLAN per nuovo `dateStr` → `getPendingCount()` riflette dosi nuove giornata.
-4. **P4 — Beep simultaneity:** notifica fires app foreground → beep `audio.js` + Notification visibile entrambi senza eccezioni Console (no double-notif, no race).
-5. **P5 — Visibility flip:** hide/show 2s → `getPendingCount()` invariato. Flip rapido <500ms × 3 → invariato (AMB-9.E' sincrona idempotente).
-
-**Raccomandato (P8):**
-
-8. **P8 — Tag-based replacement:** schedule 2 notifiche stesso `entryKey` (forzare via doppio reschedule manuale) → solo 1 in macOS Notification Center (AMB-9.H tag implicito via Map key).
-
-**P6+P7 skippati:** P6 (revocation OS-side) coperto da `useNotifications.test.jsx` test #6 (defensive revocation on mount). P7 (non-PWA fallback) coperto da `useNotifications.test.jsx` test #1 (`!isStandalone` → `enabled=false`).
-
-### Per ogni punto, output da incollare
-
-Pattern: 5-10min per punto, output sintetico in Console + screenshot opzionale del Notification Center per P1/P4/P8.
-
-```
-echo 'P<N> result'
-echo 'Notification.permission:' && Notification.permission
-echo 'notifiche_attive:' && window.__pt.app.getState().impostazioni.notifiche_attive
-echo 'getPendingCount:' && window.__pt.notifications.getPendingCount()
-```
-
-Pass/fail criteria specificati in tabella per ciascun punto (definita on-demand in apertura sessione).
-
-### CP6 closing definitivo
-
-1. Bump version §1 + front-matter v2.5.40-rc → **v2.5.40** (lockstep §6.69 — drift v2.5.34 perpetuato)
-2. Aggiungere §22.23 "Stato post-Sessione 9-B parte 4/4 implementativa (CP browser verde)"
-3. Documentare eventuali §6.NN nuove emerse da CP browser (analoga §6.119/§6.120 9-A)
-4. Aggiornare §7 row 9-B a **✅ Completo** con dettaglio CP browser P1-P5+P8 verde
-5. Cleanup `.bak.cp5` sul Mac (`rm src/components/config/*.bak.cp5`) post-bump definitivo
-6. Aggiornare §11 con prompt esecutivo Sessione 9-C (valutazione cross-midnight UI §6.26 deferred da 7d-2 + altre sospese §6.119/§6.120) oppure salto Fase 3 Log
-
-### Riferimenti AMB già fissati
-
-- AMB-9.E' (sincrona idempotente cancel-then-rebuild atomico) — validato da P5
-- AMB-9.F' (decision tree 4 stati permission) — validato da P1 (UI già verde unit test CP5)
-- AMB-9.G' (8 trigger reschedule, 7+1 thunks nominati) — validato da P2 (cambiaProfilo) + P3 (rollover)
-- AMB-9.H (tag-based replacement entryKey) — validato da P8
-- AMB-9.I (rilevamento revoche post-subscribe) — coperto unit, P6 skip
+1. **CP0 sanity-light** (4 gate): tree clean tranne `.bak.cp5` Sessione 9-B parte 3/3, top `fada4a6`, 371/371 in 35 file, ref §6.138 (atteso ≥1 in `notifications.js`)
+2. **Analisi-first:** Q1-Q4 risolte con AMB-parte5.A÷D congelate. Se Q1=A → CP1 nuovo thunk + test
+3. **Setup CP browser ripetibile:** patch `__pt` gate + icone (§6.136 + §6.137 ri-applicate, idempotenti via `.bak.cp-browser`), build, install PWA
+4. **CP1 (se Q1=A): scheduleTestDose** thunk + 1-2 test (target +2-3, 371→374±1)
+5. **CP browser P1-P5+P8 con simulatedNow disabled + scheduleTestDose attivo:**
+   - P1: `setNotifiche(true)` UI tap → `scheduleTestDose(5)` → permission prompt → `pending: 1`
+   - P2: `actions.presa(testKey)` → `pending: 0`. `cambiaProfilo(2)` → cancelAll + (eventuale reschedule)
+   - P3: `simulatedNow.set('23:55')` → tick rollover → `lastBuiltForDay` cambio. NB: P3 testa la **rebuild plan**, non lo schedule (che resta `pending: 0` finché non si rifa scheduleTestDose nel nuovo dateStr)
+   - P4: `scheduleTestDose(0.1)` → 6s wait → beep + Notification visibile
+   - P5: hide/show 2s + 3 flip rapidi <500ms → `pending` invariato (idempotenza AMB-9.E')
+   - P8: 2× `scheduleTestDose(5)` con stesso entryKey forzato → 1 sola Notification al fire (tag-as-Map-key)
+6. **CP6 closing definitivo:**
+   - Bump §1 + front-matter v2.5.40-rc.1 → **v2.5.40** (lockstep §6.69 — drift v2.5.34 perpetuato)
+   - §22.24 "Stato post-Sessione 9-B parte 5/5 implementativa (CP browser verde)"
+   - Documentare §6.NN nuove emerse (es. §6.142 scheduleTestDose se Q1=A)
+   - §7 row 9-B → ✅ **Completo**
+   - Cleanup `.bak.cp5` + `.bak.cp-browser` post-bump
+   - Revert §6.136 + §6.137 working tree (icone stub + gate restored) — oppure preservare se Q4 richiede ri-applicazione strutturale
+   - §11 sostituita con prompt esecutivo Sessione 9-C (valutazione cross-midnight UI §6.26 deferred + §6.119/§6.120/§6.139/§6.140 sospese) oppure salto Fase 3 Log
 
 ### Pattern operativi da rispettare
 
-- Pre-codice §6.118 NON applicabile (CP browser non scrive codice, solo verifica runtime)
-- Approval esplicita tra step (regola critica #4) — chiusura punto per punto
+- Pre-codice §6.118 applicabile a CP1 (se Q1=A) — validate scheduleTestDose contro entry shape canonico §6.138
+- Approval esplicita tra step (regola critica #4) — chiusura punto per punto in CP browser
 - Bash zsh-safe (echo single-quoted, no `#`, no apostrofi italiani)
-- Se emergono bug reali in browser: deviazione `§6.NN` documentata, fix come CP separato (es. `9-B CP5b — fix browser §6.NN`) prima di chiusura CP6
-- **Discriminante stop:** se P1-P5 falliscono in modo non recuperabile in 1 hotfix, considera split a parte 5/5 (raro ma possibile per regola critica #5)
+- Setup §6.136+§6.137 ri-applicato via `bash ~/Downloads/installer_*.sh` (riusare l'installer §6.137 dalla parte 4/4 se ancora disponibile, oppure rigenerare)
+- Se emergono altri bug latenti shape/path durante CP browser: deviazione `§6.NN` documentata, fix come CP separato (precedente §6.138 conferma il pattern)
+
+### Riferimenti AMB già fissati
+
+- AMB-9.E' (sincrona idempotente cancel-then-rebuild atomico) — pendente validazione P5
+- AMB-9.F' (decision tree 4 stati permission) — UI verde unit test CP5; runtime UX rifinitura §6.139 deferred
+- AMB-9.G' (8 trigger reschedule) — pendente validazione P2 (cambiaProfilo) + P3 (rollover)
+- AMB-9.H (tag-based replacement entryKey) — pendente validazione P8
+- AMB-9.I (rilevamento revoche post-subscribe) — coperto unit, P6 skip confermato
 
 ### Stima token
 
-~25-35K token totali. CP browser ~15K (Q&A punto-per-punto), CP6 closing ~10K. Margine ampio per eventuali §6.NN.
+~40-55K token totali (analisi-first ~12K + CP1 impl ~8K + CP browser ~15K + CP6 closing ~10K). Margine per eventuali §6.NN.
 
 ### One-liner di apertura
 
 ```
-Esegui il prompt al §11 del Changelog (Sessione 9-B parte 4/4 esecutiva).
+Esegui il prompt al §11 del Changelog (Sessione 9-B parte 5/5 analisi-first).
 ```
 
 ## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3 + 8-pre + 8a + 8b + 8c-parz + 8c-2
@@ -6525,5 +6653,119 @@ Costo metodologico: ~5min setup + ~2min/iteration. Beneficio: zero round-trip Ma
 6. Aprire Sessione 9-B parte 4/4 (nuova conversazione Claude) con one-liner:
    ```
    Esegui il prompt al §11 del Changelog (Sessione 9-B parte 4/4 esecutiva).
+   ```
+
+
+## 22.23 Stato post-Sessione 9-B parte 4/4 esecutiva (esito misto)
+
+**Data:** 27 aprile 2026 (sessione serale, ~21:00-21:10).
+**Baseline test pre-sessione:** 371/371 su 35 test files (§22.22 post-9-B parte 3/3).
+**Baseline test post-sessione:** 371/371 (Δ=0; hotfix §6.138 commit `fada4a6`, 13 fixture aligned in-place).
+**Bump:** v2.5.40-rc → **v2.5.40-rc.1** (release candidate progressiva, NO bump definitivo a v2.5.40 fino a CP browser parte 5/5 verde).
+**Esito:** ⚠️ **MISTO** — Setup PWA install ✅, hotfix latente §6.138 ✅, CP browser P1-P5+P8 ❌ bloccati su §6.141. Decisione: split a Sessione 9-B parte 5/5 analisi-first (regola critica #5).
+
+### CP eseguiti / esito sintetico
+
+| Step | Scope | Esito | Persistenza |
+|------|-------|-------|-------------|
+| CP0 sanity-light (4 gate) | git status, top commit, test 371/371, ref §6.13x | ⚠️ 2/4 mismatched (Gate 2 Changelog tracked drift, Gate 4 ≥3 vs effettivo 1) | annotato come drift §11 wording, non bug |
+| §6.136 patch `__pt` gate | rimuovere `if (!import.meta.env.DEV) return` per esporre `__pt.notifications` in build | ✅ applicato Step 7, ✅ revertato Step 21a | working tree (no commit) |
+| §6.137 install PWA | icone 1×1 placeholder → 3 PNG validi via Pillow + installer self-extracting SHA-1 | ✅ applicato Step 9, ✅ revertato Step 21a | working tree (no commit) |
+| Hotfix §6.138 | `entry.farmaco_id`/`dose_numero` flat → `entry.orario?.X` nested + 13 fixture aligned | ✅ committed `fada4a6` | repo branch `step-8` |
+| CP browser P1 (permission flow) | toggle ON → prompt OS accept → permission granted + notifiche_attive=1 + pending>0 | ⚠️ partial fail: granted+attive OK, pending=0 (cause: §6.140 init no-rearm + §6.141 wall-clock setTimeout filter) | runtime, non riproducibile in unit |
+| CP browser P2-P5+P8 | non eseguiti (P1 bloccante) | ❌ deferred | parte 5/5 |
+| CP6 closing | bump definitivo v2.5.40 NON eseguito | ❌ deferred | parte 5/5 |
+
+### Scoperte session-level (deviazioni introdotte)
+
+| § | Tipo | Stato | Sintesi |
+|----|------|-------|---------|
+| **§6.136** | workaround sessione | chiusa post-revert | gate `__pt` rimosso temporaneo per build production CP browser |
+| **§6.137** | asset patch | chiusa post-revert | icone PWA 1×1 → 192/512/512 placeholder validi |
+| **§6.138** | bug latente | **chiusa committed `fada4a6`** | path mismatch CP4 §6.128 incompleto |
+| **§6.139** | drift UX | deferred Wave-C | SezioneNotifiche button-style vs slider 4-state |
+| **§6.140** | bug minore | deferred Wave-C | `actions.init()` non re-arma reschedule al boot |
+| **§6.141** | architecture blocker | active parte 5/5 | `simulatedNow` non propaga ai `setTimeout` wall-clock-bound |
+
+### Catena decisionale CP browser P1 (per future referenze)
+
+1. Pre-check tab Chrome dev: `standalone:false ptKeys:10 hasNotif:undefined permission:default` → tooling missing in dev (`__pt.notifications` esposto solo se §6.126 ha eseguito; verificato non gated da `isStandalone`)
+2. HMR stale Vite (~25h running): patch §6.126 può non essere propagata a context provider — risolto con restart `rm -rf node_modules/.vite && npm run dev`
+3. Tooling esposto, ma `vite-plugin-pwa` ha `devOptions.enabled: false` → PWA non installabile in dev → build production necessario
+4. Build production gate `import.meta.env.DEV` blocca `__pt` → §6.136 patch
+5. Build production manifest valido + SW activated, ma "No supplied icon ≥144 px square" (icone 1×1) → §6.137 patch
+6. PWA installabile via Chrome menu ⋮ → "Install page as app...", finestra standalone OK, `__pt` esposto, permission granted post-toggle
+7. P1 forced reschedule manuale → `pending:0` → diagnosi shape entry → §6.138 latent bug → patch + 13 fixture + commit
+8. Post-§6.138 ri-validation: bundle stale residuo (workbox cache) → SW unregister + caches.delete + Cmd+Shift+R
+9. Post-cache-clear: `pending:0` ancora → diagnosi `delay = fireAt - Date.now()` con wall clock → §6.141 architecture limit
+10. Decisione: chiusura parte 4/4 con commit §6.138, split a parte 5/5 analisi-first per design workaround §6.141 + run CP browser P1-P5+P8 in finestra reale o via test-dose helper
+
+### File modificati / committati
+
+**Committed (commit `fada4a6` figlio di `f856b46`):**
+- `src/services/notifications.js` — 2 path corrections + 5 righe comment §6.138 (172, 174, 192, 193, 195)
+- `src/services/notifications.test.js` — 13 fixture aligned (11 single-line + 2 multi-line)
+- `src/state/AppContext.test.jsx` — 1 fixture multi-line aligned
+
+**Working tree post-revert (Step 21a, NO commit):**
+- `src/state/AppContext.jsx` — restored from `.bak.cp-browser` (gate `__pt` re-attivato)
+- `public/icons/icon-192.png`, `icon-512.png`, `icon-maskable-512.png` — restored stub 1×1 da `.bak.cp-browser`
+
+**Untracked rimasti (cleanup parte 5/5):**
+- `src/components/config/ImpostazioniTab.jsx.bak.cp5` — Sessione 9-B parte 3/3 §6.135 backup
+- `src/components/config/ImpostazioniTab.test.jsx.bak.cp5` — idem
+
+### Decisioni di scope chiusura
+
+| Decisione | Razionale |
+|-----------|-----------|
+| **Commit §6.138** in parte 4/4 (NON in parte 5/5) | unit-validated 371/371 sufficiente; fix ortogonale al CP browser blocker; commit pulito riduce delta di parte 5/5 |
+| **Revert §6.136 + §6.137** working tree | mantenere working tree pulito per Changelog v2.5.40-rc.1 commit + ri-applicabili in parte 5/5 idempotentemente |
+| **Non investigare §6.140** (init no-rearm) in-session | non bloccante (workaround forced reschedule funziona), defer Wave-C riduce scope parte 5/5 |
+| **Non investigare §6.139** (button vs slider) in-session | UX rifinitura, defer Wave-C |
+| **Modalità analisi-first parte 5/5** vs esecutiva | §6.141 è design decision (3 opzioni A/B/C); regola critica #1 si applica |
+
+### Limitazioni note
+
+1. **CP browser P1-P5+P8 NON eseguiti** runtime. §6.138 unit-validated ma non runtime-validated (P1 dipende da `pending > 0` ma a wall clock 21:00+ piano demo statico non ha dosi future).
+2. **Bump definitivo v2.5.40 deferred** a parte 5/5 verde.
+3. **iPhone PWA non testato** (defer Wave-C come §22.22).
+4. **§6.140 + §6.141 + §6.139** aggiungono carico Wave-C; valutare in parte 5/5 chiusura se 3 deviazioni residue ammettono bump v2.5.40 o richiedono v2.5.40-rc.2 intermedio.
+
+### Lessons learned
+
+1. **CP browser è blocco runtime non assimilabile a unit test** — bug latenti come §6.138 sopravvivono unit test perché le fixture replicano lo shape sbagliato. Pattern di scoperta: dump `JSON.stringify(state.X[N], null, 2)` early in CP browser.
+2. **Setup PWA install ha pre-condizioni multiple non auto-controllate** (gate `__pt`, icone valide, manifest, SW, devOptions). §11 line 3209 le presupponeva implicitamente; parte 5/5 deve esplicitarle nel CP0.
+3. **`simulatedNow` ha scope UI, non tempo-globale** — limitazione architetturale che §6.141 documenta. Le sessioni future devono distinguere "test in ora simulata UI" vs "test che richiedono tempo reale" (`setTimeout`/`setInterval`/`Notification API`/`beforeinstallprompt`/`requestAnimationFrame`).
+4. **Pattern §6.118 da estendere** a "validate concrete scenario AT EVERY data shape boundary, not just at AMB". §6.128 aveva fixato un livello (array-as-dict), §6.138 l'altro (path mismatch). Una review sistematica ai data shape boundary in CP4 avrebbe scoperto entrambi.
+5. **Sessione split su blocker architecturale**: non confondere "esecuzione bloccata" con "fallimento sessione". Pattern §6.79 + §6.99 + ora §22.23: lo split è un esito accettabile, documentato, non punitivo.
+
+### Azioni sul Mac post-Sessione 9-B parte 4/4
+
+1. Stato git corrente: tree clean tranne `.bak.cp5` Sessione 9-B parte 3/3 (cleanup pendente parte 5/5). Top `fada4a6` 9-B parte 4/4 hotfix §6.138 (parent: `f856b46` Changelog v2.5.40-rc).
+
+2. **Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude.ai** con la versione **v2.5.40-rc.1** (questo delivery).
+
+3. Commit Changelog separato (KB-only convention, repo traccia il Changelog dalla v2.5.40-rc):
+   ```
+   echo 'Commit Changelog v2.5.40-rc.1'
+   git add PharmaTimer_Changelog_Fase2.md && git commit -m 'Changelog v2.5.40-rc.1 (Sessione 9-B parte 4/4 esecutiva, esito misto)'
+   ```
+
+4. **NON eliminare i backup `.bak.cp5`** fino a chiusura CP browser parte 5/5 verde (pattern §6.135 esteso).
+
+5. **Eseguire CP0 sanity-light** del prompt §11 v2.5.40-rc.1 prima di aprire Sessione 9-B parte 5/5:
+   ```
+   echo 'CP0 9-B parte 5/5 sanity-light'
+   git status
+   git --no-pager log --oneline -3
+   npm test -- --run 2>&1 | tail -5
+   grep -c '§6.138' src/services/notifications.js
+   ```
+   Atteso: tree clean (a parte `.bak.cp5`), top `fada4a6` (o `<hash>` Changelog v2.5.40-rc.1 se committato a step 3), 371/371 in 35 files, almeno 1 match `§6.138` nel codice.
+
+6. Aprire Sessione 9-B parte 5/5 (nuova conversazione Claude) con one-liner:
+   ```
+   Esegui il prompt al §11 del Changelog (Sessione 9-B parte 5/5 analisi-first).
    ```
 
