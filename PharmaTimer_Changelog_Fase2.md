@@ -1,8 +1,8 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 2.5.38
+**Versione:** 2.5.40-rc
 **Data inizio fase:** 16 aprile 2026
-**Ultima modifica:** 26 aprile 2026 (Sessione 9-B analisi-first)
+**Ultima modifica:** 27 aprile 2026 (Sessione 9-B parte 3/3 implementativa, CP browser deferred a parte 4/4)
 **Ambito:** Sviluppo PWA React standalone con persistenza locale, preparata per futuro swap verso backend FastAPI+MariaDB.
 
 Questo documento raccoglie le decisioni architetturali, la struttura del progetto, le deviazioni dalla specifica e lo stato di avanzamento della Fase 2. È il **punto di riferimento unico** per ogni sessione di sviluppo: leggerlo prima di iniziare garantisce continuità senza dover rileggere l'intero storico chat.
@@ -600,6 +600,42 @@ Questo documento raccoglie le decisioni architetturali, la struttura del progett
 - **Nuova §22.19** "Stato post-Sessione 9-A implementativa" con file prodotti, esiti CP1-CP4, esiti CP browser 4 punti (P2 verde post-§6.118; P1 ambiguo per §6.120 pre-existing; P3 visivo OK; P4 retry-ambiguo, focus restore non fa parte scope CP4).
 - **§11 sostituita** con prompt **Sessione 9-B analisi-first** (raccomandato vs esecutiva diretta dato lessons learned 9-A: spec semantics da rivalidare in browser, AMB-9.E÷I già ratificate ma edge cases iOS PWA permettono rifinitura).
 - 5 file codice modificati (`utils/uiState.js`, `utils/uiState.test.js`, `components/oggi/DoseCard.jsx`, `components/oggi/DoseCard.test.jsx`, `components/oggi/OggiView.jsx`) + 1 file modificato in CP1 (`utils/time.js`, `utils/time.test.js` nuovo) + 2 modificati CP2 (`data/db.js`, `package.json`, `data/db.migration.test.js` nuovo) + 2 modificati CP3 (`domain/recalc.js`, `domain/planBuilder.js` confermato, test estesi) + 1 modificato CP4 docs (`domain/types.js`).
+
+**Changelog versione 2.5.40-rc (rispetto alla 2.5.39):**
+- **Sessione 9-B parte 2/2 implementativa** completata 27/04/2026 (CP4 AppContext wiring) e **Sessione 9-B parte 3/3 implementativa** stessa giornata (CP5 ImpostazioniTab UI). Entrambe portate al delivery 357/357 → 367/367 → **371/371** test su 35 test files. CP browser 8 punti deferred a Sessione 9-B parte 4/4 esecutiva (per dimensionamento sessione, regola critica #5).
+- Bump intermedio v2.5.39 → **v2.5.40-rc** (release candidate, NO bump definitivo a v2.5.40 fino a chiusura CP browser parte 4/4 + verde end-to-end).
+- **CP4 §6.125-§6.132** (parte 2/2) — wiring `AppContext.jsx` + `actions.js` + 8 trigger reschedule. 8 deviazioni introdotte e già implementate (top commit `530e983`):
+  - **§6.125** alias `useApp = useAppContext` (CP3 backward compat)
+  - **§6.126** services injection retrofit (`createActions(repo, services)` + context value `{state, actions, services, tickMs}` + `__pt.notifications` window debug)
+  - **§6.127** `rescheduleAllNotifications` usa `selectEntriesForDay(state, selectToday(state))` (was: `state.pianoOggi || []` provvisorio CP2 Q-CP2.6 risolto)
+  - **§6.128** lookup farmaco via `selectFarmacoById` (was: `state.farmaci[id]` dict access bug — `state.farmaci` è array, non dict)
+  - **§6.129** `SETTINGS_KEYS.NOTIFICHE_ATTIVE` no schema bump Dexie, default off via missing-key (`selectImpostazione` ritorna `undefined` ⇒ `enabled=false` per AMB-9.F')
+  - **§6.130** rolling-30-tick safety net (mitigazione iOS PWA `setTimeout` suspend dopo 30s in background — re-arm idempotente nel tick `useEffect` Provider)
+  - **§6.131** Δ test +10 effettivi (5 pure `notifications.test.js` + 5 wiring `AppContext.test.jsx`) vs 5 stimati in §22.20 (boundary AMB-9.J alta assorbe)
+  - **§6.132** bypass `maybeReschedule` gate in `setSetting` toggle-on (stateRef-lag dopo optimistic dispatch — il reschedule deve usare il nuovo state, non lo stateRef stale; bug reale in produzione, non solo in test)
+- **CP5 §6.133-§6.134** (parte 3/3) — `ImpostazioniTab.jsx` SezioneNotifiche 4-state + 4° campo `Notifiche pendenti` in SezioneAvanzate. Δ test +4 (367 → 371). Top commit `93c3d21` (post-amend, vedi §6.135). 2 deviazioni:
+  - **§6.133** drift terminologico §11 prompt vs AMB-9.F' literal §22.20 — il prompt §11 usava enum `{not-supported, denied, granted-off, granted-on}`; l'API reale di `useNotifications` (CP3 §6.123) espone `(isStandalone, permission, enabled)`. UI implementata segue AMB-9.F' literal (fonte autoritativa). `not-supported` collassato su `permission='denied'` da `readPermission` early-return. Documentato qui per ricerca grep futura: la nomenclatura AMB-9.F' è quella vincolante.
+  - **§6.134** pattern test `mock-collaborator` per `vi.mock('../../hooks/useNotifications.js')` in `ImpostazioniTab.test.jsx`. Alternativa scartata: estendere `renderHelpers.jsx` per iniettare `services` nel context value (richiesta ~15 LOC + tocco di 13 callers esistenti). Pattern mock-collaborator è già stabilito in `useNotifications.test.jsx` parte 1/2 (mock di `useApp`); replica naturale per UI test che consumano hook custom.
+- **§6.135** (delivery infra) — pattern installer self-extracting con backup `.bak.cpN`. L'installer crea automaticamente backup su disco prima di sovrascrivere file esistenti (rollback rapido locale). I `.bak.cpN` NON sono tracked (`.gitignore` ha pattern `*.bak`). Pattern emerso in CP5 9-B parte 3/3 quando l'amend del primo commit ha dovuto espungere i `.bak.cp5` finiti in stage per default. Convenzione formalizzata: i backup sopravvivono alla sessione per sicurezza, vengono eliminati manualmente quando non più rilevanti (es. al passaggio a sessione successiva).
+- **Sandbox vitest pre-delivery** (CP5): pattern §22.21 confermato — sandbox `/home/claude/sandbox` con vitest 2.1.9 + happy-dom, validazione 13/13 verdi prima dell'emissione installer. SHA-1 hash sandbox = SHA-1 post-install Mac (`9fc992bc...` jsx, `ff7f5b10...` test) = bit-perfect delivery.
+- **CP browser 8 punti deferred a Sessione 9-B parte 4/4** — dimensionamento regola critica #5: P1-P5 obbligatori + P6-P8 raccomandati richiedono ~30-40min di esecuzione browser ininterrotta, mal compatibile con Q&A asincrono nella stessa sessione di parte 3/3. Decisione: parte 4/4 dedicata, sessione fresh con context pulito per checklist procedurale browser-side.
+- **Decisione raccomandata CP browser parte 4/4:** P1-P5 obbligatori + P8 (tag-based replacement, OS-specific). P6 (revocation defensive) e P7 (non-PWA fallback) coperti da unit test (`useNotifications.test.jsx` test #1 `!isStandalone` + test #6 defensive revocation on mount), skip browser ridondante. Device: Chrome PWA Mac soltanto, iPhone PWA defer a Wave C se emergono regressioni iOS-specifiche.
+- **Nuova §22.22** "Stato post-Sessione 9-B parte 2/2 + parte 3/3 implementativa (CP browser deferred)" con dettaglio CP4-CP5, top commit `93c3d21`, 371/371 test, 8+2+1 deviazioni §6.125-§6.135.
+- **§11 sostituita** con prompt esecutivo **Sessione 9-B parte 4/4 esecutiva** (CP browser 6 punti + CP6 finale + bump definitivo v2.5.40-rc → v2.5.40).
+- **Drift §6.69 v2.5.34 NON retrocorretto** in v2.5.40-rc (continuità fatto-storico immutabile).
+
+**Changelog versione 2.5.39 (rispetto alla 2.5.38):**
+- **Sessione 9-B parte 1/2 implementativa** completata 27/04/2026. Eseguiti **CP1+CP2+CP3** della Sessione 9-B esecutiva (split parte 1/2 vs piano §22.20 originale a 5 CP unica). 357/357 test su 35 test files (Δ +29: +13 CP1 + +10 CP2 + +6 CP3, in linea con target per checkpoint). Bump v2.5.38 → v2.5.39.
+- **CP1 §6.124** — `src/utils/copy.js` + `src/utils/copy.test.js` nuovi. Helper `formatRelazionePastoCopy(farmaco)` body stripped (drift voluto vs `DoseCard.getPastoText`). Decisioni pre-codice Q-CP1.1=A (`indifferente` → `null` sempre, detail ignorato), Q-CP1.2=C (enum sconosciuto → `null` defensive), Q-CP1.3=ok (slice "Assumere " 9 char). 13 test verdi. Commit `f7ab6d5`.
+- **CP2 AMB-9.H** — `src/services/notifications.js` + `src/services/notifications.test.js`. Factory `createNotificationsService()` + singleton `notifications`, 7+1 metodi, Map `pending`, tag-based replacement implicito, click handler `/oggi`, defensive permission check al fire. `rescheduleAllNotifications(state, services)` puro esportato (test deferito a CP4 via AppContext.test.jsx). Decisioni pre-codice Q-CP2.1=signature confermata, Q-CP2.2=A (`/oggi`), Q-CP2.3=A (no-op silenzioso fireAt passato), Q-CP2.4=A (check al fire), Q-CP2.5=A (beep delegato a useAutoBeep esterno), Q-CP2.6=A (`state.pianoOggi || []` provvisorio, da confermare CP4). 10 test verdi. Commit `fd2ab9a`.
+- **CP3 §6.123** — `src/hooks/useNotifications.js` + `src/hooks/useNotifications.test.jsx`. Decision tree 4 stati implementato, defensive revocation check on mount + `visibilitychange`. Decisioni pre-codice Q-CP3.1=`useApp()` espone `services.notifications`/`actions.setSetting` (provvisorio, da confermare CP4), Q-CP3.2=`matchMedia` + `navigator.standalone` fallback, Q-CP3.3=throw `'permission_denied'`/`'not_standalone'`, Q-CP3.4=disable noop se non-standalone/denied, Q-CP3.5=revocation on mount + visibilitychange. 6 test verdi. Commit `c158496`.
+- **2 stub orfani scoperti durante install** (CP2 e CP3): `services/notifications.js` e `hooks/useNotifications.js` esistevano come stub di 2 righe da sessione precedente non documentata. Installer ha sovrascritto correttamente. Da formalizzare come §6.NN al CP6 closing parte 2/2.
+- **Pattern §6.118 internalizzato in tutti i CP**: ogni CP ha sezione "Pre-codice" con 2-3 scenari concreti + tabella ambiguità Q-CP_N.M con default raccomandati esplicitati e confermati prima della scrittura. Costo metodologico ~5min/CP, beneficio: zero fix ex-post analoghi a §6.118.
+- **Sandbox testing pattern** introdotto in CP2/CP3: prima di emettere installer, vitest 2.1.9 + happy-dom in sandbox `/home/claude/sandbox` per validare la suite mirata. Catch errori di mocking pattern e syntax pre-delivery. Da formalizzare come §6.NN al CP6 closing parte 2/2.
+- **Decisione split sessione**: dopo CP3 verde, sessione chiusa con ~6.5K token consumati per preservare context fresco per CP4 (modifica `AppContext.jsx` esistente, 8 trigger reschedule, listener visibility/focus, ~15 LOC + 5 test). Pattern coerente con principle §6.79 / Sessione 7d-2 split.
+- **Nuova §22.21** "Stato post-Sessione 9-B parte 1/2 implementativa" con dettaglio CP1-CP3, top commit `c158496`, 357/357 test, 2 stub orfani, decisioni pre-codice congelate per CP4-CP5.
+- **§11 sostituita** con prompt esecutivo **Sessione 9-B parte 2/2 esecutiva** (CP4 AppContext + CP5 ImpostazioniTab + CP browser 8 punti + CP6 closing bump v2.5.39 → v2.5.40).
+- **Drift §6.69 v2.5.34 NON retrocorretto** in v2.5.39 (continuità fatto-storico immutabile).
 
 **Changelog versione 2.5.38 (rispetto alla 2.5.37):**
 - **Sessione 9-B analisi-first** completata 26/04/2026 (Wave B notifiche Opzione 1 foreground-only). Q&A pattern Q1-Q5 (Q1-Q3 raccomandazioni esplicite su AMB-9.E/F/G, Q4-Q5 "decidi tu" su AMB-9.H/I) per rivalidare le 5 AMB già ratificate in §22.18 contro lessons learned 9-A (spec semantics §6.118 + pre-existing browser bug §6.119/§6.120). Baseline test invariata **328/328 su 32 test files** (analisi-first pura). Bump v2.5.37 → v2.5.38.
@@ -3040,7 +3076,7 @@ __pt.app.actions.presa(`${todayStr}-4-1`, { dataEffettiva: todayStr, oraEffettiv
 | **8d-C** | Carryforward residuo 8d-B + 8d originale: §6.107 sticky separator re-investigation, §6.109 ProfiliTab focus restore, §6.108 NavBar bottom contrast, §6.85 nome_utente 3° timebox, §6.84 test router warning | ✅ **Completo** | 313 → 313 test invariati (Δ=0, target AMB-K' centrato). 4 commit Mac-side: `0283567` CP1 §6.110, `3406e33` CP3 §6.112, `af147e0` CP4 §6.113, `db30fae` CP5 §6.114. CP2 §6.111 zero-commit (h2 falsificata, hard-defer 8d-D). 5 nuove §6.110-§6.114, 4 chiuse (§6.96/§6.108/§6.85/§6.84). Bump v2.5.34 → v2.5.35 |
 | 9 | Notifiche locali (Notification API + scheduling Opzione 1 foreground-only) + **fix dominio §6.18 cross-midnight** (§6.26) | ⏳ **Analisi-first ✅** | Split in **9-A + 9-B** (analisi-first 26/04/2026, v2.5.36). 10 AMB-9.A÷J ratificate. Decisione scope: Opzione 1 senza server (Web Push backend Mac Mini differito a Fase 3 estesa post-Step 11) |
 | **9-A** | Wave A — fix dominio §6.18 cross-midnight: `ora_ricalcolata` TIME → TEXT ISO + 3 helper `utils/time.js` + Dexie v1→v2 migration `fake-indexeddb` + propagazione apply* + tear-down §6.26 (`isCrossMidnightRecalc` ISO-aware sostituisce HH:MM-heuristic) | ✅ **Completo** | 4 CP impl + CP browser 4 punti (P2 critico verde post-§6.118 fix; P1/P4 ambigui per pre-existing fuori scope §6.119/§6.120). 313 → 328 test (+15, target AMB-9.J 329 ±3 a -1). 5 commit branch `step-8` (`d5248a0`/`d0d4e5e`/`d5de70f`/`816a49f`/`0e70a38`). 9 deviazioni: §6.115a/§6.115b/§6.116/§6.116b/§6.117/§6.117a/§6.118 chiuse, §6.119/§6.120 deferred. Bump v2.5.36 → v2.5.37 |
-| **9-B** | Wave B — notifiche Opzione 1 foreground-only: `services/notifications.js` singleton + `hooks/useNotifications.js` + `utils/copy.js` + `rescheduleAllNotifications` puro + AppContext wiring (8 trigger) + chiave `notifiche_attive` Dexie + toggle UI in ImpostazioniTab | ⏳ **Analisi-first ✅** | Analisi-first 26/04/2026 (v2.5.38). AMB-9.E÷I confermate con 4 emendamenti **E'/F'/G'/I'** (§22.20). Tabella CP impl 5 CP: CP1 §6.124 utils/copy.js (+13) / CP2 services/notifications.js (+10) / CP3 §6.123 hooks/useNotifications.js (+6) / CP4 §6.121+§6.122 AppContext (+5) / CP5 ImpostazioniTab.jsx (+4). Δ test totale +38, target AMB-9.J 9-B split +31 (boundary alta). CP browser **8 punti** (5 obbligatori + 3 raccomandati). 4 deviazioni §6.121-§6.124 previste. Bump v2.5.38 → v2.5.39 a chiusura impl |
+| **9-B** | Wave B — notifiche Opzione 1 foreground-only: `services/notifications.js` singleton + `hooks/useNotifications.js` + `utils/copy.js` + `rescheduleAllNotifications` puro + AppContext wiring (8 trigger) + chiave `notifiche_attive` Dexie + toggle UI in ImpostazioniTab | ⏳ **Impl 4/5 ✅, CP browser deferred a parte 4/4** | Analisi-first ✅ 26/04/2026 (v2.5.38). Impl split in 3 parti: parte 1/2 ✅ 27/04/2026 v2.5.39 (CP1+CP2+CP3, 357/357 test, top `c158496`), parte 2/2 ✅ 27/04/2026 v2.5.40-rc (CP4 +10 test, top `530e983`, 8 deviazioni §6.125-§6.132), parte 3/3 ✅ 27/04/2026 v2.5.40-rc (CP5 +4 test, top `93c3d21`, 2 deviazioni §6.133-§6.134 + §6.135 infra). Stato: 371/371 test su 35 file. CP browser 6 punti (P1-P5+P8) deferred a parte 4/4 esecutiva, dimensionamento regola critica #5. Bump v2.5.40-rc → v2.5.40 a chiusura parte 4/4 |
 | 10 | Service worker attivo + manifest definitivo + icone | | |
 | 11 | Polish finale, QA, accessibilità estesa, gestione errori | | |
 
@@ -3155,118 +3191,92 @@ Chiarimenti risolti pre-Step 4b (AMB-1/2/3):
 ---
 
 
-## 11. Prossimo step — Sessione 9-B esecutiva (Wave B notifiche Opzione 1)
+## 11. Prossimo step — Sessione 9-B parte 4/4 esecutiva (Wave B notifiche — CP browser + closing definitivo)
 
-**Stato baseline:** v2.5.38 (post-Sessione 9-B analisi-first). 328/328 test su 32 test files. Commit top atteso `0e70a38` 9-A CP4-fix §6.118 (Changelog tracciato KB-only, no commit codice in 9-B analisi-first).
+**Stato baseline:** v2.5.40-rc (post-Sessione 9-B parte 3/3 CP5). 371/371 test su 35 test files. Commit top `93c3d21` 9-B CP5 §6.133-§6.134. Catena commit 9-B: parte 1/2 (`f7ab6d5` → `fd2ab9a` → `c158496`) → parte 2/2 (`530e983`) → parte 3/3 (`93c3d21` post-amend, era `00cf71a` con .bak.cp5 espunti). Backup `.bak.cp5` ancora su disco per rollback.
 
-**Scope:** 5 CP impl + 1 CP browser (8 punti) + CP6 closing. AMB-9.E÷I + emendamenti E'/F'/G'/I' congelati in §22.20. Target Δ test +38 (boundary AMB-9.J alta, target +32 ±5).
+**Scope:** CP browser 6 punti (P1-P5 + P8) + CP6 closing definitivo + bump v2.5.40-rc → **v2.5.40**. P6+P7 skippati per copertura unit test (vedi §6.133 contesto). iPhone PWA defer a Wave C se emergono regressioni iOS-specifiche.
 
-### CP0 sanity-light (3 gate)
+### CP0 sanity-light (4 gate)
 
-```
-echo 'CP0 Gate 1 — git status + ultimo log'
-git status
-echo '---'
-git --no-pager log --oneline -5
-echo 'CP0 Gate 2 — full test suite (atteso 328/328 in 32 files)'
-npm test -- --run
-echo 'CP0 Gate 3 — top commit 9-A (atteso 5 match)'
-git --no-pager log --oneline | grep '9-A'
-```
+1. `git status` clean (solo Changelog modificato, KB-only convention)
+2. `git --no-pager log -1 --oneline | grep -q '9-B CP5'` deve passare (top commit `93c3d21`)
+3. `npm test -- --run 2>&1 | tail -5` mostra 371/371 in 35 file
+4. `grep -E "§6\.13[3-5]" src/components/config/ImpostazioniTab.jsx src/components/config/ImpostazioniTab.test.jsx 2>/dev/null | wc -l` ≥ 3 (riferimenti CP5)
 
-Atteso: tree clean, top `0e70a38`, 328/328, 5 match `9-A`.
+### Setup PWA
 
-### CP1 §6.124 — `utils/copy.js` (AMB-9.I')
+- **Device:** Chrome PWA Mac in `display-mode: standalone`. Verifica dal Console: `window.matchMedia('(display-mode: standalone)').matches === true`.
+- **Pre-test reset stato:** prima di ogni punto, fai reset esplicito di `notifiche_attive` via `await window.__pt.app.actions.setSetting('notifiche_attive', 0)` se necessario, e usa Chrome → site settings → Notifications "Reset/Ask" per testare permission flow da capo.
+- **Tooling Console disponibile:**
+  - `window.__pt.app.getState()` — snapshot AppState completo
+  - `window.__pt.app.actions.<thunk>` — accesso thunks
+  - `window.__pt.notifications.getPendingCount()` — N timer pending nel singleton
+  - `window.__pt.notifications.cancelAll()` — cancel manuale
+  - `window.__pt.simulatedNow.set('HH:MM')` / `.clear()` — fake clock
 
-**Scope:** helper isolato `formatRelazionePastoCopy(farmaco)` body stripped (no prefisso "Assumere ") per uso in notifica Wave B. Drift voluto vs `DoseCard.getPastoText` documentato in §6.124.
+### CP browser 6 punti
 
-**Pre-codice (lesson §6.118):** validare 2 scenari concreti del helper prima di scrivere:
-- `{relazione_pasto: 'prima', dettaglio_pasto: '30 min prima colazione'}` → `"30 min prima colazione"` (passthrough, no "Assumere ")
-- `{relazione_pasto: 'indifferente', dettaglio_pasto: null}` → body vuoto/null → fallback `"Promemoria farmaco"` gestito dal caller (in CP2 `showDoseNotification`), non da `formatRelazionePastoCopy`
+**Obbligatori (P1-P5):**
 
-**File:** `src/utils/copy.js` (nuovo, ~30 righe), `src/utils/copy.test.js` (nuovo, +13 test = 6 enum × {detail, null} + 1 fallback body vuoto).
+1. **P1 — Permission flow:** cold start con `Notification.permission === 'default'` + `notifiche_attive=0`. Click toggle in Impostazioni → prompt OS → accept → `Notification.permission==='granted'` + `notifiche_attive===1` + `getPendingCount() > 0`.
+2. **P2 — Schedule/cancel cycle:** dose imminente schedulata. `actions.presa(entryKey)` → `getPendingCount()` decrementato. `actions.cambiaProfilo(profiloId)` → cancelAll + reschedule fresh per nuovo profilo.
+3. **P3 — Rollover midnight:** `__pt.simulatedNow.set('23:55')` → tick clock automatico → REBUILD_PLAN per nuovo `dateStr` → `getPendingCount()` riflette dosi nuove giornata.
+4. **P4 — Beep simultaneity:** notifica fires app foreground → beep `audio.js` + Notification visibile entrambi senza eccezioni Console (no double-notif, no race).
+5. **P5 — Visibility flip:** hide/show 2s → `getPendingCount()` invariato. Flip rapido <500ms × 3 → invariato (AMB-9.E' sincrona idempotente).
 
-**Commit:** `9-B CP1 §6.124 — formatRelazionePastoCopy body stripped (AMB-9.I')`
+**Raccomandato (P8):**
 
-### CP2 — `services/notifications.js` singleton (AMB-9.H)
+8. **P8 — Tag-based replacement:** schedule 2 notifiche stesso `entryKey` (forzare via doppio reschedule manuale) → solo 1 in macOS Notification Center (AMB-9.H tag implicito via Map key).
 
-**Scope:** singleton closure-private 7+1 metodi (`isSupported`/`getPermission`/`requestPermission`/`scheduleNotification`/`cancelNotification`/`cancelAll`/`showDoseNotification` + `getPendingCount` introspection). Map `pending: Map<entryKey, timeoutId>`. Tag-based replacement `dose-{farmaco_id}-{dose_numero}-{dateStr}`. Click handler `window.focus()` + `window.location.href`. `rescheduleAllNotifications(state, services)` puro esportato (chiamato da AppContext in CP4).
+**P6+P7 skippati:** P6 (revocation OS-side) coperto da `useNotifications.test.jsx` test #6 (defensive revocation on mount). P7 (non-PWA fallback) coperto da `useNotifications.test.jsx` test #1 (`!isStandalone` → `enabled=false`).
 
-**Pre-codice:** validare 3 scenari concreti contro AMB-9.H:
-- Schedule futuro 5min con title="Test" body="Body" → `vi.advanceTimersByTime(5*60*1000)` → constructor `Notification` invocato con title/body atteso, opts.tag corretto
-- Cancel via tag `dose-1-1-2026-04-26` → pending Map size decrementata di 1, `clearTimeout` chiamato sul timeoutId corrispondente
-- `cancelAll` → Map vuota dopo, no leak (verifica `getPendingCount()===0`), tutti i timeoutId clearati
+### Per ogni punto, output da incollare
 
-**File:** `src/services/notifications.js` (nuovo, ~150 righe), `src/services/notifications.test.js` (nuovo, +10 test). Mock pattern: `globalThis.Notification` mock class in `beforeEach` con `permission='granted'` + `requestPermission` vi.fn, `vi.useFakeTimers()`, cleanup `afterEach`. Replicato da pattern `audio.js` test Sessione 7b-1.
-
-**Commit:** `9-B CP2 — services/notifications.js singleton 7+1 metodi (AMB-9.H)`
-
-### CP3 §6.123 — `hooks/useNotifications.js` (AMB-9.F')
-
-**Scope:** hook con shape `{permission, enabled, isStandalone, requestEnable, disable}`. Decision tree 4 stati. Defensive permission revocation check su mount + `visibilitychange` listener (rileva revoca iOS post-subscribe → forza `notifiche_attive=0` via `setSetting`).
-
-**Pre-codice:** validare 3 scenari concreti del decision tree contro AMB-9.F':
-- `isStandalone=false` → `{permission:'*', enabled:false, isStandalone:false, requestEnable:throws "not_standalone", disable:noop}`
-- `isStandalone=true, permission='granted', notifiche_attive=1` → `enabled:true`, `requestEnable:noop`, `disable:setSetting('notifiche_attive', 0)+notifications.cancelAll()`
-- `isStandalone=true, permission='denied'` → `enabled:false`, `requestEnable:throws "permission_denied"`, `disable:noop`
-
-**File:** `src/hooks/useNotifications.js` (nuovo, ~80 righe), `src/hooks/useNotifications.test.jsx` (nuovo, +6 test).
-
-**Commit:** `9-B CP3 §6.123 — useNotifications 4-state decision tree (AMB-9.F')`
-
-### CP4 §6.121 + §6.122 — Integration AppContext (AMB-9.E'/G')
-
-**Scope:** wiring 8 trigger `rescheduleAllNotifications` in AppContext + 7 thunks Config + visibility/focus listener. Nuova chiave Dexie `impostazioni_app.notifiche_attive` boolean default 0 in seed. Limitazioni Opzione 1 documentate (no app chiusa, no recovery post-suspend, recovery via UI standing badge "in ritardo" Sessione 7c-1).
-
-**Pre-codice:** validare 2 scenari concreti contro AMB-9.E' (sincrona idempotente):
-- `commitApplyResult` → `if(state.impostazioni.notifiche_attive===1) rescheduleAllNotifications(state, services)` chiamato 1 volta sync
-- Visibility flip rapido foreground→background→foreground in 100ms → 2 `rescheduleAllNotifications` sequenziali sync, pending count finale = N atteso, no orphan timer (verifica via `notifications.getPendingCount()`)
-
-**File:** `src/state/AppContext.jsx` (mod, ~+30 righe wiring + visibility listener + 30-tick rolling), `src/state/actions.js` (mod nei 7 Config thunks rilevanti `add/update/deleteFarmaco`+`add/update/delete/attivaProfilo`, ~+15 righe totali), `src/data/seed.js` (mod, +1 chiave `notifiche_attive: 0`), `src/state/AppContext.test.jsx` (mod, +5 test).
-
-**Commit:** `9-B CP4 §6.121+§6.122 — 8 trigger reschedule + foreground-only limits (AMB-9.E'/G')`
-
-### CP5 — `ImpostazioniTab.jsx` toggle UI (AMB-9.F')
-
-**Scope:** rendering UI 4 stati matrix consumando `useNotifications`. Toggle switch nei stati 2/3, banner nei stati 1/4.
-
-**Pre-codice:** validare il rendering dei 4 stati con render() su props mock di `useNotifications` (un test per stato, 4 test). +1 integration test toggle on→permission flow happy path.
-
-**File:** `src/components/config/ImpostazioniTab.jsx` (mod, ~+50 righe sezione "Notifiche"), `src/components/config/ImpostazioniTab.test.jsx` (mod, +4 test).
-
-**Commit:** `9-B CP5 — ImpostazioniTab toggle 4-state matrix (AMB-9.F')`
-
-### CP browser 9-B (8 punti, non-skippable pre-bump)
-
-Eseguibile in PWA installata Mac (Chrome installata con `display-mode: standalone`) e iPhone (PWA da Safari → Aggiungi a Home). Punti 1-5 obbligatori, 6-8 raccomandati.
-
-1. **Permission flow** — tap toggle off→on in ImpostazioniTab → prompt OS → granted → `__pt.notifications.getPendingCount() > 0` → conferma reschedule scattato.
-2. **Schedule/cancel cycle** — `apply presa` su entry imminente → pending count decrementato → `cambia profilo` → cancelAll + reschedule fresh con nuova finestra 12h.
-3. **Rollover overnight** — `__pt.simulatedNow.set('23:55')` → attendere tick rollover → verificare reschedule per nuovo `dateStr`. Tier hard (richiede simulated_now active in dev build).
-4. **Beep simultaneity** — notifica fires con app foreground → conferma beep audio (`services/audio.js`) + `Notification.show` entrambi attivi senza eccezione AudioContext suspended.
-5. **Visibility change** — hide tab/PWA per 2s → show → pending count invariato (cancel-then-reschedule sync, no leak). Ripetere flip rapido <500ms × 3 → invariato.
-6. **Permission revocation defensive** — settings iOS → revoca permesso → riapri PWA → useNotifications mount detect → `notifiche_attive=0` forzato + UI mostra stato `denied`.
-7. **Non-PWA fallback** — aprire URL in Safari mobile (no Add-to-Home) → ImpostazioniTab toggle nascosto + banner "Installa".
-8. **Tag-based replacement** — schedule 2 notifiche stesso `entryKey` (forzato via console `__pt.notifications.scheduleNotification(...)` ripetuto) → solo 1 visibile in OS notification center.
-
-### CP6 closing
-
-Bump v2.5.38 → v2.5.39, §22.21 "Stato post-Sessione 9-B implementativa", commit Changelog.
-
-### Vincoli operativi
-
-- **Pattern §6.118** (validazione semantica pre-codice) **internalizzato in CP1/CP2/CP3/CP4**: 2-3 scenari concreti del codice contro AMB pre-codice, non trust letterale del prompt §11.
-- **Regole bash zsh interattiva:** single-quoted echo, no apostrofi italiani, no `#` commenti multi-riga.
-- **Drift §6.69 procedurale:** front-matter version + entry §1 sempre in lockstep al bump.
-- **Drift numerazione §6.121-§6.124 confermata** (post-9-A consumption §6.118-§6.120).
-- **Eventuali §6.125+** emergeranno come pre-existing scoperte in CP browser (analoga §6.119/§6.120 9-A).
-
-### Apertura sessione
-
-Aprire nuova conversazione Claude con one-liner:
+Pattern: 5-10min per punto, output sintetico in Console + screenshot opzionale del Notification Center per P1/P4/P8.
 
 ```
-Esegui il prompt al §11 del Changelog (Sessione 9-B esecutiva).
+echo 'P<N> result'
+echo 'Notification.permission:' && Notification.permission
+echo 'notifiche_attive:' && window.__pt.app.getState().impostazioni.notifiche_attive
+echo 'getPendingCount:' && window.__pt.notifications.getPendingCount()
+```
+
+Pass/fail criteria specificati in tabella per ciascun punto (definita on-demand in apertura sessione).
+
+### CP6 closing definitivo
+
+1. Bump version §1 + front-matter v2.5.40-rc → **v2.5.40** (lockstep §6.69 — drift v2.5.34 perpetuato)
+2. Aggiungere §22.23 "Stato post-Sessione 9-B parte 4/4 implementativa (CP browser verde)"
+3. Documentare eventuali §6.NN nuove emerse da CP browser (analoga §6.119/§6.120 9-A)
+4. Aggiornare §7 row 9-B a **✅ Completo** con dettaglio CP browser P1-P5+P8 verde
+5. Cleanup `.bak.cp5` sul Mac (`rm src/components/config/*.bak.cp5`) post-bump definitivo
+6. Aggiornare §11 con prompt esecutivo Sessione 9-C (valutazione cross-midnight UI §6.26 deferred da 7d-2 + altre sospese §6.119/§6.120) oppure salto Fase 3 Log
+
+### Riferimenti AMB già fissati
+
+- AMB-9.E' (sincrona idempotente cancel-then-rebuild atomico) — validato da P5
+- AMB-9.F' (decision tree 4 stati permission) — validato da P1 (UI già verde unit test CP5)
+- AMB-9.G' (8 trigger reschedule, 7+1 thunks nominati) — validato da P2 (cambiaProfilo) + P3 (rollover)
+- AMB-9.H (tag-based replacement entryKey) — validato da P8
+- AMB-9.I (rilevamento revoche post-subscribe) — coperto unit, P6 skip
+
+### Pattern operativi da rispettare
+
+- Pre-codice §6.118 NON applicabile (CP browser non scrive codice, solo verifica runtime)
+- Approval esplicita tra step (regola critica #4) — chiusura punto per punto
+- Bash zsh-safe (echo single-quoted, no `#`, no apostrofi italiani)
+- Se emergono bug reali in browser: deviazione `§6.NN` documentata, fix come CP separato (es. `9-B CP5b — fix browser §6.NN`) prima di chiusura CP6
+- **Discriminante stop:** se P1-P5 falliscono in modo non recuperabile in 1 hotfix, considera split a parte 5/5 (raro ma possibile per regola critica #5)
+
+### Stima token
+
+~25-35K token totali. CP browser ~15K (Q&A punto-per-punto), CP6 closing ~10K. Margine ampio per eventuali §6.NN.
+
+### One-liner di apertura
+
+```
+Esegui il prompt al §11 del Changelog (Sessione 9-B parte 4/4 esecutiva).
 ```
 
 ## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3 + 8-pre + 8a + 8b + 8c-parz + 8c-2
@@ -6242,3 +6252,278 @@ Pattern ratificato: Q1-Q3 raccomandazioni esplicite con alternative scartate, Q4
    ```
    Esegui il prompt al §11 del Changelog (Sessione 9-B esecutiva).
    ```
+
+## 22.21 Stato post-Sessione 9-B parte 1/2 implementativa
+
+**Data:** 27 aprile 2026.
+**Baseline test pre-sessione:** 328/328 su 32 test files (§22.20 post-9-B analisi-first, baseline invariato).
+**Baseline test post-sessione:** 357/357 su 35 test files (Δ +29: +13 CP1 + +10 CP2 + +6 CP3).
+**Bump:** v2.5.38 → v2.5.39.
+**Esito:** ✅ **Parziale (3 CP su 5)** — CP1+CP2+CP3 verdi; CP4+CP5+CP browser+CP6 deferred a Sessione 9-B parte 2/2.
+
+### Decisione split sessione (regola critica #5)
+
+Sessione 9-B esecutiva originalmente pianificata come 5 CP unici (§22.20). Decisione split parte 1/2 vs parte 2/2 presa dopo CP3 verde:
+
+- **Token consumati:** ~6.5K dopo CP1+CP2+CP3 (3 CP isolati con file nuovi).
+- **CP4 ad alto rischio context-heavy:** modifica `AppContext.jsx` esistente (file non letto in sessione), 8 trigger reschedule, listener visibility/focus, adattamento interface per `services`/`actions` non-CP4-canonica, possibile rinomina `pianoOggi`. Stima ~15 LOC + 5 test, ma con expected_uncertainty alto.
+- **Beneficio split:** parte 2/2 con context fresco permette lettura completa di `AppContext.jsx`, `actions.js`, `seed.js` reali e validazione 4 ambiguità Q-CP4 in pre-codice prima di scrivere wiring.
+- **Costo split:** 1 sessione extra di setup (CP0 + lettura context).
+
+Pattern coerente con principle §6.79 (Sessione 7d-2 split parte 1/2 + parte 2/2).
+
+### CP completati
+
+| CP | Scope | File nuovi | Δ test | Commit |
+|----|-------|-----------|--------|--------|
+| **CP1 §6.124** | helper isolato body stripped | `utils/copy.js`, `utils/copy.test.js` | **+13** | `f7ab6d5` |
+| **CP2 AMB-9.H** | singleton notifications 7+1 metodi | `services/notifications.js`, `services/notifications.test.js` | **+10** | `fd2ab9a` |
+| **CP3 §6.123** | hook decision tree 4 stati | `hooks/useNotifications.js`, `hooks/useNotifications.test.jsx` | **+6** | `c158496` |
+
+**Totale parte 1/2:** 357/357 in 35 files. Top commit `c158496`.
+
+### Decisioni pre-codice congelate
+
+#### CP1 (§6.124 / AMB-9.I')
+
+| Q | Decisione | Rationale |
+|---|-----------|-----------|
+| Q-CP1.1 | A — `indifferente` → `null` sempre (detail ignorato) | Replica semantica `getPastoText` early-return: detail ignorato per coerenza UX |
+| Q-CP1.2 | C — enum sconosciuto → `null` defensive | Robustezza vs corruzione dati |
+| Q-CP1.3 | ok — slice "Assumere " 9 char | Drift §6.124 voluto |
+
+#### CP2 (AMB-9.H)
+
+| Q | Decisione | Rationale |
+|---|-----------|-----------|
+| Q-CP2.1 | Signature 7+1 metodi via factory + singleton | Testabilità (fresh instances per test) |
+| Q-CP2.2 | A — click handler URL `/oggi` | Atterraggio diretto su view dosi |
+| Q-CP2.3 | A — `fireAt <= now` no-op silenzioso | Robustezza per `rescheduleAllNotifications` con entries marginalmente passate |
+| Q-CP2.4 | A — defensive permission check al fire | Rileva revoche iOS post-schedule (AMB-9.I) |
+| Q-CP2.5 | A — beep delegato a `useAutoBeep` esterno | Separazione responsabilità: notifications.js fa solo Notification API + scheduling |
+| Q-CP2.6 | A — `state.pianoOggi || []` provvisorio | **Da confermare in CP4** (state shape reale) |
+
+#### CP3 (§6.123 / AMB-9.F')
+
+| Q | Decisione | Rationale |
+|---|-----------|-----------|
+| Q-CP3.1 | `useApp()` espone `services.notifications` + `actions.setSetting` | **Da confermare in CP4** (pattern Redux-like inferito) |
+| Q-CP3.2 | `matchMedia('(display-mode: standalone)')` + `navigator.standalone` fallback | Pattern PWA standard combinato |
+| Q-CP3.3 | requestEnable throw `'not_standalone'`/`'permission_denied'`; result `'default'` noop silenzioso | UX retry-friendly |
+| Q-CP3.4 | disable noop se `!isStandalone` o `permission==='denied'` | Toggle non visibile/disabilitato |
+| Q-CP3.5 | revocation check on mount + `visibilitychange` | AMB-9.F' literal |
+
+### Decisioni pre-codice da confermare in CP4
+
+1. **State shape `pianoOggi`** (Q-CP2.6): nome chiave reale dello state. Se diverso da `pianoOggi`, rinominare `services/notifications.js::rescheduleAllNotifications` (1 line change).
+2. **`useApp()` shape** (Q-CP3.1): confermare se context espone `services.notifications` + `actions.setSetting` come usato in `useNotifications`. Se diverso, adattare hook + AppContext.
+3. **Tick rolling 30 integration**: struttura `useEffect` tick Provider §6.24 corrente per integrazione reschedule.
+4. **Thunks Config**: dei ~9 thunks totali, quali 7 triggerano reschedule. Default §22.20: `add/update/deleteFarmaco`, `add/update/delete/attivaProfilo`. `setSetting('notifiche_attive')` path dedicato; `setSetting('tema')` esclusa.
+
+### Scoperte operative
+
+1. **2 stub orfani scoperti durante install** (CP2 + CP3): `services/notifications.js` e `hooks/useNotifications.js` esistevano come stub di 2 righe da sessione precedente non documentata (rilevati via `git status` mostrando `modified` invece di `new file`). Installer ha sovrascritto correttamente; nessun comportamento runtime intaccato (gli stub erano placeholder vuoti). Da formalizzare come §6.NN al CP6 closing parte 2/2.
+2. **Sandbox testing pattern** introdotto in CP2/CP3: prima di emettere installer, vitest 2.1.9 + happy-dom in sandbox `/home/claude/sandbox` per validare la suite mirata. Catch errori di mocking pattern (CP2 `globalThis.Notification` constructor) e ambiguità syntax pre-delivery. Costo ~30s setup, beneficio: zero round-trip Mac per fix mock pattern. Da formalizzare come §6.NN al CP6 closing parte 2/2.
+3. **Pattern §6.118 internalizzato** con costo metodologico ~5min/CP per pre-codice + tabella Q-CP_N.M con default raccomandati. Beneficio: zero fix ex-post analoghi a §6.118 in tutti e 3 i CP.
+4. **Decision tree CP3 4 stati** rappresentato come matrice (`isStandalone × permission`) con 4 percorsi UI distinti, copertura test 1:1 (un test per stato + 1 happy path requestEnable + 1 defensive revocation).
+5. **Drift §6.69 v2.5.34 perpetuato in v2.5.39** (continuità principio fatto-storico immutabile).
+
+### File prodotti / modificati parte 1/2
+
+**Modificati (docs):**
+- `PharmaTimer_Changelog_Fase2.md` — v2.5.38 → **v2.5.39** (questo delivery): front-matter, §1 entry v2.5.39, §11 sostituita con prompt esecutivo Sessione 9-B parte 2/2, §22.21 nuova.
+
+**Nuovi (code):** 6 file = 3 src + 3 test.
+- `src/utils/copy.js` (nuovo, 36 righe) + `src/utils/copy.test.js` (nuovo, 84 righe, 13 test)
+- `src/services/notifications.js` (nuovo, 152 righe) + `src/services/notifications.test.js` (nuovo, 165 righe, 10 test)
+- `src/hooks/useNotifications.js` (nuovo, 124 righe) + `src/hooks/useNotifications.test.jsx` (nuovo, 145 righe, 6 test)
+
+**Modificati (code):** nessuno (CP4-CP5 deferred).
+
+### Limitazioni note
+
+1. **CP4-CP5 deferred a parte 2/2.** Wiring AppContext, UI ImpostazioniTab, CP browser e CP6 closing fuori scope di questa sessione.
+2. **Decisioni pre-codice CP4 (Q-CP2.6 + Q-CP3.1) sono inferenze, non verifiche.** Validazione effettiva su `state.pianoOggi` e `useApp()` shape avverrà in CP4 pre-codice.
+3. **Δ test parte 1/2 +29 vs target §22.20 +29 (CP1+CP2+CP3 = 13+10+6).** Centro perfetto. Δ totale 9-B atteso +38 (parte 1/2 +29 + parte 2/2 +9), entro boundary AMB-9.J alta.
+
+### Azioni sul Mac post-Sessione 9-B parte 1/2
+
+1. Stato git corrente: tree clean, top `c158496` 9-B CP3 §6.123 (parent: `fd2ab9a` CP2 → `f7ab6d5` CP1 → `f8a2142` Changelog v2.5.38).
+
+2. **Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude.ai** con la versione **v2.5.39** (questo delivery).
+
+3. Commit Changelog separato (KB-only, repo non traccia il Changelog):
+   ```
+   echo 'Commit Changelog v2.5.39 (KB-only convention)'
+   git add PharmaTimer_Changelog_Fase2.md 2>/dev/null && git commit -m 'Changelog v2.5.39 (Sessione 9-B parte 1/2 implementativa)' || echo 'Changelog non tracciato in git, solo upload KB'
+   ```
+
+4. **Eseguire CP0 sanity-light** del prompt §11 v2.5.39 prima di aprire Sessione 9-B parte 2/2:
+   ```
+   echo 'CP0 9-B parte 2/2 sanity-light'
+   git status
+   git --no-pager log --oneline -5
+   npm test -- --run
+   git --no-pager log --oneline | grep '9-B CP'
+   ```
+   Atteso: tree clean, top `c158496`, 357/357 in 35 files, 3 match `9-B CP`.
+
+5. Aprire Sessione 9-B parte 2/2 (nuova conversazione Claude) con one-liner:
+   ```
+   Esegui il prompt al §11 del Changelog (Sessione 9-B parte 2/2 esecutiva).
+   ```
+## 22.22 Stato post-Sessione 9-B parte 2/2 + parte 3/3 implementativa (CP browser deferred)
+
+**Data:** 27 aprile 2026 (entrambe le parti stessa giornata).
+**Baseline test pre-sessione:** 357/357 su 35 test files (§22.21 post-9-B parte 1/2).
+**Baseline test post-parte 2/2:** 367/367 su 35 test files (Δ +10, top commit `530e983`).
+**Baseline test post-parte 3/3:** 371/371 su 35 test files (Δ +4, top commit `93c3d21` post-amend).
+**Bump:** v2.5.39 → **v2.5.40-rc** (release candidate, NO bump definitivo a v2.5.40 fino a chiusura CP browser).
+**Esito:** ✅ **Impl 4/5 CP completi (CP1-CP5)** — CP browser 8 punti deferred a Sessione 9-B parte 4/4 (regola critica #5: dimensionamento sessione, ~30-40min CP browser ininterrotto incompatibile con Q&A asincrono dopo 5 CP impl).
+
+### Parte 2/2 (CP4) — riepilogo sintetico
+
+CP4 wiring `AppContext.jsx` + `actions.js` + 8 trigger reschedule. Eseguita come sessione separata (parte 2/2) con context fresh per leggere file esistenti reali e validare 4 ambiguità Q-CP4 (state shape, useApp shape, tick integration, thunks Config). 8 deviazioni emerse durante implementazione, tutte già in codice al delivery (top `530e983`):
+
+| ID | Scope | Lessons learned |
+|----|-------|-----------------|
+| **§6.125** | alias `useApp = useAppContext` | CP3 §6.123 importa `useApp`; CP4 ha aggiunto alias backward compat invece di rinominare 1 import (rischio diff broad) |
+| **§6.126** | services injection retrofit | `createActions(repo, services)` + context value `{state, actions, services, tickMs}` + `__pt.notifications` window debug |
+| **§6.127** | `rescheduleAllNotifications` usa selector | `selectEntriesForDay(state, selectToday(state))` invece di `state.pianoOggi || []` (Q-CP2.6 risolto) |
+| **§6.128** | lookup farmaco via selector | `selectFarmacoById` invece di `state.farmaci[id]` (state.farmaci è array, non dict — bug latente CP2) |
+| **§6.129** | NOTIFICHE_ATTIVE no schema bump | default off via missing-key (`selectImpostazione` ritorna `undefined` ⇒ AMB-9.F' `enabled=false` corretto) |
+| **§6.130** | rolling-30-tick safety net | mitigazione iOS PWA `setTimeout` suspend dopo 30s background (re-arm idempotente in tick `useEffect` Provider) |
+| **§6.131** | Δ test +10 effettivi | vs +5 stimato §22.20 (+5 pure `notifications.test.js` +5 wiring `AppContext.test.jsx`); boundary AMB-9.J alta assorbe |
+| **§6.132** | bypass maybeReschedule gate | `setSetting('notifiche_attive', 1)`: stateRef-lag dopo optimistic dispatch, reschedule deve usare nuovo state, non stateRef stale (bug reale anche in produzione, non solo test) |
+
+### Parte 3/3 (CP5) — riepilogo sintetico
+
+CP5 `ImpostazioniTab.jsx` SezioneNotifiche 4-state + 4° campo `Notifiche pendenti` in SezioneAvanzate-DEV. Sandbox vitest pre-delivery (pattern §22.21 confermato): 13/13 verdi prima dell'emissione installer self-extracting. SHA-1 sandbox = SHA-1 post-install Mac (`9fc992bc...` jsx + `ff7f5b10...` test) = bit-perfect delivery. Δ test +4 effettivi, totale 367 → 371 (centro perfetto su target §11). 2 deviazioni emerse + §6.135 infra:
+
+| ID | Scope | Lessons learned |
+|----|-------|-----------------|
+| **§6.133** | drift terminologico §11 vs AMB-9.F' | prompt §11 usava enum `{not-supported, denied, granted-off, granted-on}`; API reale `useNotifications` (CP3) espone `(isStandalone, permission, enabled)`. UI implementata segue AMB-9.F' literal (fonte autoritativa). `not-supported` collassato su `permission='denied'` da `readPermission` early-return |
+| **§6.134** | pattern test mock-collaborator | `vi.mock('../../hooks/useNotifications.js')` in `ImpostazioniTab.test.jsx` con `DEFAULT_NOTIFICATIONS_MOCK` safe in `beforeEach`. Alternativa scartata: estendere `renderHelpers.jsx` per iniettare `services` (richiede ~15 LOC + tocco 13 callers esistenti). Mock-collaborator già stabilito in `useNotifications.test.jsx` parte 1/2 |
+| **§6.135** | installer `.bak.cpN` pattern | l'installer crea backup `.bak.cpN` prima di sovrascrivere; `.gitignore` ha pattern `*.bak`. Convenzione: i backup sopravvivono alla sessione per rollback rapido locale, vengono eliminati manualmente al passaggio sessione successiva. Emerso quando l'amend del primo commit CP5 ha dovuto espungere 2 `.bak.cp5` finiti in stage per default |
+
+### Decisione CP browser deferred (regola critica #5)
+
+CP browser 8 punti pianificati in §22.20 non eseguiti in parte 3/3. Motivazione:
+
+1. **Token consumati:** ~50K dopo CP4+CP5 + lettura file reali + sandbox
+2. **CP browser è blocco discreto** ~30-40min ininterrotti (P1-P5 + P8), mal compatibile con Q&A asincrono in coda di 5 CP impl
+3. **Rischio degrado qualità** se forzato in stessa sessione (regola critica #5 esplicita)
+
+Decisione: **Sessione 9-B parte 4/4 dedicata** al CP browser + CP6 closing definitivo (bump v2.5.40-rc → v2.5.40). Pattern già visto: §6.79 / Sessione 7d-2 split in 3 parti.
+
+### Decisione skip P6+P7 in parte 4/4
+
+**Raccomandato P1-P5 (obbligatori) + P8 (tag-based replacement, OS-specific).** Skip P6 e P7:
+- **P6 (revocation OS-side):** coperto da `useNotifications.test.jsx` test #6 (defensive revocation on mount). Re-test browser ridondante.
+- **P7 (non-PWA fallback):** coperto da `useNotifications.test.jsx` test #1 (`!isStandalone` → toggle nascosto + banner). Re-test browser ridondante.
+
+P8 invece testa comportamento OS-specifico (notification center dedup tag-based) non simulabile in jsdom.
+
+### Decisione device parte 4/4
+
+**Chrome PWA Mac soltanto.** iPhone PWA defer a Wave C se emergono regressioni iOS-specifiche. Razionale: stesso engine Notification API + setTimeout + visibilitychange, DevTools nativi solo su Mac per ispezione.
+
+### CP completati
+
+| Parte | CP | Scope | File modificati / nuovi | Δ test | Commit |
+|-------|----|-------|------------------------|--------|--------|
+| 2/2 | **CP4** | wiring + 8 trigger | `state/AppContext.jsx`, `state/actions.js`, `services/notifications.js`, `state/AppContext.test.jsx`, `services/notifications.test.js`, `data/seed.js` | **+10** | `530e983` |
+| 3/3 | **CP5** | ImpostazioniTab UI 4-state | `components/config/ImpostazioniTab.jsx`, `components/config/ImpostazioniTab.test.jsx` | **+4** | `93c3d21` (post-amend, era `00cf71a` con .bak.cp5 espunti via §6.135) |
+
+**Totale CP1-CP5:** 357 → 371 (Δ +14 in parte 2/2+3/3, totale 9-B impl Δ +43 vs target +38).
+
+### Decisioni pre-codice CP5 congelate
+
+| Q | Decisione | Rationale |
+|---|-----------|-----------|
+| Q-CP5.1 | Copy: 4 stati con label "Notifiche dosi" + hint contestuali | AMB-9.F' literal §22.20 (fonte autoritativa, ignora drift §11 §6.133) |
+| Q-CP5.2 | Nuova sezione `<SezioneNotifiche>` tra Tema e Avanzate-DEV | parallelismo con SezioneTema, fieldset+legend pattern |
+| Q-CP5.3 | `getPendingCount()` come 4° campo SezioneAvanzate-DEV (snapshot at mount) | Q-CP5.3 default §11 confermato; `services?.notifications?.getPendingCount() ?? 0` safe-navigation per test stub |
+| Q-CP5.4 | Skip "Test notifica" button | Q-CP5.4 default §11 confermato; CP browser P1+P5 coprono già fire end-to-end |
+
+### Sandbox testing pattern §6.134 confermato
+
+Pattern §22.21 introdotto in CP2/CP3 parte 1/2 ri-applicato in CP5 parte 3/3:
+
+1. `mkdir /home/claude/sandbox && npm install` (vitest 2.1.9 + happy-dom + react 18 + react-router-dom)
+2. Stub minimi delle dipendenze (`AppContext.jsx`, `selectors.js`, `useTheme.js`, `db.js`, `useNotifications.js`, `renderHelpers.jsx`) replicati fedelmente da Mac-side
+3. File CP5 modificati scritti in sandbox + test
+4. `npx vitest run` → 13/13 verdi prima del delivery
+5. Installer self-extracting con base64 payload + SHA-1 verification
+6. Mac-side: `bash installer.sh` → SHA-1 match = bit-perfect delivery
+
+Costo metodologico: ~5min setup + ~2min/iteration. Beneficio: zero round-trip Mac per fix sintassi/mock pattern.
+
+### Scoperte operative
+
+1. **Drift terminologico §11 vs AMB §22.X frequente** (CP5 §6.133, già visto 9-A §6.118 differente). Decisione perpetua: AMB §22.X = fonte autoritativa, §11 = sintesi operativa che può driftare. Documentare in §6.NN ogni drift scoperto a impl-time.
+2. **Default mock-collaborator pattern testing UI con hook custom**: `vi.mock(hookPath)` + `DEFAULT_MOCK` in `beforeEach` (zero impatto sui test esistenti) > estendere `renderHelpers.jsx` (broad blast radius). Adottato come pattern progetto.
+3. **Pattern installer + .bak.cpN** (§6.135): formalizzato come convenzione delivery. Da continuare per ogni CP futuro che modifica file esistenti.
+4. **Amend post-commit per pulire stage default**: `git rm --cached <unwanted>` + `git commit --amend --no-edit` è zero-cost se branch locale non pushato. Pattern utile per `.bak.cpN` che entrano in stage automaticamente al primo `git add -A`.
+5. **Drift §6.69 v2.5.34 perpetuato in v2.5.40-rc** (continuità principio fatto-storico immutabile).
+6. **Decisione split parte 3/3 → parte 4/4**: pattern coerente con principio §6.79 (sessione 7d-2 split 3 parti). CP browser ben candidato a sessione dedicata: blocco discreto, runtime-driven, no Q&A pre-codice.
+
+### File prodotti / modificati
+
+**Modificati (docs):**
+- `PharmaTimer_Changelog_Fase2.md` — v2.5.39 → **v2.5.40-rc** (questo delivery): front-matter, §1 entry v2.5.40-rc, §7 row 9-B aggiornata "Impl 4/5 ✅, CP browser deferred a parte 4/4", §11 sostituita con prompt esecutivo Sessione 9-B parte 4/4, §22.22 nuova.
+
+**Modificati (code) parte 2/2:**
+- `src/state/AppContext.jsx` — services injection §6.126 + tick rolling-30 §6.130
+- `src/state/actions.js` — createActions(repo, services) + 8 trigger §6.127-§6.132 + `setSetting` toggle bypass §6.132
+- `src/services/notifications.js` — selector-based `rescheduleAllNotifications` §6.127/§6.128
+- `src/state/AppContext.test.jsx` — 5 wiring test
+- `src/services/notifications.test.js` — 5 pure test
+- `src/data/seed.js` — chiave `notifiche_attive` §6.129
+
+**Modificati (code) parte 3/3:**
+- `src/components/config/ImpostazioniTab.jsx` — SezioneNotifiche +85 LOC + 4° campo Avanzate (339 righe totali)
+- `src/components/config/ImpostazioniTab.test.jsx` — +4 test +60 LOC (268 righe totali, 13 test)
+
+**Nuovi:** nessuno in CP4-CP5 (tutti nuovi files erano CP1-CP3 in parte 1/2).
+
+**Backup su disco (untracked):**
+- `src/components/config/ImpostazioniTab.jsx.bak.cp5`
+- `src/components/config/ImpostazioniTab.test.jsx.bak.cp5`
+
+### Limitazioni note
+
+1. **CP browser 8 punti NON eseguiti.** Validazione end-to-end runtime deferred a parte 4/4. Stato impl coperto solo da unit test (371/371 verdi); regressioni browser-side possibili ma improbabili dato il pattern §6.118 internalizzato in tutti i CP.
+2. **Bump definitivo v2.5.40 deferred.** v2.5.40-rc è release candidate; v2.5.40 finale solo dopo CP browser P1-P5+P8 verde.
+3. **iPhone PWA non testato.** Defer a Wave C se emergono regressioni iOS-specifiche (`setTimeout` suspend, Notification API quirks).
+4. **Δ test totale 9-B impl: +43 effettivi vs +38 stimato §22.20** (+5 sopra target). Boundary AMB-9.J alta superata di poco — accettabile, non richiede `it.skip`.
+
+### Azioni sul Mac post-Sessione 9-B parte 3/3
+
+1. Stato git corrente: tree clean (a parte Changelog modificato KB-only), top `93c3d21` 9-B CP5 (parent: `530e983` CP4 → `c158496` CP3 → `fd2ab9a` CP2 → `f7ab6d5` CP1).
+
+2. **Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude.ai** con la versione **v2.5.40-rc** (questo delivery).
+
+3. Commit Changelog separato (KB-only, repo non traccia il Changelog):
+   ```
+   echo 'Commit Changelog v2.5.40-rc (KB-only convention)'
+   git add PharmaTimer_Changelog_Fase2.md 2>/dev/null && git commit -m 'Changelog v2.5.40-rc (Sessione 9-B parte 3/3 implementativa)' || echo 'Changelog non tracciato in git, solo upload KB'
+   ```
+
+4. **NON eliminare i backup `.bak.cp5`** fino a chiusura CP browser parte 4/4 verde.
+
+5. **Eseguire CP0 sanity-light** del prompt §11 v2.5.40-rc prima di aprire Sessione 9-B parte 4/4:
+   ```
+   echo 'CP0 9-B parte 4/4 sanity-light'
+   git status
+   git --no-pager log --oneline -5
+   npm test -- --run
+   git --no-pager log --oneline | grep '9-B CP'
+   ```
+   Atteso: tree clean, top `93c3d21`, 371/371 in 35 files, 5 match `9-B CP`.
+
+6. Aprire Sessione 9-B parte 4/4 (nuova conversazione Claude) con one-liner:
+   ```
+   Esegui il prompt al §11 del Changelog (Sessione 9-B parte 4/4 esecutiva).
+   ```
+
