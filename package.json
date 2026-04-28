@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "build:tooling": "VITE_PT_TOOLING=1 vite build"
   },
   "dependencies": {
     "dexie": "^4.0.8",

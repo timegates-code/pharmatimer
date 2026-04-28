@@ -191,7 +191,8 @@ export function AppProvider({ children, initialStateProp }) {
   // Dev-only console handle. Namespaced under window.__pt.app to
   // coexist with devCheck.js helpers (window.__pt.db/repo/...).
   useEffect(() => {
-    if (!import.meta.env.DEV) return;
+    // §6.143: gate widened to allow VITE_PT_TOOLING=1 build (CP browser tooling without HMR).
+    if (!import.meta.env.DEV && !import.meta.env.VITE_PT_TOOLING) return;
     if (typeof window === 'undefined') return;
     window.__pt = window.__pt || {};
     window.__pt.app = {
