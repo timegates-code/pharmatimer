@@ -797,6 +797,54 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     return { ok: true };
   }
 
+  // §6.142 — scheduleTestDose: smoke test thunk per validazione runtime
+  // del flusso notifications (CP browser §11 P1-P5+P8 Sessione 9-B parte 5/5).
+  // Crea entry sintetica con ora_prevista = now + minutesFromNow nel wall
+  // clock reale, bypassando il limite §6.141 (simulatedNow non propaga ai
+  // setTimeout). Bypassa intenzionalmente il gate maybeReschedule
+  // (notifiche_attive=1 non è prerequisito): il chiamante controlla il
+  // toggle quando invoca via Console (`__pt.app.actions.scheduleTestDose(5)`).
+  // Shape entry post-§6.138: orario.{farmaco_id, dose_numero} nested.
+  // dose_numero=999 sentinel garantisce entryKey stabile per (farmaco, day),
+  // quindi 2× invocazioni con stesso farmacoId collassano via tag-as-Map-key
+  // del singleton notifications (validazione P8).
+  async function scheduleTestDose(minutesFromNow = 5, opts = {}) {
+    const state = getState();
+    if (state.status !== 'ready') {
+      throw new Error('NOT_READY');
+    }
+    const farmaci = state.farmaci;
+    if (!farmaci || farmaci.length === 0) {
+      throw new Error('NO_FARMACI');
+    }
+    const farmaco = opts.farmacoId
+      ? farmaci.find((f) => f.id === opts.farmacoId)
+      : farmaci[0];
+    if (!farmaco) {
+      throw new Error('FARMACO_NOT_FOUND');
+    }
+
+    const today = selectToday(state);
+    const fireAtMs = Date.now() + minutesFromNow * 60_000;
+    const fireDate = new Date(fireAtMs);
+    const hh = String(fireDate.getHours()).padStart(2, '0');
+    const mm = String(fireDate.getMinutes()).padStart(2, '0');
+    const ora_prevista = `${hh}:${mm}`;
+
+    const syntheticEntry = {
+      dateStr: today,
+      orario: { farmaco_id: farmaco.id, dose_numero: 999, offset_minuti: 0 },
+      farmaco,
+      ora_prevista,
+      ora_ricalcolata: null,
+      stato: 'prevista',
+    };
+
+    dispatch({ type: 'SET_PLAN', payload: [...state.plan, syntheticEntry] });
+    rescheduleAllNotifications(getState(), services.notifications);
+    return { ok: true, ora_prevista, farmacoId: farmaco.id };
+  }
+
   return {
     init,
     rebuildPlan,
@@ -818,5 +866,6 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     dismissPrompt,
     setSetting,
     setSimulatedNow,
+    scheduleTestDose,
   };
 }
