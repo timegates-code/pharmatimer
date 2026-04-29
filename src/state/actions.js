@@ -840,8 +840,14 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
       stato: 'prevista',
     };
 
-    dispatch({ type: 'SET_PLAN', payload: [...state.plan, syntheticEntry] });
-    rescheduleAllNotifications(getState(), services.notifications);
+    // §6.145: build fresh state explicitly. Re-reading via getState()
+    // here yields STALE state because dispatch updates stateRef in a
+    // useEffect one tick later (pattern §6.95/§6.102 from updateProfilo).
+    // The synthetic entry would be invisible to the rescheduler otherwise.
+    const newPlan = [...state.plan, syntheticEntry];
+    dispatch({ type: 'SET_PLAN', payload: newPlan });
+    const freshState = { ...state, plan: newPlan };
+    rescheduleAllNotifications(freshState, services.notifications);
     return { ok: true, ora_prevista, farmacoId: farmaco.id };
   }
 

@@ -141,3 +141,64 @@ describe('actions.scheduleTestDose', () => {
     expect(services.notifications.cancelAll).not.toHaveBeenCalled();
   });
 });
+
+describe('actions.scheduleTestDose — state freshness (§6.145)', () => {
+  it('(4) reschedule riceve state con plan gia aggiornato (fix stateRef lag)', async () => {
+    // Use vi.useFakeTimers so timestamps are deterministic.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 3, 28, 18, 0, 0));
+
+    // makeDeps mutates state on dispatch but only via the closure
+    // captured in this test scope. The thunk under test must NOT
+    // re-call getState() AFTER dispatch and pass that result to
+    // rescheduleAllNotifications — it must pass the freshly-built
+    // state explicitly, otherwise the synthetic entry is invisible
+    // to the rescheduler in the same tick.
+    const dispatched = [];
+    let getStateCallsAfterDispatch = 0;
+    let dispatchSeen = false;
+    const state = {
+      status: 'ready',
+      impostazioni: { notifiche_attive: 1 },
+      profili: [{ id: 1, nome_profilo: 'Std', attivo: 1 }],
+      profiloAttivo: { id: 1, nome_profilo: 'Std', attivo: 1 },
+      farmaci: [{ id: 10, nome: 'Aspirina' }],
+      orari: [],
+      plan: [],
+      presoStack: [],
+      error: null,
+      simulatedNow: null,
+      lastBuiltForDay: null,
+    };
+    const dispatch = (a) => {
+      dispatched.push(a);
+      if (a.type === 'SET_PLAN') {
+        // Simulate stateRef lag: do NOT mutate state until end of test.
+        // (Real AppContext updates stateRef in useEffect, one tick later.)
+      }
+      dispatchSeen = true;
+    };
+    const getState = () => {
+      if (dispatchSeen) getStateCallsAfterDispatch++;
+      return state;
+    };
+    const services = { notifications: makeNotificationsMock() };
+    const repo = {};
+    const actions = createActions({ dispatch, getState, repo, services });
+
+    const result = await actions.scheduleTestDose(5);
+    expect(result.ok).toBe(true);
+
+    // The fix MUST ensure showDoseNotification is invoked with the synthetic
+    // entry, even though state.plan would be stale if read via getState().
+    // The rescheduler iterates the state passed to it; if the thunk passed a
+    // freshly-built state, the synthetic entry is in there. If the thunk
+    // re-read getState(), the state.plan is still [] (no mutation in mock).
+    expect(services.notifications.showDoseNotification).toHaveBeenCalledTimes(1);
+    const [notifEntry] = services.notifications.showDoseNotification.mock.calls[0];
+    expect(notifEntry.orario).toMatchObject({ farmaco_id: 10, dose_numero: 999 });
+    expect(notifEntry.ora_prevista).toBe('18:05');
+
+    vi.useRealTimers();
+  });
+});
