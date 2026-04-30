@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import { fileURLToPath } from 'node:url';
 
 // Vitest config for PharmaTimer.
 // - jsdom is the default environment because most tests now touch React.
@@ -10,6 +11,16 @@ import react from '@vitejs/plugin-react';
 // Changelog Fase 2 AMB-7a.J (Sessione 7a).
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: [
+      {
+        find: /^virtual:pwa-register$/,
+        replacement: fileURLToPath(
+          new URL('./src/test/__mocks__/virtualPwaRegister.js', import.meta.url)
+        ),
+      },
+    ],
+  },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.js'],

@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import OggiView from "./components/oggi/OggiView.jsx";
 import ConfigView from "./components/config/ConfigView.jsx";
 import NavBar from "./components/shared/NavBar.jsx";
+import UpdatePrompt from "./components/shared/UpdatePrompt.jsx";
 import { useTheme } from "./hooks/useTheme.js";
 
 // Shell with bottom nav and route outlets.
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="/export" element={<Placeholder title="Export" />} />
         <Route path="*" element={<Navigate to="/oggi" replace />} />
       </Routes>
+      <UpdatePrompt />
       <NavBar />
     </ThemedShell>
   );

@@ -3,7 +3,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App.jsx";
 import { AppProvider } from "./state/AppContext.jsx";
-import { registerSW } from "./pwa/registerSW.js";
+import { setupPWA } from "./pwa/registerSW.js";
 import { runSeedIfNeeded } from "./data/seed.js";
 import { installDevCheck } from "./data/devCheck.js";
 import "./index.css";
@@ -44,7 +44,7 @@ async function bootstrap() {
     </React.StrictMode>
   );
 
-  registerSW();
+  setupPWA();
 }
 
 bootstrap();
