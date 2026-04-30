@@ -39,6 +39,13 @@ afterEach(() => {
 });
 
 describe('notifications service', () => {
+  // §6.156: fix race timezone — clock fissato in fascia diurna safe per
+  // evitare drift cross-midnight tra dateStr UTC e hh:mm locali nei
+  // test showDoseNotification (esposto in fascia notturna CEST).
+  beforeEach(() => {
+    vi.setSystemTime(new Date('2026-04-27T12:00:00'));
+  });
+
   it('schedule fires Notification constructor with title/body/tag after delay', () => {
     const svc = createNotificationsService();
     const fireAt = Date.now() + 5 * 60 * 1000;
