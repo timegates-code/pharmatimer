@@ -1,8 +1,8 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 2.5.40-rc.1
+**Versione:** 2.5.40-rc.4
 **Data inizio fase:** 16 aprile 2026
-**Ultima modifica:** 27 aprile 2026 (Sessione 9-B parte 4/4 esecutiva, CP browser bloccato su limitazione architetturale, parte 5/5 split)
+**Ultima modifica:** 30 aprile 2026 (Sessione 9-C analisi-first: §6.147 plan cross-day chiuso by-design + §6.148 §6.145 disconnect chiuso falso-positivo metodologico + §6.149 lessons-learned Console DevTools `await` mandatory; AMB-9-C.A÷B congelate; nessun fix code richiesto; CP browser P2-P5+P8 + bump v2.5.40 + cleanup `.bak.*` deferred a Sessione 9-D esecutiva snella)
 **Ambito:** Sviluppo PWA React standalone con persistenza locale, preparata per futuro swap verso backend FastAPI+MariaDB.
 
 Questo documento raccoglie le decisioni architetturali, la struttura del progetto, le deviazioni dalla specifica e lo stato di avanzamento della Fase 2. È il **punto di riferimento unico** per ogni sessione di sviluppo: leggerlo prima di iniziare garantisce continuità senza dover rileggere l'intero storico chat.
@@ -600,6 +600,23 @@ Questo documento raccoglie le decisioni architetturali, la struttura del progett
 - **Nuova §22.19** "Stato post-Sessione 9-A implementativa" con file prodotti, esiti CP1-CP4, esiti CP browser 4 punti (P2 verde post-§6.118; P1 ambiguo per §6.120 pre-existing; P3 visivo OK; P4 retry-ambiguo, focus restore non fa parte scope CP4).
 - **§11 sostituita** con prompt **Sessione 9-B analisi-first** (raccomandato vs esecutiva diretta dato lessons learned 9-A: spec semantics da rivalidare in browser, AMB-9.E÷I già ratificate ma edge cases iOS PWA permettono rifinitura).
 - 5 file codice modificati (`utils/uiState.js`, `utils/uiState.test.js`, `components/oggi/DoseCard.jsx`, `components/oggi/DoseCard.test.jsx`, `components/oggi/OggiView.jsx`) + 1 file modificato in CP1 (`utils/time.js`, `utils/time.test.js` nuovo) + 2 modificati CP2 (`data/db.js`, `package.json`, `data/db.migration.test.js` nuovo) + 2 modificati CP3 (`domain/recalc.js`, `domain/planBuilder.js` confermato, test estesi) + 1 modificato CP4 docs (`domain/types.js`).
+
+**Changelog versione 2.5.40-rc.4 (rispetto alla 2.5.40-rc.3):**
+- **Sessione 9-C analisi-first** completata 30/04/2026. Investigazione strutturata di **§6.147** (plan cross-day 27 entries) e **§6.148** (§6.145 fix presente nel bundle ma non sanante runtime), entrambi rivelati da CP browser P1 di parte 6/6. Esito: **entrambi i bug chiusi senza fix code**. Baseline test invariata **375/375 su 36 test files** (analisi-first pura). Bump cosmetico v2.5.40-rc.3 → **v2.5.40-rc.4**.
+- **§6.147 → CHIUSA by-design (AMB-9-C.A).** Verdetto immediato post-DIAG-1÷7: `state.plan` è multi-day per intentional design dal Step 5b-2 (`buildMultiDayPlan` §6.72, rehydration cross-day). `PLAN_DAYS_TOTAL=3` dichiarato esplicitamente in `domain/constants.js` (`PLAN_DAYS_BEFORE=1` + 1 + `PLAN_DAYS_AFTER=1`). 27 entries = 9 farmaci × 3 giorni, distribuzione corretta. `selectEntriesForDay(state, today)` filtra correttamente per `e.dateStr === today`; consumer notifiche/UI Oggi sono day-scoped via selettore. Nessun drift cronologico (DIAG-7: le costanti nascono già con valore 3, mai modificate). Zero codice toccato. Doc spec §3 update raccomandato in 9-D closing per documentare scope esplicito, non bloccante per release.
+- **§6.148 → CHIUSA falso-positivo metodologico (AMB-9-C.B).** Verdetto via DIAG-RT-1 runtime test deterministico Chrome-side (IIFE async con `await` esplicito): `pending: 3 → 4 → 4` (before/afterAwait/after100ms). Il fix §6.145 propaga la sintetica al rescheduler in modo deterministico, senza race async. Spiegazione del falso positivo: protocollo CP browser parte 6/6 ha letto `__pt.notifications.getPendingCount()` su tick sincrona post-`scheduleTestDose(5)` (Promise pending non awaited), prima della microtask del thunk async. Il valore osservato `pending=3` era stale. 7 ipotesi root cause investigate (H-A÷H-G2): tutte escluse dal codice statico (DIAG-8÷20) e dal runtime test, tranne **H-G2** (Promise non awaited) confermata come spiegazione. Zero codice toccato.
+- **§6.149 NUOVA — lessons-learned Console DevTools `await` mandatory.** Pattern operativo per CP browser: **mai leggere stato post-thunk async senza `await`**. `async function` ritorna sempre Promise pending; il check successivo digitato in Console su riga separata legge stato pre-microtask, contaminando la misurazione. Pattern corretto: IIFE async con `await` interno + `console.log` finale strutturato (es. JSON.stringify del bundle di osservazioni). Parallelo metodologico a §6.146 (canary-marker su commenti = inconcludente; `grep <identifier>` su bundle minified = invalido). Da formalizzare in §8 convenzioni come step di troubleshooting standard CP browser.
+- **AMB-9-C congelate (2 totali):**
+  - **AMB-9-C.A** §6.147 plan cross-day = intentional by-design (no fix code, doc spec §3 in 9-D closing)
+  - **AMB-9-C.B** §6.148 §6.145 disconnect = falso positivo metodologico (no fix code, pattern §6.149 reusabile)
+- **Decisione split implementativo:** dato che nessuno dei due bug richiede codice, **niente split 9-D + 9-E**. Sessione 9-D pianificata come **esecutiva snella** (singola sessione, ~15-20K token stimati): completamento CP browser P2-P5+P8 deferred di parte 6/6 + bump v2.5.40 definitivo + cleanup `.bak.*` (12 untracked) + chiusura formale §6.147+§6.148 nel changelog + doc spec §3 update per scope plan multi-day.
+- **Stato baseline post-9-C:** 375/375 test invariati, top commit `35fed4d` invariato, bundle `dist/assets/index-Cd8Of8Q2.js` invariato. Nessuna modifica al codice (analisi-first pura). Nessuna modifica a §12 (zero file prodotti).
+- **Pattern §6.118 reinforcement:** chiusura by-design / falso-positivo è coerente con regola critica #2 (fermarsi su incongruenze, non inventare fix). Sessione 9-C ha esercitato il pattern senza scorciatoie: 7 ipotesi indagate prima di chiudere, runtime test deterministico richiesto per dirimere H-G2 vs altre.
+- **Drift §6.69 v2.5.34 NON retrocorretto** in v2.5.40-rc.4 (continuità fatto-storico immutabile, §6.71/§6.85 archive).
+- **Aggiornamento roadmap §7 row 9-B:** post-`parte 6/6 parziale (§6.146 sbloccato, §6.147+§6.148 nuovi)` → `+ Sessione 9-C analisi-first ✅ chiude §6.147 by-design + §6.148 falso-positivo + §6.149 nuova; CP browser P2-P5+P8 + bump v2.5.40 deferred Sessione 9-D esecutiva snella`.
+- **§11 sostituita** con prompt esecutivo **Sessione 9-D esecutiva snella** (CP0 sanity-light + CP browser P2-P5+P8 + closing chiusure §6.147/§6.148/§6.149 + doc spec §3 update + bump v2.5.40 + cleanup `.bak.*`). 9-D è una sessione browser-heavy / no-code-heavy.
+- **Nuova §22.25** "Stato post-Sessione 9-C analisi-first" con dataset diagnostico (DIAG-1÷20 + DIAG-RT-1), tabella ipotesi H-A÷H-G2, tabella AMB-9-C, decisione no-split, scope 9-D dettagliato.
+- Nessuna modifica a §3 struttura progetto. Nessun nuovo file in §12.
 
 **Changelog versione 2.5.40-rc.1 (rispetto alla 2.5.40-rc):**
 - **Sessione 9-B parte 4/4 esecutiva** completata 27/04/2026 con esito **misto**. Setup PWA install ✅, hotfix latente §6.138 ✅ (commit `fada4a6` figlio di `f856b46`, 371/371 test), CP browser P1-P5+P8 ❌ **bloccati su limitazione architetturale**. Decisione: **split a Sessione 9-B parte 5/5** dedicata (regola critica #5).
@@ -3188,6 +3205,346 @@ Raccomandata in apertura parte 5/5: **opzione A** per qualità + riusabilità. D
 
 ---
 
+## 6.142 — `actions.scheduleTestDose` thunk per CP browser smoke test (Sessione 9-B parte 5/5 CP1)
+
+**Scope:** Implementazione del workaround §6.141 secondo opzione A ratificata in analisi-first parte 5/5 (AMB-parte5.A). Nuovo thunk `scheduleTestDose(minutesFromNow=5, opts={farmacoId?})` in `actions.js` per validazione runtime dello scheduling notifications senza dipendere da `simulatedNow`.
+
+**Design (originale, vedi §6.145 per fix successivo):**
+- Crea entry sintetica con `dateStr=today`, `ora_prevista = now + minutesFromNow` calcolato sul wall clock reale (`Date.now()`, non `resolveNow`)
+- Shape canonico post-§6.138: `entry.orario.{farmaco_id, dose_numero, offset_minuti}` nested
+- `dose_numero=999` sentinel garantisce `entryKey` stabile per (farmaco, day) → 2× invocazioni con stesso `farmacoId` collassano via tag-as-Map-key del singleton notifications (validazione P8 idempotenza)
+- Default `farmacoId = state.farmaci[0].id`; opzionale override via `opts.farmacoId`
+- Throw `NOT_READY` se `state.status !== 'ready'`, `NO_FARMACI` se array vuoto, `FARMACO_NOT_FOUND` se override id non trovato
+- Bypassa intenzionalmente il gate `maybeReschedule` (chiamata diretta `rescheduleAllNotifications`, non via wrapper): smoke test non richiede `notifiche_attive=1` come prerequisito formale (il chiamante controlla via Console)
+- Persistenza runtime-only: nessuna scrittura DB. Wiped al prossimo `rebuildPlan` (cambio profilo, midnight rollover). Coerente con scope smoke test
+- Esposto via `__pt.app.actions.scheduleTestDose(...)` quando build con `VITE_PT_TOOLING=1` (vedi §6.143)
+
+**Test:** `actions.scheduleTestDose.test.js` con 3 scenari (happy path, NOT_READY, NO_FARMACI) + (4) state freshness aggiunto in CP1.1 (vedi §6.145). Pattern `vi.useFakeTimers` + `vi.setSystemTime` per asserzione deterministica su `ora_prevista`. Mock dispatch mutativo + closure state per simulare flusso sincrono `dispatch → reschedule`.
+
+**Δ codice:** +49 LOC in `actions.js` (function block + 1 entry in return obj), +143 LOC test file nuovo. **Δ test:** +3 (371→374). Commit `3de09ab` branch `step-8` (`9-B parte 5/5 CP1 — scheduleTestDose thunk per CP browser smoke test (§6.142)`).
+
+**Prerequisito di funzionamento:** §6.143 (gate `__pt` ampliato a `VITE_PT_TOOLING`) + §6.144 (icone PWA placeholder valide) committed nel commit precedente `d7f252a`.
+
+---
+
+## 6.143 — Gate `__pt` esteso a `VITE_PT_TOOLING` per build production tooling-aware (Sessione 9-B parte 5/5 CP-pre)
+
+**Scope:** Rifattorizzazione strutturale del gate dev-only `__pt` console handle in `AppContext.jsx:194` per supportare CP browser ripetibili senza patch+revert manuali (deviazione §6.136 della parte 4/4 elevata a fix permanente).
+
+**Decisione (AMB-parte5.D D1):** introdurre env var `VITE_PT_TOOLING` lato build e ampliare il gate da `if (!import.meta.env.DEV) return;` a `if (!import.meta.env.DEV && !import.meta.env.VITE_PT_TOOLING) return;`. Aggiunto script `package.json` `"build:tooling": "VITE_PT_TOOLING=1 vite build"` per rendere la build CP-browser one-command idempotente.
+
+**Invariante di sicurezza (verificato):**
+- `npm run build` (production standard) **NON** espone `__pt` → bundle minified `grep -c '__pt'` = 0 nella suite CP-pre Step 5
+- `npm run build:tooling` espone `__pt` come previsto → bundle minified contiene `__pt` keyword
+
+**Razionale lift-out:** la deviazione §6.136 della parte 4/4 (patch+revert ad ogni CP browser) era costo operativo ricorrente che si sarebbe ripresentato in Wave-C (smoke test future). Il refactor è 1 riga di gate + 1 script in `package.json` + un commento §6.143. Costo minimale, eliminazione completa del pattern transient.
+
+**Δ codice:** 1 riga in `AppContext.jsx:194`, +1 script in `package.json`. **Δ test:** 0 (gate non testato in unit, validato in CP-pre browser). §6.136 storica resta "chiusa parte 4/4"; §6.143 è il fix permanente parte 5/5. Commit `d7f252a`.
+
+---
+
+## 6.144 — Icone PWA placeholder valide (192/512/maskable-512) committed (Sessione 9-B parte 5/5 CP-pre)
+
+**Scope:** Sostituzione delle icone PWA stub da 68 byte (placeholder Vite scaffolding) con 3 PNG validi 192×192, 512×512, e 512×512 maskable, generati via Pillow nel sandbox e committati come placeholder definitivi Fase 2 (icone artistiche definitive Wave-C).
+
+**Decisione (AMB-parte5.D D2):**
+- Design: lettera "P" bianca su fondo `#15141A` (theme color PharmaTimer), font sans-serif bold
+- 192×192 e 512×512 standard: "P" al ~70% della dimensione, full-bleed
+- Maskable 512×512: "P" al ~45% della dimensione per safe-area circolare Android (icone di Chrome/Android applicano crop circolare aggressivo)
+- Path: `public/icons/{icon-192,icon-512,icon-maskable-512}.png` (allineato al riferimento `vite.config.js` VitePWA `manifest.icons[]`)
+
+**Razionale lift-out:** la deviazione §6.137 della parte 4/4 (icone valide installate temporaneamente per Chrome PWA install, poi revertate a stub) era anch'essa transient. Le icone valide in repository non incidono sull'app production (le definitive Wave-C le sovrascriveranno) e sbloccano `Cmd+T` apri-PWA-install in Chrome senza patch ad-hoc.
+
+**Verifica visiva (sandbox claude):** entrambi 192 e maskable-512 sono stati renderizzati e ispezionati pre-delivery (lettera "P" centrata, no clipping, contrasto pulito).
+
+**Δ codice:** 3 PNG binari (1578/4423/3450 byte). **Δ test:** 0. §6.137 storica resta "chiusa parte 4/4"; §6.144 è il fix permanente parte 5/5. Commit `d7f252a` (combinato con §6.143 in unico commit "CP-pre" perché entrambi setup-ripetibile).
+
+---
+
+## 6.145 — Fix stateRef lag in `scheduleTestDose`: pass fresh state to rescheduleAllNotifications (Sessione 9-B parte 5/5 CP1.1 hotfix)
+
+**Scope:** Hotfix critico al thunk `scheduleTestDose` (§6.142) emerso durante CP browser pre-§6.146 blocking. La versione iniziale chiamava `rescheduleAllNotifications(getState(), services.notifications)` **dopo** `dispatch({type:'SET_PLAN', payload:[...state.plan, syntheticEntry]})`, leggendo lo stato via `getState()` di seconda lettura. Pattern stateRef lag (memory user / §6.95 / §6.102): `getState()` post-dispatch in flusso sincrono restituisce stato **stale** (plan pre-mutation) perché AppContext aggiorna `stateRef` in `useEffect` **un tick DOPO** il dispatch. Conseguenza runtime: `rescheduleAllNotifications` non vedeva l'entry sintetica appena creata → `pending count` invariato → notifica mai schedulata.
+
+**Diagnosi runtime (confermata in DIAG-5/DIAG-6 CP browser parte 5/5):**
+- BEFORE `scheduleTestDose(5)`: pending=3 (3 entries cena 20:30 future)
+- AFTER `scheduleTestDose(5)` con state stale: pending=3 (NON aumenta, plan +1 ma scheduling skip)
+- Toggle `setSetting('notifiche_attive', 0/1)` post-thunk: pending=4 (con state aggiornato in stateRef ad un tick di distanza, l'entry sintetica diventa visibile e viene schedulata)
+
+**Fix:** sostituire `getState()` di seconda lettura con state freshly-built esplicito, pattern §6.95/§6.102 (test 7 di `actions.profili.test.js` per `updateProfilo`):
+
+```js
+const newPlan = [...state.plan, syntheticEntry];
+dispatch({ type: 'SET_PLAN', payload: newPlan });
+const freshState = { ...state, plan: newPlan };
+rescheduleAllNotifications(freshState, services.notifications);
+```
+
+**Test (4) aggiunto in `actions.scheduleTestDose.test.js`** dentro nuovo describe `'state freshness (§6.145)'`:
+- Mock dispatch che NON muta state (simula stateRef lag literally)
+- Counter `getStateCallsAfterDispatch` per detect re-read
+- Asserzione: `showDoseNotification` chiamato 1× con entry sintetica (proverebbe che reschedule l'ha vista, possibile solo con freshState esplicito)
+
+**Δ codice:** -1/+7 righe in `scheduleTestDose` (4 commento + 3 logica), +61 LOC test (4). **Δ test:** +1 (374→375). Commit `35fed4d` branch `step-8` (`9-B parte 5/5 CP1.1 hotfix — pass fresh state to rescheduleAllNotifications (§6.145, stateRef lag fix)`).
+
+**Lessons learned:**
+- Il bias §6.95/§6.102 si estende a **qualsiasi** chiamata sincrona post-dispatch che legga state via `getState()`, non solo `rebuildPlan()` post-`updateProfilo`. Audit candidato Wave-C: identificare altri thunk con pattern `dispatch(action) → readState → callPureFn(state)` che potrebbero avere lo stesso bias silente
+- L'analisi-first parte 5/5 (AMB-parte5.A) aveva descritto il design corretto a livello concettuale (`rescheduleAllNotifications(getState(), ...)`) ma non aveva messo a fuoco il bias stateRef. Pre-codice §6.118 in CP1 ha catturato altre scoperte (S1/S2/S3) ma non questa: stateRef lag è invisibile in unit test (vitest non simula `useEffect` lag a meno di mock dedicato). Il bias emerge solo runtime. Pattern memorizzato
+
+---
+
+## 6.146 — Anomalia rebuild Vite: bundle deterministicamente pre-fix nonostante sorgente patchato (Sessione 9-B parte 5/5, blocco CP browser)
+
+**Sintomo:** dopo commit CP1.1 (`35fed4d`), `npm run build:tooling` produce `dist/assets/index-Ci2FlSxN.js` **identico bit-per-bit** a quello pre-fix CP1.1, sia per hash che per dimensione (405564 byte) che per SHA-1 contenuto (`ab4bcd76...`). Il bundle **NON contiene** `freshState`, `newPlan`, `§6.145` (0 occorrenze), pur con `src/state/actions.js` patchato (2 occorrenze `freshState` confermate via `grep`). Il bundle viene servito a Chrome via `vite preview`, dove `__pt.app.actions.scheduleTestDose.toString()` mostra il pattern minified pre-fix `e({type:"SET_PLAN",payload:[...Z.plan,fe]}),Ya(t(),...)` (riconoscibile per `t()` = `getState()` minified).
+
+**Diagnosi tentate (tutte negative):**
+- `rm -rf dist node_modules/.vite node_modules/.cache` + rebuild → bundle identico
+- `touch src/state/actions.js` per forzare mtime → bundle identico
+- Cache HTTP Chrome: `Cmd+Shift+R` + Application > Storage > Clear site data + Service Worker Unregister + Cmd+Q Chrome + relaunch → bundle identico
+- Test canary marker: prepend riga `// CANARY_<timestamp>_PT_DEBUG` al sorgente → marker invisibile nel bundle (0 occorrenze) → conferma che **Vite NON sta leggendo il sorgente patchato durante il build**, anche con cache wiped
+- Verifica integrità sorgente: `grep -c freshState src/state/actions.js` = 2 ✅; nessun secondo `actions.js` nel progetto; nessuna directory `dist` shadow; nessuna cache `.vite*` residua
+
+**Stato all'atto del blocco:**
+- Test suite `npm test -- --run`: 375/375 in 36 file ✅ (Vitest legge il sorgente patchato; il fix è verificato a livello dominio e propagato nei test unit)
+- File system: 1 sola directory `dist/`, 1 solo `actions.js`, 4 directory `.backup_5b2_*` / `.backup_changelog_*` (pre-esistenti, no `actions.js` interno)
+- Working tree: pulito (10 `.bak.*` untracked attesi)
+
+**Ipotesi rimaste, non validate (non escluse):**
+- macOS APFS clone/copy-on-write semantica che può far apparire un file "modificato" agli utility ma immutato a Vite/Rollup file watcher
+- Plugin Vite con caching a livello di modulo non standard (improbabile, vite-plugin-pwa è il più sospetto ma non noto per questo)
+- npm cache (`~/.npm`) o esbuild cache (in `node_modules` non rimosso interamente) che fornisce bytecode/AST stale
+- Pattern Roberto-specifico: macOS Tahoe 26.0.1 + APFS + Time Machine + il filesystem snapshot ha cache che Vite non invalida
+
+**Decisione:** **deferred a parte 6/6** dopo regola critica #5 invocazione. Continuare diagnostica ad-hoc senza ipotesi solida è anti-pattern. Sessione chiusa con CP browser non eseguiti (P1-P5+P8 zero verde) ma fix codice committed integralmente (375/375 test garantisce correttezza dominio).
+
+**Action plan parte 6/6:**
+1. **Tentativo radicale**: `rm -rf node_modules package-lock.json && npm install && npm run build:tooling`. Se risolve → Vite cache nascosta dentro node_modules
+2. Se persiste: investigation Rollup tracing (`vite build --debug`), comparazione AST diretta sorgente vs bundle
+3. Fallback: rebuild da branch fresh (clone separato), confronto bundle. Se in clone fresh il fix appare → conferma corruzione cache locale
+4. Una volta sbloccato: ri-eseguire CP browser P1-P5+P8 + closing definitivo
+
+### Chiusura §6.146 (Sessione 9-B parte 6/6, CP1 Tentativo A)
+
+**Risoluzione:** **Tentativo radicale** ha sbloccato l'anomalia al primo colpo.
+
+```
+rm -rf node_modules package-lock.json
+npm install
+npm run build:tooling
+```
+
+Risultato:
+- Bundle hash: `index-Ci2FlSxN.js` (pre-fix, 405564 byte) → `index-Cd8Of8Q2.js` (post-fix, 405628 byte, +64 byte coerenti con i due `const` aggiuntivi `newPlan` + `freshState`)
+- Test post-reinstall: 375/375 in 36 file ✅
+- Pattern `SET_PLAN` nel bundle (verifica CP1.5):
+  - Pre-fix: `e({type:"SET_PLAN",payload:[...Z.plan,fe]}),Ya(t(),...)` (call inline `getState()` minified come `t()`)
+  - Post-fix: `Te=[...Z.plan,fe];e({type:"SET_PLAN",payload:Te});const Ce={...Z,plan:Te};return Ya(Ce,...)` (binding a variabile + `freshState` minified come `Ce`)
+
+Mapping minify: `Te`→`newPlan`, `Ce`→`freshState`, `Z`→`state`, `fe`→`syntheticEntry`, `Ya`→`rescheduleAllNotifications`. Il fix `freshState` è semanticamente nel bundle ma l'identificatore-stringa è scomparso (Rollup minify rinomina `const` locali in identificatori a 1-2 lettere).
+
+**Causa root candidata:** cache nascosta in `node_modules` non invalidata dalle pulizie targeted (`node_modules/.vite`, `node_modules/.cache`). Probabilmente esbuild deps cache o un livello di cache plugin Vite-PWA che usa un path/namespace non documentato. Nessuna evidenza diretta, ma il rebuild radicale è stato risolutivo deterministicamente. La rimozione di **`package-lock.json`** è verosimilmente l'elemento decisivo: riforza npm a re-risolvere le versioni transitive e a re-fetchare gli artefatti da scratch, by-passando qualsiasi cache di `npm ci`-style.
+
+**Falso positivo metodologico documentato (lezione critica):**
+- **"Test canary marker"** del §6.146 originale (prepend `// CANARY_<timestamp>` al sorgente, `grep` sul bundle) era **inconcludente by design**: i commenti vengono **sempre** rimossi dal minify Rollup, indipendentemente dalla cache. Quel test non distingue "sorgente non letto" da "sorgente letto + commento minified".
+- **`grep -c freshState dist/...`** come check di propagazione del fix in §11 era **invalido per produzione**: gli identificatori `const` locali sono rinominati. Nel bundle di un fix sano `grep freshState` può legittimamente dare 0.
+- **Pattern corretto** per verificare propagazione fix in bundle minified:
+  1. Confronto **semantico pre/post** (es. `t()` vs `Ce`)
+  2. **Sourcemap** se presente (in build corrente assente)
+  3. Verifica behavior runtime (P1-Px CP browser)
+  4. **MAI** affidarsi all'identificatore-stringa di un simbolo locale
+
+**Lessons-learned per il futuro:**
+- Pulizia cache Vite/Rollup affidabile = `rm -rf node_modules package-lock.json && npm install`. Le pulizie targeted (`node_modules/.vite`, `dist`, `node_modules/.cache`) **non sono sufficienti**. Documentare in §8 convenzioni come step di troubleshooting standard.
+- Mai usare commenti come canary marker per verificare che un build legga il sorgente.
+- Mai usare `grep <identifier-name>` su bundle production-minified come prova di presenza di un fix.
+
+**Status:** chiuso ✅. Soluzione: rebuild radicale.
+
+---
+
+## 6.147 — Plan cross-day: 27 entries su 3 giorni nel pristine state (Sessione 9-B parte 6/6, CP browser P1)
+
+**Sintomo:** post-hard-refresh, **prima di qualsiasi azione utente o `scheduleTestDose`**, `__pt.app.getState().plan` contiene **27 entries** distribuite su 3 giorni consecutivi (ieri, oggi, domani):
+
+```
+Object.keys(plan distribution): {2026-04-29: 9, 2026-04-30: 9, 2026-05-01: 9}
+plan.length: 27
+lastBuiltForDay: '2026-04-30'  (oggi, corretto)
+oggi_iso: '2026-04-30'
+simulatedNow: null
+status: 'ready'
+```
+
+Keys delle entries (ispezionate via `plan.map(e => e.key)`): rigorosamente univoche, pattern `dateStr-farmacoId-orarioId` (es. `2026-04-29-1-1`, `2026-04-30-1-1`, `2026-05-01-1-1`). Distribuzione 9 farmaci × 3 giorni rigorosa, niente duplicati, niente collisioni di key. Il plan **è costruito intenzionalmente** su tre giorni, non è accumulo da chiamate ripetute di `init`.
+
+**Domanda aperta:** intentional design o regression?
+
+- **Ipotesi A (intentional):** una sessione passata ha introdotto un orizzonte di look-ahead 3 giorni nel `planBuilder` (forse per supportare cross-midnight, prefetch per UI "domani", o pre-schedule notifiche oltre mezzanotte). Lo scope è disponibile in `plan` per UI ma il filtro applicativo (`selectEntriesForDay(state, today)`) restringe a 1 giorno per i consumi correnti (rescheduler notifiche, contatori homepage).
+- **Ipotesi B (regression):** lo scope del plan è sempre stato 1 giorno; l'estensione a 3 giorni è regression introdotta in qualche sessione recente (8c-2 / 8d-* / 9-* sospetti, dato che §22.x precedenti non menzionano cross-day esplicitamente). Bug bloccante: viola spec §3 (modello dati) + §4 (algoritmo ricalcolo).
+
+**Verifiche richieste in 9-C analisi-first:**
+1. Lettura spec §3 + §4 per scope ufficiale del piano
+2. `git log -- src/state/planBuilder.js src/domain/recalc.js` per identificare quando lo scope è cambiato
+3. Lettura `selectEntriesForDay`, `selectToday`, `rescheduleAllNotifications` per verificare se filtrano per `dateStr === today` (atteso) o accettano cross-day
+4. Verifica unit test: c'è un test che assert `plan.length === 9` per profilo 9-farmaci? Se sì, come passa con `plan.length === 27`? (mock specifico? ambiente test sterile vs runtime browser?)
+5. Decisione: se intentional → confermare e documentare in §3 spec; se regression → identificare commit responsabile + fix
+
+**Impatto su §6.148:** se §6.147 è regression, il plan cross-day potrebbe **mascherare** il bug §6.145 in runtime: la sintetica entra in `state.plan` (key con `dateStr` di oggi), ma `freshState = {...state, plan: newPlan}` propagato a `rescheduleAllNotifications` potrebbe non essere visto correttamente da `selectEntriesForDay(freshState, today)` se i selectors hanno comportamenti inattesi su plan cross-day. Va investigato CONGIUNTAMENTE a §6.148.
+
+**Status:** open, **bloccante per release v2.5.40**. Investigazione in 9-C analisi-first.
+
+**Aggiornamento Sessione 9-C (30/04/2026):** ✅ **CHIUSA — by-design** (AMB-9-C.A).
+
+**Verdetto:** plan cross-day intentional dal Step 5b-2 (`buildMultiDayPlan` §6.72, rehydration cross-day), non regression.
+
+**Evidenze convergenti (DIAG-1÷7 Mac-side):**
+
+| DIAG | Evidenza | Implicazione |
+|---|---|---|
+| DIAG-2 | `domain/constants.js`: `PLAN_DAYS_BEFORE=1`, `PLAN_DAYS_AFTER=1`, `PLAN_TOTAL_DAYS=3` | Look-ahead 3-day **dichiarato esplicitamente** |
+| DIAG-1 | `domain/planBuilder.js:101` itera `addDaysLocal(startDate, d)` su `d ∈ [0, PLAN_TOTAL_DAYS)` | Genera 3 giorni × N farmaci by-design |
+| DIAG-7 | I 3 add `+export const PLAN_DAYS_*` sono il **commit di introduzione**, niente storia di drift | Le costanti nascono già con valore 3 (Sessione 5b-2 §6.72) |
+| DIAG-6 | Ultimo touch `d5de70f` (9-A CP3 §6.115b) "planBuilder invariante §6.23 esteso", nessun cambio scope post-5b-2 | No regression recente |
+| DIAG-3 | `selectEntriesForDay(state, dateStr)` filtra correttamente `e.dateStr === dateStr` | Filtro applicativo presente e funzionante |
+| DIAG-5 | `rescheduleAllNotifications` (`services/notifications.js:170-171`) usa `selectEntriesForDay(state, today)` → restringe a 1 giorno | Consumer notifiche day-scoped corretto |
+
+**Risultato pristine state ricostruito:** 27 entries = 9 farmaci × 3 giorni (ieri / oggi / domani). Distribuzione corretta, nessun bug.
+
+**Impatto su §6.148:** ipotesi originale (plan cross-day maschera bug §6.145 via `selectEntriesForDay` rotto) **esclusa** — la sintetica ha `dateStr=today` (verificato in DIAG-RT-1: `sint_dateStr: '2026-04-30'`) e viene correttamente inclusa dal selettore.
+
+**Risoluzione:** zero codice toccato. Doc spec §3 raccomandato in 9-D closing per documentare scope esplicito (`state.plan` multi-day, scope `[today-PLAN_DAYS_BEFORE, today+PLAN_DAYS_AFTER]`, projection day-scoped via `selectEntriesForDay`). Non bloccante per release v2.5.40.
+
+**Lessons-learned:** un'osservazione runtime "anomala" può corrispondere a behavior intentional non documentato esplicitamente nella spec. Pre-investigazione standard: leggere costanti + lettore primario (planBuilder) + consumer (selectors) + git log; spesso 4 grep risolvono.
+
+---
+
+## 6.148 — Bug §6.145 sembra non sanato in runtime nonostante fix presente nel bundle (Sessione 9-B parte 6/6, CP browser P1)
+
+**Sintomo:** CP browser P1 (`scheduleTestDose(5)` con `Notification.permission === 'granted'`, eseguito ad ore valide ~15:43, sintetica per ~15:48 quindi `delay > 0` non-no-op):
+
+| Indicatore | Valore | Atteso | Esito |
+|---|---|---|---|
+| `getPendingCount()` pre | 3 | 3 | ✅ baseline |
+| `getPendingCount()` post `scheduleTestDose(5)` | **3** | 4 (3 sera + 1 sintetica) | ❌ |
+| `result.ok` | n.d. (Promise non ispezionato) | true | (probabile true, irrilevante) |
+| `state.plan` post | contiene la sintetica come key 27 | sì | ✅ (il dispatch SET_PLAN funziona) |
+
+Il fix §6.145 funziona a livello **dispatch+state** (la sintetica entra in `state.plan`) ma **non a livello `rescheduleAllNotifications`** (`getPendingCount` non sale).
+
+**Stato dei check:**
+- Unit test 375/375 verde, incluso `actions.scheduleTestDose.test.js` (3 test specifici §6.145 in §6.142)
+- Bundle servito contiene il pattern semantico post-fix (CP1.5 verde, vedi §6.146 chiusura)
+- Behavior runtime browser **non corrisponde** né alla source né al bundle né ai test unit
+
+**Ipotesi root cause (da investigare 9-C):**
+1. **H-A (correlato §6.147)** — `freshState = {...state, plan: newPlan}` propagato a `rescheduleAllNotifications`, ma `selectEntriesForDay(freshState, today)` filtra in modo inatteso per via del plan cross-day 27 entries. La sintetica ha `dateStr` corretto (oggi) o no? Se la sintetica è stata costruita da `scheduleTestDose` senza `dateStr` o con `dateStr` differente dal `today` calcolato dal selector, verrebbe filtrata via.
+2. **H-B (delay <= 0 silent no-op)** — `scheduleNotification` ha early-return su `delay <= 0` (vedi `notifications.js:64`). La sintetica per `+5min` ha `fireAt = Date.now() + 5*60*1000`, quindi `delay = 5*60*1000`, sicuramente > 0. **Esclusa** salvo bug grossolano nel calcolo di `fireAt` interno a `scheduleTestDose`.
+3. **H-C (entryKey collision)** — la sintetica costruita da `scheduleTestDose` usa una `entryKey` che collide con una entry già presente in `pending` Map → tag-based replacement (per design, vedi `notifications.js:65-68`) cancella e re-schedula sulla stessa key, mantenendo `pending.size === 3`. Pattern AMB-9.H. Da verificare: che `entryKey` ha la sintetica? Coincide con quella di una dose 20:30 (le 3 sere)?
+4. **H-D (race tra dispatch + rescheduleAllNotifications)** — il fix §6.145 dovrebbe averla risolta passando `freshState` esplicito (no `getState()` lazy), ma forse esiste un altro percorso async (es. `services` ha riferimento a uno snapshot di state stantio).
+
+**Investigazioni richieste in 9-C analisi-first:**
+1. Ispezione `entryKey` della sintetica vs quelle delle 3 sere preesistenti (ipotesi H-C)
+2. Tracing `rescheduleAllNotifications`: aggiungere log temp `console.log('reschedule-all:', state.plan.length, today, entries.length)` e ri-buildare con `VITE_PT_TOOLING=1`
+3. Ispezione `selectEntriesForDay` su `freshState` con plan 27 entries — quante entries oggi vede? La sintetica è inclusa?
+4. Verifica `dateStr` della sintetica in `state.plan` (se `undefined` o ≠ `today`, root cause = `scheduleTestDose` non setta `dateStr` correttamente)
+
+**Status:** open, **bloccante per release v2.5.40**. Investigazione CONGIUNTA con §6.147 in 9-C analisi-first (le due ipotesi H-A potrebbero risolvere entrambe).
+
+**Aggiornamento Sessione 9-C (30/04/2026):** ✅ **CHIUSA — falso positivo metodologico** (AMB-9-C.B).
+
+**Verdetto:** il fix §6.145 funziona deterministicamente. La discrepanza rilevata in CP browser parte 6/6 era un **artifact del protocollo di test in DevTools Console**: l'`async function` `scheduleTestDose` ritorna Promise pending; il `getPendingCount()` digitato in Console su riga separata legge `pending.size` **prima** che la microtask del thunk venga processata. Il valore stale `pending=3` è precisamente il valore baseline pre-thunk.
+
+**Dataset diagnostico DIAG-RT-1 (Chrome-side, IIFE async con await esplicito):**
+
+```js
+(async () => {
+  const before = __pt.notifications.getPendingCount();
+  const r = await __pt.app.actions.scheduleTestDose(5);
+  const afterAwait = __pt.notifications.getPendingCount();
+  await new Promise(res => setTimeout(res, 100));
+  const after100ms = __pt.notifications.getPendingCount();
+  // ... ispezione plan + sintetica ...
+})();
+```
+
+Output runtime (30/04/2026 ~17:15 wall-clock):
+
+| Misura | Atteso (sano) | Osservato | Diagnosi |
+|---|---|---|---|
+| `before` | 3 | **3** | ✅ baseline |
+| `afterAwait` | 4 | **4** | ✅ fix §6.145 funziona |
+| `after100ms` | 4 | **4** | ✅ no race async |
+| `plan_total` | 28 (=27 §6.147 + 1 sintetica) | **28** | ✅ |
+| `plan_dates` (3 distinte) | `[2026-04-29, 2026-04-30, 2026-05-01]` | match esatto | ✅ §6.147 by-design |
+| `sint_dateStr` | today (`2026-04-30`) | **`2026-04-30`** | ✅ |
+| `sint_ora_prevista` | now+5min wall-clock | **`17:15`** (now era `17:10`) | ✅ |
+| `sint_stato` | `'prevista'` | **`'prevista'`** | ✅ |
+| `sint_orario.farmaco_id` | farmaci[0].id reale | **1** | ✅ no collision con sentinel 999 |
+| `sint_orario.dose_numero` | 999 sentinel | **999** | ✅ |
+| `result.ok` | `true` | **`true`** | ✅ |
+
+**7 ipotesi root cause investigate, 6 escluse:**
+
+| Ipotesi | Stato | Evidenza esclusione |
+|---|---|---|
+| **H-A** plan cross-day filtra male sintetica | ❌ esclusa | DIAG-3 + DIAG-RT-1: `selectEntriesForDay` corretto, `sint_dateStr === today`, sintetica inclusa |
+| **H-B** `delay ≤ 0` no-op | ❌ esclusa | wall-clock `delay ≈ 5min > 0` |
+| **H-C** entryKey collision sentinel 999 | ❌ esclusa | DIAG-8/9: `dose_numero=999` non collide con dosi reali (1..N max) |
+| **H-D** race dispatch+reschedule async | ❌ esclusa | DIAG-11: `freshState` esplicito + DIAG-RT-1 `after100ms = afterAwait` (no race) |
+| **H-E** lookup farmaco fallisce | ❌ esclusa | DIAG-14: `selectFarmacoById` corretto, sint farmaco lookup match |
+| **H-F** secondo reschedule async post-dispatch (tick TICK_INTERVAL_MS=60s o `onForegroundEvent`) sovrascrive con stato stantio | ❌ esclusa | DIAG-RT-1 `after100ms = 4` invariato; tick non scatta in 100ms; focus rimane su Console durante test |
+| **H-G2** Promise non awaited (pattern Console) | ✅ **confermata** | DIAG-RT-1 `before=3, afterAwait=4` mostra che il valore osservato in §6.148 originale era pre-microtask |
+
+**Risoluzione:** zero codice toccato. Pattern operativo §6.149 (Console DevTools `await` mandatory) introdotto come lessons-learned reusabile.
+
+**Lessons-learned (parallelo metodologico §6.146):** in CP browser via Console, **mai leggere stato post-thunk async senza `await`**. `async function` ritorna sempre Promise pending; il check successivo digitato in Console su riga separata legge stato pre-microtask, contaminando la misurazione. Pattern corretto: IIFE async con `await` interno + `console.log` strutturato finale. Vedi §6.149 per pattern reusabile.
+
+---
+
+## 6.149 — Lessons-learned: Console DevTools `await` mandatory per check post-thunk async (Sessione 9-C analisi-first)
+
+**Sintesi:** in CP browser via Chrome DevTools Console, il pattern di lettura "fire-and-forget" su riga separata genera **falsi positivi** nel test di thunks async che mutano stato mediato da microtask. `async function` ritorna Promise pending; il check successivo eseguito in stessa tick sincrona legge stato **pre-microtask**, contaminando la misurazione.
+
+**Esempio falso-positivo (§6.148 originale):**
+```js
+__pt.app.actions.scheduleTestDose(5)
+// Console: Promise {<pending>}
+__pt.notifications.getPendingCount()
+// Console: 3   ← stale (microtask del thunk non ancora eseguita)
+```
+
+**Pattern corretto (§6.149):**
+```js
+(async () => {
+  const before = __pt.notifications.getPendingCount();
+  const r = await __pt.app.actions.scheduleTestDose(5);
+  const afterAwait = __pt.notifications.getPendingCount();
+  await new Promise(res => setTimeout(res, 100));   // intercetta eventuali reschedule async
+  const after100ms = __pt.notifications.getPendingCount();
+  console.log(JSON.stringify({ before, afterAwait, after100ms, /* + altri probe */ }, null, 2));
+})();
+```
+
+**Razionale:**
+1. **IIFE async** garantisce che il body sia eseguito in un contesto async coerente
+2. **`await` su Promise del thunk** forza la conclusione delle microtask del thunk prima del check
+3. **`await new Promise(setTimeout)` con delay piccolo (50-100ms)** intercetta eventuali reschedule async (es. `useEffect` reattivi su state change) che potrebbero rimuovere/sovrascrivere il risultato del thunk
+4. **`JSON.stringify` di un bundle di osservazioni** in singolo `console.log` evita output frammentato e rende la misurazione atomicamente leggibile
+
+**Contesto:**
+- Roberto digita comandi in Console DevTools manualmente; è **inevitabile** che due righe consecutive vengano eseguite su tick separate o su stessa tick
+- Anche con `Object.keys(__pt.app.actions)` è fattibile distinguere `async function` da funzioni sincrone, ma il pattern IIFE va applicato **per default** a qualsiasi check post-thunk per immunità contro async-future-changes
+- Il pattern non sostituisce gli unit test (vitest con `await act()` / `vi.runOnlyPendingTimers()`); è uno strumento di **runtime validation** per CP browser
+
+**Parallelo metodologico §6.146:** entrambe le deviazioni documentano antipattern di troubleshooting che producono conclusioni invalide:
+- §6.146: canary marker su commenti (rimossi dal minify) + `grep <identifier>` su bundle minified (rinominati) → falso negativo (fix sembra mancante)
+- §6.149: check stato sync post-thunk async senza `await` → falso positivo (bug sembra presente)
+
+**Da formalizzare in §8 convenzioni** come step di troubleshooting standard CP browser. Riferimento da inserire in §11 prompt CP browser future per riuso.
+
+**Status:** chiuso ✅ (lessons-learned non richiede fix code).
+
+---
+
 ## 7. Roadmap Fase 2 — avanzamento
 
 | Step | Contenuto | Stato | Note |
@@ -3227,7 +3584,8 @@ Raccomandata in apertura parte 5/5: **opzione A** per qualità + riusabilità. D
 | **8d-C** | Carryforward residuo 8d-B + 8d originale: §6.107 sticky separator re-investigation, §6.109 ProfiliTab focus restore, §6.108 NavBar bottom contrast, §6.85 nome_utente 3° timebox, §6.84 test router warning | ✅ **Completo** | 313 → 313 test invariati (Δ=0, target AMB-K' centrato). 4 commit Mac-side: `0283567` CP1 §6.110, `3406e33` CP3 §6.112, `af147e0` CP4 §6.113, `db30fae` CP5 §6.114. CP2 §6.111 zero-commit (h2 falsificata, hard-defer 8d-D). 5 nuove §6.110-§6.114, 4 chiuse (§6.96/§6.108/§6.85/§6.84). Bump v2.5.34 → v2.5.35 |
 | 9 | Notifiche locali (Notification API + scheduling Opzione 1 foreground-only) + **fix dominio §6.18 cross-midnight** (§6.26) | ⏳ **Analisi-first ✅** | Split in **9-A + 9-B** (analisi-first 26/04/2026, v2.5.36). 10 AMB-9.A÷J ratificate. Decisione scope: Opzione 1 senza server (Web Push backend Mac Mini differito a Fase 3 estesa post-Step 11) |
 | **9-A** | Wave A — fix dominio §6.18 cross-midnight: `ora_ricalcolata` TIME → TEXT ISO + 3 helper `utils/time.js` + Dexie v1→v2 migration `fake-indexeddb` + propagazione apply* + tear-down §6.26 (`isCrossMidnightRecalc` ISO-aware sostituisce HH:MM-heuristic) | ✅ **Completo** | 4 CP impl + CP browser 4 punti (P2 critico verde post-§6.118 fix; P1/P4 ambigui per pre-existing fuori scope §6.119/§6.120). 313 → 328 test (+15, target AMB-9.J 329 ±3 a -1). 5 commit branch `step-8` (`d5248a0`/`d0d4e5e`/`d5de70f`/`816a49f`/`0e70a38`). 9 deviazioni: §6.115a/§6.115b/§6.116/§6.116b/§6.117/§6.117a/§6.118 chiuse, §6.119/§6.120 deferred. Bump v2.5.36 → v2.5.37 |
-| **9-B** | Wave B — notifiche Opzione 1 foreground-only: `services/notifications.js` singleton + `hooks/useNotifications.js` + `utils/copy.js` + `rescheduleAllNotifications` puro + AppContext wiring (8 trigger) + chiave `notifiche_attive` Dexie + toggle UI in ImpostazioniTab | ⏳ **Impl 5/5 ✅ + hotfix §6.138 (commit `fada4a6`), CP browser deferred a parte 5/5** | Analisi-first ✅ 26/04/2026 (v2.5.38). Impl split in 3 parti: parte 1/2 ✅ 27/04/2026 v2.5.39 (CP1+CP2+CP3, 357/357 test, top `c158496`), parte 2/2 ✅ 27/04/2026 v2.5.40-rc (CP4 +10 test, top `530e983`, 8 deviazioni §6.125-§6.132), parte 3/3 ✅ 27/04/2026 v2.5.40-rc (CP5 +4 test, top `93c3d21`, 2 deviazioni §6.133-§6.134 + §6.135 infra). Stato: 371/371 test su 35 file. CP browser 6 punti (P1-P5+P8) deferred a parte 4/4 esecutiva, dimensionamento regola critica #5. Parte 4/4 esecutiva ✅ 27/04/2026 v2.5.40-rc.1 (setup PWA `§6.136`+`§6.137` revertati, hotfix §6.138 committed, P1 bloccato su §6.141 wall-clock setTimeout vs simulatedNow). Bump v2.5.40-rc.1 → v2.5.40 a chiusura parte 5/5 |
+| **9-B** | Wave B — notifiche Opzione 1 foreground-only: `services/notifications.js` singleton + `hooks/useNotifications.js` + `utils/copy.js` + `rescheduleAllNotifications` puro + AppContext wiring (8 trigger) + chiave `notifiche_attive` Dexie + toggle UI in ImpostazioniTab | ⏳ **Impl 5/5 + hotfix §6.138 + parte 5/5 parziale + parte 6/6 parziale + 9-C analisi-first ✅ chiude §6.147+§6.148 senza fix code** | Analisi-first ✅ 26/04/2026 (v2.5.38). Impl 1/2+2/2+3/3 ✅ 27/04/2026 v2.5.39→v2.5.40-rc. Parte 4/4 esecutiva ✅ 27/04/2026 v2.5.40-rc.1. Parte 5/5 esecutiva parziale ⚠️ 29/04/2026 v2.5.40-rc.2. Parte 6/6 implementativa parziale ⚠️ 30/04/2026 v2.5.40-rc.3 (§6.146 sbloccato; CP browser P1 ha rivelato §6.147+§6.148). **Sessione 9-C analisi-first ✅ 30/04/2026 v2.5.40-rc.4**: §6.147 chiuso by-design (AMB-9-C.A), §6.148 chiuso falso-positivo metodologico (AMB-9-C.B), §6.149 nuova lessons-learned. CP browser P2-P5+P8 + bump v2.5.40 deferred Sessione 9-D esecutiva snella. 375/375 test invariati |
+| **9-D** | Esecutiva snella post-9-C: completamento CP browser P2-P5+P8 (deferred parte 6/6) + bump v2.5.40 definitivo + cleanup `.bak.*` (12 untracked) + chiusura formale §6.147+§6.148+§6.149 + doc spec §3 update scope plan multi-day | ⏳ **Pianificata** | Browser-heavy / no-code-heavy. Stima ~15-20K token. Nessun fix code richiesto (entrambi i bug 9-B parte 6/6 chiusi senza codice in 9-C) |
 | 10 | Service worker attivo + manifest definitivo + icone | | |
 | 11 | Polish finale, QA, accessibilità estesa, gestione errori | | |
 
@@ -3342,69 +3700,140 @@ Chiarimenti risolti pre-Step 4b (AMB-1/2/3):
 ---
 
 
-## 11. Prossimo step — Sessione 9-B parte 5/5 analisi-first (CP browser unblocking + closing definitivo)
+## 11. Prossimo step — Sessione 9-D esecutiva snella (CP browser P2-P5+P8 deferred + bump v2.5.40 + cleanup + closing 9-B)
 
-**Stato baseline:** v2.5.40-rc.1 (post-Sessione 9-B parte 4/4 esecutiva). 371/371 test su 35 test files. Commit top `fada4a6` (hotfix §6.138). Catena: `93c3d21` CP5 → `f856b46` Changelog v2.5.40-rc → `fada4a6` hotfix §6.138. Backup `.bak.cp5` ancora su disco (Sessione 9-B parte 3/3 originale, espurgazione differita).
+**Stato baseline:** v2.5.40-rc.4 (post-Sessione 9-C analisi-first). 375/375 test su 36 test files. Catena commit branch `step-8` invariata vs parte 5/5 e parte 6/6:
+- `35fed4d` CP1.1 hotfix §6.145 (stateRef lag fix)
+- `3de09ab` CP1 §6.142 (`scheduleTestDose` thunk + 3 test)
+- `d7f252a` CP-pre §6.143+§6.144 (VITE_PT_TOOLING gate + icone PWA valide)
+- `6a403e0` Changelog v2.5.40-rc.1 (storico parte 4/4)
+- `fada4a6` hotfix §6.138 (storico parte 4/4)
+- `f856b46` Changelog v2.5.40-rc (storico parte 3/3)
 
-**Scope:** **analisi-first** per design workaround §6.141 (3 opzioni A/B/C in §6.141 §1), poi **esecutiva** dello stesso scope: CP browser P1-P5+P8 + CP6 closing definitivo + bump v2.5.40-rc.1 → **v2.5.40**.
+**Bundle servito:** `dist/assets/index-Cd8Of8Q2.js` (405628 byte, post-CP1A rebuild radicale parte 6/6). Pattern post-fix `freshState` confermato semanticamente nel bundle (vedi §6.146 chiusura) e validato runtime via DIAG-RT-1 (vedi §6.148 chiusura).
 
-### Razionale modalità analisi-first
+Backup `.bak.*` ancora su disco (12 untracked: 10 baseline §11 parte 5/5 + 1 `Changelog.bak2` user safety + 1 `package-lock.json.bak.cp1A` da CP1 Tentativo A parte 6/6), espurgazione pianificata in 9-D CP6 closing.
 
-§6.141 è blocker architetturale che richiede **decisione di design** prima del codice (3 opzioni con trade-off divergenti). La parte 4/4 esecutiva è fallita perché ha tentato CP browser senza pre-design del workaround test-dose. Pattern coerente con regola critica #1 (analisi prima dell'implementazione su task complesso) e §6.118 (validate concrete scenario, not literal prompt).
+**Scope:** sessione **esecutiva snella browser-heavy / no-code-heavy** dedicata a:
+1. completamento CP browser P2-P5+P8 deferred di parte 6/6 (validazione runtime AMB-9.E'/G'/H + permission revocation defensive + non-PWA fallback)
+2. eventuali fix code emergenti dai CP browser (best case zero, worst case 1-2 hotfix puntuali)
+3. doc spec §3 update: documentazione esplicita scope plan multi-day (`PLAN_DAYS_TOTAL=3`)
+4. bump v2.5.40 definitivo (release candidate finalizzata)
+5. cleanup `.bak.*` (12 untracked) + commit closing
+6. chiusura formale §6.147+§6.148+§6.149 nel changelog (già marcate CHIUSE in v2.5.40-rc.4, qui solo conferma post-CP browser)
 
-### Domande Q1-Q4 da fissare in apertura analisi-first
+### Razionale 9-C → 9-D (sessione esecutiva snella, niente split 9-D + 9-E)
 
-- **Q1 — Workaround §6.141:** A (consigliato `actions.scheduleTestDose`) / B (farmaco demo dinamico) / C (accept time-window only)?
-- **Q2 — Mitigazione §6.140 (init non re-arma):** investigation in-session o defer Wave-C? (raccomando defer, non bloccante)
-- **Q3 — UX §6.139 (button vs slider):** investigation in-session o defer Wave-C? (raccomando defer, fuori scope notifiche)
-- **Q4 — Setup ripetibile:** §6.136 + §6.137 patch+revert come parte stabile del CP browser setup, oppure refactor strutturale (es. `import.meta.env.VITE_PT_TOOLING`, gate `__pt` senza dipendere da DEV)?
+Sessione 9-C ha chiuso §6.147 (by-design via DIAG-1÷7 + DIAG-RT-1 conferma sintetica `dateStr=today`) e §6.148 (falso-positivo metodologico via DIAG-RT-1 deterministico) **senza richiedere fix code**. Decisione split implementativo originale (9-D singola vs 9-D+9-E) **decaduta**: niente codice da scrivere, solo CP browser deferred + bump + cleanup. Stima 9-D: ~15-20K token totali (browser-heavy).
 
 ### Workflow proposto
 
-1. **CP0 sanity-light** (4 gate): tree clean tranne `.bak.cp5` Sessione 9-B parte 3/3, top `fada4a6`, 371/371 in 35 file, ref §6.138 (atteso ≥1 in `notifications.js`)
-2. **Analisi-first:** Q1-Q4 risolte con AMB-parte5.A÷D congelate. Se Q1=A → CP1 nuovo thunk + test
-3. **Setup CP browser ripetibile:** patch `__pt` gate + icone (§6.136 + §6.137 ri-applicate, idempotenti via `.bak.cp-browser`), build, install PWA
-4. **CP1 (se Q1=A): scheduleTestDose** thunk + 1-2 test (target +2-3, 371→374±1)
-5. **CP browser P1-P5+P8 con simulatedNow disabled + scheduleTestDose attivo:**
-   - P1: `setNotifiche(true)` UI tap → `scheduleTestDose(5)` → permission prompt → `pending: 1`
-   - P2: `actions.presa(testKey)` → `pending: 0`. `cambiaProfilo(2)` → cancelAll + (eventuale reschedule)
-   - P3: `simulatedNow.set('23:55')` → tick rollover → `lastBuiltForDay` cambio. NB: P3 testa la **rebuild plan**, non lo schedule (che resta `pending: 0` finché non si rifa scheduleTestDose nel nuovo dateStr)
-   - P4: `scheduleTestDose(0.1)` → 6s wait → beep + Notification visibile
-   - P5: hide/show 2s + 3 flip rapidi <500ms → `pending` invariato (idempotenza AMB-9.E')
-   - P8: 2× `scheduleTestDose(5)` con stesso entryKey forzato → 1 sola Notification al fire (tag-as-Map-key)
-6. **CP6 closing definitivo:**
-   - Bump §1 + front-matter v2.5.40-rc.1 → **v2.5.40** (lockstep §6.69 — drift v2.5.34 perpetuato)
-   - §22.24 "Stato post-Sessione 9-B parte 5/5 implementativa (CP browser verde)"
-   - Documentare §6.NN nuove emerse (es. §6.142 scheduleTestDose se Q1=A)
-   - §7 row 9-B → ✅ **Completo**
-   - Cleanup `.bak.cp5` + `.bak.cp-browser` post-bump
-   - Revert §6.136 + §6.137 working tree (icone stub + gate restored) — oppure preservare se Q4 richiede ri-applicazione strutturale
-   - §11 sostituita con prompt esecutivo Sessione 9-C (valutazione cross-midnight UI §6.26 deferred + §6.119/§6.120/§6.139/§6.140 sospese) oppure salto Fase 3 Log
+1. **CP0 sanity-light** (4 gate Mac-side): tree clean tranne 12 untracked attesi, top `35fed4d`, 375/375 test in 36 file, bundle `index-Cd8Of8Q2.js` su disco
+2. **Setup CP browser:** preview attiva (`VITE_PT_TOOLING=1 npm run preview`), Chrome `http://localhost:4173`, DevTools Console dropdown `top`, verifica `typeof __pt === 'object'`
+3. **CP browser P2:** `visibilitychange` + `focus` event triggerano `rescheduleAllNotifications` (validazione AMB-9.G' trigger 8). Test: simulare blur/focus della tab, ispezionare `pending.size` pre/post via IIFE async pattern §6.149
+4. **CP browser P3:** `setSetting('notifiche_attive', 1)` → `rescheduleAllNotifications` (toggle on); `setSetting('notifiche_attive', 0)` → `cancelAll` (toggle off). Validazione AMB-9.G' trigger 6+7
+5. **CP browser P4:** `addFarmaco` / `updateFarmaco` / `deleteFarmaco` trigger reschedule (validazione AMB-9.G' trigger 5 — 7 thunks rilevanti). Test: aggiungere farmaco con orario futuro, ispezionare `pending` cresce di 1
+6. **CP browser P5:** rapid visibility flip foreground→background→foreground (5 cicli rapidi) — validazione AMB-9.E' "sincrona idempotente cancel-then-rebuild atomico". Test: `pending.size` finale = baseline, no leak
+7. **CP browser P8:** tag-based replacement entryKey collision — re-schedulare 2× `scheduleTestDose` per stesso farmaco con sentinel `dose_numero=999` → `pending.size` collapse a baseline + 1 (non +2). Validazione AMB-9.H
+8. **CP browser P6 (raccomandato):** permission revocation defensive — revocare manualmente Notification permission da Chrome Settings, focus tab → check `notifiche_attive` forzato a 0 (AMB-9.F' decision tree)
+9. **CP browser P7 (raccomandato):** non-PWA fallback — aprire URL in regular tab (no install) → toggle nascosto + banner "Installa l'app sulla home" (AMB-9.F' branch !isStandalone)
+
+### Pattern di test §6.149 mandatory
+
+Tutti i test in CP browser P2-P8 devono usare **IIFE async + `await` pattern** introdotto in §6.149:
+
+```js
+(async () => {
+  const before = __pt.notifications.getPendingCount();
+  // ... azione + await dei thunk ...
+  const after = __pt.notifications.getPendingCount();
+  await new Promise(res => setTimeout(res, 100));
+  const after100ms = __pt.notifications.getPendingCount();
+  console.log(JSON.stringify({ before, after, after100ms, /* + altri probe */ }, null, 2));
+})();
+```
+
+Mai leggere `getPendingCount()` su riga separata post-thunk async (rischio falso-positivo §6.148 stile).
+
+### Doc spec §3 update (post-CP browser, pre-bump)
+
+Aggiungere a `PharmaTimer_Project_Spec.md` §3 "Modello dati" la nota:
+
+> `state.plan` è multi-day per intentional design dal Step 5b-2. Scope: `[today − PLAN_DAYS_BEFORE, today + PLAN_DAYS_AFTER]` con `PLAN_DAYS_TOTAL = PLAN_DAYS_BEFORE + 1 + PLAN_DAYS_AFTER` (default `3`). Le projection day-scoped per UI/notifiche avvengono via `selectEntriesForDay(state, dateStr)`. Vedi `PharmaTimer_Changelog_Fase2.md` §6.147 (chiusura by-design Sessione 9-C).
+
+### CP6 closing (post-CP browser P2-P8 verdi)
+
+1. **Bump v2.5.40-rc.4 → v2.5.40 definitivo** in changelog front-matter + sommario §1
+2. **§7 row 9-B** marcata `✅ Completo` con riferimento commit closing
+3. **§7 row 9-D** marcata `✅ Completo` con riferimento dataset CP browser
+4. **Cleanup `.bak.*`** (12 untracked):
+   ```
+   echo 'Cleanup backup files post-9-D closing'
+   rm -f PharmaTimer_Changelog_Fase2.md.bak2
+   rm -f package-lock.json.bak.cp1A package.json.bak.cp-pre
+   rm -f public/icons/icon-192.png.bak.cp-pre public/icons/icon-512.png.bak.cp-pre public/icons/icon-maskable-512.png.bak.cp-pre
+   rm -f src/components/config/ImpostazioniTab.jsx.bak.cp5 src/components/config/ImpostazioniTab.test.jsx.bak.cp5
+   rm -f src/state/AppContext.jsx.bak.cp-pre
+   rm -f src/state/actions.js.bak.cp1 src/state/actions.js.bak.cp1.1
+   rm -f src/state/actions.scheduleTestDose.test.js.bak.cp1.1
+   git status --short
+   ```
+5. **Commit closing 9-D:**
+   ```
+   echo 'Commit closing Sessione 9-D'
+   git add -A
+   git commit -m '9-D closing — CP browser P2-P8 verdi + cleanup .bak.* + bump v2.5.40'
+   ```
+6. **Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude.ai** con la versione **v2.5.40** (deliverata in 9-D closing)
 
 ### Pattern operativi da rispettare
 
-- Pre-codice §6.118 applicabile a CP1 (se Q1=A) — validate scheduleTestDose contro entry shape canonico §6.138
-- Approval esplicita tra step (regola critica #4) — chiusura punto per punto in CP browser
 - Bash zsh-safe (echo single-quoted, no `#`, no apostrofi italiani)
-- Setup §6.136+§6.137 ri-applicato via `bash ~/Downloads/installer_*.sh` (riusare l'installer §6.137 dalla parte 4/4 se ancora disponibile, oppure rigenerare)
-- Se emergono altri bug latenti shape/path durante CP browser: deviazione `§6.NN` documentata, fix come CP separato (precedente §6.138 conferma il pattern)
+- Approval esplicita tra step (regola critica #4) — chiusura punto per punto
+- **Niente codice in 9-D salvo emergenze** (best case zero codice; se emergono bug runtime in CP browser P2-P8, applicare hotfix puntuali con §6.NN dedicata)
+- Se un CP browser fallisce con bug nuovo, **non bloccare la sessione**: documentare come §6.NN deferred a 9-E e procedere con bump v2.5.40 limitato ai CP verdi (regola critica #5)
+- Markdown autolink: usare `window['__pt']['app']` (bracket notation) per evitare autolink Console su `pt.app`
 
-### Riferimenti AMB già fissati
+### Riferimenti AMB carryforward
 
-- AMB-9.E' (sincrona idempotente cancel-then-rebuild atomico) — pendente validazione P5
-- AMB-9.F' (decision tree 4 stati permission) — UI verde unit test CP5; runtime UX rifinitura §6.139 deferred
-- AMB-9.G' (8 trigger reschedule) — pendente validazione P2 (cambiaProfilo) + P3 (rollover)
-- AMB-9.H (tag-based replacement entryKey) — pendente validazione P8
-- AMB-9.I (rilevamento revoche post-subscribe) — coperto unit, P6 skip confermato
+- AMB-9.E' (sincrona idempotente cancel-then-rebuild atomico) — validazione runtime in CP browser P5
+- AMB-9.F' (decision tree 4 stati permission) — validazione runtime in CP browser P6+P7 (raccomandati)
+- AMB-9.G' (8 trigger reschedule) — validazione runtime in CP browser P2/P3/P4
+- AMB-9.H (tag-based replacement entryKey) — validazione runtime in CP browser P8
+- AMB-9.I (rilevamento revoche post-subscribe) — coperto unit + validazione runtime in CP browser P6
+- **AMB-9-C.A** (§6.147 by-design) — chiuso in 9-C, conferma in 9-D via doc spec §3 update
+- **AMB-9-C.B** (§6.148 falso-positivo) — chiuso in 9-C, pattern §6.149 reusabile in CP browser P2-P8
 
 ### Stima token
 
-~40-55K token totali (analisi-first ~12K + CP1 impl ~8K + CP browser ~15K + CP6 closing ~10K). Margine per eventuali §6.NN.
+~15-20K token totali (CP0 sanity ~2K + setup CP browser ~2K + 5 CP browser core P2-P5+P8 ~6-8K + 2 CP browser raccomandati P6+P7 ~2-3K + CP6 closing bump+cleanup+commit ~3-4K + §11 sostituzione 9-E o "Step 10" ~1-2K). Sessione browser-heavy / no-code-heavy.
+
+### Comandi diagnostici di apertura proposti
+
+```
+cd ~/Sviluppo/pharmatimer
+echo 'CP0 9-D gate 1: git status'
+git status --short
+echo ''
+echo 'CP0 9-D gate 2: top commit chain'
+git --no-pager log --oneline -3
+echo ''
+echo 'CP0 9-D gate 3: test suite full run'
+npm test -- --run 2>&1 | tail -8
+echo ''
+echo 'CP0 9-D gate 4: bundle on disk'
+ls -la dist/assets/index-*.js
+echo ''
+echo 'CP0 9-D gate 5: branch'
+git branch --show-current
+```
+
+Atteso: 12 untracked `.bak.*`, top `35fed4d`, 375/375 in 36 file, `Cd8Of8Q2.js` 405628 byte, branch `step-8`.
 
 ### One-liner di apertura
 
 ```
-Esegui il prompt al §11 del Changelog (Sessione 9-B parte 5/5 analisi-first).
+Esegui il prompt al §11 del Changelog (Sessione 9-D esecutiva snella).
 ```
 
 ## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3 + 8-pre + 8a + 8b + 8c-parz + 8c-2
@@ -6769,3 +7198,235 @@ Costo metodologico: ~5min setup + ~2min/iteration. Beneficio: zero round-trip Ma
    Esegui il prompt al §11 del Changelog (Sessione 9-B parte 5/5 analisi-first).
    ```
 
+## 22.24 Stato post-Sessione 9-B parte 6/6 implementativa parziale (sblocco §6.146 + scoperta §6.147+§6.148)
+
+**Esito:** ⚠️ **PARZIALE** — §6.146 sbloccato ✅ (CP1 Tentativo A risolutivo), CP browser P1 ❌ ha rivelato due bug runtime indipendenti (§6.147 plan cross-day + §6.148 §6.145 disconnect bundle/runtime), CP browser P2-P5+P8 deferred Sessione 9-C analisi-first. Bump v2.5.40 NON eseguito. Bump cosmetico v2.5.40-rc.2 → **v2.5.40-rc.3**.
+
+### Sintesi ottenuti
+
+| CP | Scope | Esito | Riferimento |
+|---|---|---|---|
+| CP0 sanity-light | 4 gate (tree+commit+grep+test) | ✅ | 12 untracked invece di 10 (extra: `.bak2` Changelog user-safety + nessuna anomalia bloccante) |
+| CP1 Tentativo A | rebuild radicale `rm -rf node_modules package-lock.json && npm install && npm run build:tooling` | ✅ | bundle `Ci2FlSxN` (405564b) → `Cd8Of8Q2` (405628b, +64b) |
+| CP1.5 verifica falso positivo | check semantico bundle pre/post | ✅ | pattern `SET_PLAN",payload:Te` confermato (`Te=newPlan`, `Ce=freshState` minified). §6.146 falso positivo metodologico documentato |
+| Setup CP browser | preview + Chrome + clear site data + dropdown context `top` | ✅ | richieste 2 iterazioni (SW residuo, dropdown `(no item select…)`); pattern stabilizzato |
+| CP browser P1 | `scheduleTestDose(5)` → atteso `pending: 4` | ❌ | osservato `pending: 3` ad ore valide (delay > 0). §6.148 nuovo |
+| CP browser P1 (collateral) | ispezione `state.plan` pristine | ❌ scoperta | 27 entries × 3 giorni (`2026-04-29 / 04-30 / 05-01`), keys univoche pattern intentional. §6.147 nuovo |
+| CP browser P2-P5+P8 | restanti CP | ⏸️ deferred 9-C | bloccato da §6.147+§6.148 |
+| CP6 closing v2.5.40 | bump definitivo | ⏸️ deferred 9-C+ | non possibile finché §6.147+§6.148 aperti |
+
+### Deviazioni introdotte / chiuse
+
+| Deviazione | Stato | Note |
+|---|---|---|
+| §6.146 | **CHIUSA** ✅ | Causa root candidata: cache nascosta in `node_modules`/`package-lock.json` non invalidata da pulizie targeted. Soluzione: rebuild radicale. Falso positivo metodologico documentato (canary marker su commenti = inconcludente; `grep <identifier>` su bundle minified = invalido per identificatori locali). Lessons-learned in §6.146 closing |
+| §6.147 | **NUOVA — open** | Plan cross-day 27 entries (3 giorni). Intentional vs regression — verifica in 9-C |
+| §6.148 | **NUOVA — open** | §6.145 fix presente nel bundle (verifica CP1.5) ma `pending_post=3` invece di 4 in runtime. Disconnect unit-test/bundle/runtime. 4 ipotesi root cause H-A÷H-D documentate, H-B esclusa via wall-clock. Investigazione in 9-C |
+
+### Lessons-learned operative
+
+1. **Cache Vite/Rollup cleaning affidabile** = `rm -rf node_modules package-lock.json && npm install`. Targeted clean (`node_modules/.vite`, `dist`, `node_modules/.cache`) **non sufficienti**. Documentare in §8 convenzioni come step di troubleshooting standard
+2. **Mai canary marker su commenti** per verificare che un build legga il sorgente — i commenti sono sempre rimossi da minify, indipendentemente da cache
+3. **Mai `grep <identifier-name>` su bundle production-minified** come prova di presenza di un fix — gli identificatori `const`/`let` locali sono rinominati. Patterns validi: confronto semantico pre/post, sourcemap, behavior runtime
+4. **CP browser è scoperta-friendly per definizione** — può rivelare bug latenti invisibili agli unit test (375/375 verde non garantisce runtime sano). Pattern §6.138/§6.145/§6.147/§6.148 conferma: ogni sessione esecutiva post-implementativa ha rivelato almeno 1 bug nuovo. Da preventivare margine di scoperta in tutti i prompt CP browser futuri
+5. **Service Worker su `vite preview`** può rubare il control del frame `top` lasciando dropdown DevTools `(no item select…)`. Workaround: Application → Storage → Clear site data **deselezionando IndexedDB** (preserva dati app), tab nuova, riapri DevTools. Documentare in §6.143+ doc CP browser come step preliminare standard
+6. **Markdown autolink Console** — il client Claude.ai può autolinkare token simili a TLD (`pt.app` = TLD valido) in `[pt.app](http://pt.app)` markdown, rompendo JS incollato in DevTools Console. **Pattern operativo:** usare `window['__pt']['app']` (bracket notation) o equivalenti che evitino sintassi sensibile a markdown autolink
+
+### Decisioni operative parte 6/6
+
+| Decisione | Razionale |
+|---|---|
+| **Niente bump v2.5.40 definitivo** | §6.147+§6.148 open, behavior runtime non validato. Bump prematuro sarebbe regression pubblicizzata |
+| **Bump cosmetico v2.5.40-rc.2 → v2.5.40-rc.3** | Documentazione changelog avanzata + §6.146 chiusura, ma niente release marker |
+| **Cleanup `.bak.*` deferred 9-D+** | Pattern §6.135: backup sopravvivono fino al CP6 closing definitivo. Parte 6/6 non chiude scope |
+| **§6.146 chiusura intra-sessione** | Causa root candidata + soluzione + lessons-learned già consolidati, no investigazione ulteriore richiesta |
+| **§6.147+§6.148 a 9-C analisi-first** | Bug runtime con root cause non triviale — investigazione strutturata Q&A pattern, no quick-fix in-sessione (regola critica #1) |
+| **Sessione 9-C analisi-first** vs esecutiva | §6.147 può essere intentional (no fix code) o regression (revert/fix); §6.148 richiede design del fix, non può essere implementato senza prima isolare root cause. Analisi-first appropriata |
+
+### Stato git post-sessione
+
+- Branch: `step-8`
+- Top commit: `35fed4d` (invariato vs parte 5/5, no nuovi commit Mac-side in parte 6/6 — solo doc-side)
+- Working tree: 2 modificati (`PharmaTimer_Changelog_Fase2.md`, `package-lock.json`) + 12 untracked (10 baseline §11 parte 5/5 + 1 `.bak2` user safety + 1 `package-lock.json.bak.cp1A` da CP1A)
+- `package-lock.json` modificato come effetto collaterale di `npm install` post-`rm`. Idempotente da git perspective; opzionale committare se cambia versioni transitive significative — verifica in 9-C closing pre-bump
+- Bundle `dist/assets/index-Cd8Of8Q2.js` su disco (405628 byte, post-CP1A)
+- Preview spenta (kill PID 2413 fine sessione)
+
+### Hand-off a Sessione 9-C analisi-first
+
+§11 sostituita con prompt **Sessione 9-C analisi-first** dedicata a §6.147 + §6.148. Pattern Q&A 10 domande (Q1-Q5 §6.147, Q6-Q10 §6.148). Output atteso: AMB-9-C.A÷N congelate, decisione split implementativo (9-D singola o 9-D+9-E).
+
+Aprire Sessione 9-C (nuova conversazione Claude) con one-liner:
+```
+Esegui il prompt al §11 del Changelog (Sessione 9-C analisi-first §6.147 + §6.148).
+```
+
+
+## 22.25 Stato post-Sessione 9-C analisi-first (chiusura §6.147 + §6.148 senza fix code)
+
+**Data:** 30 aprile 2026.
+**Baseline test pre-sessione:** 375/375 su 36 test files (§22.24 post-9-B parte 6/6 parziale).
+**Baseline test post-sessione:** 375/375 invariato (analisi-first pura, zero codice scritto).
+**Bump:** v2.5.40-rc.3 → **v2.5.40-rc.4**.
+**Esito:** ✅ **Completo** — entrambe le deviazioni §6.147 + §6.148 chiuse senza fix code; pattern §6.149 reusabile introdotto; AMB-9-C.A+B congelate; decisione no-split (9-D singola sessione esecutiva snella).
+
+### Scope consegnato
+
+Sessione 9-C analisi-first aperta come one-liner `Esegui il prompt al §11 del Changelog (Sessione 9-C analisi-first §6.147 + §6.148).` (raccomandato in §11 v2.5.40-rc.3). Modalità Q&A iterativa con risposte deterministiche dirette dai DIAG (no Q&A pieno: dati DIAG univoci hanno risolto Q1-Q5 §6.147 in singola passata, e il runtime test DIAG-RT-1 ha risolto Q6-Q10 §6.148 in singolo CP browser).
+
+### Decisione strategica
+
+**Niente split implementativo 9-D + 9-E.** Le 3 opzioni del §11 v2.5.40-rc.3 ("split immediato in 9-D singola" / "9-D + 9-E split per regression" / "§6.148 sola in 9-D, §6.147 by-design in 9-C") **decadute tutte e tre** dato che entrambi i bug si rivelano non-bug:
+
+- §6.147 = intentional by-design dal Step 5b-2 (no fix code, doc spec §3 in 9-D closing)
+- §6.148 = falso-positivo metodologico (no fix code, pattern §6.149 reusabile)
+
+→ Sessione 9-D pianificata come **esecutiva snella browser-heavy** dedicata ai CP browser P2-P5+P8 deferred di parte 6/6 + bump v2.5.40 + cleanup + closing.
+
+### CP0 9-C verde (5/5)
+
+| Gate | Esito | Valore |
+|---|---|---|
+| 1 | tree status | ✅ 12 untracked attesi (10 baseline parte 5/5 + `Changelog.bak2` + `package-lock.json.bak.cp1A`) |
+| 2 | top commit chain | ✅ `35fed4d` (CP1.1 hotfix §6.145), parent `3de09ab`, parent `d7f252a` |
+| 3 | test suite full run | ✅ 375 passed in 36 files (6.82s) |
+| 4 | bundle on disk | ✅ `index-Cd8Of8Q2.js` 405628 byte |
+| 5 | branch | ✅ `step-8` |
+
+### Dataset diagnostico §6.147 (DIAG-1÷7 Mac-side)
+
+| DIAG | File / scope | Output rilevante | Conclusione |
+|---|---|---|---|
+| DIAG-1 | `domain/planBuilder.js` (`addDays|today|dateStr|day.*range|forEach.*day|PLAN_DAYS`) | riga 101 itera `addDaysLocal(startDate, d)` su `d ∈ [0, PLAN_TOTAL_DAYS)` | Genera N giorni contigui by-design |
+| DIAG-2 | `domain/constants.js` (`PLAN_DAYS_*`) | `PLAN_DAYS_BEFORE=1`, `PLAN_DAYS_AFTER=1`, `PLAN_TOTAL_DAYS=3` | Look-ahead 3-day **dichiarato esplicitamente** |
+| DIAG-3 | `state/selectors.js` (`selectEntriesForDay`) | `state.plan.filter(e => e.dateStr === dateStr)` | Filtro day-scoped corretto, niente bug |
+| DIAG-4 | `state/actions.js` (`scheduleTestDose`) | sintetica con `dateStr: today`, `orario.farmaco_id`, `dose_numero=999`, `stato='prevista'` | Shape canonica corretta |
+| DIAG-5 | `services/notifications.js` (`rescheduleAllNotifications`) | usa `selectEntriesForDay(state, today)` (riga 170-171), filtri `stato ∈ {prevista,ricalcolata}` (173), lookup farmaco corretto (176) | Consumer notifiche day-scoped corretto |
+| DIAG-6 | `git log` planBuilder/recalc/selectors | ultimo touch `d5de70f` (9-A CP3 §6.115b) "planBuilder invariante §6.23 esteso", precedenti commit di routine | Nessun drift cronologico recente |
+| DIAG-7 | `git log -p --follow constants.js` | I 3 add `+export const PLAN_DAYS_*` sono il commit di **introduzione**, niente storia di drift | Costanti nascono già con valore 3 (Sessione 5b-2 §6.72) |
+
+**Verdetto §6.147 (Q1-Q5 risolti):** intentional by-design → AMB-9-C.A.
+
+### Dataset diagnostico §6.148 (DIAG-8÷20 Mac-side + DIAG-RT-1 Chrome-side)
+
+**Mac-side (DIAG-8÷20):**
+
+- DIAG-8 `showDoseNotification` body: `entryKey = dose-{farmaco.id}-{entry.orario?.dose_numero}-{dateStr}`; `fireAt` da `ora_ricalcolata` (ISO) o `composeIsoDateTime(dateStr, ora_prevista)`. Nessun branch latente.
+- DIAG-9 `scheduleNotification`: tag-based replacement via `pending.has(entryKey)` + `clearTimeout`; `delay <= 0` early-return; `setTimeout` defensive `Notification.permission` check al fire.
+- DIAG-10 factory `createNotificationsService` + `pending` Map closure-private.
+- DIAG-11 body completo `scheduleTestDose`: `freshState = {...state, plan: newPlan}` esplicito post-dispatch (fix §6.145), no `getState()` lazy reread.
+- DIAG-13 `AppContext.jsx` consumer `rescheduleAllNotifications`: chiamato da `maybeReschedule(s)` (riga 146-149) gated su `s.impostazioni?.notifiche_attive === 1`. Trigger 3 (riga 169 tick rolling/rebuild) + trigger 2 (riga 179 `onForegroundEvent` su `visibilitychange`+`focus`).
+- DIAG-13b useEffect dependency arrays: stateRef update via `useEffect(() => { stateRef.current = state; }, [state])` (78-81), tick `setInterval(tick, TICK_INTERVAL_MS)` con cleanup.
+- DIAG-14 `selectFarmacoById` (selectors.js:125): `(state.farmaci || []).find(f => f.id === id) ?? null`. Corretto.
+- DIAG-15 4 test scheduleTestDose: (1) happy path canonical shape + showDoseNotification chiamato 1×, (2) NOT_READY rejection, (3) NO_FARMACI rejection, (4) state freshness §6.145 con dispatch mock no-mutate (verifica passing freshState esplicito).
+- DIAG-16 `TICK_INTERVAL_MS = 60_000` (1 minuto).
+- DIAG-17 reducer SET_PLAN: `return { ...state, plan: action.payload };` (preserva sintetica nel plan).
+- DIAG-18 maybeReschedule chiamato in 2 path: tick (rolling/rebuild) + onForegroundEvent.
+- DIAG-19 `actions.rebuildPlan`: ricostruisce plan da farmaci+orari via `buildMultiDayPlan` (NON preserva sintetica). Chiamato solo se `selectToday(s) !== s.lastBuiltForDay` (rollover detect).
+- DIAG-20 tick body completo: legge `stateRef.current`, rebuild solo a rollover, reschedule solo su rebuild OR rolling 30 tick. `onForegroundEvent` su `focus` reschedula sempre se ready.
+
+**Chrome-side (DIAG-RT-1, IIFE async pattern §6.149):**
+
+```
+{
+  "before": 3,
+  "afterAwait": 4,
+  "after100ms": 4,
+  "plan_total": 28,
+  "plan_dates": ["2026-04-29", "2026-04-30", "2026-05-01"],
+  "sint_present": true,
+  "sint_dateStr": "2026-04-30",
+  "sint_ora_prevista": "17:15",
+  "sint_stato": "prevista",
+  "sint_orario": {"farmaco_id": 1, "dose_numero": 999, "offset_minuti": 0},
+  "result": {"ok": true, "ora_prevista": "17:15", "farmacoId": 1}
+}
+```
+
+**Verdetto §6.148 (Q6-Q10 risolti):** falso-positivo metodologico → AMB-9-C.B + §6.149 nuova.
+
+### Tabella ipotesi root cause §6.148 (7 totali, 6 escluse)
+
+| Ipotesi | Stato | Evidenza esclusione |
+|---|---|---|
+| **H-A** plan cross-day filtra male sintetica | ❌ esclusa | DIAG-3 + DIAG-RT-1: selectEntriesForDay corretto, sint_dateStr === today, sintetica inclusa |
+| **H-B** delay ≤ 0 no-op | ❌ esclusa | wall-clock delay ≈ 5 min > 0 |
+| **H-C** entryKey collision sentinel 999 | ❌ esclusa | DIAG-8/9: dose_numero=999 non collide con dosi reali (1..N max) |
+| **H-D** race dispatch+reschedule async | ❌ esclusa | DIAG-11 freshState esplicito + DIAG-RT-1 after100ms = afterAwait (no race) |
+| **H-E** lookup farmaco fallisce | ❌ esclusa | DIAG-14 selectFarmacoById corretto, sint farmaco lookup match |
+| **H-F** secondo reschedule async post-dispatch (TICK_INTERVAL_MS=60s o onForegroundEvent) sovrascrive | ❌ esclusa | DIAG-RT-1 after100ms = 4 invariato; tick non scatta in 100ms; focus rimane su Console durante test; H-F sarebbe stato evidente con drop pending=4 → pending=3 entro la finestra di osservazione |
+| **H-G2** Promise non awaited (pattern Console) | ✅ **confermata** | DIAG-RT-1 before=3, afterAwait=4 mostra che il valore osservato in §6.148 originale era pre-microtask del thunk async |
+
+### AMB-9-C congelate (2 totali, no AMB.C÷N)
+
+| ID | Scope | Esito | Fix |
+|---|---|---|---|
+| **AMB-9-C.A** | §6.147 plan cross-day intentional vs regression | Intentional by-design (`PLAN_DAYS_TOTAL=3` da 5b-2 `buildMultiDayPlan` §6.72) | Zero codice. Doc spec §3 raccomandata in 9-D closing |
+| **AMB-9-C.B** | §6.148 §6.145 disconnect bundle/runtime | Falso-positivo metodologico (Promise non awaited in CP browser parte 6/6) | Zero codice. Pattern §6.149 reusabile per CP browser future |
+
+### Deviazioni introdotte / chiuse
+
+| Deviazione | Stato | Note |
+|---|---|---|
+| §6.147 | **CHIUSA ✅ by-design** | DIAG-1÷7 univoci, AMB-9-C.A. Doc spec §3 update in 9-D closing (non bloccante) |
+| §6.148 | **CHIUSA ✅ falso-positivo metodologico** | DIAG-RT-1 deterministico, AMB-9-C.B, 7 ipotesi H-A÷H-G2 (1 confermata, 6 escluse) |
+| §6.149 | **NUOVA — chiusa** | Lessons-learned Console DevTools `await` mandatory. Pattern operativo IIFE async + `await` interno + `console.log` strutturato finale. Parallelo metodologico §6.146 (canary marker su commenti / `grep <identifier>` su bundle minified). Da formalizzare in §8 |
+
+### Limitazioni note
+
+1. **Doc spec §3 update non eseguito in 9-C.** AMB-9-C.A richiede che §3 di `PharmaTimer_Project_Spec.md` documenti esplicitamente lo scope multi-day (`PLAN_DAYS_TOTAL=3`, projection day-scoped via `selectEntriesForDay`). 9-C ha congelato la decisione ma non l'ha attuata: scheduled per 9-D closing pre-bump v2.5.40.
+2. **CP browser P2-P5+P8 ancora deferred.** Validazione runtime AMB-9.E'/G'/H rimane a 9-D. Il pattern §6.149 (`await` mandatory) è ora formalizzato e va applicato a tutti i CP browser P2-P8.
+3. **CP browser P6+P7 raccomandati ma non obbligatori per bump v2.5.40.** Coverage AMB-9.F' decision tree 4 stati (permission revocation defensive + non-PWA fallback) è coperto da unit test CP5 9-B parte 3/3; runtime validation è defensive, non blocking.
+4. **`__pt.notifications` ancora esposto via `VITE_PT_TOOLING=1`.** Non da rimuovere prima del bump (CP browser P2-P8 lo richiedono). Possibile cleanup futuro Wave-C / Step 11 polish.
+
+### Lessons-learned operative
+
+1. **DIAG come strategia di compressione Q&A.** §6.147 è stato chiuso in singolo turno post-DIAG-1÷7 senza Q&A iterativa pulita: i dati DIAG erano univoci e convergenti. Pattern: quando 3+ DIAG concordano su una conclusione deterministica, scrivere il verdetto direttamente nelle AMB e chiedere conferma binaria all'utente, evitando il pattern Q1-Q5 sequenziale.
+2. **Pattern §6.149 (IIFE async + `await`) è obbligatorio per CP browser future.** Internalizzato in §11 9-D scope. Costo: ~2 righe in più di Console boilerplate. Beneficio: zero falsi-positivi tipo §6.148 originale.
+3. **Sessione 9-C ha esercitato pattern §6.118 (validare prima di concludere) senza scorciatoie.** 7 ipotesi indagate prima di chiudere §6.148, runtime test deterministico richiesto per dirimere H-G2 vs altre. Coerente con regola critica #2 (fermarsi su incongruenze).
+4. **Decisione "no-split 9-D + 9-E" risparmia 1 sessione.** Quando sessione analisi-first scopre che bug originali sono non-bug, decisione split decade automaticamente. Pattern: aggiornare §11 next-step con scope ridotto invece di forzare scope inflato per "completare" il piano originale (regola critica #5 dimensionamento).
+5. **Drift §6.69 v2.5.34 perpetuato in v2.5.40-rc.4.** Pattern fatto-storico immutabile §6.71/§6.85 conferma: gap v2.5.33 → v2.5.35 → ... → v2.5.40-rc.4 mantenuto, mai retrocorretto.
+
+### File prodotti / modificati
+
+**Modificati (docs):**
+- `PharmaTimer_Changelog_Fase2.md` — v2.5.40-rc.3 → **v2.5.40-rc.4** (questo delivery): front-matter, §1 entry v2.5.40-rc.4 nuova, §6.147 promossa CHIUSA by-design, §6.148 promossa CHIUSA falso-positivo, §6.149 NUOVA, §7 row 9-B aggiornata + row 9-D nuova pianificata, §11 sostituita con prompt esecutivo Sessione 9-D, §22.25 nuova.
+
+**Modificati (code):** nessuno (analisi-first pura).
+
+**Nuovi:** nessuno.
+
+### Azioni sul Mac post-Sessione 9-C analisi-first
+
+1. Stato git corrente: tree clean tranne 12 untracked `.bak.*` attesi, top `35fed4d` invariato. Convenzione progetto: KB-only, repo tracks code only.
+
+2. **Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude.ai** con la versione **v2.5.40-rc.4** (questo delivery).
+
+3. Commit Changelog separato (solo se il repo lo traccia — convenzione progetto: KB-only):
+   ```
+   echo 'Commit Changelog v2.5.40-rc.4 (opzionale, dipende da convenzione progetto)'
+   git add PharmaTimer_Changelog_Fase2.md 2>/dev/null && git commit -m 'Changelog v2.5.40-rc.4 (Sessione 9-C analisi-first)' || echo 'Changelog non tracciato in git, solo upload KB'
+   ```
+
+4. **Eseguire CP0 sanity-light** del prompt §11 v2.5.40-rc.4 prima di aprire Sessione 9-D:
+   ```
+   echo 'CP0 9-D sanity-light'
+   git status --short
+   git --no-pager log --oneline -3
+   npm test -- --run 2>&1 | tail -8
+   ls -la dist/assets/index-*.js
+   git branch --show-current
+   ```
+   Atteso: 12 untracked `.bak.*` (invariati post-9-C), top `35fed4d`, 375/375 in 36 file, `Cd8Of8Q2.js` 405628 byte, branch `step-8`.
+
+5. **Avviare preview con tooling esposto** prima di Sessione 9-D (richiesto per CP browser):
+   ```
+   echo 'Avvio preview con tooling esposto (richiesto per CP browser P2-P8 9-D)'
+   VITE_PT_TOOLING=1 npm run preview
+   ```
+   Lasciare il terminale aperto durante 9-D.
+
+6. Aprire Sessione 9-D (nuova conversazione Claude) con one-liner:
+   ```
+   Esegui il prompt al §11 del Changelog (Sessione 9-D esecutiva snella).
+   ```
