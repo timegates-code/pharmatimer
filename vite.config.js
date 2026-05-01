@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
       includeAssets: ["icons/*.png", "favicon.svg"],
       manifest: {
         name: "PharmaTimer",
@@ -29,6 +29,8 @@ export default defineConfig({
         ]
       },
       workbox: {
+        skipWaiting: false,
+        clientsClaim: false,
         globPatterns: ["**/*.{js,css,html,png,svg,woff2}"],
         cleanupOutdatedCaches: true,
         runtimeCaching: [
