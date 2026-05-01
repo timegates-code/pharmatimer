@@ -1,8 +1,8 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 2.5.40-rc.4
+**Versione:** 2.6.0
 **Data inizio fase:** 16 aprile 2026
-**Ultima modifica:** 30 aprile 2026 (Sessione 9-C analisi-first: §6.147 plan cross-day chiuso by-design + §6.148 §6.145 disconnect chiuso falso-positivo metodologico + §6.149 lessons-learned Console DevTools `await` mandatory; AMB-9-C.A÷B congelate; nessun fix code richiesto; CP browser P2-P5+P8 + bump v2.5.40 + cleanup `.bak.*` deferred a Sessione 9-D esecutiva snella)
+**Ultima modifica:** 30 aprile 2026 (Sessione Step 10-B esecutiva: CP4 SW registration + UpdatePrompt component + 6 unit test [3 registerSW + 3 UpdatePrompt]; CP4 hot-fix §6.154 vitest alias per `virtual:pwa-register` transform-time + mock fisico `src/test/__mocks__/virtualPwaRegister.js`; CP5 build verify [16 precache 430 KiB, bundle delta +1230 byte = 6% del +20KB budget, 5 asset precached, dist/sw.js 2057 byte, single-source SW no `dist/registerSW.js` inject]; CP6 chiusura con 2 commit [rebaseline `01a553f` package.json `0.1.0` → `2.5.42`, closing `959dc40` bump `2.5.42` → `2.6.0` + cleanup 8 backup `.bak.cp1` + `.bak.cp4*`]; 3 deviazioni nuove: §6.153 path/scope §11 vs filesystem reale (Sessione 9-B existing files), §6.154 vitest alias hot-fix per `virtual:pwa-register`, §6.155 disallineamento storico package.json vs changelog version recovery; baseline test 375 → **381/381** su 38 file (+6 esatto, target AMB-10.G centrato); AMB-10.A/C/G consumate; CP7 browser deferred a Step 10-C; nuova §22.29 Stato post-Step 10-B esecutiva; §11 sostituita con prompt esecutivo Step 10-C snella; bump v2.5.42 → **v2.6.0** definitivo)
 **Ambito:** Sviluppo PWA React standalone con persistenza locale, preparata per futuro swap verso backend FastAPI+MariaDB.
 
 Questo documento raccoglie le decisioni architetturali, la struttura del progetto, le deviazioni dalla specifica e lo stato di avanzamento della Fase 2. È il **punto di riferimento unico** per ogni sessione di sviluppo: leggerlo prima di iniziare garantisce continuità senza dover rileggere l'intero storico chat.
@@ -600,6 +600,49 @@ Questo documento raccoglie le decisioni architetturali, la struttura del progett
 - **Nuova §22.19** "Stato post-Sessione 9-A implementativa" con file prodotti, esiti CP1-CP4, esiti CP browser 4 punti (P2 verde post-§6.118; P1 ambiguo per §6.120 pre-existing; P3 visivo OK; P4 retry-ambiguo, focus restore non fa parte scope CP4).
 - **§11 sostituita** con prompt **Sessione 9-B analisi-first** (raccomandato vs esecutiva diretta dato lessons learned 9-A: spec semantics da rivalidare in browser, AMB-9.E÷I già ratificate ma edge cases iOS PWA permettono rifinitura).
 - 5 file codice modificati (`utils/uiState.js`, `utils/uiState.test.js`, `components/oggi/DoseCard.jsx`, `components/oggi/DoseCard.test.jsx`, `components/oggi/OggiView.jsx`) + 1 file modificato in CP1 (`utils/time.js`, `utils/time.test.js` nuovo) + 2 modificati CP2 (`data/db.js`, `package.json`, `data/db.migration.test.js` nuovo) + 2 modificati CP3 (`domain/recalc.js`, `domain/planBuilder.js` confermato, test estesi) + 1 modificato CP4 docs (`domain/types.js`).
+
+**Changelog versione 2.5.42 (rispetto alla 2.5.41-rc.1):**
+- **Sessione Step 10-A esecutiva parziale** completata 30/04/2026. CP1 + CP2 + CP3 (su 7 totali §11 v2.5.41-rc.1) eseguiti, **CP4-CP7 deferred a Step 10-B**. Baseline test invariata **375/375 su 36 test files** (CP1-CP3 toccano solo asset+config, zero codice testato). Bump v2.5.41-rc.1 → **v2.5.42** (intermedio; bump definitivo a v2.6.0 a CP6 closing Step 10-B).
+- **CP1 — Icone PWA definitive (AMB-10.D + AMB-10.E + AMB-10.F).** Nuovo file `scripts/genera-icone.mjs` (idempotente, sharp 0.34.5 + libvips 8.17.3). Consegna in 3 passi:
+  1. Sandbox-rendered (Linux/DejaVu Sans Bold via fallback `font-family: Helvetica, Inter, …, sans-serif`) → installer self-extracting con base64-encoded PNG + `.bak.cp1` backup dei 3 §6.144 placeholder esistenti. SHA-1 bit-perfect bridge sandbox↔Mac post-installer.
+  2. `npm install sharp --save-dev` Mac-side (Apple Silicon binario nativo prebuilt, zero compilazione).
+  3. Rigenerazione su Mac via `node scripts/genera-icone.mjs` → PNG hash diversi (Helvetica reale risolto dal first-of-chain). Decisione operativa Roberto: **commit dei Mac-rendered** per fedeltà AMB-10.D ("Helvetica/Inter bold mono"). Sandbox-rendered scartati post-rigen (recovery via re-run installer rimane disponibile fino a chiusura Step 10-B per pattern §6.135).
+  - File: `scripts/genera-icone.mjs` (new), `public/icons/icon-192.png` (regen, ex §6.144 placeholder), `public/icons/icon-512.png` (regen, ex §6.144 placeholder), `public/icons/icon-maskable-512.png` (regen ~10% safe area inner-80%, ex §6.144 placeholder), `public/icons/apple-touch-icon-180.png` (new), `public/favicon.svg` (new — viewBox 32×32, rounded `rx=6`, "PT" semplificato, bit-identico tra sandbox↔Mac perché plain text). `package.json` + `package-lock.json` aggiunta `"sharp": "^0.34.5"` in `devDependencies`. **3 file `.bak.cp1` preservati** in `public/icons/` fino a chiusura Step 10-B (cleanup pattern §6.135).
+- **CP2 — Manifest fields completati + index.html link tags (AMB-10.J + AMB-10.E + AMB-10.F).** Patcher Python anchor-based idempotente (`cp2-patcher.py`). Modifiche a `vite.config.js`: `includeAssets: ["icons/*.png"]` → `["icons/*.png", "favicon.svg"]`; manifest object esteso con `lang: "it"`, `dir: "ltr"`, `categories: ["medical", "health"]`; `purpose: "any"` esplicito su icon-192/512. Modifiche a `index.html`: rimosso `<link rel="apple-touch-icon" href="/icons/icon-192.png" />` (puntava a file generico), aggiunti `<link rel="icon" type="image/svg+xml" href="/favicon.svg" />` e `<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-180.png" />`. SHA-1 bit-perfect col sandbox: `vite.config.js=ad2ed1e5…`, `index.html=acdb7b87…`.
+- **CP3 — Workbox runtimeCaching scaffold (AMB-10.B).** Patcher Python anchor-based idempotente (`cp3-patcher.py`). Modifica a `vite.config.js` workbox object: aggiunta `cleanupOutdatedCaches: true` + array `runtimeCaching` con 1 regola attiva (icons CacheFirst su `/icons/*.{png,svg}`, ridondante col precache `globPatterns` ma scaffold per future icone dinamiche tipo avatar profilo) + 2 regole commentate (Google Fonts CacheFirst — uncomment se webfont remoti aggiunti — e API NetworkFirst — uncomment in Fase 3 quando backend FastAPI wired). 3 regex JS validate sintatticamente in sandbox via eval. SHA-1 post-CP3: `vite.config.js=aa03591a…`.
+- **Decisione di sessione split (regola critica #5):** dopo CP3 sessione consumata ~40K token, CP4 stimato 25-30K (registerSW + UpdatePrompt + 6 unit test, file più denso del §11). Split a Step 10-A/Step 10-B come da contingency già pre-frozen in §11 v2.5.41-rc.1 sezione "Stima token". Vantaggio: CP4 con UI a11y + token tema + mock `virtual:pwa-register` merita context fresh per qualità test coverage.
+- **Zero deviazioni §6.NN nuove.** Il font fallback DejaVu Sans → Helvetica tra sandbox e Mac è implementation detail dell'AMB-10.D (che cita Helvetica/Inter come stile non come binding); la regola runtime icons ridondante col precache è coerente con §11 letterale ("CacheFirst per `^/icons/`"); l'`apple-touch-icon` link rifattorizzato è coerente con §11 ("Aggiungere `<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-180.png">`" — il vecchio link generico veniva sostituito de facto).
+- **Pattern operativi rispettati:** bash zsh-safe (echo single-quoted, no `#`, no apostrofi italiani) per CP0 + 3 passi CP1; patcher Python idempotenti con detection `ALREADY-PATCHED` su anchor stringa esatta (no regex, no parsing JS) per CP2/CP3; pre-validation in sandbox con SHA-1 hash bridge prima di ogni delivery; backup `.bak.cp1` solo se file target esiste e backup non esiste già (idempotency su re-run).
+- **§11 sostituita** con prompt esecutivo **Step 10-B** (CP0 sanity-light esteso post-Step 10-A + CP4 registerSW + UpdatePrompt + 6 unit test + CP5 build verify + CP6 bump v2.6.0 closing + CP7 CP browser 4 punti deferred).
+- **Nuova §22.28** "Stato post-Sessione Step 10-A esecutiva parziale" con file delta CP1-CP3, dataset SHA-1, Decisioni in-session, riferimenti commit Mac-side, motivazione split.
+- **Aggiornamento roadmap §7:** Step 10 da pending a `⏸️ **Split in 10-A + 10-B**` (riferimento §22.28). Nuove righe **10-A ✅ Completo (parziale CP1-CP3)** + **10-B ⏳ Pianificata (CP4-CP7)**.
+- **Estensione §12** con file delta CP1-CP3 (6 nuovi: `scripts/genera-icone.mjs`, `public/favicon.svg`, `public/icons/apple-touch-icon-180.png`, e 3 PNG regenerati con titolo aggiornato). Titolo §12 esteso con "+ 9-A + 9-B + 9-D + 10-A".
+- **Drift §6.69 v2.5.34 NON retrocorretto** in v2.5.42 (continuità fatto-storico immutabile, §6.71/§6.85 archive).
+- Nessuna modifica a §3 struttura progetto. Nessuna nuova §6.NN. Commit code-side (sul Mac, branch `step-8`): 1 commit unitario CP1+CP2+CP3 `52f67bd` (10 file, 705 ins / 5 del). Commit Changelog alla consegna (KB-only, non tracked git).
+
+**Changelog versione 2.5.40 (rispetto alla 2.5.40-rc.4):**
+- **Sessione 9-D esecutiva snella** completata 30/04/2026. Browser-heavy / no-code-heavy come da §11 v2.5.40-rc.4. **5 CP browser core verdi** (P2/P3/P4/P5/P8) con AMB-9.E'/9.G'/9.H validati runtime via pattern §6.149 (IIFE async + monkey-patch counters su `__pt.notifications`). Baseline test invariata **375/375 su 36 test files** (zero codice). Bump v2.5.40-rc.4 → **v2.5.40 definitivo**.
+- **CP browser core 5/5 verdi:**
+  - **P2** — `visibilitychange` + `focus` reschedule: validazione AMB-9.G' trigger 8 + AMB-9.E' atomic. `pending=3` invariato, `cancelAll` incrementa coerentemente su entrambi i listener (handler vis-only vs focus-only wirati separatamente).
+  - **P3** — toggle `notifiche_attive` on/off: validazione AMB-9.G' trigger 6+7. Baseline `notifiche_attive=1` `pending=3` → `setSetting(0)` → `pending=0` (cancel sync, niente rebuild) → `setSetting(1)` → `pending=3` (cancel + rebuild atomic). `cancelAll` count coerente (0→1→2). Stabile post-100ms (no async tail leak).
+  - **P4** — thunks farmaci `addFarmaco` / `updateFarmaco` / `deleteFarmaco`: validazione AMB-9.G' trigger 5. Test data `P4_TEST_<TS>` con `tipo_frequenza='fisso', dosi_giornaliere=1`. `cancelAll` +1 per ogni thunk (0→1→2→3). `farmaci_count` ritorna a baseline post-delete (11→12→12→11). `pending=3` invariato (atomic).
+  - **P5** — rapid visibility flip stress test (5 cicli rapidi `blur→hidden→visible→focus`): validazione AMB-9.E' atomic idempotente sotto stress. `pending=3` in tutti i 13 snapshot (zero transient zero, zero drift). `cancelAll` cresce monotonicamente 0→15 (3 per ciclo: vis-hidden +1, vis-visible +1, focus +1). `post-200ms-settle` identico a `post-loop-sync` (no async leak).
+  - **P8** — tag-based replacement entryKey collision: validazione AMB-9.H. Doppio `scheduleTestDose(5, {farmacoId: 1})` con stesso `(farmaco_id, dose_numero=999, dateStr)`. `pending: 3 → 4 → 4` (replacement, non +2 affianco). `state.plan` accumula 2 sentinel entries (state-side append normale, decoupling state/notifications corretto). `r1.ora_prevista == r2.ora_prevista == "18:27"` conferma stesso entryKey.
+- **CP browser raccomandati P6+P7 skipped** come da §11 (raccomandati non gating). Coverage **AMB-9.F'** (decision tree 4 stati permission) e **AMB-9.I** (rilevamento revoche post-subscribe) rimane **unit-only**, deferred a Wave-C/Wave-D quando UI permission settings sarà più matura. Rationale: P6 richiede toggle manuale Chrome Settings poco automatizzabile (rischio inconcludente come Cmd+Tab di P2 v1), P7 richiede non-PWA tab non utile per validare scope corrente.
+- **3 nuove deviazioni minori §6.150-§6.152 introdotte (memo CP browser, non bug):**
+  - §6.150 — `__pt.wipe` undefined: mismatch con riferimento §6.113 nel changelog v2.5.34. Probe sorgente `grep -rn "wipe" src/` mostra solo commenti testuali (es. `actions.js:714`), nessuna funzione esposta su `__pt`. Lessons-learned **chiusa**: la safety net documentata in §6.113 non è esposta a runtime; non blocca CP P2-P8 (zero dipendenze).
+  - §6.151 — Limite di osservabilità monkey-patch property-level su `__pt.notifications`: il wrap di `cancelAll` / `scheduleNotification` / `cancelNotification` su property dell'oggetto esposto **non intercetta** call interne al modulo `services/notifications.js` (closure-private). Conseguenza: `schedule=0` osservato in tutti i CP P2-P5+P8 nonostante reschedule effettivo (verificato indirettamente via `pending` delta). Pattern §6.149 esteso: validazione via `pending` delta + `cancelAll` count, non via `schedule` count. Non bug, lessons-learned chiusa.
+  - §6.152 — `plan_entries` delta non strettamente lineare durante test multi-step async di durata >1s. Osservato in CP P4: post-delete-100ms `plan_entries: 29 → 27` (-2 invece di -1) per scadenza naturale di una dose pristine durante i ~3-4s di test (cursore now avanzato oltre offset). Non bug, conseguenza intenzionale di `selectEntriesForDay` che esclude entries con `ora_prevista < now`. Memo per future CP browser: usare snapshot `pending` per validazione atomicity, `plan` count solo come marker informativo. Non bug, lessons-learned chiusa.
+- **§6.147 + §6.148 + §6.149 confermate CHIUSE** post-CP browser: nessun nuovo finding emerso dai 5 CP core che richieda riapertura. AMB-9-C.A (plan cross-day by-design) e AMB-9-C.B (§6.145 falso-positivo metodologico) ratificate operativamente.
+- **Doc spec §3 update consegnato:** nuova **§3.8 "Modello dati state-side (Fase 2)"** in `PharmaTimer_Project_Spec.md` documenta `state.plan` multi-day, `PLAN_DAYS_TOTAL=3`, projection day-scoped via `selectEntriesForDay`. Cross-reference a §6.147 changelog. Spec passa da 443 → 453 linee. Sostituita nella KB Claude.ai durante CP6.2 di 9-D.
+- **Asimmetria documentata:** la spec è **KB-only** (non locale al filesystem progetto Roberto-side), il changelog è **KB+local**. §11 v2.5.40-rc.4 sottintendeva editing locale spec; nella realtà l'edit è server-side in chat con upload manuale lato Roberto. Memo per template prompt sessioni future.
+- **Cleanup 12 `.bak.*` untracked completato** in CP6.5 (era CP6 punto 4 di §11 v2.5.40-rc.4): 1 `Changelog.bak2`, 1 `package-lock.json.bak.cp1A`, 1 `package.json.bak.cp-pre`, 3 `public/icons/*.png.bak.cp-pre`, 2 `ImpostazioniTab*.bak.cp5`, 1 `AppContext.jsx.bak.cp-pre`, 2 `actions.js.bak.cp1*`, 1 `actions.scheduleTestDose.test.js.bak.cp1.1`. Tree post-cleanup pulito.
+- **Step 9 Notifiche ✅ chiuso** (9-A + 9-B + 9-C + 9-D). Wave A fix dominio §6.18 cross-midnight + Wave B notifiche Opzione 1 foreground-only + 9-C analisi-first chiusura §6.147+§6.148 + 9-D esecutiva snella validazione runtime AMB-9.E'/G'/H. Da analisi-first 26/04/2026 (v2.5.36) a release 30/04/2026 (v2.5.40): 4 giorni, 9 sotto-sessioni, da 313 a 375 test (+62), 38 deviazioni §6.115-§6.152.
+- **Aggiornamento roadmap §7:** Step 9-B `⏳` → `✅ **Completo**` (closing in 9-D). Step 9-D `⏳ Pianificata` → `✅ **Completo**` con riepilogo CP browser 5/5 verdi.
+- **§11 sostituita** con prompt **Step 10 analisi-first** (Service worker attivo + manifest definitivo + icone definitive). Step 10 = ultimo step tecnico Fase 2 prima di Step 11 polish. Coerente con pattern sessioni 9-* gestite analisi-first per scope ratification.
+- **Nuova §22.26** "Stato post-Sessione 9-D esecutiva snella" con dataset CP browser core 5/5, motivazione skip P6+P7, decisioni operative (split CP6.3a/CP6.3b, KB-only spec asimmetria), riferimento commit closing.
+- **Drift §6.69 v2.5.34 NON retrocorretto** in v2.5.40 (continuità fatto-storico immutabile, §6.71/§6.85 archive).
+- Nessuna modifica a §3 struttura progetto. Nessun nuovo file in §12 (sessione no-code).
 
 **Changelog versione 2.5.40-rc.4 (rispetto alla 2.5.40-rc.3):**
 - **Sessione 9-C analisi-first** completata 30/04/2026. Investigazione strutturata di **§6.147** (plan cross-day 27 entries) e **§6.148** (§6.145 fix presente nel bundle ma non sanante runtime), entrambi rivelati da CP browser P1 di parte 6/6. Esito: **entrambi i bug chiusi senza fix code**. Baseline test invariata **375/375 su 36 test files** (analisi-first pura). Bump cosmetico v2.5.40-rc.3 → **v2.5.40-rc.4**.
@@ -3545,6 +3588,255 @@ __pt.notifications.getPendingCount()
 
 ---
 
+## 6.150 — `__pt.wipe` undefined runtime: mismatch documentale §6.113 (Sessione 9-D CP0/CP browser setup)
+
+**Origine:** scoperto nel setup CP browser di Sessione 9-D durante mappatura API esposta su `__pt`. Il check `Object.keys(window['__pt'])` ritorna `['app', 'notifications']`, mentre `window['__pt']['wipe']` è `undefined`.
+
+**Contesto storico:** §6.113 (CP4 Sessione 8d-C) introduce `__pt.wipe()` come safety net per cleanup IndexedDB. La nota originale parlava di esposizione su `__pt`. Il probe runtime di 9-D dimostra che la funzione non è esposta (almeno non più, o forse mai a quel path).
+
+**Probe Mac-side:**
+```bash
+grep -rn "wipe" src/state/ src/utils/ src/components/ --include="*.js" --include="*.jsx" | grep -v ".test." | grep -v "swipe"
+```
+
+Output: solo commenti testuali (es. `actions.js:714` "Accept empty array (wipe all orari) for contract completeness;"), nessuna funzione esposta.
+
+**Impatto:** **nessuno** sui CP browser P2-P8 di 9-D (zero dipendenze). La safety net documentata non è disponibile a runtime, ma essendo un'utility manuale di cleanup IndexedDB non blocca alcun flow di test né il funzionamento utente.
+
+**Ipotesi (non investigate, tracciate per riferimento):**
+- Ipotesi A: il refactor 9-A/9-B ha rimosso `wipe` silenziosamente
+- Ipotesi B: `wipe` era esposto su sub-namespace `__pt.dev.wipe` (non su `__pt` flat) e §6.113 ha drift documentale
+- Ipotesi C: feature mai implementata, §6.113 documenta intento non eseguito
+
+**Status:** chiuso ✅ — lessons-learned. Constatazione documentale, non richiede fix code. Se il bisogno di safety net IndexedDB tooling-time emergerà in Step 10/11 polish (es. testing manuale rapido), può essere riaperto come deviazione attiva.
+
+---
+
+## 6.151 — Limite di osservabilità monkey-patch property-level su `__pt.notifications` (Sessione 9-D CP browser P2-P8)
+
+**Origine:** scoperto in CP browser P2 di 9-D durante introduzione del pattern monkey-patch counters per validare invocazione handler app-side.
+
+**Pattern applicato (P2-P8):**
+```js
+const N = window['__pt']['notifications'];
+const orig_cancelAll = N.cancelAll.bind(N);
+N.cancelAll = (...a) => { counters.cancelAll++; return orig_cancelAll(...a); };
+// idem per scheduleNotification, cancelNotification
+```
+
+**Osservazione:** in tutti e 5 i CP browser core (P2/P3/P4/P5/P8), `counters.cancelAll` incrementa coerentemente, ma `counters.schedule` resta `0` nonostante `pending` cresca/decresca correttamente (segno indiretto di reschedule effettivo).
+
+**Spiegazione:** le call interne al modulo `services/notifications.js` (es. dentro `rescheduleAllNotifications`) sono closure-private e fanno riferimento alle funzioni del modulo stesso (`scheduleNotification` import locale), non alla property `__pt.notifications.scheduleNotification` esposta. Il monkey-patch property-level wrap solo le call che passano attraverso l'oggetto `__pt.notifications` esposto a runtime, non le call interne al modulo.
+
+**Conseguenza per CP browser:**
+- ✅ `cancelAll` count attendibile (chiamato anche da rescheduleAllNotifications attraverso il singleton esposto? NO — coerente perché `cancelAll` è chiamato dall'**handler app-side** che usa `__pt.notifications.cancelAll` o equivalente esterno-al-modulo, mentre le `scheduleNotification` interne sono chiamate `from within the module` per ogni entry rebuild)
+- ❌ `schedule` count **inaffidabile** per validare AMB-9.E' rebuild
+- ✅ `pending` delta **affidabile** sempre (legge stato runtime del singleton)
+
+**Pattern §6.149 esteso:** validazione CP browser via (1) `pending` delta + (2) `cancelAll` count, **non** via `schedule` count.
+
+**Alternative considerate (non implementate, scope-creep):**
+- A: monkey-patch a livello di servizio interno (richiede esposizione tooling-only, scope creep notifications service)
+- B: counters lato-modulo gated `import.meta.env.VITE_PT_TOOLING` (più invasivo, deferribile)
+- C: usare solo `pending` delta (sufficiente per AMB-9.E'/G'/H, adottato in 9-D)
+
+**Status:** chiuso ✅ — lessons-learned operativa. Non bug, limit architetturale di osservabilità da documentare in §8 convenzioni come complemento al pattern §6.149. Se in Step 10/11 polish servirà osservabilità più fine (es. validazione coalesce/debounce), valutare opzione B con feature flag.
+
+---
+
+## 6.152 — `plan_entries` delta non strettamente lineare durante test multi-step async di durata >1s (Sessione 9-D CP browser P4)
+
+**Origine:** osservato in CP browser P4 (thunks farmaci) di 9-D, sequenza add → update → delete con sleep 100ms intermedi. Durata totale ~3-4s reali.
+
+**Sequenza `plan_entries`:** `28 → 28 → 29 → 29 → 29 → 29 → 27`.
+
+| Step | plan_entries | Note |
+|---|---|---|
+| baseline | 28 | normale |
+| post-add-sync | 28 | rebuild async ancora in volo |
+| post-add-100ms | 29 | +1 entry visibile (farmaco P4_TEST_<TS> con 1 dose) |
+| post-update-sync | 29 | update non cambia entries count |
+| post-update-100ms | 29 | stabile |
+| post-delete-sync | 29 | delete async ancora in volo |
+| post-delete-100ms | **27** | **-2 invece di -1** |
+
+**Spiegazione:** durante i ~3-4s di test, il cursore `now` (wall-clock o `simulatedNow` se attivo) ha avanzato oltre l'`ora_prevista` di una dose pristine (non sentinel, dose normale del farmaco demo). `selectEntriesForDay(state, today)` esclude entries con `ora_prevista < now` per coerenza day-scoped consumer. Il `-2` osservato è quindi `-1` (delete del farmaco P4_TEST) `+ -1` (scadenza naturale di una dose pristine durante il test).
+
+**Riproducibilità:** non deterministica — dipende dall'ora reale di esecuzione del test. Test eseguito a 18:00-18:01 ha attraversato la scadenza di una dose con `ora_prevista` prossima a quel momento.
+
+**Conseguenza per CP browser future:**
+- `pending` count e `cancelAll` count restano i marker primari per validazione AMB-9.E'/G'/H
+- `plan_entries` count è **marker informativo**, non pass criterion stringente
+- Test sequenziali multi-step di durata significativa non possono assumere conservazione lineare di `plan_entries` se intersecano un `ora_prevista` di dose pristine
+
+**Status:** chiuso ✅ — lessons-learned operativa. Non bug, conseguenza intenzionale di selezione day-scoped. Da menzionare nei prompt CP browser future come caveat di osservazione quando il test ha durata > 30 sec wall-clock.
+
+---
+
+## 6.153 — Step 10-B CP4: scope §11 path-rivisto vs filesystem reale (existing files Sessione 9-B)
+
+**Origine:** scoperta in CP0 Step 10-B (verifica baseline pre-impl) + paste filesystem Mac.
+
+**Discrepanza:** §11 v2.5.42 prescriveva 3 path errati rispetto al filesystem effettivo:
+
+| § 11 prescriveva | Realtà filesystem |
+|---|---|
+| `src/registerSW.js` (NEW) | `src/pwa/registerSW.js` esistente da Sessione 9-B parte 4/4 (scaffold dynamic-import `virtual:pwa-register`, single-export `registerSW()` no-args, single caller `main.jsx:50`) |
+| `src/components/UpdatePrompt.jsx` (NEW) | convenzione progetto colloca shared in `src/components/shared/` (NavBar, ConfirmModal, UnsavedChangesModal); path effettivo `src/components/shared/UpdatePrompt.jsx` |
+| `src/main.jsx` mount `<UpdatePrompt />` sopra `<NavBar />` | `<NavBar />` è in `App.jsx:41` dentro `<ThemedShell>`, non in `main.jsx` |
+
+**Decisioni operative:**
+- (a) **Rewrite** `src/pwa/registerSW.js` con API estesa `setupPWA()` + `subscribeUpdateAvailable(cb) → unsubscribe` + `triggerUpdate()` + `__TEST_ONLY_reset` per isolamento test. Single caller `main.jsx:50` da aggiornare → patcher banale, no path morti coesistenti.
+- (b) `src/components/shared/UpdatePrompt.jsx` + `.test.jsx` (allineamento convenzione progetto).
+- (c) Mount `<UpdatePrompt />` in `App.jsx` immediatamente prima di `<NavBar />` dentro `<ThemedShell>`. Modifica `main.jsx` limitata a rinomina import (`registerSW` → `setupPWA`) + chiamata bootstrap.
+
+**File deltas finali CP4:**
+- 1 rewrite: `src/pwa/registerSW.js` (88 righe, SHA `155ee827...`)
+- 3 new: `src/pwa/registerSW.test.js` (76 righe), `src/components/shared/UpdatePrompt.jsx` (95 righe), `src/components/shared/UpdatePrompt.test.jsx` (83 righe)
+- 2 modified (patcher idempotente anchor-based): `src/main.jsx` (rinomina line 6 + line 47), `src/App.jsx` (+1 import line 5, +1 mount line 42)
+
+**Conseguenza scope:** AMB-10.A/C/G inalterate sostantivamente. Target test 375 → 381 invariato. Pattern operativo da rinforzare nei futuri §11 esecutivi: **CP0 deve includere ricognizione attiva dei path prescritti**, non solo gate di stato sul commit precedente. Candidato di rinforzo per il template di apertura step esecutivi.
+
+**Status:** chiuso ✅ — patcher applicato, test 381/381, commit `959dc40` Step 10-B closing.
+
+---
+
+## 6.154 — Step 10-B CP4 hot-fix: `virtual:pwa-register` non risolvibile da vitest a transform-time, alias resolve + mock fisico
+
+**Origine:** test failure post-CP4 (1 file su 38 fail: `src/pwa/registerSW.test.js`, 0 test eseguiti, errore transform).
+
+**Sintomo:**
+```
+Error: Failed to resolve import "virtual:pwa-register" from "src/pwa/registerSW.js".
+Plugin: vite:import-analysis
+File: src/pwa/registerSW.js:48:17
+   return import('virtual:pwa-register')
+                  ^
+```
+
+**Root cause:** `vi.mock('virtual:pwa-register')` (suggerito implicitamente in §11 letterale) fallisce perché `vite:import-analysis` rifiuta l'import a transform-time, prima che `vi.mock` (runtime) possa intercettarlo. `vite-plugin-pwa` fornisce il modulo virtuale `virtual:pwa-register` solo durante build/dev (è registrato nei `plugins` di `vite.config.js`, NON di `vitest.config.js`). In ambiente test il plugin non è attivo → la stringa virtuale non risolve → `vite:import-analysis` rigetta il file prima di consegnarlo a vitest.
+
+**Opzioni considerate:**
+- **A** — helper iniettabile + `@vite-ignore`: scartata. Romperebbe la build production (il plugin-PWA richiede il letterale `'virtual:pwa-register'` per la sua trasformazione build-time; `@vite-ignore` lo escluderebbe dal dep graph).
+- **C** — test via API pubblica senza mock virtual: scartata. Non praticabile, le callback `onNeedRefresh` sono interne — niente modo di farle scattare senza accesso al mock.
+- **B'-1** (selezionata) — alias `resolve.alias` in `vitest.config.js` mappa la stringa virtuale a un file fisico mock con API test esplicita.
+
+**Implementazione:**
+- New file `src/test/__mocks__/virtualPwaRegister.js` (67 righe, SHA `78797f6e...`): mock fisico esporta `registerSW(options)` (compat firma plugin reale) + API test (`__setUpdateSWMock(fn)`, `__getLastOptions()`, `__getCallCount()`, `__reset()`). Late-binding wrapper su `updateSW` → `__setUpdateSWMock` invocabile prima o dopo `setupPWA()` con effetto identico.
+- Modify `vitest.config.js`: `+import { fileURLToPath } from 'node:url'` + blocco `resolve.alias` array form con regex `/^virtual:pwa-register$/` + replacement assoluto via `fileURLToPath(new URL(...))`. Patcher idempotente.
+- Rewrite `src/pwa/registerSW.test.js` (72 righe, SHA `bd847677...`): importa il mock via `'virtual:pwa-register'` (risolto dall'alias allo stesso file fisico che il SUT usa) anziché `vi.mock`. Pattern più deterministico, zero dipendenza da hoisting `vi.mock` di moduli virtuali.
+- `src/pwa/registerSW.js` invariato post-installazione CP4 originale.
+
+**Conseguenze:**
+- Build production intatta: l'alias vive solo in `vitest.config.js`. `vite-plugin-pwa` continua a generare il `virtual:pwa-register` reale al build (verificato in CP5: `dist/assets/virtual_pwa-register-DYrn-dMG.js` 760 byte presente).
+- Pattern `.bak.cp4-hf` distinto da `.bak.cp4` per non collidere con i backup CP4 originali.
+- Target test 381/381 invariato post-fix (3 test registerSW + 3 test UpdatePrompt + 375 baseline = 381).
+
+**Lessons-learned:** `vi.mock` non funziona per moduli `virtual:*` di plugin Vite — sono rejected at transform-time. Pattern §6.154 (alias resolve + mock fisico) è la canonica per testare codice che usa virtual modules da plugin Vite. Da considerare pre-impl in qualsiasi futuro test che tocchi virtual modules (es. eventuali altri plugin Vite che espongano `virtual:*`).
+
+**Status:** chiuso ✅ — alias attivo, 381/381 verde, commit `959dc40`.
+
+---
+
+## 6.155 — Disallineamento storico package.json (`0.1.0`) vs changelog version (`v2.5.x`), recovery via rebaseline commit dedicato
+
+**Origine:** scoperta in CP6 Step 10-B durante esecuzione bump `package.json` 2.5.42 → 2.6.0.
+
+**Sintomo:** guard nello script CP6 ha rifiutato il bump:
+```
+ERRORE rebaseline: version corrente 0.1.0 != 2.5.42 atteso
+```
+Il `package.json` era rimasto a `"version": "0.1.0"` dall'init Step 1, mentre il Changelog Fase 2 aveva tracciato bump semantici v2.5.0 → v2.5.42 lungo le sessioni 5b → 10-A (40+ entries §22.x). Il bump documentato nei §22.x era esclusivamente *changelog-side* (header `**Versione:**`), mai propagato al `package.json`.
+
+**Aggravante:** il primo commit Step 10-B closing (`b0d2ed9`, poi annullato) era stato eseguito comunque, con subject "bump v2.6.0" mentre `package.json` restava a `0.1.0`. Commit semanticamente falso (subject non riflette il diff). Il fatto che il guard avesse stampato l'errore non è bastato a fermare l'esecuzione perché lo script bash non aveva `set -e` e la sequenza dei comandi è proseguita senza halt.
+
+**Recovery (Q1=C + Q2=A):**
+1. `git reset --soft 52f67bd` per smontare `b0d2ed9` mantenendo gli 8 file CP4+CP5 staged.
+2. Bump dedicato `0.1.0` → `2.5.42` (rebaseline allineamento storico) + commit isolato con SOLO `package.json`: hash `01a553f` "Rebaseline package.json 0.1.0 -> 2.5.42 (recupero disallineamento storico)".
+3. Bump finale `2.5.42` → `2.6.0` + ri-stage 8 file CP4+CP5 + commit closing: hash `959dc40` "Step 10-B closing — SW autoUpdate+prompt + bump v2.6.0 (PWA production-ready)".
+
+**Storia git post-fix lineare e onesta:**
+```
+959dc40 Step 10-B closing — SW autoUpdate+prompt + bump v2.6.0
+01a553f Rebaseline package.json 0.1.0 -> 2.5.42 (recupero disallineamento storico)
+52f67bd Step 10-A closing — icone PT + manifest fields + workbox
+376c610 9-D closing
+```
+
+**Pattern operativo da retrofittare:** ogni futuro CP che bumpa `package.json` deve aprire con guard di consistenza fra changelog version e package.json version. Da aggiungere a CP0 sanity-light template di tutti i futuri step "esecutiva" con bump in scope:
+```
+echo 'CP0 gate consistenza version: changelog vs package.json'
+CHANGELOG_V=$(grep -m1 '^\*\*Versione:\*\*' PharmaTimer_Changelog_Fase2.md | sed -E 's/.*\*\*Versione:\*\* (.+)/\1/')
+PACKAGE_V=$(grep -m1 '"version"' package.json | sed -E 's/.*"version": "(.+)",.*/\1/')
+echo "changelog: $CHANGELOG_V | package.json: $PACKAGE_V"
+```
+
+**Lessons-learned:** Mai eseguire commit con subject prescrittivo (es. "bump v2.6.0") senza verifica diff effettivo del file inciso. Un guard che stampa errore ma non halta è false safety. Considerare `set -e` nei blocchi bash di sequenze critiche dove un fallimento intermedio NON deve permettere agli step successivi di proseguire — bilanciato con il fatto che `set -e` rompe il flow conversazionale di blocchi multi-step (interrompe alla prima di N istruzioni). Compromesso possibile: guard espliciti che chiamano `exit 1` in caso di mismatch, in luogo di `raise SystemExit` Python che esce dallo heredoc ma non dal bash circostante.
+
+**Status:** chiuso ✅ — `package.json: "version": "2.6.0"`, storia git pulita post-fix, 2 commit `01a553f` + `959dc40`.
+
+---
+
+## 6.156 — Test-only timezone race in `notifications.test.js` (Step 10-C CP0 unblock)
+
+**Scoperta:** Step 10-C CP0 gate 4. Baseline attesa 381/381, osservato 379/381. Il file `src/services/notifications.test.js` aveva 2 test rossi, esclusivamente nel describe principale `'notifications service'`:
+- `showDoseNotification builds dose-tag and uses formatRelazionePastoCopy body`
+- `showDoseNotification with indifferente+null farmaco uses fallback "Promemoria farmaco" body`
+
+Il commit `959dc40` (Step 10-B closing) era stato consegnato verde. La regression è apparsa solo eseguendo i test in fascia notturna locale (~23:55 CEST).
+
+**Diagnosi:** il setup di entrambi i test costruisce `entry` mescolando timezone:
+
+```js
+const fireAt = t0 + 30 * 60_000;
+const dateStr = new Date(fireAt).toISOString().slice(0, 10); // UTC
+const hh = String(new Date(fireAt).getHours()).padStart(2, '0'); // locale
+const mm = String(new Date(fireAt).getMinutes()).padStart(2, '0'); // locale
+```
+
+`showDoseNotification` ricompone `fireAt` con parsing locale: ``new Date(`DATE_TPL`).getTime()`` dove `DATE_TPL` è la concatenazione `dateStr + 'T' + ora_prevista`. Se `t0+30min` cade già nel giorno locale successivo ma `dateStr` (UTC) è ancora il giorno corrente, il `fireAt` ricomposto cade ~23h nel passato → guardia `delay <= 0` → no-op silenzioso → `getPendingCount() === 0`.
+
+**Fix:** `beforeEach` interno al describe principale fissa `vi.setSystemTime(new Date('2026-04-27T12:00:00'))` — pattern già adottato nel describe `rescheduleAllNotifications` dello stesso file (creato in CP4 §6.131). +7 righe (block commento §6.156 + `beforeEach`), 0 modifiche al production code.
+
+**Impatto runtime:** zero. Bug interno al test setup, mai raggiunto in produzione perché AppContext costruisce `entry.dateStr` in modo coerente con `entry.ora_prevista` tramite selectors centralizzati.
+
+**Pattern lesson:** test che derivano `dateStr` ISO + `hh:mm` da uno stesso `Date` devono o (a) fissare l'orologio in fascia safe via `vi.setSystemTime`, oppure (b) derivare `dateStr` dal medesimo riferimento locale (`getFullYear`/`getMonth`/`getDate`). Mix UTC+locale è una bomba a orologeria timezone-sensibile. Pattern (a) preferito perché self-documenting e già consolidato altrove.
+
+**Versioning:** test-only fix, no bump. Resta `2.6.0`. Commit dedicato `d6719b5`.
+
+**Esito:** baseline 381/381 ripristinata, Step 10-C CP0 sbloccato, prosecuzione P1.
+
+## 6.157 — `<UpdatePrompt />` non scatta in `autoUpdate` mode (Step 10-C P3 fail genuino)
+
+**Scoperta:** Step 10-C P3 verifica end-to-end. Sequence eseguita (bump `package.json` 2.6.0→2.6.1-fake, rebuild, restart server, click DevTools "Update"), nuovo SW correttamente installato e attivato (`#23004 activated and is running`, timestamp 11:10:01), ma toast `<UpdatePrompt />` mai apparso e nessun cambio UI percepibile.
+
+**Root cause:** mismatch architetturale tra config workbox e codice subscriber.
+
+- `vite.config.js`: `registerType: "autoUpdate"` (riga 11)
+- `dist/sw.js` generato (workbox default per `autoUpdate`): contiene `self.skipWaiting()` + `e.clientsClaim()` → nuovo SW si attiva immediatamente bypassando lo stato `waiting`.
+- `src/pwa/registerSW.js`: callback `onNeedRefresh()` setta `updateAvailable = true` e notifica subscribers.
+- `src/components/shared/UpdatePrompt.jsx`: subscriber che mostra toast quando `available && !dismissed`.
+
+**Conflitto:** `onNeedRefresh` di `vite-plugin-pwa` è emesso **solo** quando esiste un SW in stato `waiting` che richiede consenso utente per attivarsi. Con `skipWaiting()` automatico, nessun SW entra mai in `waiting` → `onNeedRefresh` mai chiamato → `updateAvailable` resta `false` → toast invisibile.
+
+**Intent dichiarato vs realizzato:** il commento in `registerSW.js` esplicita "hybrid autoUpdate + prompt UI. User must consciously trigger reload to avoid losing volatile state (e.g. mid-intake) on PWA refresh." Questo intent **non è realizzato** dalla config attuale — `<UpdatePrompt />` è codice morto in produzione.
+
+**Falso positivo evitato — pattern §11 P3 step bump version:** prima della diagnosi corretta, il bump `package.json` da solo non cambia il bundle output (workbox precache hash dipendono da contenuto asset, non da version), generando `sw.js` byte-identical al precedente. Per ottenere un nuovo `sw.js` reale è servito introdurre una stringa runtime live (sopravvive al minify) in `src/main.jsx` (`window.__PT_CACHEBUST__ = <epoch>`). Pattern coerente con §6.146 (bundle deterministicamente uguale a sorgente patchato).
+
+**Opzioni di fix (deferred Step 10-C-fix):**
+
+1. **[RACCOMANDATA AMB-10-C-fix.A]** `registerType: "prompt"` in `vite.config.js` + workbox config esplicita `skipWaiting: false` + `clientsClaim: false` → `onNeedRefresh` scatta come da intent. Toast vince. Coerente con commento `registerSW.js`.
+2. `registerType: "autoUpdate"` invariato + rimuovere `<UpdatePrompt />` + accettare auto-aggiornamento silenzioso. Più semplice, ma rischio "lost mid-intake state" come paventato dal commento intent.
+3. Custom workbox plugin che emette `onNeedRefresh` anche in autoUpdate. Complesso, sconsigliato.
+
+**Impatto Step 10-C:** P3 fail documentato. P1+P2+P4 verdi. Step 10 milestone code-complete ma con TODO update flow → Step 10 non taggato `v2.6.0` come milestone definitivo, in attesa Step 10-C-fix.
+
+**Test impact:** zero. `UpdatePrompt.test.jsx` 3/3 verde — testa la logica subscriber unit-level isolata, non il flow SW end-to-end. La regression non è catturabile a unit-level (richiede integrazione SW + workbox).
+
+**Pattern lesson 1 — config-vs-intent drift:** verifica config-vs-intent in code review per Step PWA-related. Commenti che dichiarano intent ("hybrid X+Y") senza test integration corrispondente sono fonte di drift latente. Per Fase 3+, eventuali integration tests con MSW + Workbox mock potrebbero coprire flow SW end-to-end.
+
+**Pattern lesson 2 — verifiche browser PWA su `npx serve` localhost:** richiedono attenzione a (a) porta auto-fallback macOS quando 5000 occupata da AirPlay (Tahoe usa 5000 come default Control Center), (b) cache SW aggressiva tra restart server, (c) bundle deterministic anche con bump version-only. Per Step 10-C-fix il blocco P3 deve istruire un cachebust source-level reale, non bump version.
+
 ## 7. Roadmap Fase 2 — avanzamento
 
 | Step | Contenuto | Stato | Note |
@@ -3584,9 +3876,11 @@ __pt.notifications.getPendingCount()
 | **8d-C** | Carryforward residuo 8d-B + 8d originale: §6.107 sticky separator re-investigation, §6.109 ProfiliTab focus restore, §6.108 NavBar bottom contrast, §6.85 nome_utente 3° timebox, §6.84 test router warning | ✅ **Completo** | 313 → 313 test invariati (Δ=0, target AMB-K' centrato). 4 commit Mac-side: `0283567` CP1 §6.110, `3406e33` CP3 §6.112, `af147e0` CP4 §6.113, `db30fae` CP5 §6.114. CP2 §6.111 zero-commit (h2 falsificata, hard-defer 8d-D). 5 nuove §6.110-§6.114, 4 chiuse (§6.96/§6.108/§6.85/§6.84). Bump v2.5.34 → v2.5.35 |
 | 9 | Notifiche locali (Notification API + scheduling Opzione 1 foreground-only) + **fix dominio §6.18 cross-midnight** (§6.26) | ⏳ **Analisi-first ✅** | Split in **9-A + 9-B** (analisi-first 26/04/2026, v2.5.36). 10 AMB-9.A÷J ratificate. Decisione scope: Opzione 1 senza server (Web Push backend Mac Mini differito a Fase 3 estesa post-Step 11) |
 | **9-A** | Wave A — fix dominio §6.18 cross-midnight: `ora_ricalcolata` TIME → TEXT ISO + 3 helper `utils/time.js` + Dexie v1→v2 migration `fake-indexeddb` + propagazione apply* + tear-down §6.26 (`isCrossMidnightRecalc` ISO-aware sostituisce HH:MM-heuristic) | ✅ **Completo** | 4 CP impl + CP browser 4 punti (P2 critico verde post-§6.118 fix; P1/P4 ambigui per pre-existing fuori scope §6.119/§6.120). 313 → 328 test (+15, target AMB-9.J 329 ±3 a -1). 5 commit branch `step-8` (`d5248a0`/`d0d4e5e`/`d5de70f`/`816a49f`/`0e70a38`). 9 deviazioni: §6.115a/§6.115b/§6.116/§6.116b/§6.117/§6.117a/§6.118 chiuse, §6.119/§6.120 deferred. Bump v2.5.36 → v2.5.37 |
-| **9-B** | Wave B — notifiche Opzione 1 foreground-only: `services/notifications.js` singleton + `hooks/useNotifications.js` + `utils/copy.js` + `rescheduleAllNotifications` puro + AppContext wiring (8 trigger) + chiave `notifiche_attive` Dexie + toggle UI in ImpostazioniTab | ⏳ **Impl 5/5 + hotfix §6.138 + parte 5/5 parziale + parte 6/6 parziale + 9-C analisi-first ✅ chiude §6.147+§6.148 senza fix code** | Analisi-first ✅ 26/04/2026 (v2.5.38). Impl 1/2+2/2+3/3 ✅ 27/04/2026 v2.5.39→v2.5.40-rc. Parte 4/4 esecutiva ✅ 27/04/2026 v2.5.40-rc.1. Parte 5/5 esecutiva parziale ⚠️ 29/04/2026 v2.5.40-rc.2. Parte 6/6 implementativa parziale ⚠️ 30/04/2026 v2.5.40-rc.3 (§6.146 sbloccato; CP browser P1 ha rivelato §6.147+§6.148). **Sessione 9-C analisi-first ✅ 30/04/2026 v2.5.40-rc.4**: §6.147 chiuso by-design (AMB-9-C.A), §6.148 chiuso falso-positivo metodologico (AMB-9-C.B), §6.149 nuova lessons-learned. CP browser P2-P5+P8 + bump v2.5.40 deferred Sessione 9-D esecutiva snella. 375/375 test invariati |
-| **9-D** | Esecutiva snella post-9-C: completamento CP browser P2-P5+P8 (deferred parte 6/6) + bump v2.5.40 definitivo + cleanup `.bak.*` (12 untracked) + chiusura formale §6.147+§6.148+§6.149 + doc spec §3 update scope plan multi-day | ⏳ **Pianificata** | Browser-heavy / no-code-heavy. Stima ~15-20K token. Nessun fix code richiesto (entrambi i bug 9-B parte 6/6 chiusi senza codice in 9-C) |
-| 10 | Service worker attivo + manifest definitivo + icone | | |
+| **9-B** | Wave B — notifiche Opzione 1 foreground-only: `services/notifications.js` singleton + `hooks/useNotifications.js` + `utils/copy.js` + `rescheduleAllNotifications` puro + AppContext wiring (8 trigger) + chiave `notifiche_attive` Dexie + toggle UI in ImpostazioniTab | ✅ **Completo** (closing in 9-D) | Analisi-first ✅ 26/04/2026 (v2.5.38). Impl 1/2+2/2+3/3 ✅ 27/04/2026 v2.5.39→v2.5.40-rc. Parte 4/4 esecutiva ✅ 27/04/2026 v2.5.40-rc.1. Parte 5/5 esecutiva parziale ⚠️ 29/04/2026 v2.5.40-rc.2. Parte 6/6 implementativa parziale ⚠️ 30/04/2026 v2.5.40-rc.3 (§6.146 sbloccato; CP browser P1 ha rivelato §6.147+§6.148). **Sessione 9-C analisi-first ✅ 30/04/2026 v2.5.40-rc.4**: §6.147 chiuso by-design (AMB-9-C.A), §6.148 chiuso falso-positivo metodologico (AMB-9-C.B), §6.149 nuova lessons-learned. **Sessione 9-D esecutiva snella ✅ 30/04/2026 v2.5.40 definitivo**: 5 CP browser core verdi (P2/P3/P4/P5/P8), AMB-9.E'/G'/H validati runtime, P6+P7 raccomandati skipped (deferred Wave-C/Wave-D). 375/375 test invariati |
+| **9-D** | Esecutiva snella post-9-C: completamento CP browser P2-P5+P8 (deferred parte 6/6) + bump v2.5.40 definitivo + cleanup `.bak.*` (12 untracked) + chiusura formale §6.147+§6.148+§6.149 + doc spec §3 update scope plan multi-day | ✅ **Completo** | Esecutiva snella browser-heavy / no-code-heavy completata 30/04/2026. **5 CP browser core verdi**: P2 visibilitychange+focus (AMB-9.G' trigger 8 + AMB-9.E' atomic), P3 toggle notifiche_attive on/off (trigger 6+7), P4 thunks farmaci add/update/delete (trigger 5), P5 rapid visibility flip 5 cicli (AMB-9.E' robusto sotto stress), P8 tag-based replacement entryKey collision (AMB-9.H). 3 nuove deviazioni minori §6.150-§6.152 (memo CP browser, tutte chiuse non bug). P6+P7 raccomandati skipped (coverage AMB-9.F'+9.I rimane unit-only, deferred Wave-C/Wave-D). Doc spec §3.8 "Modello dati state-side" consegnata + KB sostituita. Cleanup 12 `.bak.*`. Bump v2.5.40-rc.4 → **v2.5.40 definitivo**. 375/375 test invariati. **Step 9 ✅ chiuso completo** |
+| 10 | Service worker attivo + manifest definitivo + icone | ⏸️ **Split in 10-A + 10-B** | Decisione di sessione 30/04/2026 (regola critica #5): post-CP3 sessione consumata ~40K token, CP4 stimato 25-30K → split a Step 10-A/10-B come contingency già pre-frozen in §11 v2.5.41-rc.1. Riferimento §22.28 |
+| **10-A** (parziale) | CP1 icone PT (script sharp + 4 PNG + favicon.svg) + CP2 manifest fields (`lang/dir/categories`, `purpose:any`, apple-touch-180 + favicon link) + CP3 workbox runtimeCaching scaffold (`cleanupOutdatedCaches` + 1 regola attiva icons + 2 commentate). **CP4-CP7 deferred a 10-B** | ✅ **Completo** (parziale) | 375 → 375 test invariati (CP1-CP3 toccano solo asset+config). 1 commit Mac-side `step-8` `52f67bd` (10 file, 705 ins / 5 del). Zero nuove deviazioni §6.NN. Bump v2.5.41-rc.1 → v2.5.42 |
+| **10-B** | CP4 service worker registration + UpdatePrompt component + 6 unit test (3 registerSW mock `virtual:pwa-register` + 3 UpdatePrompt render/click/dismiss) + CP5 build verify (`dist/sw.js` + manifest.webmanifest fields nuovi) + CP6 bump v2.6.0 + commit closing + CP7 CP browser 4 punti raccomandati (install Chrome+Android, offline airplane, update flow toast, icone home screen) | ⏳ **Pianificata** | Target test 375 → 381 (+6 da CP4). Range tollerato 380-383. CP browser deferred a sessione successiva (pattern §22.26) |
 | 11 | Polish finale, QA, accessibilità estesa, gestione errori | | |
 
 
@@ -3700,143 +3994,120 @@ Chiarimenti risolti pre-Step 4b (AMB-1/2/3):
 ---
 
 
-## 11. Prossimo step — Sessione 9-D esecutiva snella (CP browser P2-P5+P8 deferred + bump v2.5.40 + cleanup + closing 9-B)
+## 11. Prossimo step — Step 10-C-fix esecutiva snella (risoluzione §6.157 update flow)
 
-**Stato baseline:** v2.5.40-rc.4 (post-Sessione 9-C analisi-first). 375/375 test su 36 test files. Catena commit branch `step-8` invariata vs parte 5/5 e parte 6/6:
-- `35fed4d` CP1.1 hotfix §6.145 (stateRef lag fix)
-- `3de09ab` CP1 §6.142 (`scheduleTestDose` thunk + 3 test)
-- `d7f252a` CP-pre §6.143+§6.144 (VITE_PT_TOOLING gate + icone PWA valide)
-- `6a403e0` Changelog v2.5.40-rc.1 (storico parte 4/4)
-- `fada4a6` hotfix §6.138 (storico parte 4/4)
-- `f856b46` Changelog v2.5.40-rc (storico parte 3/3)
+**Stato baseline:** v2.6.0 (post-Step 10-C). 381/381 su 38 file. Branch `step-8`. Top commit `d6719b5` (Hot-fix §6.156). Tree pulito.
 
-**Bundle servito:** `dist/assets/index-Cd8Of8Q2.js` (405628 byte, post-CP1A rebuild radicale parte 6/6). Pattern post-fix `freshState` confermato semanticamente nel bundle (vedi §6.146 chiusura) e validato runtime via DIAG-RT-1 (vedi §6.148 chiusura).
+**Tipologia sessione:** esecutiva snella stile §22.26 9-D / §22.30 Step 10-C. Code change minimale (config + eventuale ribuild), retest CP browser P3 only. Stima: 3-5K token. Singola sessione.
 
-Backup `.bak.*` ancora su disco (12 untracked: 10 baseline §11 parte 5/5 + 1 `Changelog.bak2` user safety + 1 `package-lock.json.bak.cp1A` da CP1 Tentativo A parte 6/6), espurgazione pianificata in 9-D CP6 closing.
+**Scope:** chiusura §6.157 via opzione 1 (registerType prompt + workbox skipWaiting:false). Sblocca P3 toast UpdatePrompt end-to-end. Chiude Step 10 milestone-definitivo se P3 verde.
 
-**Scope:** sessione **esecutiva snella browser-heavy / no-code-heavy** dedicata a:
-1. completamento CP browser P2-P5+P8 deferred di parte 6/6 (validazione runtime AMB-9.E'/G'/H + permission revocation defensive + non-PWA fallback)
-2. eventuali fix code emergenti dai CP browser (best case zero, worst case 1-2 hotfix puntuali)
-3. doc spec §3 update: documentazione esplicita scope plan multi-day (`PLAN_DAYS_TOTAL=3`)
-4. bump v2.5.40 definitivo (release candidate finalizzata)
-5. cleanup `.bak.*` (12 untracked) + commit closing
-6. chiusura formale §6.147+§6.148+§6.149 nel changelog (già marcate CHIUSE in v2.5.40-rc.4, qui solo conferma post-CP browser)
+### AMB pre-frozen
 
-### Razionale 9-C → 9-D (sessione esecutiva snella, niente split 9-D + 9-E)
+- **AMB-10-C-fix.A:** `registerType: "prompt"` in `vite.config.js`. Sostituisce `"autoUpdate"`.
+- **AMB-10-C-fix.B:** workbox config esplicita `skipWaiting: false` + `clientsClaim: false`. Per `registerType: "prompt"` `vite-plugin-pwa` dovrebbe già non emettere skipWaiting, ma esplicitiamo per evitare magic.
+- **AMB-10-C-fix.C:** `<UpdatePrompt />` invariato (già montato + test 3/3 verde). No code change React-side.
+- **AMB-10-C-fix.D:** P3 retest via cachebust source-level reale (non bump version-only). Pattern: aggiungere `window.__PT_CACHEBUST__ = <epoch>` in `src/main.jsx` come scratch source change.
+- **AMB-10-C-fix.E:** Tag git annotato `v2.6.0` come milestone PWA **solo** se P3 verde end-to-end. Pattern conservativo §22.26.
+- **AMB-10-C-fix.F:** Bump version `2.6.0 → 2.6.1`: fix utente-visibile (update flow funzionante = patch level), applicato solo se P3 verde. NO bump se P3 ancora rosso.
 
-Sessione 9-C ha chiuso §6.147 (by-design via DIAG-1÷7 + DIAG-RT-1 conferma sintetica `dateStr=today`) e §6.148 (falso-positivo metodologico via DIAG-RT-1 deterministico) **senza richiedere fix code**. Decisione split implementativo originale (9-D singola vs 9-D+9-E) **decaduta**: niente codice da scrivere, solo CP browser deferred + bump + cleanup. Stima 9-D: ~15-20K token totali (browser-heavy).
-
-### Workflow proposto
-
-1. **CP0 sanity-light** (4 gate Mac-side): tree clean tranne 12 untracked attesi, top `35fed4d`, 375/375 test in 36 file, bundle `index-Cd8Of8Q2.js` su disco
-2. **Setup CP browser:** preview attiva (`VITE_PT_TOOLING=1 npm run preview`), Chrome `http://localhost:4173`, DevTools Console dropdown `top`, verifica `typeof __pt === 'object'`
-3. **CP browser P2:** `visibilitychange` + `focus` event triggerano `rescheduleAllNotifications` (validazione AMB-9.G' trigger 8). Test: simulare blur/focus della tab, ispezionare `pending.size` pre/post via IIFE async pattern §6.149
-4. **CP browser P3:** `setSetting('notifiche_attive', 1)` → `rescheduleAllNotifications` (toggle on); `setSetting('notifiche_attive', 0)` → `cancelAll` (toggle off). Validazione AMB-9.G' trigger 6+7
-5. **CP browser P4:** `addFarmaco` / `updateFarmaco` / `deleteFarmaco` trigger reschedule (validazione AMB-9.G' trigger 5 — 7 thunks rilevanti). Test: aggiungere farmaco con orario futuro, ispezionare `pending` cresce di 1
-6. **CP browser P5:** rapid visibility flip foreground→background→foreground (5 cicli rapidi) — validazione AMB-9.E' "sincrona idempotente cancel-then-rebuild atomico". Test: `pending.size` finale = baseline, no leak
-7. **CP browser P8:** tag-based replacement entryKey collision — re-schedulare 2× `scheduleTestDose` per stesso farmaco con sentinel `dose_numero=999` → `pending.size` collapse a baseline + 1 (non +2). Validazione AMB-9.H
-8. **CP browser P6 (raccomandato):** permission revocation defensive — revocare manualmente Notification permission da Chrome Settings, focus tab → check `notifiche_attive` forzato a 0 (AMB-9.F' decision tree)
-9. **CP browser P7 (raccomandato):** non-PWA fallback — aprire URL in regular tab (no install) → toggle nascosto + banner "Installa l'app sulla home" (AMB-9.F' branch !isStandalone)
-
-### Pattern di test §6.149 mandatory
-
-Tutti i test in CP browser P2-P8 devono usare **IIFE async + `await` pattern** introdotto in §6.149:
-
-```js
-(async () => {
-  const before = __pt.notifications.getPendingCount();
-  // ... azione + await dei thunk ...
-  const after = __pt.notifications.getPendingCount();
-  await new Promise(res => setTimeout(res, 100));
-  const after100ms = __pt.notifications.getPendingCount();
-  console.log(JSON.stringify({ before, after, after100ms, /* + altri probe */ }, null, 2));
-})();
-```
-
-Mai leggere `getPendingCount()` su riga separata post-thunk async (rischio falso-positivo §6.148 stile).
-
-### Doc spec §3 update (post-CP browser, pre-bump)
-
-Aggiungere a `PharmaTimer_Project_Spec.md` §3 "Modello dati" la nota:
-
-> `state.plan` è multi-day per intentional design dal Step 5b-2. Scope: `[today − PLAN_DAYS_BEFORE, today + PLAN_DAYS_AFTER]` con `PLAN_DAYS_TOTAL = PLAN_DAYS_BEFORE + 1 + PLAN_DAYS_AFTER` (default `3`). Le projection day-scoped per UI/notifiche avvengono via `selectEntriesForDay(state, dateStr)`. Vedi `PharmaTimer_Changelog_Fase2.md` §6.147 (chiusura by-design Sessione 9-C).
-
-### CP6 closing (post-CP browser P2-P8 verdi)
-
-1. **Bump v2.5.40-rc.4 → v2.5.40 definitivo** in changelog front-matter + sommario §1
-2. **§7 row 9-B** marcata `✅ Completo` con riferimento commit closing
-3. **§7 row 9-D** marcata `✅ Completo` con riferimento dataset CP browser
-4. **Cleanup `.bak.*`** (12 untracked):
-   ```
-   echo 'Cleanup backup files post-9-D closing'
-   rm -f PharmaTimer_Changelog_Fase2.md.bak2
-   rm -f package-lock.json.bak.cp1A package.json.bak.cp-pre
-   rm -f public/icons/icon-192.png.bak.cp-pre public/icons/icon-512.png.bak.cp-pre public/icons/icon-maskable-512.png.bak.cp-pre
-   rm -f src/components/config/ImpostazioniTab.jsx.bak.cp5 src/components/config/ImpostazioniTab.test.jsx.bak.cp5
-   rm -f src/state/AppContext.jsx.bak.cp-pre
-   rm -f src/state/actions.js.bak.cp1 src/state/actions.js.bak.cp1.1
-   rm -f src/state/actions.scheduleTestDose.test.js.bak.cp1.1
-   git status --short
-   ```
-5. **Commit closing 9-D:**
-   ```
-   echo 'Commit closing Sessione 9-D'
-   git add -A
-   git commit -m '9-D closing — CP browser P2-P8 verdi + cleanup .bak.* + bump v2.5.40'
-   ```
-6. **Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude.ai** con la versione **v2.5.40** (deliverata in 9-D closing)
-
-### Pattern operativi da rispettare
-
-- Bash zsh-safe (echo single-quoted, no `#`, no apostrofi italiani)
-- Approval esplicita tra step (regola critica #4) — chiusura punto per punto
-- **Niente codice in 9-D salvo emergenze** (best case zero codice; se emergono bug runtime in CP browser P2-P8, applicare hotfix puntuali con §6.NN dedicata)
-- Se un CP browser fallisce con bug nuovo, **non bloccare la sessione**: documentare come §6.NN deferred a 9-E e procedere con bump v2.5.40 limitato ai CP verdi (regola critica #5)
-- Markdown autolink: usare `window['__pt']['app']` (bracket notation) per evitare autolink Console su `pt.app`
-
-### Riferimenti AMB carryforward
-
-- AMB-9.E' (sincrona idempotente cancel-then-rebuild atomico) — validazione runtime in CP browser P5
-- AMB-9.F' (decision tree 4 stati permission) — validazione runtime in CP browser P6+P7 (raccomandati)
-- AMB-9.G' (8 trigger reschedule) — validazione runtime in CP browser P2/P3/P4
-- AMB-9.H (tag-based replacement entryKey) — validazione runtime in CP browser P8
-- AMB-9.I (rilevamento revoche post-subscribe) — coperto unit + validazione runtime in CP browser P6
-- **AMB-9-C.A** (§6.147 by-design) — chiuso in 9-C, conferma in 9-D via doc spec §3 update
-- **AMB-9-C.B** (§6.148 falso-positivo) — chiuso in 9-C, pattern §6.149 reusabile in CP browser P2-P8
-
-### Stima token
-
-~15-20K token totali (CP0 sanity ~2K + setup CP browser ~2K + 5 CP browser core P2-P5+P8 ~6-8K + 2 CP browser raccomandati P6+P7 ~2-3K + CP6 closing bump+cleanup+commit ~3-4K + §11 sostituzione 9-E o "Step 10" ~1-2K). Sessione browser-heavy / no-code-heavy.
-
-### Comandi diagnostici di apertura proposti
+### CP0 sanity-light pre-Step 10-C-fix (Mac-side, 6 gate)
 
 ```
 cd ~/Sviluppo/pharmatimer
-echo 'CP0 9-D gate 1: git status'
+echo 'CP0 gate 1: git status pulito'
 git status --short
 echo ''
-echo 'CP0 9-D gate 2: top commit chain'
+echo 'CP0 gate 2: top commit (atteso d6719b5 Hot-fix §6.156)'
 git --no-pager log --oneline -3
 echo ''
-echo 'CP0 9-D gate 3: test suite full run'
-npm test -- --run 2>&1 | tail -8
-echo ''
-echo 'CP0 9-D gate 4: bundle on disk'
-ls -la dist/assets/index-*.js
-echo ''
-echo 'CP0 9-D gate 5: branch'
+echo 'CP0 gate 3: branch (atteso step-8)'
 git branch --show-current
+echo ''
+echo 'CP0 gate 4: test baseline (atteso 381/381 su 38 file)'
+npm test -- --run 2>&1 | grep -v 'npm notice' | tail -8
+echo ''
+echo 'CP0 gate 5: package.json version (atteso 2.6.0)'
+grep '"version"' package.json | head -1
+echo ''
+echo 'CP0 gate 6: vite.config.js registerType corrente (atteso autoUpdate, da cambiare)'
+grep -n 'registerType' vite.config.js
 ```
 
-Atteso: 12 untracked `.bak.*`, top `35fed4d`, 375/375 in 36 file, `Cd8Of8Q2.js` 405628 byte, branch `step-8`.
+Atteso: tree pulito, top `d6719b5`, branch `step-8`, 381/381, version `2.6.0`, registerType `autoUpdate` confermato.
+
+### CP1 patch vite.config.js (Mac-side via patcher Python idempotente)
+
+Patch surgical: sostituisce `registerType: "autoUpdate"` con `registerType: "prompt"` + aggiunge `skipWaiting: false, clientsClaim: false` in workbox block. Patcher idempotente con assertion check. Codice esatto del patcher consegnato all'apertura sessione.
+
+Verifica diff atteso: `git diff vite.config.js` → 3 cambi netti (1 string change + 2 keys aggiunte in workbox).
+
+### CP2 rebuild + retest unit (Mac-side)
+
+```
+npm run build 2>&1 | tail -10
+npm test -- --run 2>&1 | grep -v 'npm notice' | tail -8
+```
+
+Atteso: build OK, 381/381 invariato (config change non tocca unit logic).
+
+### CP browser Step 10-C-fix (P3 retest only)
+
+**Setup pre-P3:**
+- `npx serve dist -l 50727` (porta esplicita, evita auto-fallback)
+- Chrome Desktop, install PWA su `http://localhost:50727`
+
+**Sequence P3 con cachebust source-level (NON bump version):**
+
+```
+echo 'Step 1: cachebust source-level live (sopravvive minify)'
+printf '\nwindow.__PT_CACHEBUST__ = %d;\n' $(date +%s) >> src/main.jsx
+echo ''
+echo 'Step 2: rebuild dist/'
+npm run build 2>&1 | tail -5
+echo ''
+echo 'Step 3: verifica nuovo dist/assets/index-*.js hash diverso'
+ls dist/assets/ | grep '^index-'
+```
+
+Restart `npx serve` (Ctrl+C + rilancio identico), poi su PWA standalone DevTools → Application → Service Workers → click Update.
+
+**Pass criterion P3 (atteso questa volta):**
+- Nuovo SW entra in stato `waiting to activate` (NON più `activated and is running` immediatamente)
+- Toast `<UpdatePrompt />` appare bottom-fixed con copy "Nuova versione disponibile" + bottone "Ricarica"
+- Click "Ricarica" → app refresh + nuovo SW prende controllo
+
+**Cleanup post-P3:**
+```
+git checkout HEAD -- src/main.jsx
+npm run build 2>&1 | tail -3
+git status --short
+```
+
+### Esiti possibili Step 10-C-fix
+
+- **P3 verde** → §6.157 chiuso. Bump `package.json` 2.6.0 → 2.6.1. Commit dedicato "Step 10-C-fix — registerType prompt + skipWaiting:false (chiude §6.157)". Tag annotato `v2.6.0` come milestone PWA (AMB-10-C-fix.E). Step 10 milestone-definitivo. §22.31 al changelog.
+- **P3 ancora rosso** → §6.157 esteso con seconda iterazione. Possibili cause: vite-plugin-pwa version-specific quirks. Hot-fix Wave-2 oppure fallback opzione 2 (`autoUpdate` + rimozione `<UpdatePrompt />`).
+
+### Target test post-Step 10-C-fix
+
+381/381 invariato. Eventuale +1 test SOLO se hot-fix Wave-2 introduce nuova logica testabile.
+
+### Pattern operativi da rispettare
+
+- Bash zsh-safe (echo single-quoted, no `#`, no apostrofi italiani).
+- Patcher Python anchor-based idempotente per config (pattern §6.156).
+- Cachebust source-level NON bump version (lessons §6.157).
+- `npx serve` con `-l 50727` esplicita (lessons §22.30 porta auto-fallback).
+- Documentare ogni discrepanza CP browser come §6.NN.
 
 ### One-liner di apertura
 
 ```
-Esegui il prompt al §11 del Changelog (Sessione 9-D esecutiva snella).
+Esegui il prompt al §11 del Changelog (Step 10-C-fix esecutiva snella).
 ```
 
-## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3 + 8-pre + 8a + 8b + 8c-parz + 8c-2
+## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3 + 8-pre + 8a + 8b + 8c-parz + 8c-2 + 9-A + 9-B + 9-D + 10-A + 10-B
 
 | File | Step | Note |
 |---|---|---|
@@ -4024,6 +4295,31 @@ Esegui il prompt al §11 del Changelog (Sessione 9-D esecutiva snella).
 - `src/state/actions.farmaci.test.js`
 - Delete button + data_fine-past interceptor in FarmaciTab
 - 1 test `selectFarmacoById` in `selectors.test.js`
+
+### Delta Step 10-A (CP1+CP2+CP3 — icone PWA + manifest fields + workbox runtimeCaching)
+
+| File | Step | Note |
+|---|---|---|
+| `scripts/genera-icone.mjs` | **10-A CP1** | NEW. Idempotent icon generator. sharp 0.34.5 + libvips 8.17.3. Output: 4 PNG (192/512/maskable-512/apple-touch-180) + favicon.svg. Font fallback chain `Helvetica, Inter, "Helvetica Neue", Arial, sans-serif` |
+| `public/icons/icon-192.png` | **10-A CP1** | REGEN da §6.144 placeholder. Mac-rendered (Helvetica reale). Backup `.bak.cp1` preservato fino a chiusura 10-B |
+| `public/icons/icon-512.png` | **10-A CP1** | REGEN da §6.144 placeholder. Mac-rendered. Backup `.bak.cp1` |
+| `public/icons/icon-maskable-512.png` | **10-A CP1** | REGEN da §6.144 placeholder. Glifo al 52% size per stare nell'inner-80% safe area Android adaptive. Backup `.bak.cp1` |
+| `public/icons/apple-touch-icon-180.png` | **10-A CP1** | NEW (AMB-10.E). Mac-rendered |
+| `public/favicon.svg` | **10-A CP1** | NEW (AMB-10.F). viewBox 32×32, `rx=6` rounded corners, "PT" semplificato. Bit-identico tra sandbox↔Mac (plain text, no rasterizzazione) |
+| `package.json` / `package-lock.json` | **10-A CP1** | + `"sharp": "^0.34.5"` in `devDependencies` |
+| `vite.config.js` | **10-A CP2 + CP3** | Manifest: + `lang: "it"` + `dir: "ltr"` + `categories: ["medical","health"]` + `purpose: "any"` esplicito su icon-192/512. `includeAssets: ["icons/*.png", "favicon.svg"]`. workbox: + `cleanupOutdatedCaches: true` + `runtimeCaching: [...]` (1 attiva icons CacheFirst + 2 commentate Google Fonts/API Fase 3) |
+| `index.html` | **10-A CP2** | RIMOSSO `<link rel="apple-touch-icon" href="/icons/icon-192.png" />` (puntava a file generico). AGGIUNTI `<link rel="icon" type="image/svg+xml" href="/favicon.svg" />` + `<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-180.png" />` |
+| **Totale test passing post-10-A** | | **375/375** (invariato — CP1-CP3 toccano solo asset+config) |
+| **Commit unitario** | | 1 commit branch `step-8` `52f67bd` (10 file, 705 ins / 5 del). Bump v2.5.41-rc.1 → v2.5.42 |
+
+**NON prodotti (scope CP4-CP7, deferred a Step 10-B):**
+- `src/registerSW.js` (CP4 — `setupPWA(onNeedRefresh)` + export `updateSW`)
+- `src/components/UpdatePrompt.jsx` (CP4 — toast bottom-fixed + role=alert)
+- `src/registerSW.test.js` (CP4 — 3 unit con mock `virtual:pwa-register`)
+- `src/components/UpdatePrompt.test.jsx` (CP4 — 3 unit render/click/dismiss)
+- Modifica `src/main.jsx` (CP4 — mount `<UpdatePrompt />`)
+- `package.json` version bump v2.5.42 → v2.6.0 (CP6)
+- Cleanup `.bak.cp1` di `public/icons/` (CP6.5, pattern §6.135 esteso)
 
 ## 13. Decisioni pre-implementazione Sessione 5b
 
@@ -7430,3 +7726,425 @@ Sessione 9-C analisi-first aperta come one-liner `Esegui il prompt al §11 del C
    ```
    Esegui il prompt al §11 del Changelog (Sessione 9-D esecutiva snella).
    ```
+
+---
+
+## 22.26 Stato post-Sessione 9-D esecutiva snella (Step 9 chiuso completo, bump v2.5.40 definitivo)
+
+**Data:** 30 aprile 2026.
+**Baseline test pre-sessione:** 375/375 su 36 test files (§22.25 post-9-C analisi-first).
+**Baseline test post-sessione:** 375/375 invariato (sessione no-code, zero codice scritto).
+**Bump:** v2.5.40-rc.4 → **v2.5.40 definitivo**.
+**Esito:** ✅ **Completo** — 5 CP browser core verdi (P2/P3/P4/P5/P8); AMB-9.E'/G'/H validati runtime; P6+P7 raccomandati skipped (deferred Wave-C/Wave-D); doc spec §3.8 aggiunta; cleanup 12 `.bak.*`; commit closing 9-D; **Step 9 Notifiche chiuso completamente**.
+
+### Scope consegnato
+
+Sessione aperta come one-liner `Esegui il prompt al §11 del Changelog (Sessione 9-D esecutiva snella).` (raccomandato in §11 v2.5.40-rc.4). Browser-heavy / no-code-heavy come previsto. Stima §11 era ~15-20K token totali; consumo effettivo coerente con stima.
+
+### CP0 9-D verde (5/5 con 1 nota documentale)
+
+| Gate | Esito | Valore | Note |
+|---|---|---|---|
+| 1 | tree status | ✅ | 12 untracked `.bak.*` invariati post-9-C |
+| 2 | top commit chain | ⚠ doc drift §11 | Top reale `835b9a3` (closing 9-C), §11 v2.5.40-rc.4 indicava `35fed4d` come expected (era pre-closing 9-C). Risolto cosmetico in v2.5.40 closing |
+| 3 | test suite full run | ✅ | 375 passed in 36 files (7.12s) |
+| 4 | bundle on disk | ✅ | `index-Cd8Of8Q2.js` 405628 byte invariato |
+| 5 | branch | ✅ | `step-8` |
+
+### Setup CP browser (probe API + baseline)
+
+Probe `Object.keys(window['__pt'])`: `['app', 'notifications']`. **Mismatch §6.113 rilevato:** `__pt.wipe` `undefined` → §6.150 nuova (chiusa lessons-learned).
+
+`__pt.notifications` API esposta: `['isSupported', 'getPermission', 'requestPermission', 'scheduleNotification', 'cancelNotification', 'cancelAll', 'showDoseNotification', 'getPendingCount']`.
+
+`__pt.app` API esposta: `['getState', 'actions']` (21 thunks).
+
+**Pristine state al boot (baseline tutti i CP):** `pending=3`, `notifiche_attive=1`, `state.farmaci.length=11`, `state.orari.length=17`, `state.plan.length=28` (3 giorni multi-day per AMB-9-C.A).
+
+### CP browser core 5/5 verdi
+
+| CP | AMB validato | Marker primario | Esito |
+|---|---|---|---|
+| **P2** | 9.G' trigger 8 (visibilitychange + focus) + 9.E' atomic | `cancelAll` count = 2 (1 per ciascun listener wirato separatamente), `pending=3` invariato | ✅ |
+| **P3** | 9.G' trigger 6+7 (toggle notifiche_attive) | `pending: 3 → 0 → 3`, `cancelAll` 0→1→2, stabile post-100ms | ✅ |
+| **P4** | 9.G' trigger 5 (3 thunks farmaci) | `cancelAll` +1 per `addFarmaco` / `updateFarmaco` / `deleteFarmaco`, `farmaci_count` 11→12→12→11, `pending=3` invariato | ✅ |
+| **P5** | 9.E' atomic idempotente sotto stress | 5 cicli rapidi `blur+vis-hidden→vis-visible+focus`, `pending=3` in 13/13 snapshot, `cancelAll` 0→15 monotonic, post-200ms-settle = post-loop-sync | ✅ |
+| **P8** | 9.H tag-based replacement entryKey | Doppio `scheduleTestDose(5, {farmacoId: 1})`: `pending: 3 → 4 → 4` (replacement, non +2). `r1.ora_prevista == r2.ora_prevista == "18:27"` conferma stesso entryKey | ✅ |
+
+### Pattern §6.149 applicato a tutti i CP
+
+Tutti i 5 CP browser usano IIFE async + `await` esplicito + monkey-patch counters + `console.log(JSON.stringify(log, null, 2))` finale strutturato. Pattern §6.149 ratificato come standard per CP browser future.
+
+### Limit di osservabilità scoperto e tracciato
+
+§6.151 nuova: monkey-patch property-level su `__pt.notifications` non intercetta call interne al modulo `services/notifications.js` (closure-private). Conseguenza: `schedule` count `0` in tutti i CP nonostante reschedule effettivo. Validazione via `pending` delta + `cancelAll` count, non via `schedule`. Lessons-learned chiusa.
+
+### CP browser raccomandati P6+P7 skipped
+
+Decisione esplicita Roberto + Claude (opzione A vs B in chat 9-D): skip CP browser P6 (permission revocation defensive) + P7 (non-PWA fallback). Coverage AMB-9.F' (decision tree 4 stati permission) e AMB-9.I (rilevamento revoche post-subscribe) rimane **unit-only**, deferred Wave-C/Wave-D.
+
+**Razionale skip:**
+- P6 richiede toggle manuale Chrome Settings poco automatizzabile, alto rischio di esiti inconcludenti come Cmd+Tab di P2 v1 (DevTools focus sticky)
+- P7 richiede non-PWA tab non utile per scope corrente (PWA install verificato in Sessione 9-B parte 4/4)
+- AMB-9.F'+9.I unit coverage già verde, bug runtime hypothetical
+- §11 §11 v2.5.40-rc.4 §11 marcava P6+P7 come "raccomandati" non gating
+
+**Trigger per riapertura:** se in Step 10/11 polish o in Wave-C/Wave-D emergono bug correlati permission flow / non-standalone fallback, riaprire come §6.NN dedicate.
+
+### 3 deviazioni minori introdotte (tutte chiuse non bug)
+
+| § | Sintetico | Status |
+|---|---|---|
+| §6.150 | `__pt.wipe` undefined runtime (mismatch documentale §6.113) | ✅ chiuso lessons-learned |
+| §6.151 | Limit di osservabilità monkey-patch property-level (closure-private call) | ✅ chiuso lessons-learned |
+| §6.152 | `plan_entries` delta non-lineare per scadenze naturali doses durante test multi-step async >1s | ✅ chiuso lessons-learned |
+
+### Decisioni operative metasessione
+
+1. **Spec è KB-only, changelog è KB+local.** Asimmetria scoperta in CP6.1 di 9-D quando `ls -la PharmaTimer_Project_Spec.md` ha dato `No such file or directory` sul Mac. Workflow doc spec §3 update rivisto: lettura KB lato Claude (`/mnt/project/`) + edit + delivery via `present_files` + Roberto upload manuale in KB Claude.ai. Memo per template prompt sessioni future.
+2. **Split CP6.3 in CP6.3a (meccaniche) + CP6.3b (redazionali).** Granularità approval finer-grained, basso rischio errori cumulativi. Pattern adottabile per future sessioni con changelog editing massivo.
+3. **Hotfix in-CP6.3a:** str_replace su Edit 2 ha clobbered header rc.4 + frammento bullet, riparato con str_replace mirato. Memo procedurale: "str_replace su pattern testuali contigui ad header simili richiede old_str completo del bullet per evitare clobber".
+
+### File prodotti / modificati in 9-D
+
+| File | Tipo | Note |
+|---|---|---|
+| `PharmaTimer_Project_Spec.md` | KB upload | +§3.8 "Modello dati state-side (Fase 2)" (10 righe). 443 → 453 linee. Sostituita in KB Claude.ai durante CP6.2. |
+| `PharmaTimer_Changelog_Fase2.md` | KB upload | v2.5.40-rc.4 → v2.5.40 definitivo. Bump front-matter, nuovo blocco changelog 2.5.40, §7 rows 9-B+9-D ✅ Completo, §6.150+§6.151+§6.152 nuove, nuova §22.26 (questo blocco), nuova §11 prompt Step 10. ~7541 → ~7720 linee. Sostituita in KB Claude.ai durante CP6.6. |
+| `.bak.*` (12 file) | filesystem | Eliminati in CP6.5 cleanup. Tree post-cleanup pulito. |
+| Codice src/ | nessuno | Sessione no-code (zero modifiche). |
+
+### Step 9 Notifiche — chiusura completa
+
+Da analisi-first 26/04/2026 (v2.5.36) a release 30/04/2026 (v2.5.40): **4 giorni**, **9 sotto-sessioni** (9-A + 9-B parte 1/2 + 2/2 + 3/3 + 4/4 + 5/5 + 6/6 + 9-C + 9-D), **da 313 a 375 test** (+62), **38 deviazioni §6.115-§6.152** (di cui 11 chiuse subito + 27 attive con disposizioni note).
+
+Architettura notifiche Opzione 1 foreground-only **stabile e validata runtime**: tutti i trigger 1-8 di AMB-9.G' verificati o unit-only-coverable; AMB-9.E' atomic idempotente robusto sotto stress; AMB-9.H tag-based replacement entryKey collision validato; AMB-9.I revoche post-subscribe coperto unit (deferred runtime Wave-C). Pattern lessons-learned §6.149 + §6.151 + §6.152 codificato.
+
+Web Push backend differito a **Fase 3 estesa post-Step 11** (decisione AMB-9 originale §22.20).
+
+### Prossimi passi (post-9-D, pre-Step 10)
+
+1. **Stato git corrente:** tree pulito post-cleanup, top = commit closing 9-D, branch `step-8` (eventuale rinomina a `step-9` o `main` valutabile in Step 10).
+2. **Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude.ai** con versione **v2.5.40** (questo delivery).
+3. Eseguire CP0 sanity-light prima di aprire Step 10 analisi-first.
+4. Aprire **Sessione Step 10 analisi-first** (nuova conversazione Claude) con one-liner:
+   ```
+   Esegui il prompt al §11 del Changelog (Step 10 analisi-first).
+   ```
+
+### Riferimenti
+
+- Dataset CP browser: vedi §6.150 + §6.151 + §6.152 per dettaglio limiti osservabilità e marker affidabili
+- Razionale skip P6+P7: vedi sezione "CP browser raccomandati P6+P7 skipped" in questo §22.26
+- AMB-9.E'/G'/H runtime evidence: matrice CP browser core 5/5 in questo §22.26
+- §11 nuovo: prompt analisi-first Step 10 (Service worker + manifest + icone)
+
+## 22.27 Stato post-Sessione Step 10 analisi-first
+
+**Data**: 30 aprile 2026
+**Modalità**: analisi-first Q&A pattern (batch, "decidi tu" su 3 punti aperti)
+**Token consumati**: ~12-15K
+**Esito**: AMB-10.A÷J ratificate, scope CP impl congelato a 7 CP, §11 sostituita con prompt esecutivo Step 10.
+
+### CP0 sanity-light verificato
+
+8 gate verdi (output in chat sessione):
+- git status pulito, top `376c610` 9-D closing, branch `step-8`
+- 375/375 test su 36 file, durata 7.27s
+- bundle `dist/assets/index-Cd8Of8Q2.js` 405628 byte invariato
+- vite-plugin-pwa `^0.20.1` pinned
+- manifest config attuale: `registerType: "autoUpdate"`, base fields presenti, no runtimeCaching, devOptions disabled
+- 3 icone PNG §6.144 valide (192/512/maskable-512, RGB, non-interlaced)
+
+### AMB-10 ratificate (10 totali)
+
+- **AMB-10.A** SW autoUpdate **+ onNeedRefresh prompt UI** (deviazione da default §11 puro autoUpdate, motivazione contesto medical)
+- **AMB-10.B** Workbox precache shell + runtimeCaching scaffold (fonts/icons CacheFirst, NetworkFirst API commentato Fase 3)
+- **AMB-10.C** Toast bottom-fixed non-blocking + button "Ricarica" dismissable
+- **AMB-10.D** Icone opz.B typography "PT" su `#15141A` (sostituisce §6.144 "P")
+- **AMB-10.E** apple-touch-icon-180×180 "PT", splash statici skipped → Step 11
+- **AMB-10.F** Favicon SVG only, no ICO
+- **AMB-10.G** Unit test SW: mock `virtual:pwa-register` per registerSW + UpdatePrompt component test, runtime CP browser
+- **AMB-10.H** CP browser 4 punti core (install, offline, update, icone)
+- **AMB-10.I** Bump v2.5.40 → **v2.6.0** (minor, PWA production-ready milestone)
+- **AMB-10.J nuova** Manifest fields aggiuntivi: `lang:"it"`, `categories:["medical","health"]`, `dir:"ltr"`
+
+### Decisioni "decidi tu"
+
+Roberto ha demandato 3 decisioni: modus operandi Q&A → **batch**; logo PharmaTimer → **non disponibile, opz.B placeholder migliorato**; bump versione → **v2.6.0**.
+
+### Scope CP impl frozen (7 CP)
+
+CP1 generazione icone (sharp script) · CP2 manifest fields + index.html · CP3 workbox runtimeCaching · CP4 registerSW + UpdatePrompt + test · CP5 build + verify · CP6 bump v2.6.0 + commit closing · CP7 CP browser raccomandato manuale
+
+### File previsti
+
+**New**: `scripts/genera-icone.mjs`, `src/registerSW.js`, `src/components/UpdatePrompt.jsx`, `src/registerSW.test.js`, `src/components/UpdatePrompt.test.jsx`, `public/icons/apple-touch-icon-180.png`, `public/favicon.svg`
+
+**Modified**: `vite.config.js` (manifest + workbox), `index.html` (link tags), `src/main.jsx` (mount UpdatePrompt), `package.json` (devDep sharp + version), `public/icons/icon-192.png` + `icon-512.png` + `icon-maskable-512.png` (regen)
+
+### Target test
+
+375 → 381 (+6: 3 registerSW + 3 UpdatePrompt). Range tollerato 380-383.
+
+### Stima token impl
+
+~35-45K. Split a Step 10-A/Step 10-B se CP4 sfora.
+
+### Cleanup
+
+Nessun bak file pendente (cleanup 9-D già completo). Branch `step-8` mantenuto per Step 10 esecutiva.
+
+### Stato changelog post-analisi-first
+
+Versione changelog: v2.5.40 → **v2.5.41-rc.1** (analisi-first prep work, no code change). §11 sostituita. Bump effettivo a v2.6.0 a CP6 esecutiva.
+
+### Pattern session
+
+Conferma pattern §22.20/§22.25 (analisi-first apre ogni step Q&A iterativo + AMB freeze + scope CP impl + sostituzione §11). Costo analisi-first ~12-15K token, sostenibile come modus operandi standard.
+
+### Riferimenti
+
+- §11 nuovo (questa versione): prompt esecutivo Step 10
+- §22.26: chiusura Step 9 + indicazioni di apertura Step 10 analisi-first
+- AMB-10.A motivazione medical context: vedi sezione "AMB-10 pre-frozen" in §11 nuovo
+
+## 22.28 Stato post-Sessione Step 10-A esecutiva parziale
+
+**Data**: 30 aprile 2026
+**Modalità**: esecutiva diretta da prompt §11 v2.5.41-rc.1, split a CP3 (regola critica #5)
+**Token consumati**: ~40K
+**Esito**: ⚠️ **Parziale** — CP1+CP2+CP3 ✅, CP4-CP7 deferred a Step 10-B.
+
+### CP0 sanity-light verificato (9 gate)
+
+Tutti verdi: tree pulito, top `376c610` 9-D closing, branch `step-8`, 375/375 test su 36 file (durata 6.55s post-filtering banner npm), bundle `dist/assets/index-Cd8Of8Q2.js` 405628 byte, vite-plugin-pwa `^0.20.1`, sharp assente, 3 PNG §6.144 placeholder presenti, favicon assente.
+
+### CP completati
+
+| CP | Scope | Esito | Output | Commit |
+|---|---|---|---|---|
+| **CP1** | Icone PWA definitive (AMB-10.D + AMB-10.E + AMB-10.F) | ✅ | `scripts/genera-icone.mjs` (new) + `package.json`/`package-lock.json` (sharp `^0.34.5` devDep) + `public/icons/icon-192.png` (regen) + `public/icons/icon-512.png` (regen) + `public/icons/icon-maskable-512.png` (regen, glifo 52% per safe area inner-80%) + `public/icons/apple-touch-icon-180.png` (new) + `public/favicon.svg` (new) | `52f67bd` (unitario) |
+| **CP2** | Manifest fields + index.html link tags (AMB-10.J + AMB-10.E + AMB-10.F) | ✅ | `vite.config.js`: `+lang/dir/categories/purpose:any/includeAssets favicon.svg`. `index.html`: rimosso `apple-touch-icon` generic link, aggiunti SVG favicon + apple-touch-180 sized | `52f67bd` (unitario) |
+| **CP3** | Workbox runtimeCaching scaffold (AMB-10.B) | ✅ | `vite.config.js`: + `cleanupOutdatedCaches: true` + `runtimeCaching` array (1 attiva icons CacheFirst + 2 commentate Google Fonts + API Fase 3) | `52f67bd` (unitario) |
+
+### CP NON completati (deferred a Step 10-B)
+
+- **CP4** Service worker registration (`registerSW.js`) + UpdatePrompt component + 5 file nuovi + 6 unit test
+- **CP5** Build verify (`dist/sw.js`, manifest webmanifest, bundle delta < +20KB, 381/381 test)
+- **CP6** Bump v2.5.42 → v2.6.0 + commit closing + cleanup `.bak.cp1` (3 file in `public/icons/`)
+- **CP7** CP browser 4 punti raccomandati (deferred a sessione successiva, non bloccante per closing)
+
+### Decisioni in-session
+
+1. **Design icone PT approvato** (preview sandbox-rendered DejaVu Sans Bold via `ask_user_input_v0`). AMB-10.D rispettata: typography "PT" su `#15141A`, glifo bold sans-serif, maskable con safe area 80%.
+2. **Font fallback Mac vs sandbox** dichiarato implementation detail dell'AMB-10.D, non deviazione formale §6.NN. Rationale: AMB-10.D cita "Helvetica/Inter bold mono" come stile non come binding stretto. Sandbox produce DejaVu Sans Bold (Linux fallback chain), Mac produce Helvetica reale (first-of-chain risolto). Decisione operativa Roberto post-rigen Mac: commit dei Mac-rendered per fedeltà AMB-10.D originale.
+3. **Pattern §6.135 esteso** ai backup `.bak.cp1` di CP1: 3 file (placeholder §6.144 originali) preservati durante 10-A e fino a CP6 di 10-B come safety-net rollback. Cleanup mandatory in CP6.5.
+4. **Split a Step 10-A/Step 10-B post-CP3** (regola critica #5): consumo token ~40K post-CP3, CP4 stimato 25-30K. Split già pre-frozen in §11 v2.5.41-rc.1 sezione "Stima token". Vantaggio: CP4 con `UpdatePrompt.jsx` (a11y `role=alert`, token tema, mock `virtual:pwa-register`) merita context fresh per qualità test coverage.
+
+### Pattern operativi confermati
+
+- **Bash zsh-safe** rispettato: echo single-quoted, no `#`, no apostrofi italiani in tutti i blocchi consegnati a Mac (CP0 + 3 passi CP1).
+- **Patcher Python anchor-based idempotente** (CP2/CP3): detection `ALREADY-PATCHED` su match stringa esatta, no regex, no parsing JS. Re-run safe.
+- **Installer self-extracting con SHA-1 bridge** (CP1): pattern §6.135 + sandbox validation pre-delivery. SHA-1 bit-perfect tra sandbox e Mac post-installer. Successiva rigen Mac via `node scripts/genera-icone.mjs` ha prodotto PNG hash diversi (Helvetica reale) — atteso e documentato.
+- **Pre-validation in sandbox** prima di ogni delivery: simulate-target run per installer + JS regex eval per CP3 + Python file run per CP2/CP3.
+- **`ask_user_input_v0`** usato per design icone (4 opzioni) e per decisione split sessione (2 opzioni). Pattern utile per decisioni binarie/3-way ad alto impatto su qualità deliverable.
+
+### Deviazioni introdotte
+
+**Zero §6.NN nuove.** Riepilogo motivazioni:
+- Font fallback DejaVu/Helvetica = implementation detail di AMB-10.D, non deviazione.
+- Regola runtime icons ridondante col precache = coerente con §11 letterale ("CacheFirst per `^/icons/`").
+- Apple-touch-icon link generico rifattorizzato = coerente con §11 (richiesta esplicita di sostituzione con file dedicato 180×180).
+
+### Backup `.bak.cp1` da preservare (cleanup deferred a CP6.5 di Step 10-B)
+
+```
+public/icons/icon-192.png.bak.cp1            (1578 byte, §6.144 placeholder originale)
+public/icons/icon-512.png.bak.cp1            (4423 byte, §6.144 placeholder originale)
+public/icons/icon-maskable-512.png.bak.cp1   (3450 byte, §6.144 placeholder originale)
+```
+
+`.gitignore` pattern `*.bak` previene tracking; `git status --short` non li mostra. Pattern §6.135.
+
+### Prossimi passi (post-10-A, pre-10-B)
+
+1. **Stato git corrente:** branch `step-8`, top `52f67bd` commit unitario CP1+CP2+CP3 (10 file, 705 ins / 5 del).
+2. **Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude.ai** con versione **v2.5.42** (questo delivery).
+3. Eseguire CP0 sanity-light §11 v2.5.42 (8 gate) prima di aprire Step 10-B esecutiva.
+4. Aprire **Sessione Step 10-B esecutiva** (nuova conversazione Claude) con one-liner:
+   ```
+   Esegui il prompt al §11 del Changelog (Step 10-B esecutiva).
+   ```
+
+### Riferimenti
+
+- **§11 nuovo** (questa versione): prompt esecutivo Step 10-B
+- **§22.27**: chiusura Step 10 analisi-first + AMB-10 pre-frozen (riferimento decisioni "decidi tu" + scope CP frozen)
+- **§22.26**: pattern operativi 9-D (CP browser deferred + bump definitivo)
+- **§6.135**: pattern `.bak.cpN` esteso a 10-A → 10-B (preservazione + cleanup mandatory in CP closing)
+
+## 22.29 Stato post-Sessione Step 10-B esecutiva
+
+**Data**: 30 aprile 2026
+**Modalità**: esecutiva diretta da prompt §11 v2.5.42, sessione singola completa CP4+CP5+CP6 (no split), incluso hot-fix mid-session (§6.154) e recovery git (§6.155)
+**Token consumati**: ~70-80K
+**Esito**: ✅ **Step 10 chiuso completo a livello codice + build**. CP7 browser deferred a Step 10-C esecutiva snella (§22.30 futura).
+
+### CP0 sanity-light verificato (8 gate)
+
+Tutti verdi: tree pulito (3 `.bak.cp1` da Step 10-A presenti, untracked), top `52f67bd`, branch `step-8`, 375/375 test in 6.94s, sharp `^0.34.5`, 5 icone definitive presenti, 4 manifest fields in `vite.config.js`, 2 link tags in `index.html`.
+
+### CP completati
+
+| CP | Scope | Esito | Output |
+|---|---|---|---|
+| **CP4** | SW registration + UpdatePrompt + 6 unit test (AMB-10.A/C/G) | ✅ | 4 nuovi: `src/pwa/registerSW.test.js`, `src/components/shared/UpdatePrompt.jsx`, `src/components/shared/UpdatePrompt.test.jsx`, `src/test/__mocks__/virtualPwaRegister.js` (post hot-fix). 1 rewrite: `src/pwa/registerSW.js`. 3 modify: `src/main.jsx`, `src/App.jsx`, `vitest.config.js` (post hot-fix) |
+| **CP4 hot-fix** | §6.154 vitest alias `virtual:pwa-register` | ✅ | 1 new (mock fisico) + 1 rewrite (test) + 1 modify (vitest.config.js) |
+| **CP5** | build verify (AMB-10.B) | ✅ | 92 moduli transformed, 16 precache (430.20 KiB), bundle `index-6TYqLO7L.js` 406858 byte (delta +1230 vs baseline 405628 = 6% del +20480 budget), `dist/sw.js` 2057 byte, single-source SW (no `dist/registerSW.js` inject), 5 asset precached (favicon.svg + apple-touch-icon-180 + 3 PNG), test 381/381 invariato post-build |
+| **CP6** | bump v2.6.0 + cleanup + commit closing (AMB-10.I) | ✅ con recovery §6.155 | 2 commit: `01a553f` rebaseline + `959dc40` closing. Cleanup 8 backup (`.bak.cp1` × 3 + `.bak.cp4` × 5) |
+| **CP7** | CP browser 4 punti (AMB-10.H) | ⏭ deferred Step 10-C | non bloccante |
+
+### File deltas finali Step 10-B
+
+**Nuovi (4):**
+- `src/components/shared/UpdatePrompt.jsx` — 95 righe, SHA `40a79cbb...`. Toast `role=alert` + `aria-live=polite`, `fixed bottom-20 inset-x-4 z-50`, theming `useTheme` (modalBg + headerBorder + textPrimary/Secondary + blue accent con text adattivo dark/light), button Ricarica → `triggerUpdate()`, button ✕ → dismiss locale, subscribe in `useEffect` con cleanup
+- `src/components/shared/UpdatePrompt.test.jsx` — 83 righe, SHA `067452f2...`. 3 unit: hidden a flag false, click Ricarica invoca triggerUpdate, click ✕ nasconde senza triggerUpdate. Mock `useTheme` + mock `../../pwa/registerSW.js`
+- `src/pwa/registerSW.test.js` — 72 righe, SHA `bd847677...`. 3 unit: setupPWA registra con onNeedRefresh+onOfflineReady, notify subscribers + late-subscriber sync, triggerUpdate invoca updateSW. Pattern §6.154 (alias resolve invece di vi.mock virtuale)
+- `src/test/__mocks__/virtualPwaRegister.js` — 67 righe, SHA `78797f6e...`. Mock fisico aliasato da `virtual:pwa-register`. API: `registerSW(options)` + `__setUpdateSWMock` + `__getLastOptions` + `__getCallCount` + `__reset`
+
+**Rewrite (1):**
+- `src/pwa/registerSW.js` — 88 righe, SHA `155ee827...`. Da scaffold 9-B (single-export `registerSW()` no-args) a API estesa `setupPWA()` (Promise-returning, idempotente) + `subscribeUpdateAvailable(cb) → unsubscribe` (con replay sync) + `triggerUpdate()` + `__TEST_ONLY_reset`
+
+**Modified (4):**
+- `src/main.jsx` — 2 righe modificate (line 6 import + line 47 chiamata). Bootstrap chiama `setupPWA()` invece di `registerSW()`
+- `src/App.jsx` — 2 righe aggiunte (line 5 import UpdatePrompt + line 42 mount `<UpdatePrompt />` sopra `<NavBar />` dentro `<ThemedShell>`)
+- `vitest.config.js` — 1 import + 10 righe blocco `resolve.alias` per pattern §6.154
+- `package.json` — version `0.1.0` → `2.5.42` (commit `01a553f` rebaseline) → `2.6.0` (commit `959dc40` closing)
+
+### Decisioni in-session
+
+1. **Q1 state management UpdatePrompt** → opzione A (module-level subscribe pattern). Razionale: flag "update available" è singleton di fatto (un SW, un evento), C sposta stato in `App.jsx` che ha già responsabilità routing, B ha overhead Provider injustificato per single consumer attuale. Pattern A: zero overhead React, mock test triviale.
+2. **Hot-fix §6.154 strategia** → B'-1 (alias `vitest.config.js` + mock fisico). A scartata (rompe build prod), C scartata (non praticabile, callback interne). Pattern canonico raccomandato dalla doc vite-plugin-pwa.
+3. **Bug installer Step 10-A** scoperto e fixato in-session: la versione 10-A creava backup spuri sui re-run dei file new. Fix: skip totale se SHA del target attuale corrisponde all'atteso (vera idempotenza). Pattern da retrofittare in CP futuri.
+4. **Recovery §6.155 strategia** → Q1=C (rebaseline commit dedicato 0.1.0 → 2.5.42, poi bump → 2.6.0) + Q2=A (`git reset --soft 52f67bd` + 2 commit). Razionale: storia changelog v2.5.x è realtà documentata in 40+ entries §22.x, saltare a v2.6.0 con un solo commit nasconderebbe quella storia. 2 commit onesti separano chiaramente "recupero allineamento storico" da "bump milestone".
+
+### Pattern operativi confermati
+
+- **Bash zsh-safe** rispettato in tutti i blocchi consegnati: echo single-quoted, no `#` literali, no apostrofi italiani.
+- **Installer self-extracting con SHA-1 bridge + idempotenza vera** (skip per SHA match): pattern matures rispetto a Step 10-A che aveva bug di backup spuri sui re-run. Validazione sandbox pre-delivery: prima esecuzione + re-run su replica filesystem ricostruita da paste utente.
+- **Patcher Python anchor-based idempotente**: detection ALREADY-PATCHED su match marker, uniqueness check su anchor, fail-fast su anchor mancanti. Backup `.bak.cpN` distinto per evitare collisioni (es. `.bak.cp4` vs `.bak.cp4-hf` per CP4 + hot-fix).
+- **Pre-validation in sandbox** prima di ogni delivery: replica filesystem da paste utente, prima esecuzione, re-run idempotenza, syntax check post-modifica (`node --check` su .js, `@babel/parser` su .jsx).
+- **§6.NN formalizzate appena emerse**: §6.153 dopo CP0 ricognizione path, §6.154 dopo test failure mid-CP4, §6.155 dopo recovery git CP6. Nessuna deviazione silenziosa.
+- **`ask_user_input_v0`** non utilizzato in questa sessione (tutte le decisioni Q1/Q2 risolte conversazionalmente).
+
+### Lessons-learned consolidate (riferimenti per futuri step)
+
+1. **Pattern §11 "esecutiva" non è infallibile** — il prompt §11 v2.5.42 conteneva 3 assunzioni errate sul filesystem (path registerSW, path UpdatePrompt, file di mount). CP0 deve includere ricognizione attiva path prescritti, non solo gate di stato. Da retrofittare nel template di apertura step esecutivi.
+2. **`vi.mock` non funziona per moduli `virtual:*` di plugin Vite** — sono rejected at transform-time, prima che il runtime intercetti. Pattern §6.154 (alias resolve + mock fisico) è la canonica.
+3. **Mai eseguire commit con subject prescrittivo senza verificare diff effettivo** (lessons §6.155). Un guard che stampa errore ma non halta il flow è false safety. Considerare `set -e` in sequenze critiche dove i passi sono dipendenti.
+4. **Bash zsh + commenti `#` parse-error**: anche un blocco di "spiegazione" che assomiglia a uno script, se incollato nel terminale, viene eseguito riga per riga con commenti shell-interpretati. Convenzione: ogni blocco *eseguibile* deve essere chiaramente delimitato e zsh-safe; le spiegazioni vanno in prosa Markdown, non in fenced code blocks.
+
+### Deviazioni introdotte
+
+3 nuove §6.NN: **§6.153** (path/scope §11 vs filesystem reale), **§6.154** (vitest alias hot-fix), **§6.155** (rebaseline commit dedicato per disallineamento package.json).
+
+### Backup `.bak.cp4*` cleanup (CP6.5)
+
+8 file rimossi al closing CP6:
+```
+public/icons/icon-192.png.bak.cp1
+public/icons/icon-512.png.bak.cp1
+public/icons/icon-maskable-512.png.bak.cp1
+src/App.jsx.bak.cp4
+src/main.jsx.bak.cp4
+src/pwa/registerSW.js.bak.cp4
+src/pwa/registerSW.test.js.bak.cp4-hf
+vitest.config.js.bak.cp4-hf
+```
+
+`.gitignore` pattern `*.bak` previene tracking; nessuno era staged. Pattern §6.135 esteso confermato.
+
+### Stato git post-sessione
+
+Branch `step-8`, top `959dc40`, working tree pulito.
+```
+959dc40 (HEAD -> step-8) Step 10-B closing — SW autoUpdate+prompt + bump v2.6.0 (PWA production-ready)
+01a553f Rebaseline package.json 0.1.0 -> 2.5.42 (recupero disallineamento storico)
+52f67bd Step 10-A — icone PT + manifest fields + workbox runtimeCaching scaffold
+376c610 9-D closing — CP browser P2/P3/P4/P5/P8 verdi + cleanup bak files + bump v2.5.40
+```
+
+### Stato changelog post-sessione
+
+Versione changelog: v2.5.42 → **v2.6.0** definitivo (allineato a `package.json`). §11 sostituita con prompt esecutivo Step 10-C esecutiva snella. §6 esteso con §6.153/6.154/6.155. §12 title aggiornato (`+ 10-B`). §22 esteso con §22.29 (questa sezione).
+
+### Prossimi passi (post-10-B, pre-10-C)
+
+1. **Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude.ai** con versione **v2.6.0** (questo delivery).
+2. Aprire **Sessione Step 10-C esecutiva snella** (nuova conversazione Claude) con one-liner:
+   ```
+   Esegui il prompt al §11 del Changelog (Step 10-C esecutiva snella).
+   ```
+3. Eseguire CP0 sanity-light §11 v2.6.0 (7 gate) prima dei 4 punti CP browser.
+4. Decidere all'apertura di Step 10-C: tag git annotato `v2.6.0` come milestone? Default conservativo no, coerente §22.26 9-D.
+
+### Riferimenti
+
+- **§11 nuovo** (questa versione): prompt esecutivo Step 10-C esecutiva snella
+- **§22.28**: chiusura Step 10-A esecutiva parziale (riferimento file deltas pre-10-B)
+- **§22.27**: chiusura Step 10 analisi-first + AMB-10 pre-frozen
+- **§22.26**: pattern operativi 9-D (CP browser deferred + bump definitivo) — riferimento stilistico per Step 10-C
+- **§6.153/6.154/6.155**: deviazioni introdotte in questa sessione
+- **§6.135**: pattern `.bak.cpN` chiuso con cleanup CP6.5 (3 .bak.cp1 + 5 .bak.cp4*)
+
+## 22.30 Stato post-Sessione Step 10-C esecutiva snella (esito misto, P3 deferred a Step 10-C-fix)
+
+**Top commit:** `d6719b5` (Hot-fix §6.156). Branch `step-8`. Tree pulito.
+**Test:** 381/381 su 38 file (invariato vs Step 10-B baseline).
+**Tag git milestone:** **non applicato** (decisione conservativa: tag `v2.6.0` in attesa di P3 verde end-to-end via Step 10-C-fix).
+
+### Esito CP browser P1-P4
+
+```
+CP0 sanity-light:                    OK 6/7 gate, gate 4 sbloccato via §6.156 hot-fix
+P1 Install Chrome Desktop:           OK
+P2 Offline (refresh+nav+Dexie):      OK (2 warning console innocui)
+P3 Update flow toast UpdatePrompt:   FAIL §6.157 config mismatch genuino
+P4 Icone:
+   - iOS Safari Add-to-Home:         OK end-to-end reale
+   - Android proxy manifest+asset:   OK
+   - Android empirico:               DEFERRED (no hardware)
+```
+
+### Hot-fix introdotto
+
+**§6.156** — `notifications.test.js` timezone race su `showDoseNotification` (2 test rossi in CP0 gate 4). Bug nel test setup (mix UTC `dateStr` + locale `hh:mm`), production code invariato. Fix: `vi.setSystemTime` fascia diurna safe nel `beforeEach` describe principale. +7 righe test-only, no version bump. Commit dedicato `d6719b5`.
+
+### Scoperta deferita
+
+**§6.157** — `<UpdatePrompt />` non scatta perché `registerType: "autoUpdate"` + workbox default `skipWaiting()` cortocircuitano `onNeedRefresh`. Codice morto in produzione, intent non realizzato. Fix in Step 10-C-fix opzione 1 (vedi §6.157 + §11 nuovo).
+
+### Discrepanza `dist/sw.js` Content-Length identico
+
+Diagnosi durante P3 retry: bump `package.json` da solo NON cambia il bundle (workbox precache hash dipende da contenuto asset), serve cachebust source-level reale. Pattern §6.146 si è ripresentato. §11 nuovo (Step 10-C-fix) corregge il blocco P3 di conseguenza.
+
+### Discrepanze ambientali rilevate (tracked, non bloccanti)
+
+1. **Porta 5000 occupata su macOS Tahoe:** AirPlay Receiver / Control Center usa 5000 di default. `npx serve dist -p 5000` auto-fallback su porta random (osservato 50727, 54689). Per Step 10-C-fix il blocco P3 deve forzare `npx serve dist -l 50727` (porta esplicita), o disabilitare AirPlay Receiver in Impostazioni Sistema → Generale → AirDrop e Handoff.
+2. **Warning console PWA standalone offline:**
+   - `<meta name="apple-mobile-web-app-capable">` deprecated → considerare aggiunta `<meta name="mobile-web-app-capable">` standard W3C in `index.html` accanto al legacy iOS. Candidate Wave next, non bloccante.
+   - `Unchecked runtime.lastError: Could not establish connection.` → estensione Chrome dell'utente, non PharmaTimer, scartabile.
+3. **Sticky data separator distante dal margine superiore:** sintomo già pre-esistente (zona §6.96 / §6.107 / §6.110), osservato anche in production build PWA standalone. **Non aperta nuova §6.NN**: fenomeno già tracciato, sessione futura dedicata Wave next.
+
+### Stato Step 10 nel complesso
+
+Code: complete (Step 10-A icone+manifest+workbox runtimeCaching, Step 10-B SW autoUpdate+prompt+bump). Verifica end-to-end browser: 3/4 verde + 1 fail genuino sbloccabile in 1 sessione dedicata Step 10-C-fix.
+
+Step 10 **NON è chiuso milestone-definitivo**. Status: "code-complete con TODO P3 update flow".
+
+### One-liner riapertura
+
+```
+Esegui il prompt al §11 del Changelog (Step 10-C-fix esecutiva snella).
+```
