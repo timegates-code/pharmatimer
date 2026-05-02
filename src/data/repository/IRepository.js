@@ -121,4 +121,32 @@
 
 // This file exports nothing at runtime — it's a pure contract.
 // The factory in `./index.js` returns an object matching IRepository.
+
+/**
+ * --- Error contract (CP1a Step 11-A, AMB-11.A.1/2) ---
+ *
+ * All methods of any IRepository implementation MUST throw
+ * `RepositoryError` (or a subclass) on failure. Raw IndexedDB /
+ * Dexie / HTTP errors MUST be wrapped via `wrapRepoError` or an
+ * equivalent classifier.
+ *
+ * Code vocabulary (extensible; see RepositoryError.js):
+ *   DB_UNAVAILABLE        — connection lost / DB closed       → critical
+ *   TRANSACTION_ABORT     — atomic op rolled back              → critical
+ *   CONSTRAINT_VIOLATION  — uniqueness / FK / business-rule    → error or warning
+ *   NOT_FOUND             — record absent                      → warning
+ *   GENERIC               — unclassified                       → error
+ *
+ * Future ApiRepository (Fase 3) MUST honor this contract:
+ *   HTTP 5xx              → DB_UNAVAILABLE   (critical)
+ *   HTTP 409 conflict     → CONSTRAINT_VIOLATION
+ *   HTTP 404              → NOT_FOUND
+ *   HTTP 4xx other        → GENERIC
+ *   network error         → DB_UNAVAILABLE   (critical)
+ *
+ * Severity values are exactly: 'warning' | 'error' | 'critical'.
+ * Consumers (reducer.SET_ERROR) read payload.severity to decide UI
+ * surface (toast vs banner — see ErrorSurface, CP1b).
+ */
+
 export {};

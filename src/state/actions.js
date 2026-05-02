@@ -249,7 +249,12 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     } catch (err) {
       dispatch({
         type: 'SET_ERROR',
-        payload: { kind: 'repo', message: err?.message ?? 'Errore nel ricalcolo del piano' },
+        payload: {
+          kind: 'repo',
+          severity: err?.severity ?? 'error',
+          code: err?.code,
+          message: err?.message ?? 'Errore nel ricalcolo del piano',
+        },
       });
     }
   }
@@ -317,7 +322,12 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     if (stack.length === 0) {
       dispatch({
         type: 'SET_ERROR',
-        payload: { kind: 'domain', message: 'Nessuna azione da annullare' },
+        payload: {
+          kind: 'domain',
+          severity: 'error',
+          code: undefined,
+          message: 'Nessuna azione da annullare',
+        },
       });
       return { ok: false };
     }
@@ -400,7 +410,12 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     } catch (err) {
       dispatch({
         type: 'SET_ERROR',
-        payload: { kind: 'repo', message: err?.message ?? 'Errore nel cambio profilo' },
+        payload: {
+          kind: 'repo',
+          severity: err?.severity ?? 'error',
+          code: err?.code,
+          message: err?.message ?? 'Errore nel cambio profilo',
+        },
       });
       return { ok: false };
     }
@@ -475,7 +490,12 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
       });
       dispatch({
         type: 'SET_ERROR',
-        payload: { kind: 'repo', message: err?.message ?? 'Errore nel salvataggio impostazione' },
+        payload: {
+          kind: 'repo',
+          severity: err?.severity ?? 'error',
+          code: err?.code,
+          message: err?.message ?? 'Errore nel salvataggio impostazione',
+        },
       });
       return { ok: false };
     }
@@ -521,6 +541,8 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
         type: 'SET_ERROR',
         payload: {
           kind: 'repo',
+          severity: err?.severity ?? 'error',
+          code: err?.code,
           message: err?.message ?? 'Errore nel salvataggio profilo',
         },
       });
@@ -574,6 +596,8 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
         type: 'SET_ERROR',
         payload: {
           kind: 'repo',
+          severity: err?.severity ?? 'error',
+          code: err?.code,
           message: err?.message ?? 'Errore nell\'aggiornamento profilo',
         },
       });
@@ -597,6 +621,8 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
         type: 'SET_ERROR',
         payload: {
           kind: 'repo',
+          severity: err?.severity ?? 'error',
+          code: err?.code,
           message: err?.message ?? 'Errore nell\'eliminazione profilo',
         },
       });
@@ -699,6 +725,8 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
         type: 'SET_ERROR',
         payload: {
           kind: 'repo',
+          severity: err?.severity ?? 'error',
+          code: err?.code,
           message: err?.message ?? 'Errore nel salvataggio farmaco',
         },
       });
@@ -730,6 +758,8 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
         type: 'SET_ERROR',
         payload: {
           kind: 'repo',
+          severity: err?.severity ?? 'error',
+          code: err?.code,
           message: err?.message ?? 'Errore nell\'aggiornamento farmaco',
         },
       });
@@ -756,6 +786,8 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
         type: 'SET_ERROR',
         payload: {
           kind: 'repo',
+          severity: err?.severity ?? 'error',
+          code: err?.code,
           message: err?.message ?? 'Errore nell\'eliminazione farmaco',
         },
       });
@@ -781,6 +813,8 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
         type: 'SET_ERROR',
         payload: {
           kind: 'domain',
+          severity: 'error',
+          code: undefined,
           message: 'Profilo non trovato',
         },
       });

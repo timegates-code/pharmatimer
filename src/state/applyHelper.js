@@ -77,7 +77,12 @@ export async function commitApplyResult({
     if (err instanceof DomainError) {
       dispatch({
         type: 'SET_ERROR',
-        payload: { kind: 'domain', code: err.code, message: err.message },
+        payload: {
+          kind: 'domain',
+          severity: err?.severity ?? 'error',
+          code: err.code,
+          message: err.message,
+        },
       });
       // Surface the domain code in the thunk return value so UI consumers
       // (e.g. UndoModal) can branch on it directly, without reading back
@@ -86,7 +91,12 @@ export async function commitApplyResult({
     }
     dispatch({
       type: 'SET_ERROR',
-      payload: { kind: 'unknown', message: err?.message ?? String(err) },
+      payload: {
+        kind: 'unknown',
+        severity: err?.severity ?? 'error',
+        code: err?.code,
+        message: err?.message ?? String(err),
+      },
     });
     return { ok: false };
   }
@@ -131,7 +141,12 @@ export async function commitApplyResult({
 
     dispatch({
       type: 'SET_ERROR',
-      payload: { kind: 'repo', message: err?.message ?? 'Errore di persistenza' },
+      payload: {
+        kind: 'repo',
+        severity: err?.severity ?? 'error',
+        code: err?.code,
+        message: err?.message ?? 'Errore di persistenza',
+      },
     });
     return { ok: false };
   }

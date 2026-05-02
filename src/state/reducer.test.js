@@ -223,6 +223,31 @@ describe('reducer — error channel', () => {
     const next = reducer(s, { type: 'CLEAR_ERROR' });
     expect(next.error).toBeNull();
   });
+
+  // CP1a Step 11-A (AMB-11.A.2): severity + code propagation.
+  it('SET_ERROR propaga severity e code dal payload', () => {
+    const err = {
+      kind: 'repo',
+      severity: 'critical',
+      code: 'DB_UNAVAILABLE',
+      message: 'IndexedDB chiuso',
+    };
+    const next = reducer(initialState, { type: 'SET_ERROR', payload: err });
+    expect(next.error).toEqual(err);
+    expect(next.error.severity).toBe('critical');
+    expect(next.error.code).toBe('DB_UNAVAILABLE');
+  });
+
+  // CP1a Step 11-A: backward-compat. Reducer must accept legacy payload
+  // shape (no severity, no code) without breaking. Consumers that read
+  // only state.error.message keep working.
+  it('SET_ERROR backward-compat: payload legacy senza severity/code accettato', () => {
+    const legacy = { kind: 'domain', message: 'errore vecchio formato' };
+    const next = reducer(initialState, { type: 'SET_ERROR', payload: legacy });
+    expect(next.error).toEqual(legacy);
+    expect(next.error.severity).toBeUndefined();
+    expect(next.error.code).toBeUndefined();
+  });
 });
 
 describe('reducer — dev controls', () => {
