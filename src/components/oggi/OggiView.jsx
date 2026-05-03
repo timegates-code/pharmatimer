@@ -81,6 +81,7 @@ import {
   selectCountersForDay,
   selectUltimaPresa,
   selectPromptEntry,
+  selectImpostazione,
 } from '../../state/selectors.js';
 import {
   groupEntriesByDayAndMomento,
@@ -342,6 +343,11 @@ export default function OggiView() {
     setRecuperoModal(null);
   };
 
+  // CP1b CP3 (AMB-11.A.10/11): header greeting "Ciao [nome]" with defensive
+  // fallback "Ciao!" when nome_utente is unset (variant B, §6.NN).
+  const nomeUtente = selectImpostazione(state, 'nome_utente');
+  const greeting = nomeUtente ? `Ciao ${nomeUtente}` : 'Ciao!';
+
   return (
     <>
       <style>{cssString}</style>
@@ -360,7 +366,7 @@ export default function OggiView() {
                 PharmaTimer
               </h1>
               <p className="text-xs truncate" style={{ color: t.textSecondary }}>
-                {subtitle}
+                {greeting} · {subtitle}
               </p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">

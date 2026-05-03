@@ -348,3 +348,34 @@ describe('OggiView — auto-prompt gap recovery (Sessione 7c-2)', () => {
     expect(ctxRef.current.state.prompt).toBeNull();
   });
 });
+
+
+// ============================================================
+// Sessione Step 11-A CP1b CP3 — header greeting (AMB-11.A.10/11).
+// Validates the greeting line in OggiView's header subtitle:
+//   - "Ciao!" fallback when state.impostazioni.nome_utente is unset
+//   - "Ciao Roberto" when state.impostazioni.nome_utente === 'Roberto'
+//
+// Pattern: override hoist.repo BEFORE renderWithRealProvider so the
+// Proxy reads the seeded impostazioni at init time. The global
+// beforeEach already sets a default makeFakeRepo() (with empty
+// impostazioni) — the fallback test relies on the default; the
+// custom-nome test overrides locally.
+// ============================================================
+describe('OggiView — header greeting (CP1b CP3)', () => {
+  it('renders "Ciao!" fallback when impostazioni.nome_utente is unset', async () => {
+    // hoist.repo already seeded with empty impostazioni by global beforeEach.
+    const { ctxRef } = renderWithRealProvider(<OggiView />);
+    await waitForReady(ctxRef);
+
+    expect(screen.getByText(/Ciao!/)).toBeInTheDocument();
+  });
+
+  it('renders "Ciao Roberto" when impostazioni.nome_utente is set', async () => {
+    hoist.repo = makeFakeRepo({ impostazioni: { nome_utente: 'Roberto' } });
+    const { ctxRef } = renderWithRealProvider(<OggiView />);
+    await waitForReady(ctxRef);
+
+    expect(screen.getByText(/Ciao Roberto/)).toBeInTheDocument();
+  });
+});

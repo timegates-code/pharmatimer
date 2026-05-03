@@ -3,6 +3,8 @@ import OggiView from "./components/oggi/OggiView.jsx";
 import ConfigView from "./components/config/ConfigView.jsx";
 import NavBar from "./components/shared/NavBar.jsx";
 import UpdatePrompt from "./components/shared/UpdatePrompt.jsx";
+import ErrorSurface from "./components/shared/ErrorSurface.jsx";
+import ErrorAnnouncer from "./components/shared/ErrorAnnouncer.jsx";
 import { useTheme } from "./hooks/useTheme.js";
 
 // Shell with bottom nav and route outlets.
@@ -31,6 +33,8 @@ function ThemedShell({ children }) {
 export default function App() {
   return (
     <ThemedShell>
+      <ErrorAnnouncer />
+      <ErrorSurface />
       <Routes>
         <Route path="/" element={<Navigate to="/oggi" replace />} />
         <Route path="/oggi" element={<OggiView />} />
