@@ -1,8 +1,10 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 2.6.0
+**Versione:** 2.7.0
 **Data inizio fase:** 16 aprile 2026
-**Ultima modifica:** 30 aprile 2026 (Sessione Step 10-B esecutiva: CP4 SW registration + UpdatePrompt component + 6 unit test [3 registerSW + 3 UpdatePrompt]; CP4 hot-fix §6.154 vitest alias per `virtual:pwa-register` transform-time + mock fisico `src/test/__mocks__/virtualPwaRegister.js`; CP5 build verify [16 precache 430 KiB, bundle delta +1230 byte = 6% del +20KB budget, 5 asset precached, dist/sw.js 2057 byte, single-source SW no `dist/registerSW.js` inject]; CP6 chiusura con 2 commit [rebaseline `01a553f` package.json `0.1.0` → `2.5.42`, closing `959dc40` bump `2.5.42` → `2.6.0` + cleanup 8 backup `.bak.cp1` + `.bak.cp4*`]; 3 deviazioni nuove: §6.153 path/scope §11 vs filesystem reale (Sessione 9-B existing files), §6.154 vitest alias hot-fix per `virtual:pwa-register`, §6.155 disallineamento storico package.json vs changelog version recovery; baseline test 375 → **381/381** su 38 file (+6 esatto, target AMB-10.G centrato); AMB-10.A/C/G consumate; CP7 browser deferred a Step 10-C; nuova §22.29 Stato post-Step 10-B esecutiva; §11 sostituita con prompt esecutivo Step 10-C snella; bump v2.5.42 → **v2.6.0** definitivo)
+**Ultima modifica:** 3 maggio 2026 (Sessione Step 11-B Wave-next + closing Fase 2 esecutiva: chiusura sezione "Domani" cross-midnight rendering + sticky multi-separator verify-only + closing Step 11 / Fase 2 milestone in 4 CP impl + 1 CP closing con commit unico finale `<TBD-closing-commit>`. **CP1** commit grouping: helper `effectiveDateStr` + partition `groupEntriesByDayAndMomento` per effective bucket in `src/utils/uiState.js` + prop `bucketDateStr` propagata in `DoseCard.jsx` con gate `badgeBucketSuppressed` + `OggiView.jsx` propagation chain (+9 test: 6 uiState + 3 DoseCard). **CP2** edge cases: 3 test in `uiState.test.js` (stato=ricalcolata cross-midnight promotion, stato=presa non-promotion, anticipo same-day). **CP3** verify-only no-code: AMB-11.B.4/5 chiusi (sticky stack-replacement nativo CSS confermato browser, `top-[149px]` calibrazione single-separator preserva con N≥2 separatori). **CP3-fix** propagation: `getCardState` in `uiState.js` usa `effectiveDateStr` invece di `entry.dateStr` (+ 2 regression test) — verifica visiva browser confermata Olevia 2a dose cross-midnight mostra stato neutro invece di IN RITARDO. **CP4** QW5 deferred Fase 3: audit ImpostazioniTab non-actionable senza navigazione browser, bug non riproducibile rapidamente, scope opportunistic decade. Cumulativo +14 test (atteso +12, espansivo +17, dentro range). 2 nuove deviazioni §6.NN: §6.160 (CP3-fix propagation `getCardState` come scope-creep necessaria su AMB-11.B.1, distinzione tra bucketing sezione vs cardState semantico) e §6.161 (QW5 deferred Fase 3 backlog). Decisioni in-session ratificate: **AMB-11.B.6** = tag annotato `v2.7.0` su closing 11-B (Fase 2 milestone reale, non stub `v3.0.0-alpha` Fase 3 prematuro), **AMB-11.B.7 nuova** = convention "package.json bump solo a closing Step (non a closing CP intra-step)" — bump 2.6.1 → 2.7.0 in questa closing. Retrospettiva Fase 2 (sub-sub-sezione §11.B closing, non §23 nuova top-level): 44 deviazioni §6.115-§6.161 raggruppate per cluster tematici, debt deferito Fase 3 enumerato, `LocalRepository` come ground truth contratto `ApiRepository` Fase 3, AMB candidati Fase 3 F3.A÷H pre-frozen come hand-off. §11 evoluto a hand-off Sessione Fase 3 analisi-first dedicata (Q7=B). Bump v2.6.4 → **v2.7.0** + tag annotato `v2.7.0` "Fase 2 closing milestone PWA standalone".)
+
+**Changelog versione 2.6.4 (rispetto alla 2.6.3, retroattiva):** Sessione Step 11-A CP1b esecutiva chiusura ErrorSurface UI + greeting nome_utente + ARIA live region in 5 CP incrementali con commit unico finale `755602e`. **CP1**: nuovo `src/components/shared/ErrorSurface.jsx` (severity-based runtime surface — toast 4s autodismiss per warning/error, banner persistente per critical, click-dismiss manuale via `CLEAR_ERROR`) + `ErrorSurface.test.jsx` 6 test (null/toast/banner/autodismiss/click-dismiss/legacy-shape backward-compat). Variant decisione D3-bis: `DISMISS_ERROR` action originalmente prevista rinominata a `CLEAR_ERROR` post-CP0 round 4 audit reducer (CP1a-era audit incompleto, §6.158). +6 → 411/411. **CP2**: rename retroattivo `DISMISS_ERROR` → `CLEAR_ERROR` (8 occorrenze totali in ErrorSurface.jsx + .test.jsx) via patcher Python idempotente + mount globale `<ErrorSurface />` in App.jsx come primo child di `<ThemedShell>`. Reducer NESSUNA modifica (case `CLEAR_ERROR` pre-esistente da 8a CP4 §6.77 assorbe semantica DISMISS_ERROR per zero duplicazione, §6.158). 411 → 411 (+0, scope collapse). **CP3**: greeting "Ciao [nome]" / "Ciao!" fallback in OggiView header subtitle prepended (variant B sempre presente, AMB-11.A.10/11 risolti) + `selectImpostazione` esportato dal selectors block + 2 test integration in `OggiView.test.jsx` (default fallback + custom nome via `hoist.repo = makeFakeRepo({impostazioni: {nome_utente: 'Roberto'}})` override pattern lazy Proxy). +2 → 413/413. **CP4**: nuovo `src/components/shared/ErrorAnnouncer.jsx` (sr-only ARIA live region globale, `aria-live="polite"` per warning/error/null, `aria-live="assertive"` per critical, `aria-atomic="true"`, riusa `state.error.message` zero nuovo state slice — Q2=A) + `ErrorAnnouncer.test.jsx` 3 test (null+polite, polite+message, assertive+message) + mount in App.jsx PRIMA di `<ErrorSurface />` (race rule: live region deve essere mounted prima della transizione null→value). +3 → 416/416. **CP5**: verify-only AMB-11.A.7 ratifica 9/9 consumer `useModalA11y` conformi (`labelId` non-null + `triggerRef` propagato + `{...modalProps}` spread + container link consistente + orphan-id check passa) — zero codice, zero test, scope creep evitato. Cumulativo CP1b +11 test (sopra bound espansivo +5-10 di +1 accettato). Pattern 5 CP impl + closing unico. 2 nuove deviazioni §6.NN: §6.158 (scope collapse `CLEAR_ERROR` ricicla `DISMISS_ERROR`, audit CP0 round 3 incompleto su action types, lezione: gate CP0 deve grep-check action types correnti pre-lock D3) e §6.159 (CP1b ErrorSurface scope = aggiunta runtime, OggiView:288 INIT failure screen invariato — popolazioni `state.status='error'` vs `state.error≠null` distinte, stub §22.33 letterale "sostituzione inline render error riga 288" rivelato sbagliato post-audit empirico). Commit Mac-side `755602e` "CP1b Step 11-A: ErrorSurface UI + greeting + ARIA live region (CLEAR_ERROR ricicla DISMISS_ERROR)" (7 file, 456 ins / 1 del, branch `step-8`). Cleanup `.bak.cp2/cp3/cp4` + patcher transients post-commit. Bump v2.6.3 → **v2.6.4**. AMB-11.A.3/7/9/10/11 chiusi. AMB-11.A.4/5/6/8 (empty states consolidation, error boundary, retry UX, useModalA11y refactor) NON toccati — fuori scope CP1b, candidati Step 11-B. CP1b apertura ha documentato D3-bis come §6.158 inline post-CP1, eseguita rinomina retroattiva senza touch del reducer.)
 **Ambito:** Sviluppo PWA React standalone con persistenza locale, preparata per futuro swap verso backend FastAPI+MariaDB.
 
 Questo documento raccoglie le decisioni architetturali, la struttura del progetto, le deviazioni dalla specifica e lo stato di avanzamento della Fase 2. È il **punto di riferimento unico** per ogni sessione di sviluppo: leggerlo prima di iniziare garantisce continuità senza dover rileggere l'intero storico chat.
@@ -600,6 +602,29 @@ Questo documento raccoglie le decisioni architetturali, la struttura del progett
 - **Nuova §22.19** "Stato post-Sessione 9-A implementativa" con file prodotti, esiti CP1-CP4, esiti CP browser 4 punti (P2 verde post-§6.118; P1 ambiguo per §6.120 pre-existing; P3 visivo OK; P4 retry-ambiguo, focus restore non fa parte scope CP4).
 - **§11 sostituita** con prompt **Sessione 9-B analisi-first** (raccomandato vs esecutiva diretta dato lessons learned 9-A: spec semantics da rivalidare in browser, AMB-9.E÷I già ratificate ma edge cases iOS PWA permettono rifinitura).
 - 5 file codice modificati (`utils/uiState.js`, `utils/uiState.test.js`, `components/oggi/DoseCard.jsx`, `components/oggi/DoseCard.test.jsx`, `components/oggi/OggiView.jsx`) + 1 file modificato in CP1 (`utils/time.js`, `utils/time.test.js` nuovo) + 2 modificati CP2 (`data/db.js`, `package.json`, `data/db.migration.test.js` nuovo) + 2 modificati CP3 (`domain/recalc.js`, `domain/planBuilder.js` confermato, test estesi) + 1 modificato CP4 docs (`domain/types.js`).
+
+**Changelog versione 2.6.1 (rispetto alla 2.6.0):**
+- **Sessione Step 10-C-fix esecutiva snella** completata 1 maggio 2026. **§6.157 chiusa ✅** via opzione 1 raccomandata (AMB-10-C-fix.A+B): `registerType: "prompt"` in `vite.config.js` + workbox `skipWaiting: false` + `clientsClaim: false`. **P3 retest end-to-end VERDE**: SW nuovo `#23014` entra in `waiting to activate` (vs `activated and is running` immediato di v2.6.0), toast `<UpdatePrompt />` appare con copy "Nuova versione disponibile" + bottone "Ricarica", click "Ricarica" → app refresh + nuovo SW prende controllo. Intent dichiarato in `registerSW.js` (`hybrid autoUpdate + prompt UI. User must consciously trigger reload`) ora effettivamente realizzato. Bump v2.6.0 → **v2.6.1** definitivo. Step 10 milestone-definitivo PWA production-ready.
+- **CP0 sanity-light 6/6 verde**: tree con solo `M PharmaTimer_Changelog_Fase2.md` atteso (asimmetria KB+local §22.26), top `d6719b5` (Hot-fix §6.156 da Step 10-C), branch `step-8`, 381/381 su 38 file in 7.56s, version 2.6.0, `registerType: "autoUpdate"` confermato alla riga 10.
+- **CP1 — Patcher Python anchor-based idempotente** (`/tmp/patch_vite_config_10cfix.py`): 2 edit surgicali con detection `ALREADY-PATCHED`. Edit 1: anchor `      registerType: "autoUpdate",` → `      registerType: "prompt",`. Edit 2: anchor multi-line `      workbox: {\n        globPatterns: [...]` → aggiunge `        skipWaiting: false,` + `        clientsClaim: false,` prima di `globPatterns`. Backup `vite.config.js.bak.cp10cfix` creato (cleanup in CP closing). Diff atteso 3 cambi netti verificato: 1 string change `registerType` + 2 keys aggiunte in workbox.
+- **CP2 — rebuild + retest unit** verdi: `npm run build` 1.11s, `dist/sw.js` 2116 byte rigenerato con nuovo precache hash interno (16 precache entries 430.53 KiB), bundle hash `index-Dsc43izY.js` (baseline pre-cachebust). Retest 381/381 su 38 file invariato in 7.03s — config change non tocca unit logic.
+- **CP browser P3 retest** (Mac-side `npx serve dist -l 50727` + Chrome Desktop tab regolare): cachebust source-level live via `printf '\nwindow.__PT_CACHEBUST__ = %d;\n' $(date +%s) >> src/main.jsx` (sopravvive minify, pattern AMB-10-C-fix.D). Bundle hash post-cachebust `index-Bn-FaMi-.js` ≠ baseline. Restart server, click DevTools `Update`. Status SW post-update: `#23013 activated and is running` + `#23014 waiting to activate` con bottone `skipWaiting` clickable, **Update Cycle** mostra `#23014 Wait` come barra estesa rosa (vs trattino verticale di `autoUpdate`). Toast `<UpdatePrompt />` apparso bottom-fixed nella pagina. Click "Ricarica" → SW `#23014 activated and is running`, vecchio rimosso.
+- **Cleanup post-P3**: `git checkout HEAD -- src/main.jsx` revert cachebust scratch source change, `rm -f vite.config.js.bak.cp10cfix` rimozione backup CP1, bump `package.json` 2.6.0 → 2.6.1, rebuild verifica (✓ built in 1.10s, version 2.6.1), retest 381/381 verde.
+- **Tag annotato `v2.6.0` NON applicato** — decisione A su 3 opzioni proposte (raccomandata): pattern conservativo §22.26 strict, tag rimandato a Fase 2 closing (Step 11) o Fase 3 milestone, semantica pulita "tag = release reale". AMB-10-C-fix.E letterale derogata per coerenza decisionale.
+- **Commit closing**: `689db5c` "Step 10-C-fix — registerType prompt + skipWaiting:false (chiude 6.157)" su branch `step-8`, 2 file (vite.config.js + package.json), 4 ins / 2 del. Trailer commit message multi-line con AMB-10-C-fix.A/B/F + nota P3 verde end-to-end.
+- **Zero deviazioni §6.NN nuove.** §6.157 chiusa ✅ con status update da "deferred Step 10-C-fix" a "chiuso ✅ — Step 10-C-fix opzione 1 applicata, P3 verde, intent realizzato" nella entry §6.157 stessa.
+- **Pattern operativi confermati**: bash zsh-safe (echo single-quoted, no `#`, no apostrofi italiani) per CP0+CP1+CP2+Step B; patcher Python anchor-based idempotente con detection `ALREADY-PATCHED` validato in sandbox (run-1 applica 2 cambi, run-2 stampa `ALREADY-PATCHED, skip`); cachebust source-level NON bump version (lessons §6.157 pattern §6.146); `npx serve dist -l 50727` con porta esplicita (lessons §22.30 anti auto-fallback macOS); split commit codice vs Changelog (Changelog rimane `M` post-commit codice, atteso da asimmetria KB+local §22.26).
+- **Nota operativa Mac-side incidenti minori non bloccanti**:
+  - `vite preview` su porta 4173 lanciato anziché `npx serve -l 50727` come da §11 (deviazione operativa runtime, recovered con clean slate Mac-side: kill node residui + reinstall PWA fresh).
+  - PWA standalone su macOS Tahoe: Cmd+Opt+I chiude la finestra (DevTools shortcut anomalo). Fallback `chrome://inspect/#apps` mostrava lista vuota anche con PWA aperta. Workaround: testare il flow SW in tab Chrome regolare invece che PWA standalone (equivalente per scope P3 — stesso origin, stesso SW). Non bloccante per P3 ma memo per future verifiche browser PWA standalone su Tahoe.
+- **Aggiornamento roadmap §7**: Step 10 da `⏸️ Split in 10-A + 10-B` a `✅ **Completo** milestone PWA production-ready`. Riga 10-B `⏳ Pianificata` → `✅ **Completo**`. Nuove righe **10-C ⚠️ Parziale** (P3 deferred a 10-C-fix) + **10-C-fix ✅ Completo** (chiusura §6.157).
+- **§6.157 status updated** da "deferred Step 10-C-fix" a "chiuso ✅".
+- **§11 sostituita** con stub **Step 11 polish + Wave-next analisi-first** (backlog tracciato: §6.26 cross-midnight UI, sticky data separator §6.96/§6.107/§6.110, `apple-mobile-web-app-capable` deprecated meta, Q&A pattern per scoping completo).
+- **Nuova §22.31** "Stato post-Sessione Step 10-C-fix esecutiva snella" con CP gate-by-gate, dataset SHA bundle, esito P3 verde, decisione no-tag, riferimento commit `689db5c`.
+- **Estensione §12** titolo con "+ 10-C-fix" (zero nuovi file, modifiche surgicali a `vite.config.js` + `package.json` già tracciati). Nessuna modifica a §3 struttura progetto.
+- **Drift §6.69 v2.5.34 NON retrocorretto** in v2.6.1 (continuità fatto-storico immutabile, §6.71/§6.85 archive).
+- **Asimmetria KB+local Changelog confermata**: il `M PharmaTimer_Changelog_Fase2.md` post-commit è atteso (Changelog è KB+local, modifica server-side viene uploaded manualmente da Roberto), risolto in delivery v2.6.1 con upload del file completo aggiornato.
+- Baseline test **381/381 su 38 file** invariata. Build `dist/sw.js` 2116 byte (post-bump 2.6.1). Bundle finale `index-*.js` con hash determinato da version 2.6.1 + invariato source.
 
 **Changelog versione 2.5.42 (rispetto alla 2.5.41-rc.1):**
 - **Sessione Step 10-A esecutiva parziale** completata 30/04/2026. CP1 + CP2 + CP3 (su 7 totali §11 v2.5.41-rc.1) eseguiti, **CP4-CP7 deferred a Step 10-B**. Baseline test invariata **375/375 su 36 test files** (CP1-CP3 toccano solo asset+config, zero codice testato). Bump v2.5.41-rc.1 → **v2.5.42** (intermedio; bump definitivo a v2.6.0 a CP6 closing Step 10-B).
@@ -3837,6 +3862,137 @@ const mm = String(new Date(fireAt).getMinutes()).padStart(2, '0'); // locale
 
 **Pattern lesson 2 — verifiche browser PWA su `npx serve` localhost:** richiedono attenzione a (a) porta auto-fallback macOS quando 5000 occupata da AirPlay (Tahoe usa 5000 come default Control Center), (b) cache SW aggressiva tra restart server, (c) bundle deterministic anche con bump version-only. Per Step 10-C-fix il blocco P3 deve istruire un cachebust source-level reale, non bump version.
 
+**Status:** chiuso ✅ — Step 10-C-fix esecutiva snella (1 maggio 2026, v2.6.1) ha applicato l'opzione 1: `registerType: "prompt"` + `skipWaiting: false` + `clientsClaim: false`. CP browser P3 retest end-to-end VERDE: SW nuovo entra in `waiting to activate`, toast `<UpdatePrompt />` appare, click "Ricarica" attiva nuovo SW. Intent `hybrid autoUpdate + prompt UI` ora effettivamente realizzato. Commit `689db5c` su branch `step-8`. Versione `package.json` 2.6.0 → 2.6.1. Cross-reference §22.31.
+
+## 6.158 — CP2 scope collapse: `CLEAR_ERROR` pre-esistente assorbe `DISMISS_ERROR` previsto
+
+**Sessione:** Step 11-A CP1b CP2 (3 maggio 2026).
+
+**Contesto.** §22.33 / §11.A.b lockato in apertura CP1b prevedeva una nuova action reducer `DISMISS_ERROR` (decisione D3=A "simmetria con SET_ERROR + testabile in isolamento"). CP0 audit incrementale §22.33 round 3 aveva verificato la shape attuale di `state.error` ma NON aveva enumerato gli action types pre-esistenti.
+
+**Scoperta intra-CP2.** Audit Mac-side `cat src/state/reducer.js` rivela case `CLEAR_ERROR` già presente (riga ~169) introdotto in 8a CP4 §6.77 cleanup legacy `nomeUtente` mirror. Test `it('CLEAR_ERROR azzera error', ...)` a `reducer.test.js:221` già coperto. Aggiungere `DISMISS_ERROR` come case nuovo distinto sarebbe duplicazione semantica netta (entrambi `state.error → null`).
+
+**Decisione D3-bis (post-CP1).** Rinomina retroattiva: il dispatch hardcoded a `DISMISS_ERROR` in `ErrorSurface.jsx` (CP1) viene rinominato a `CLEAR_ERROR` via patcher Python idempotente (8 occorrenze: 2 in `ErrorSurface.jsx` + 6 in `ErrorSurface.test.jsx`). Reducer e `reducer.test.js` invariati. Test impact CP2 atteso `+1-2` collapsed a `+0`.
+
+**Alternative valutate.** Opzione B `case 'DISMISS_ERROR': case 'CLEAR_ERROR': return ...` (alias-case) bloccata per bloat semantico ingiustificato. Opzione C case nuovo distinto bloccata per duplicazione netta.
+
+**Lezione operativa.** Gate CP0 deve grep-check action types correnti **prima** di lockare nuove action types come decisione architetturale. Pattern audit ampliato per sessioni future:
+```bash
+grep -nE "case ['\"][A-Z_]+['\"]" src/state/reducer.js | sort -u
+```
+
+Nessuna scoperta architetturale latente — il pattern `CLEAR_ERROR` era stato dimenticato post-8a CP4. Eco lessons §6.NN-stile (es. §6.90 "preesistenza non catturata da analisi-first scope-AMB").
+
+**Classificazione.** Deviazione di scope intra-sessione, retroattiva, zero impact codice produzione (semantica equivalente).
+
+**Status:** chiuso ✅ (CP2 commit `755602e`).
+
+---
+
+## 6.159 — CP1b ErrorSurface scope: aggiunta runtime surface, OggiView:288 INIT failure invariato
+
+**Sessione:** Step 11-A CP1b CP0 round 4 audit (3 maggio 2026).
+
+**Contesto.** §11.A.b stub v2.6.3 dichiarava letteralmente: «`OggiView.jsx` (MOD) — sostituzione inline render error riga 288 con delega a ErrorSurface globale». Pre-CP1 audit Mac-side ha rivelato che la riga 288 contiene il **render full-screen INIT failure** (`state.status === 'error'` + bottone "Riprova"), NON un toast/banner runtime.
+
+**Discriminante architetturale.** Esistono due popolazioni di errore distinte nel codebase:
+
+| Origine | `state.status` | `state.error` | Sito UI |
+|---|---|---|---|
+| INIT failure (`actions.init()` catch) | `'error'` | `{kind:'init',message,...}` | OggiView:288 full-screen "Riprova" |
+| Runtime catch (CP1a, 11+3 sites) | `'ready'` | `{kind:'repo'\|'domain',message,severity,code}` | **NESSUN render → gap CP1b** |
+
+**Decisione di scope (CP0 round 4).** ErrorSurface **aggiunge** la runtime surface per la popolazione 2; lo screen INIT failure resta com'è (è il pattern corretto: senza repo init non c'è app, full-screen "Riprova" è UX appropriata). Lo stub §11.A.b letterale è stato classificato come incongruenza pre-freeze (eco AMB-11.A.10 "Header OggiView (CP0 conferma esclusività)" SBAGLIATO al pre-freeze).
+
+**File impattati CP1b post-decisione.** ErrorSurface lavora su `state.error` (non `state.status`), quindi:
+- `src/components/oggi/OggiView.jsx`: riga 288 INIT screen **invariata**, modificata solo per CP3 greeting.
+- `src/App.jsx`: mount globale `<ErrorSurface />` per la popolazione 2.
+
+**Alternative valutate.** Implementare letteralmente lo stub avrebbe rimosso lo screen INIT failure rendendo la PWA muta su repo unavailable (UX regression severa). Respinta.
+
+**Lezione operativa.** Stub `§11.X` lockati in chiusura sessione precedente possono contenere assunzioni architetturali errate. Audit Mac-side empirico (CP0 round 4 in CP1b) deve verificare sempre **i siti reali** delle modifiche prima di applicare patcher. Pattern §22.33 round 1 (chiusura AMB-11.A.7 con grep `useModalA11y`) era già stato applicato — esteso ora a verifica del sito puntuale `OggiView:288`.
+
+**Status:** chiuso ✅ (CP1b commit `755602e`).
+
+---
+
+## 6.160 — CP3-fix propagation `getCardState` su `effectiveDateStr` (scope-creep necessaria su AMB-11.B.1)
+
+**Sessione:** Step 11-B Wave-next parte 1/2 implementativa (3 maggio 2026, post-CP3 verify-only, pre-CP4 audit).
+
+**Contesto.** AMB-11.B.1 era stato chiuso in CP1 con scope esplicito *"raggruppamento sezione 'Domani' per effective bucket"*: helper `effectiveDateStr(entry)` introdotto in `src/utils/uiState.js`, `groupEntriesByDayAndMomento` partizionava per effective bucket invece di `entry.dateStr`, prop `bucketDateStr` propagata a `DoseCard.jsx` con gate `badgeBucketSuppressed`. Il bucketing visivo era corretto: cards con `ora_ricalcolata` cross-midnight apparivano sotto separator data "Domani" (risolve §6.119 effetto collaterale, AMB-11.B.1 atteso).
+
+**Bug residuo emerso post-CP3 (verifica visiva browser).** Cards con `ora_ricalcolata` cross-midnight bumpate alla sezione "Domani" continuavano a mostrare badge stato **IN RITARDO** (rosso) invece di stato neutro. Esempio reale CP browser:
+
+```
+Card key:          2026-04-26-4-2 (Olevia 2a dose)
+entry.dateStr:     2026-04-26 (oggi)
+ora_prevista:      14:00 (oggi)
+ora_ricalcolata:   2026-04-27T02:00 (domani, cross-midnight)
+effectiveDateStr:  2026-04-27 (domani)
+
+Sezione visiva:    Domani ✅ (CP1 OK, AMB-11.B.1 atteso)
+Badge stato:       IN RITARDO ❌ (atteso: neutro)
+```
+
+**Causa.** `getCardState(entry, now)` in `src/utils/uiState.js` leggeva `entry.dateStr` per determinare se la dose era "in ritardo" (now > entry.dateStr+ora_prevista+TOLLERANZA_MIN). La logica IGNORAVA `ora_ricalcolata` cross-midnight: per entry su `2026-04-26` con recalc a `2026-04-27T02:00`, alle 18:00 del 26 aprile `now` era oltre `2026-04-26T14:00+TOLLERANZA`, quindi `getCardState` decideva "in ritardo". Ma la card **mostrava già lo slot 02:00 di domani** (display_orario applicato), creando dissonanza UX severa: card visualmente "in futuro" + badge "in ritardo".
+
+**Decisione (Opzione A applicata).** `getCardState` deve usare `effectiveDateStr(entry)` invece di `entry.dateStr` per il calcolo del threshold ritardo. Questo è coerente col bucketing: se l'effective bucket è "Domani", la card deve essere valutata come dose futura (stato neutro), non come dose passata in ritardo.
+
+**Modifica applicata.** In `src/utils/uiState.js`:
+
+```diff
+ export function getCardState(entry, now) {
+   if (entry.stato === 'presa') return 'presa';
+   if (entry.stato === 'saltata') return 'saltata';
+   if (entry.stato === 'sospesa') return 'sospesa';
+-  const slotDateStr = entry.dateStr;
++  const slotDateStr = effectiveDateStr(entry);
+   const slotMs = isoToMs(slotDateStr, entry.ora_ricalcolata?.hhmm ?? entry.ora_prevista);
+   if (now.getTime() > slotMs + TOLLERANZA_MIN * 60 * 1000) return 'in_ritardo';
+   ...
+ }
+```
+
+**2 regression test aggiunti** in `src/utils/uiState.test.js`:
+1. `getCardState — cross-midnight recalc returns neutral state when bumped to tomorrow effective bucket` (Olevia-style scenario)
+2. `getCardState — cross-midnight recalc still returns 'in_ritardo' when now > effective slot+tolleranza` (regression guard: la dose recalc-bumpata può comunque essere in ritardo se ora_ricalcolata è già passata)
+
+**Verifica visiva browser post-fix.** Olevia 2a dose cross-midnight ora mostra stato **neutro** (no badge IN RITARDO) in sezione "Domani". Bucketing CP1 + cardState fix = comportamento UX coerente.
+
+**Classificazione: scope-creep necessaria su AMB-11.B.1.** AMB-11.B.1 letterale era *"criterio promozione entry 'Oggi'→'Domani'"* limitato al bucketing. La distinzione **bucketing sezione vs cardState semantico** non era esplicitata. Senza questo fix, il bucketing produrrebbe regression UX (cards in futuro con badge passato). Tracciato come §6.NN per visibilità ma non come violazione spec — è sub-conseguenza necessaria di AMB-11.B.1.
+
+**Lezione operativa.** Quando un AMB introduce un helper di derivazione (`effectiveDateStr`), audit pre-CP closing deve cercare ALL i siti che leggevano la grandezza originale (`entry.dateStr`) per valutare se il flip semantico li impatta. Pattern §6.116b (consumer drift `uiState.js` post-ISO migration) qui replicato: stesso file, stessa lezione, ciclo successivo.
+
+**Status:** chiuso ✅ (CP3-fix incluso in commit closing 11-B).
+
+---
+
+## 6.161 — QW5 focus post-toggle notifiche deferred a Fase 3 backlog
+
+**Sessione:** Step 11-B Wave-next parte 1/2 implementativa (3 maggio 2026, audit pre-CP4).
+
+**Contesto.** Q5 in Step 11 analisi-first (§22.32) aveva selezionato subset QW1+QW2+QW3+QW4 per Step 11-A (decisione 11.0 Q5=A) e demandato **QW5 focus post-toggle notifiche** a Step 11-B con flag *"opportunistic post-CP0 audit empirico"*. Razionale Q5 originale: scope esatto richiede CP0 empirico (in quale stato post-toggle si perde focus?), bassa probabilità scope-creep se rimandato.
+
+**Audit Step 11-B (pre-CP4).** Verifica codice `ImpostazioniTab.jsx` + `SezioneNotifiche` button-style senza navigazione browser non riproduce il bug rapidamente. Lo stato post-toggle dipende da:
+1. Se `ToggleNotifiche` è bottone vs slider 4-state (cfr. §6.139, deferred Wave-C)
+2. Se il browser recupera il focus al bottone toggle dopo dispatch async `setSetting('notifiche_attive', v)` o lo perde
+3. Se la transizione visuale CSS interferisce con il focus ring
+
+Senza riproduzione runtime browser-side, fix mirato non è componibile.
+
+**Decisione.** Defer QW5 a Fase 3 backlog. Razionale:
+- **Scope opportunistic**: nessun impegno pre-frozen Step 11. Q5 in §22.32 era *"opportunistic post-CP0 audit"* — audit non riproduce → skip è coerente con la classificazione originale.
+- **Bassa priorità UX**: bug minore (focus ring non visibile post-toggle), non blocca funzionalità.
+- **Fase 3 contestualizzazione**: Fase 3 introdurrà ApiRepository + potenzialmente refactor ImpostazioniTab per loading states server-aware. Affrontare QW5 in quel contesto evita doppio lavoro su file che cambia pattern.
+- **§6.139 affine**: SezioneNotifiche button-style vs slider 4-state già deferred Wave-C (non ancora schedulato). QW5 può essere accorpato a quel ticket.
+
+**Classificazione: deferred → Fase 3 backlog.** Aggiunto a debt list Fase 3 in retrospettiva (§11.B closing). Non è una deviazione di scope — è un refresh della classificazione "opportunistic" originale al verdict "non opportuno ora".
+
+**Status:** deferred ⏳ (Fase 3 backlog, candidato accorpamento con §6.139).
+
+---
+
 ## 7. Roadmap Fase 2 — avanzamento
 
 | Step | Contenuto | Stato | Note |
@@ -3878,10 +4034,15 @@ const mm = String(new Date(fireAt).getMinutes()).padStart(2, '0'); // locale
 | **9-A** | Wave A — fix dominio §6.18 cross-midnight: `ora_ricalcolata` TIME → TEXT ISO + 3 helper `utils/time.js` + Dexie v1→v2 migration `fake-indexeddb` + propagazione apply* + tear-down §6.26 (`isCrossMidnightRecalc` ISO-aware sostituisce HH:MM-heuristic) | ✅ **Completo** | 4 CP impl + CP browser 4 punti (P2 critico verde post-§6.118 fix; P1/P4 ambigui per pre-existing fuori scope §6.119/§6.120). 313 → 328 test (+15, target AMB-9.J 329 ±3 a -1). 5 commit branch `step-8` (`d5248a0`/`d0d4e5e`/`d5de70f`/`816a49f`/`0e70a38`). 9 deviazioni: §6.115a/§6.115b/§6.116/§6.116b/§6.117/§6.117a/§6.118 chiuse, §6.119/§6.120 deferred. Bump v2.5.36 → v2.5.37 |
 | **9-B** | Wave B — notifiche Opzione 1 foreground-only: `services/notifications.js` singleton + `hooks/useNotifications.js` + `utils/copy.js` + `rescheduleAllNotifications` puro + AppContext wiring (8 trigger) + chiave `notifiche_attive` Dexie + toggle UI in ImpostazioniTab | ✅ **Completo** (closing in 9-D) | Analisi-first ✅ 26/04/2026 (v2.5.38). Impl 1/2+2/2+3/3 ✅ 27/04/2026 v2.5.39→v2.5.40-rc. Parte 4/4 esecutiva ✅ 27/04/2026 v2.5.40-rc.1. Parte 5/5 esecutiva parziale ⚠️ 29/04/2026 v2.5.40-rc.2. Parte 6/6 implementativa parziale ⚠️ 30/04/2026 v2.5.40-rc.3 (§6.146 sbloccato; CP browser P1 ha rivelato §6.147+§6.148). **Sessione 9-C analisi-first ✅ 30/04/2026 v2.5.40-rc.4**: §6.147 chiuso by-design (AMB-9-C.A), §6.148 chiuso falso-positivo metodologico (AMB-9-C.B), §6.149 nuova lessons-learned. **Sessione 9-D esecutiva snella ✅ 30/04/2026 v2.5.40 definitivo**: 5 CP browser core verdi (P2/P3/P4/P5/P8), AMB-9.E'/G'/H validati runtime, P6+P7 raccomandati skipped (deferred Wave-C/Wave-D). 375/375 test invariati |
 | **9-D** | Esecutiva snella post-9-C: completamento CP browser P2-P5+P8 (deferred parte 6/6) + bump v2.5.40 definitivo + cleanup `.bak.*` (12 untracked) + chiusura formale §6.147+§6.148+§6.149 + doc spec §3 update scope plan multi-day | ✅ **Completo** | Esecutiva snella browser-heavy / no-code-heavy completata 30/04/2026. **5 CP browser core verdi**: P2 visibilitychange+focus (AMB-9.G' trigger 8 + AMB-9.E' atomic), P3 toggle notifiche_attive on/off (trigger 6+7), P4 thunks farmaci add/update/delete (trigger 5), P5 rapid visibility flip 5 cicli (AMB-9.E' robusto sotto stress), P8 tag-based replacement entryKey collision (AMB-9.H). 3 nuove deviazioni minori §6.150-§6.152 (memo CP browser, tutte chiuse non bug). P6+P7 raccomandati skipped (coverage AMB-9.F'+9.I rimane unit-only, deferred Wave-C/Wave-D). Doc spec §3.8 "Modello dati state-side" consegnata + KB sostituita. Cleanup 12 `.bak.*`. Bump v2.5.40-rc.4 → **v2.5.40 definitivo**. 375/375 test invariati. **Step 9 ✅ chiuso completo** |
-| 10 | Service worker attivo + manifest definitivo + icone | ⏸️ **Split in 10-A + 10-B** | Decisione di sessione 30/04/2026 (regola critica #5): post-CP3 sessione consumata ~40K token, CP4 stimato 25-30K → split a Step 10-A/10-B come contingency già pre-frozen in §11 v2.5.41-rc.1. Riferimento §22.28 |
+| 10 | Service worker attivo + manifest definitivo + icone | ✅ **Completo** milestone PWA production-ready | Split in **10-A + 10-B + 10-C + 10-C-fix**. v2.6.1 (1 maggio 2026). 381/381 test invariati. Toast `<UpdatePrompt />` end-to-end funzionante. Riferimenti §22.28 (10-A), §22.29 (10-B), §22.30 (10-C), §22.31 (10-C-fix) |
 | **10-A** (parziale) | CP1 icone PT (script sharp + 4 PNG + favicon.svg) + CP2 manifest fields (`lang/dir/categories`, `purpose:any`, apple-touch-180 + favicon link) + CP3 workbox runtimeCaching scaffold (`cleanupOutdatedCaches` + 1 regola attiva icons + 2 commentate). **CP4-CP7 deferred a 10-B** | ✅ **Completo** (parziale) | 375 → 375 test invariati (CP1-CP3 toccano solo asset+config). 1 commit Mac-side `step-8` `52f67bd` (10 file, 705 ins / 5 del). Zero nuove deviazioni §6.NN. Bump v2.5.41-rc.1 → v2.5.42 |
-| **10-B** | CP4 service worker registration + UpdatePrompt component + 6 unit test (3 registerSW mock `virtual:pwa-register` + 3 UpdatePrompt render/click/dismiss) + CP5 build verify (`dist/sw.js` + manifest.webmanifest fields nuovi) + CP6 bump v2.6.0 + commit closing + CP7 CP browser 4 punti raccomandati (install Chrome+Android, offline airplane, update flow toast, icone home screen) | ⏳ **Pianificata** | Target test 375 → 381 (+6 da CP4). Range tollerato 380-383. CP browser deferred a sessione successiva (pattern §22.26) |
-| 11 | Polish finale, QA, accessibilità estesa, gestione errori | | |
+| **10-B** | CP4 service worker registration + UpdatePrompt component + 6 unit test (3 registerSW mock `virtual:pwa-register` + 3 UpdatePrompt render/click/dismiss) + CP5 build verify (`dist/sw.js` + manifest.webmanifest fields nuovi) + CP6 bump v2.6.0 + commit closing + CP7 CP browser 4 punti raccomandati | ✅ **Completo** | 375 → **381/381** (+6 esatto, target AMB-10.G centrato). 3 deviazioni nuove: §6.153 path/scope §11 vs filesystem reale, §6.154 vitest alias hot-fix per `virtual:pwa-register`, §6.155 disallineamento storico package.json. 2 commit Mac-side: `01a553f` rebaseline + `959dc40` closing. Bump v2.5.42 → v2.6.0. CP7 browser deferred a 10-C |
+| **10-C** | Esecutiva snella post-10-B: CP browser P1-P4 (install/offline/update/icone) + Hot-fix §6.156 timezone race notifications.test.js | ⚠️ **Parziale** | 381/381 invariato. P1+P2+P4 verdi (Install Chrome + Offline + Icone iOS Safari + Android proxy), **P3 fail genuino §6.157** (mismatch `autoUpdate` + workbox skipWaiting → toast `<UpdatePrompt />` non scatta, codice morto in produzione). 1 commit Mac-side `d6719b5` Hot-fix §6.156 (test-only, no version bump). P3 deferred a 10-C-fix. Versione resta v2.6.0 |
+| **10-C-fix** | Esecutiva snella opzione 1 §6.157: `registerType: "prompt"` + workbox `skipWaiting:false` + `clientsClaim:false` in `vite.config.js`. CP1 patcher Python idempotente. CP2 rebuild + retest unit. CP browser P3 retest cachebust source-level. Bump v2.6.1 + commit closing | ✅ **Completo** | 381/381 invariato (config-only, zero nuovi test). **P3 retest VERDE end-to-end**: SW nuovo `waiting to activate`, toast `<UpdatePrompt />` appare, click "Ricarica" attiva. §6.157 chiusa ✅. Zero nuove deviazioni §6.NN. 1 commit Mac-side `689db5c`. Bump v2.6.0 → v2.6.1. Tag `v2.6.0` NON applicato (decisione A pattern conservativo §22.26 strict). **Step 10 milestone-definitivo** |
+| 11 | Polish finale, QA, accessibilità estesa, gestione errori | ✅ **Completo** Fase 2 milestone | Backlog tracciato + chiuso: §6.26 cross-midnight UI (effetto §6.119 risolto da §6.160 propagation), sticky data separator §6.96/§6.107/§6.110 (AMB-11.B.4/5 verify-only stack-replacement nativo CSS confermato browser), `apple-mobile-web-app-capable` deprecated meta (W3C affiancata 11-A CP5). **Step 11-A completo**: CP1a (+24 test 381→405) + CP1b (+11 test 405→416, ErrorSurface UI + greeting nome_utente + ARIA live region). **Step 11-B completo**: CP1+CP2+CP3 verify-only+CP3-fix (+14 test 416→430, sezione "Domani" cross-midnight rendering + propagation getCardState). 16 AMB-11.A.1-11/11.B.1-7 tutti chiusi. CP4 QW5 deferred Fase 3 (§6.161). 4 nuove §6.158-§6.161. **Fase 2 PWA standalone milestone** raggiunta — bump v2.7.0 + tag annotato `v2.7.0` |
+| **11-A CP1a** | QW1 error handling thunks + repo + reducer test (4 step incrementali con commit unico finale `3c2f514`): RepositoryError typed class + wrapRepoError + classifyRawError → wrap 31 metodi `LocalRepository.js` con `_wrap(fn, codeOverride)` → catch sites SET_ERROR `actions.js`+`applyHelper.js` propagano `severity`+`code` → `IRepository.js` docstring Error contract → `reducer.test.js` +2 test severity propagation + backward-compat | ✅ **Completo** | 381 → **405/405** test (+24, sforo bound espansivo +22 di +2 accettato a inizio sessione). Commit Mac-side `3c2f514` (8 file, 789 ins / 149 del, branch `step-8`). Zero nuove deviazioni §6.NN. AMB-11.A.1/2/3 chiusi. AMB-11.A.7/8/9/10/11 (ARIA, nome_utente, live region) NON toccati — demandati a sessioni separate. Patcher v1 step 3 fail intra-sessione su pattern multi-line con rollback automatico, fix in v2 con DOTALL+parse-in-callback. Bump v2.6.2-rc.1 → v2.6.3 |
+| **11-A CP1b** | ErrorSurface UI + greeting nome_utente + ARIA live region (5 CP + closing, commit unico finale `755602e`): ErrorSurface.jsx severity-based runtime surface (toast 4s autodismiss warning/error, banner persistente critical) + ErrorAnnouncer.jsx sr-only ARIA live region globale (polite/assertive su severity, riusa `state.error` Q2=A) + greeting `Ciao [nome]` / `Ciao!` fallback in OggiView header subtitle (variant B AMB-11.A.10/11) + verify-only ARIA modali 9/9 (AMB-11.A.7 ratifica). 2 deviazioni §6.158 (CP2 scope collapse `CLEAR_ERROR` ricicla `DISMISS_ERROR`, lezione gate CP0 grep action types) + §6.159 (ErrorSurface scope additivo, OggiView:288 INIT screen invariato) | ✅ **Completo** | 405 → **416/416** test (+11, sopra bound espansivo +5-10 di +1 accettato). Commit Mac-side `755602e` (7 file, 456 ins / 1 del, branch `step-8`). AMB-11.A.3/7/9/10/11 chiusi. AMB-11.A.4/5/6/8 (empty states consolidation, error boundary, retry UX, useModalA11y refactor) demandati Step 11-B. Pattern 5 CP impl + closing unico replicato senza drift. Bump v2.6.3 → v2.6.4 |
+| **11-B** | Wave-next + closing Fase 2: CP1 commit grouping `effectiveDateStr` helper + bucket partition + `bucketDateStr` prop chain (uiState.js + DoseCard.jsx + OggiView.jsx) + CP2 edge cases multi-day promotion + CP3 verify-only sticky multi-separator AMB-11.B.4/5 + CP3-fix propagation `getCardState` su `effectiveDateStr` (§6.160) + CP4 QW5 deferred (§6.161) | ✅ **Completo** Fase 2 milestone | 416 → **430/430** test (+14, atteso +12 espansivo +17 dentro range). 5 file modificati (`src/utils/uiState.js`, `src/utils/uiState.test.js`, `src/components/oggi/DoseCard.jsx`, `src/components/oggi/DoseCard.test.jsx`, `src/components/oggi/OggiView.jsx`). 2 nuove deviazioni §6.160 + §6.161. AMB-11.B.1/2/3/4/5/6/7 tutti chiusi. AMB-11.B.6 = tag annotato `v2.7.0` su closing 11-B (Fase 2 milestone reale). AMB-11.B.7 nuova = convention package.json bump solo a closing Step. Bump v2.6.4 → **v2.7.0** (cumulato in closing) + tag annotato `v2.7.0` "Fase 2 closing milestone PWA standalone" |
 
 
 ### Setup testing (Step 4a–4b + 7a)
@@ -3994,120 +4155,384 @@ Chiarimenti risolti pre-Step 4b (AMB-1/2/3):
 ---
 
 
-## 11. Prossimo step — Step 10-C-fix esecutiva snella (risoluzione §6.157 update flow)
+## 11. Prossimo step — Sessione Fase 3 analisi-first dedicata (Step 11 ✅ closed Fase 2 milestone)
 
-**Stato baseline:** v2.6.0 (post-Step 10-C). 381/381 su 38 file. Branch `step-8`. Top commit `d6719b5` (Hot-fix §6.156). Tree pulito.
+**Stato baseline:** v2.7.0 (post-closing Step 11-B Wave-next + Fase 2 closing milestone). 430/430 su 42 file. Branch `step-8`. Top commit Mac-side `<TBD-closing-commit>` (Step 11-B closing -- Fase 2 milestone) + tag annotato `v2.7.0` "Fase 2 closing milestone PWA standalone".
 
-**Tipologia sessione:** esecutiva snella stile §22.26 9-D / §22.30 Step 10-C. Code change minimale (config + eventuale ribuild), retest CP browser P3 only. Stima: 3-5K token. Singola sessione.
+**Step 11 closed.** Tutti i 17 AMB pre-frozen 11.A.1-11/11.B.1-7 sono chiusi (16 originali + 1 nuova AMB-11.B.7 in-session). Step 11-A ✅ + Step 11-B ✅ completati, Fase 2 PWA standalone milestone raggiunta.
 
-**Scope:** chiusura §6.157 via opzione 1 (registerType prompt + workbox skipWaiting:false). Sblocca P3 toast UpdatePrompt end-to-end. Chiude Step 10 milestone-definitivo se P3 verde.
+**Sezioni storiche §11.0/§11.1/§11.2/§11.A.a/§11.A.b/§11.B/§11.X** sotto preservate come record di Step 11. La sub-sezione **§11.C** in coda contiene il prompt forward-looking per la prossima Sessione Fase 3 analisi-first dedicata.
 
-### AMB pre-frozen
+**Tipologia closure analisi-first:** Q&A iterativa Q1-Q8 chiusa in singola sessione su CP0 audit Mac-side fornito da Roberto in apertura. Output: 17 AMB pre-frozen, scope CP esplicitato per 11-A e 11-B, target test split-aware. Token consumati: ~6-8K (stima §11 v2.6.1 era 5-15K, atteso centrato).
 
-- **AMB-10-C-fix.A:** `registerType: "prompt"` in `vite.config.js`. Sostituisce `"autoUpdate"`.
-- **AMB-10-C-fix.B:** workbox config esplicita `skipWaiting: false` + `clientsClaim: false`. Per `registerType: "prompt"` `vite-plugin-pwa` dovrebbe già non emettere skipWaiting, ma esplicitiamo per evitare magic.
-- **AMB-10-C-fix.C:** `<UpdatePrompt />` invariato (già montato + test 3/3 verde). No code change React-side.
-- **AMB-10-C-fix.D:** P3 retest via cachebust source-level reale (non bump version-only). Pattern: aggiungere `window.__PT_CACHEBUST__ = <epoch>` in `src/main.jsx` come scratch source change.
-- **AMB-10-C-fix.E:** Tag git annotato `v2.6.0` come milestone PWA **solo** se P3 verde end-to-end. Pattern conservativo §22.26.
-- **AMB-10-C-fix.F:** Bump version `2.6.0 → 2.6.1`: fix utente-visibile (update flow funzionante = patch level), applicato solo se P3 verde. NO bump se P3 ancora rosso.
+### 11.0 Decisioni Q1-Q8 congelate
 
-### CP0 sanity-light pre-Step 10-C-fix (Mac-side, 6 gate)
+| Q | Decisione | Note operative |
+|---|---|---|
+| Q1 | **B split upfront 11-A → 11-B** | Ordine: 11-A primo (indurisce primitive UI riusabili in 11-B sez. "Domani") |
+| Q2 | **B sezione "Domani" sotto separatore data multi-day** | Coerente §3.8 spec + mockup v5; risolve come effetto §6.119 |
+| Q3 | **C skip + archive closure §6.96/§6.107/§6.110** | Sub-question multi-separator → AMB-11.B.4/5 demandate a CP0 11-B impl |
+| Q4 | **A `<meta name="mobile-web-app-capable">` W3C affiancata legacy iOS** | Quick-win 1 riga in `index.html` dopo riga 8 |
+| Q5 | **A subset QW1+QW2+QW3+QW4 in 11-A** | QW5 focus toggle notifiche → opportunistic 11-B post-CP0 |
+| Q6 | **C skip tag** | Candidato `v2.7.0` su closing 11-B demandato AMB-11.B.6 |
+| Q7 | **B sessione Fase 3 analisi-first dedicata post-11-B** | Naming convention demandato a quel momento |
+| Q8 | **A-split target espliciti** | 11-A: +14-22 test → 395-403; 11-B: +8-17 → 403-420 |
 
-```
-cd ~/Sviluppo/pharmatimer
-echo 'CP0 gate 1: git status pulito'
-git status --short
-echo ''
-echo 'CP0 gate 2: top commit (atteso d6719b5 Hot-fix §6.156)'
-git --no-pager log --oneline -3
-echo ''
-echo 'CP0 gate 3: branch (atteso step-8)'
-git branch --show-current
-echo ''
-echo 'CP0 gate 4: test baseline (atteso 381/381 su 38 file)'
-npm test -- --run 2>&1 | grep -v 'npm notice' | tail -8
-echo ''
-echo 'CP0 gate 5: package.json version (atteso 2.6.0)'
-grep '"version"' package.json | head -1
-echo ''
-echo 'CP0 gate 6: vite.config.js registerType corrente (atteso autoUpdate, da cambiare)'
-grep -n 'registerType' vite.config.js
-```
+### 11.1 AMB pre-frozen 11-A (11 AMB; restanti raffinati in CP0 11-A empirico)
 
-Atteso: tree pulito, top `d6719b5`, branch `step-8`, 381/381, version `2.6.0`, registerType `autoUpdate` confermato.
+| AMB | Tema | Decisione |
+|---|---|---|
+| 11.A.1 | Coverage error handling | Tutti thunks pubblici `actions.js` + metodi pubblici `LocalRepository.js` |
+| 11.A.2 | Pattern uniforme errore | Campo `severity ∈ {warning, error, critical}` |
+| 11.A.3 | UI surface errore | Toast effimero (recoverable) + banner persistente (critical) |
+| 11.A.4 | Empty states count | Stima 4-7 totali in OggiView+ConfigView, raffinato CP0 11-A |
+| 11.A.5 | `EmptyState` props | `{ icona, titolo, sottotitolo, azione? }` (pattern già implicito mockup v5) |
+| 11.A.6 | Copy "nessuna dose oggi" cross-midnight aware | Demandato a 11-B (interaction Q2=B) |
+| 11.A.7 | ARIA coverage modali | Tutti (OggiView modali + FarmacoDrawer + UnsavedChangesModal + ConfirmModal) |
+| 11.A.8 | `useModalA11y` strategia | Solo audit consumer + retrofit gap, NO refactor hook (storia §6.92/§6.103/§6.105) |
+| 11.A.9 | Live region globale | Hidden `<div aria-live="polite">` in `App.jsx`, messaggio via context |
+| 11.A.10 | `nome_utente` locations | Header `OggiView` (CP0 conferma esclusività) |
+| 11.A.11 | Copy fallback nome_utente | "Ciao!" greeting-style (coerente UI esistente) |
 
-### CP1 patch vite.config.js (Mac-side via patcher Python idempotente)
+### 11.2 AMB pre-frozen 11-B (6 AMB; risolti in CP0 11-B impl)
 
-Patch surgical: sostituisce `registerType: "autoUpdate"` con `registerType: "prompt"` + aggiunge `skipWaiting: false, clientsClaim: false` in workbox block. Patcher idempotente con assertion check. Codice esatto del patcher consegnato all'apertura sessione.
+| AMB | Tema | Resolution mode |
+|---|---|---|
+| 11.B.1 | Criterio promozione entry "Oggi"→"Domani" | `dateStr` originale vs ricalcolato post-recalc — interaction §6.118 ISO-aware — CP0 11-B |
+| 11.B.2 | Stato `ricalcolato` di entry promossa | Badge+delta originale visibili vs presentazione "pulita" tooltip storico — CP0 11-B |
+| 11.B.3 | Card "fantasma" in "Oggi" | Redirect tooltip vs scomparsa silente — CP0 11-B |
+| 11.B.4 | Sticky multi-separator behavior | Stack-replacement nativo CSS vs sovrapposizione vs solo "Oggi" sticky — CP0 11-B |
+| 11.B.5 | Calibrazione `top-[149px]` multi-separator | Verifica empirica CP0 11-B |
+| 11.B.6 | Tag `v2.7.0` su closing 11-B vs `v3.0.0-alpha` Fase 3 | Decisione closing 11-B post-Q7 sessione Fase 3 (scope chiaro) |
 
-Verifica diff atteso: `git diff vite.config.js` → 3 cambi netti (1 string change + 2 keys aggiunte in workbox).
+### 11.A Sub-sezione — Step 11-A polish UI/a11y/errori
 
-### CP2 rebuild + retest unit (Mac-side)
+**Scope:** Q5 quick-wins QW1+QW2+QW3+QW4 + Q4 meta W3C + Q6 no-op tag.
 
-```
-npm run build 2>&1 | tail -10
-npm test -- --run 2>&1 | grep -v 'npm notice' | tail -8
-```
-
-Atteso: build OK, 381/381 invariato (config change non tocca unit logic).
-
-### CP browser Step 10-C-fix (P3 retest only)
-
-**Setup pre-P3:**
-- `npx serve dist -l 50727` (porta esplicita, evita auto-fallback)
-- Chrome Desktop, install PWA su `http://localhost:50727`
-
-**Sequence P3 con cachebust source-level (NON bump version):**
+**CP planning:**
 
 ```
-echo 'Step 1: cachebust source-level live (sopravvive minify)'
-printf '\nwindow.__PT_CACHEBUST__ = %d;\n' $(date +%s) >> src/main.jsx
-echo ''
-echo 'Step 2: rebuild dist/'
-npm run build 2>&1 | tail -5
-echo ''
-echo 'Step 3: verifica nuovo dist/assets/index-*.js hash diverso'
-ls dist/assets/ | grep '^index-'
+CP0  Audit empirico (modali count, empty states, nome_utente loc, try/catch gap)
+CP1  QW1 error handling thunks+repo+UI surface          (+5-8 test)
+CP2  QW2 empty states componente shared                  (+3-5 test)
+CP3  QW3 ARIA modali + live regions                      (+4-6 test)
+CP4  QW4 nome_utente defensive (intra-CP2 candidato)    (+2-3 test)
+CP5  Q4 meta W3C in index.html                            (+0 test)
+CP closing  Changelog v2.6.2 + commit + verifica suite 395-403
 ```
 
-Restart `npx serve` (Ctrl+C + rilancio identico), poi su PWA standalone DevTools → Application → Service Workers → click Update.
+**Target test:** 381 → **395-403** (+14-22).
 
-**Pass criterion P3 (atteso questa volta):**
-- Nuovo SW entra in stato `waiting to activate` (NON più `activated and is running` immediatamente)
-- Toast `<UpdatePrompt />` appare bottom-fixed con copy "Nuova versione disponibile" + bottone "Ricarica"
-- Click "Ricarica" → app refresh + nuovo SW prende controllo
-
-**Cleanup post-P3:**
+**One-liner apertura 11-A impl:**
 ```
-git checkout HEAD -- src/main.jsx
-npm run build 2>&1 | tail -3
-git status --short
+Esegui il prompt al §11.A del Changelog (Step 11-A polish impl).
 ```
 
-### Esiti possibili Step 10-C-fix
+(Executive prompt completo da popolare in §11.A al primo CP commit di apertura 11-A: `package.json` baseline, `index.html` sezione meta, file da modificare per QW1-QW4 con anchor empirici post-CP0, AMB-11.A.1-11 letterali pre-frozen.)
 
-- **P3 verde** → §6.157 chiuso. Bump `package.json` 2.6.0 → 2.6.1. Commit dedicato "Step 10-C-fix — registerType prompt + skipWaiting:false (chiude §6.157)". Tag annotato `v2.6.0` come milestone PWA (AMB-10-C-fix.E). Step 10 milestone-definitivo. §22.31 al changelog.
-- **P3 ancora rosso** → §6.157 esteso con seconda iterazione. Possibili cause: vite-plugin-pwa version-specific quirks. Hot-fix Wave-2 oppure fallback opzione 2 (`autoUpdate` + rimozione `<UpdatePrompt />`).
+#### 11.A.a Sub-sub-sezione — CP1a chiuso (QW1 error handling)
 
-### Target test post-Step 10-C-fix
+**Stato:** ✅ **Completo** (2 maggio 2026, commit Mac-side `3c2f514`).
 
-381/381 invariato. Eventuale +1 test SOLO se hot-fix Wave-2 introduce nuova logica testabile.
+**Scope realizzato:** AMB-11.A.1/2/3 chiusi. QW1 error handling thunks + repo + reducer test in 4 step incrementali con commit unico finale.
 
-### Pattern operativi da rispettare
+**File prodotti:**
+- `src/data/repository/RepositoryError.js` (NEW) — typed error class extends Error + `wrapRepoError(rawErr, code, message?, severity?)` + `classifyRawError` heuristic Dexie-aware (`DatabaseClosedError`/`InvalidStateError`/`VersionError`/`UnknownError` → `DB_UNAVAILABLE`; `AbortError`/`TransactionInactiveError` → `TRANSACTION_ABORT`; `ConstraintError`/`DataError` → `CONSTRAINT_VIOLATION`; fallback `GENERIC`)
+- `src/data/repository/RepositoryError.test.js` (NEW, 18 test) — shape, severity defaults, idempotency wrap, classify mappings, payload backward-compat
+- `src/data/repository/LocalRepository.errors.test.js` (NEW, 4 test) — wrap idempotency, classify DatabaseClosedError, codeOverride forcing, deleteProfilo CONSTRAINT_VIOLATION/warning
+- `src/data/repository/LocalRepository.js` (MOD) — helper `_wrap(fn, codeOverride)` applicato a 31 metodi async pubblici; 5 metodi transazionali con `codeOverride='TRANSACTION_ABORT'`; `deleteProfilo` business-rule converted to `RepositoryError({code:'CONSTRAINT_VIOLATION', severity:'warning'})`
+- `src/data/repository/IRepository.js` (MOD) — sezione docstring "Error contract (CP1a Step 11-A, AMB-11.A.1/2)" appended con vocabulary + mapping HTTP futuro Fase 3 ApiRepository
+- `src/state/actions.js` (MOD) — 11 catch sites SET_ERROR estesi con `severity: err?.severity ?? 'error'`, `code: err?.code` (literal `'error'` + `undefined` per early-return guards)
+- `src/state/applyHelper.js` (MOD) — 3 catch sites SET_ERROR estesi (DomainError path preserva `code: err.code` esistente)
+- `src/state/reducer.test.js` (MOD) — +2 test in `describe('reducer — error channel')`: SET_ERROR severity+code propagation, backward-compat legacy shape
 
-- Bash zsh-safe (echo single-quoted, no `#`, no apostrofi italiani).
-- Patcher Python anchor-based idempotente per config (pattern §6.156).
-- Cachebust source-level NON bump version (lessons §6.157).
-- `npx serve` con `-l 50727` esplicita (lessons §22.30 porta auto-fallback).
-- Documentare ogni discrepanza CP browser come §6.NN.
+**Test impact:** 381 → **405** (+24). Bound espansivo 11-A era +22, sforo +2 accettato a inizio sessione (alternative: Opzione A "accetta lo sforo, scope su file nuovo isolato basso rischio drift" preferita su B "drop scope" e C "split sessione").
 
-### One-liner di apertura
+**Reducer note:** zero modifiche a `reducer.js`. Spread completo `return { ...state, error: action.payload }` propaga automaticamente `severity` + `code` aggiunti dalla nuova shape; backward-compat con legacy shape `{kind, message}` validata da test esplicito.
+
+**Patcher operativo:** Step 3 ha richiesto **patcher Python idempotente** per evitare 11+3 str_replace manuali. Pattern v1 fallito intra-sessione (regex single-line non gestiva payload multi-line preesistenti, output rotto con doppia virgola `,,` in 7 sites; rollback automatico via `.bak.cp1a-step3` ripristinava 403/403). Pattern v2 con `re.DOTALL` + parse Python in callback gestisce correttamente entrambi i casi single-line e multi-line + apostrofi italiani escaped + preservation `code:` esistenti. Idempotency dual-counter: distinzione "mutazioni reali" da "match no-op" via closure counter.
+
+**Cumulativo CP1a (4 step):**
+
+| Step | Operazione | Test impact |
+|---|---|---|
+| 1 | RepositoryError class + 18 test | 381 → 399 (+18) |
+| 2 | LocalRepository wrap 31 metodi + 4 test errors | 399 → 403 (+4) |
+| 3 | actions.js + applyHelper.js + IRepository.js refactor | 403 → 403 (+0) |
+| 4 | reducer.test.js +2 test severity | 403 → **405** (+2) |
+| **Totale** | | **+24** |
+
+**Deviazioni:** zero §6.NN nuove. Tutte le modifiche backward-compat o estensioni architetturali concordi con AMB pre-frozen.
+
+**AMB-11.A.7/8/9/10/11 NON toccati:** ARIA modali (audit chiuso a 9 consumer `useModalA11y` retrofit completo), live region globale `<div aria-live="polite">` in `App.jsx`, `nome_utente` defensive guard (scoperto in CP0 round 2: lettura sito `OggiView` header non implementata, va aggiunta per QW4 tramite Opzione A approvata in CP0). Demandati a sessione separata 11-A.b CP1b o successive.
+
+#### 11.A.b Sub-sub-sezione — CP1b chiuso (ErrorSurface UI + greeting + ARIA live region)
+
+**Stato:** ✅ **Completo** (3 maggio 2026, commit Mac-side `755602e`).
+
+**Scope realizzato:** AMB-11.A.3/7/9/10/11 chiusi. ErrorSurface UI + greeting `Ciao [nome]` + ARIA live region globale + verify-only ARIA modali in 5 CP incrementali con commit unico finale.
+
+**File prodotti:**
+- `src/components/shared/ErrorSurface.jsx` (NEW, 153 righe) — runtime surface severity-based: toast 4s autodismiss per `warning`/`error`, banner persistente per `critical`, click-dismiss manuale via `dispatch({type: 'CLEAR_ERROR'})`. Backward-compat shape legacy (`severity` undefined → toast).
+- `src/components/shared/ErrorSurface.test.jsx` (NEW, 6 test) — null state, toast warning autodismiss 4s, toast error autodismiss, banner critical no-autodismiss + code visibile, click-dismiss, legacy shape default.
+- `src/components/shared/ErrorAnnouncer.jsx` (NEW, 52 righe) — sr-only ARIA live region globale: `aria-live="polite"` per warning/error/null, `aria-live="assertive"` per critical, `aria-atomic="true"`. Riusa `state.error.message` (Q2=A, zero nuovo state slice).
+- `src/components/shared/ErrorAnnouncer.test.jsx` (NEW, 3 test) — null+polite empty, polite+message warning/error, assertive+message critical.
+- `src/App.jsx` (MOD, +4 righe) — import `ErrorAnnouncer` + `ErrorSurface` + mount in ordine: `<ErrorAnnouncer />` (race rule: live region prima di ogni surface visibile) → `<ErrorSurface />` → `<Routes>`. Dentro `<ThemedShell>`.
+- `src/components/oggi/OggiView.jsx` (MOD, +8/-1 righe) — `selectImpostazione` aggiunto al selectors import block + `const greeting = nomeUtente ? \`Ciao ${nomeUtente}\` : 'Ciao!'` prima del main return + sostituzione `<p>{subtitle}</p>` con `<p>{greeting} · {subtitle}</p>`. Variant B (greeting sempre visibile, AMB-11.A.10/11). NESSUNA modifica alla riga 288 INIT failure (§6.159 scope decision).
+- `src/components/oggi/OggiView.test.jsx` (MOD, +31 righe) — nuovo `describe('OggiView — header greeting (CP1b CP3)')` con 2 test integration: default fallback + custom nome via `hoist.repo = makeFakeRepo({impostazioni: {nome_utente: 'Roberto'}})` lazy Proxy override.
+
+**Test impact:** 405 → **416** (+11). Bound espansivo CP1b era +5-10, sforo +1 accettato (CP1 6 test + CP3 2 + CP4 3 + CP5 0).
+
+**Decisioni in-session:**
+
+1. **D1=A single-slot extension `state.error`** (Q1 turn 2). `{kind, message, severity, code, dismissible?}` esteso da CP1a senza dual-slot/stack overhead.
+2. **D2=A live region riusa `state.error`** (Q2 turn 2). Zero nuovo state, `aria-live` dinamico polite/assertive su severity. Componente separato `ErrorAnnouncer` (Pattern A) per non accoppiare App() declarative a state.
+3. **D3=A `DISMISS_ERROR` action nuova** (Q3 turn 2 → ratificata pre-CP1). **Rovesciata D3-bis=A `CLEAR_ERROR` ricicla** (CP2 audit empirico, §6.158).
+4. **Q3-bis=A scope CP5 verify-only** (Q3 turn 2). 9/9 consumer `useModalA11y` conformi pre-CP5 (audit Mac-side round 1 §22.33). CP5 = solo grep coverage check.
+5. **CP0 round 4 = greeting variant B** (turn pre-CP3). `Ciao [nome]` / `Ciao!` fallback (variant A drop completamente respinta, variant C letterale AMB respinta per asciuttezza).
+6. **§6.159 ratifica scope ErrorSurface = aggiunta runtime, OggiView:288 INIT screen invariato** (CP0 round 4 audit). Stub §11.A.b v2.6.3 letterale "sostituzione inline render error riga 288" rivelato sbagliato post-audit.
+
+**Pattern delivery:** 4 patcher Python idempotenti uno per CP (anchor letterali multi-line, all-or-nothing, marker idempotency). 2 file NEW via base64 self-extracting bash installer (CP1 ErrorSurface + CP4 ErrorAnnouncer). Pattern §22.33 v2 patcher (DOTALL+parse-in-callback) replicato senza drift.
+
+**Cleanup post-commit:** `.bak.cp2/cp3/cp4` rimossi + `/tmp/patcher_cp{2,3,4}.py` rimossi. Working tree pulito eccetto `M PharmaTimer_Changelog_Fase2.md` (asimmetria KB+local attesa, risolto al successivo upload Changelog v2.6.4).
+
+**Bump versione:** v2.6.3 → **v2.6.4**.
+
+### 11.B Sub-sezione — Step 11-B Wave-next + closing Fase 2 ✅ CLOSED
+
+**Stato:** ✅ **Completo** (3 maggio 2026, 2 sessioni: parte 1/2 implementativa CP1-CP3+CP3-fix Mac-side + parte 2/2 closing).
+
+**Scope realizzato:** Q2 cross-midnight UI rendering "Domani" (§6.26 effetto, AMB-11.B.1/2/3 chiusi) + Q3 archive closure §6.96/§6.107/§6.110 verify-only (AMB-11.B.4/5 chiusi) + closing Fase 2 milestone (AMB-11.B.6/7 chiusi). QW5 deferred Fase 3 (§6.161, CP4 audit non riproduce).
+
+#### Executive prompt populated retrospettivamente (originalmente da popolare in CP1 apertura 11-B impl)
 
 ```
-Esegui il prompt al §11 del Changelog (Step 10-C-fix esecutiva snella).
+Esegui CP plan Step 11-B Wave-next + closing Fase 2.
+
+Baseline: v2.6.4 commit 755602e (CP1b Step 11-A), 416/416 su 42 file, branch step-8, package.json 2.6.1 (convention legacy pre-AMB-11.B.7).
+
+Scope frozen (§22.32 + §22.34):
+- Q2 = B sezione "Domani" sotto separator data multi-day (AMB-11.B.1/2/3)
+- Q3 = C skip + archive closure §6.96/§6.107/§6.110 (AMB-11.B.4/5 verify-only)
+- Q5 QW5 = opportunistic post-CP0 (AMB residua dipendente da audit)
+- Q6 tag = AMB-11.B.6 demandato closing
+- Q7 = B Fase 3 analisi-first sessione separata
+
+CP plan:
+CP0  Audit empirico AMB-11.B.1/2/3/4/5 + QW5 check
+CP1  Q2 cross-midnight UI rendering sezione "Domani" (+6-10 test)
+CP2  Edge cases multi-day promotion (ricalcolato/ghost) (+2-4 test)
+CP3  Sticky multi-separator AMB-11.B.4 (+0-2 test)
+CP4  QW5 focus post-toggle notifiche (opportunistic) (+0-3 test)
+CP5  Q3 archive closure §6.96/§6.107/§6.110 (+0 test, sub-CP3)
+CP closing  Changelog v2.7.0 + retrospettiva Fase 2 + AMB-11.B.6 tag + commit closing
+
+Target test post-11-A: 416 → 403-420 (range conservativo-espansivo). Atteso 411 (centrato +12).
+
+File da modificare CP1 (post-CP0 audit empirico):
+- src/utils/uiState.js — helper effectiveDateStr + groupEntriesByDayAndMomento partition by effective bucket
+- src/utils/uiState.test.js — test bucketing effective + edge cases
+- src/components/oggi/DoseCard.jsx — prop bucketDateStr + gate badgeBucketSuppressed
+- src/components/oggi/DoseCard.test.jsx — test prop propagation
+- src/components/oggi/OggiView.jsx — bucketDateStr propagation chain
+
+CP browser raccomandato post-CP1: verifica visuale Olevia 2a dose cross-midnight bumpata sezione "Domani".
+
+CP closing materiale:
+- §11.B sub-section executive prompt populated + esiti CP1-CPN
+- §6.NN nuove (numerazione finale a closing)
+- §22.NN stato post-closing
+- Retrospettiva Fase 2 sub-sub-sezione interna §11.B
+- §11 hand-off Fase 3 analisi-first dedicata
+- Bump versione + roadmap §7
+- Commit unico closing + tag annotato v2.7.0
 ```
 
-## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3 + 8-pre + 8a + 8b + 8c-parz + 8c-2 + 9-A + 9-B + 9-D + 10-A + 10-B
+#### Esiti CP1-CP4 + closing
+
+| CP | Scope | Test impact | Esito |
+|---|---|---|---|
+| **CP0** | Audit empirico AMB-11.B.1/2/3/4/5 + QW5 check Mac-side | 416 → 416 | ✅ AMB-11.B.1/2/3 risolti su Opzione A "bucket effective + entry.dateStr invariato" (consistente §6.119 Opzione B); AMB-11.B.4/5 risolti su Opzione A "stack-replacement nativo CSS preserva con N≥2"; QW5 audit non riproduce |
+| **CP1** | Commit grouping: `effectiveDateStr` helper + `groupEntriesByDayAndMomento` partition by effective bucket + `bucketDateStr` prop chain (uiState.js + DoseCard.jsx + OggiView.jsx) + 9 test (6 uiState + 3 DoseCard) | 416 → 425 (+9) | ✅ AMB-11.B.1/2/3 chiusi. Bucketing visivo cross-midnight cards in sezione "Domani" funzionante |
+| **CP2** | Edge cases multi-day promotion: 3 test in `uiState.test.js` (stato=ricalcolata cross-midnight promotion, stato=presa non-promotion, anticipo same-day) | 425 → 428 (+3) | ✅ Edge cases coperti |
+| **CP3** | Verify-only sticky multi-separator AMB-11.B.4/5 (browser CP) | 428 → 428 (+0) | ✅ Stack-replacement nativo CSS confermato browser (separatori N=2 si sostituiscono correttamente, no overlap, `top-[149px]` calibrazione single-separator preserva). AMB-11.B.4/5 chiusi |
+| **CP3-fix** | Propagation `getCardState` su `effectiveDateStr` (uiState.js) + 2 regression test — §6.160 scope-creep necessaria | 428 → 430 (+2) | ✅ Bug residuo post-CP3 risolto: card cross-midnight bumpata "Domani" non mostra più badge IN RITARDO. Verifica visiva browser confermata |
+| **CP4** | QW5 focus post-toggle notifiche (opportunistic) | 430 → 430 (+0) | ⏸️ Audit ImpostazioniTab non-actionable senza navigazione browser, bug non riproducibile rapidamente — §6.161 deferred Fase 3 |
+| **CP closing** | Changelog v2.7.0 + retrospettiva Fase 2 + AMB-11.B.6 tag + bump package.json 2.6.1→2.7.0 + commit unico + tag annotato | 430 → 430 (+0) | ✅ Fase 2 milestone raggiunta |
+
+**Cumulativo CP1-CP3-fix:** 416 → **430** (+14, atteso +12 espansivo +17 dentro range; conservativo era +8 — sopra centro).
+
+**File modificati Step 11-B (5 totali):**
+- `src/utils/uiState.js` (MOD) — helper `effectiveDateStr` + partition `groupEntriesByDayAndMomento` + `getCardState` propagation §6.160
+- `src/utils/uiState.test.js` (MOD) — 6 test CP1 + 3 test CP2 + 2 test CP3-fix = +11 test totali
+- `src/components/oggi/DoseCard.jsx` (MOD) — prop `bucketDateStr` + gate `badgeBucketSuppressed`
+- `src/components/oggi/DoseCard.test.jsx` (MOD) — 3 test propagation prop
+- `src/components/oggi/OggiView.jsx` (MOD) — `bucketDateStr` propagation chain in JSX render
+
+**Decisioni in-session ratificate (post-CP0):**
+
+1. **AMB-11.B.1=A "bucket effective + entry.dateStr invariato"**: consistente con §6.119 Opzione B (no rename entry key). Helper `effectiveDateStr(entry) = entry.ora_ricalcolata?.dateStr ?? entry.dateStr` puro, zero side-effect su React keys/equality.
+2. **AMB-11.B.2=A "badge+delta originale visibili"**: la card recalc-bumpata mostra il badge `ricalcolato` + delta originale anche in sezione "Domani" (semantica: "questa è una dose bumpata da oggi", non presentazione "pulita" che nasconderebbe il salto temporale).
+3. **AMB-11.B.3=A "redirect tooltip"**: card "fantasma" in "Oggi" non c'è perché entry.dateStr resta originale (no scomparsa silente, no bisogno di tooltip — sub-AMB collassata, non si manifesta visivamente).
+4. **AMB-11.B.4=A "stack-replacement nativo CSS"**: CP browser conferma che con N≥2 separatori sticky `top-[149px]` il browser sostituisce automaticamente il separator vecchio col nuovo (no overlap, no doppio sticky simultaneo).
+5. **AMB-11.B.5=A "calibrazione `top-[149px]` preserva con N≥2"**: nessuna ricalibrazione necessaria. Misurazione browser-side coerente single-/multi-separator.
+6. **AMB-11.B.6=v2.7.0 closing 11-B (Fase 2 milestone reale)**: tag annotato applicato a closing 11-B, NON `v3.0.0-alpha` Fase 3 prematuro. Razionale: Fase 2 PWA standalone è milestone semanticamente forte autoconsistente; Fase 3 farà nuovo tag dedicato (`v2.8.0` MVP backend o `v3.0.0` integration completa, decisione demandata).
+7. **AMB-11.B.7 NUOVA "package.json bump solo a closing Step"**: convention emersa in-session, ratificata. Il changelog version può divergere dal package.json: changelog avanza ad ogni CP closing significativo (es. v2.6.3 / v2.6.4 intra-step), package.json avanza solo a closing Step (last bump v2.6.1 a Step 10-C-fix → v2.7.0 a Step 11-B closing). Razionale: package.json dovrebbe riflettere release significative, non micro-iterazioni; il changelog ha la granularità fine.
+8. **§6.160 scope-creep necessaria**: documentata come deviazione visibile per audit trail, ma è sub-conseguenza tecnica AMB-11.B.1 (non violazione spec). Pattern §6.116b consumer drift replicato.
+9. **§6.161 QW5 deferred Fase 3**: defer coerente con classificazione "opportunistic" originale Q5.
+
+#### 11.B.r Sub-sub-sezione — Retrospettiva Fase 2 (44 deviazioni §6.115-§6.161)
+
+> Inclusa internamente a §11.B per scope hand-off Fase 3 (Q7=B). Non promossa a §23 top-level per coerenza con architettura "Fase 2 closing è milestone, non capitolo separato" (AMB-11.B.6).
+
+**Conteggio.** §6.115 (CP1 9-A primo helper ISO) → §6.161 (QW5 deferred Fase 3) = 47 nominali, ma §6.115a/§6.115b (CP1+CP3 split), §6.116/§6.116b (sub-finding consumer drift), §6.117/§6.117a (sub-drift JSDoc) = 3 sub-split. Effettive: **44 deviazioni**. Numerazione non-monotona (gap §6.121-§6.135 mai allocati per re-coerenza fatto-storico §6.71/§6.85, principio no-retrocorrezione).
+
+**Cluster tematici (6 totali):**
+
+**Cluster 1 — Dominio cross-midnight ISO datetime (§6.115a-§6.120, §6.160):**
+- §6.115a/§6.115b: 3 helper ISO `utils/time.js` + recalc.js ISO propagation cross-midnight
+- §6.116/§6.116b: tear-down workaround §6.26 (sostituita da §6.118) + consumer drift `uiState.js` + `OggiView` gap calc post-ISO
+- §6.117/§6.117a: Dexie v1→v2 migration `ora_ricalcolata` ISO + types.js JSDoc drift
+- §6.118: `isCrossMidnightRecalc` ISO-aware (chiude §6.26 e §6.18 dati definitivamente)
+- §6.119: bug visivo planBuilder.dateStr non bumpato cross-midnight (deferred 9-A → risolto effetto §6.160 Step 11-B CP1+CP3-fix)
+- §6.120: actions.presa() ignora simulated_now in DEV (deferred, DEV-only non bloccante)
+- §6.160: propagation `getCardState` su `effectiveDateStr` (chiude §6.119 effetto)
+
+**Lezione cluster.** Cambio tipo dominio (HH:MM → ISO) propaga consumer drift in 3 onde successive: (1) helper introdotti CP1 9-A, (2) consumer aggiornati CP4 9-A + CP4-fix §6.118, (3) consumer ulteriori scoperti CP1+CP3-fix Step 11-B (§6.160). Pattern: **dopo cambio tipo, audit `grep` consumer originale è obbligatorio**.
+
+**Cluster 2 — Notifiche locali Opzione 1 foreground-only (§6.136-§6.149):**
+- §6.136-§6.138: gate `__pt` dev-only + icone PWA placeholder + bug latente farmaco_id nested (parte 4/4)
+- §6.139: SezioneNotifiche button-style vs slider 4-state (deferred Wave-C, candidato accorpamento §6.161)
+- §6.140-§6.141: actions.init() non re-arma rescheduleAllNotifications + simulatedNow non propaga setTimeout singleton (limitazioni note Opzione 1)
+- §6.142-§6.146: scheduleTestDose thunk + VITE_PT_TOOLING gate + 192/512/maskable-512 icone + stateRef lag fix + anomalia rebuild Vite
+- §6.147-§6.149: plan cross-day 27 entries by-design + falso-positivo metodologico §6.148 + lessons-learned async DevTools
+
+**Lezione cluster.** Scheduling timer-based + permessi browser-gated è territorio fragile. CP browser empirico catturarono regression che unit test mancarono (es. §6.146 anomalia rebuild). Pattern: **CP browser obbligatorio per integrazioni con API browser asincrone permission-gated**.
+
+**Cluster 3 — CP browser & osservabilità (§6.150-§6.152):**
+- §6.150: __pt.wipe undefined runtime — mismatch documentale §6.113 chiuso
+- §6.151: limit di osservabilità monkey-patch property-level su __pt.notifications
+- §6.152: plan_entries delta non strettamente lineare durante test multi-step async >1s
+
+**Lezione cluster.** Test browser-side monkey-patch ha limiti: alcuni binding sono catturati pre-patch da closure interne. Pattern: **per validation runtime, preferire dispatch action diretto su state vs spy su singleton**.
+
+**Cluster 4 — Service Worker & PWA production-ready (§6.153-§6.157):**
+- §6.153-§6.154: scope path §11 vs filesystem reale + virtual:pwa-register vitest alias + mock fisico
+- §6.155: disallineamento storico package.json (`0.1.0`) vs changelog version (`v2.5.x`), recovery via rebaseline commit dedicato
+- §6.156: test-only timezone race in notifications.test.js
+- §6.157: `<UpdatePrompt />` non scatta in autoUpdate mode → fix `registerType: "prompt"` + workbox `skipWaiting:false` + `clientsClaim:false`
+
+**Lezione cluster.** PWA production-ready richiede coerenza fra build mode (autoUpdate vs prompt) e UI runtime (prompt component). §6.155 ha rivelato che package.json può divergere dal changelog (radice di AMB-11.B.7 nuova convention). Pattern: **rebaseline commit dedicato per recovery storico discrepancies**.
+
+**Cluster 5 — Error handling Step 11-A (§6.158-§6.159):**
+- §6.158: CLEAR_ERROR pre-esistente assorbe DISMISS_ERROR previsto (scope collapse, gate CP0 incompleto)
+- §6.159: ErrorSurface scope additivo, OggiView:288 INIT failure screen invariato (popolazioni `state.status` vs `state.error` distinte)
+
+**Lezione cluster.** Audit pre-CP deve grep-check action types correnti pre-lock D3, e verificare i siti reali delle modifiche prima di applicare patcher. Pattern §22.33 round 1 esteso a verifica sito puntuale.
+
+**Cluster 6 — Step 11-B Wave-next & closing (§6.160-§6.161):**
+- §6.160: CP3-fix propagation `getCardState` su `effectiveDateStr` (scope-creep necessaria su AMB-11.B.1)
+- §6.161: QW5 deferred Fase 3 (audit non riproduce)
+
+**Lezione cluster.** Helper di derivazione (effectiveDateStr) richiedono audit propagation completa: bucketing visivo + cardState semantico sono due siti distinti che condividono la stessa grandezza derivata.
+
+#### Debt deferito a Fase 3 (5 ticket attivi)
+
+| Ticket | Tema | Priorità | Note |
+|---|---|---|---|
+| §6.119 | bug planBuilder.dateStr non bumpato cross-midnight (Opzione A originale) | Bassa | Effetto risolto da §6.160 propagation. Verificare in Fase 3 se bucketing causa edge case con ApiRepository sync |
+| §6.120 | actions.presa() ignora simulated_now in DEV | Bassa (DEV-only) | Non bloccante PROD. Fixarlo se si riprende DEV tooling in Fase 3 setup |
+| §6.139 | SezioneNotifiche button-style vs slider 4-state | Media (UX) | Candidato accorpamento con §6.161 (QW5 focus). UI polish opportunistic in Fase 3 |
+| §6.140 | actions.init() non re-arma rescheduleAllNotifications al boot | Bassa | Limitazione nota Opzione 1 foreground-only. Risolto naturalmente da Web Push Fase 3 estesa |
+| §6.141 | simulatedNow non propaga setTimeout singleton notifications | Bassa (DEV-only) | Design blocker DEV-only. Skip se non si fa più DEV testing notifiche manuale |
+| §6.161 | QW5 focus post-toggle notifiche | Bassa (UX) | Audit Step 11-B non riproduce. Da rivedere quando UX polish è scope |
+
+#### LocalRepository ground truth (contratto per ApiRepository Fase 3)
+
+`LocalRepository.js` (Step 3 + Step 7d-2 + Step 11-A CP1a + altri intermedi) definisce **31 metodi pubblici async** + 1 transazione `withTransaction(storeNames, fn)`. ApiRepository in Fase 3 dovrà implementare la stessa firma + vocabulary errore consolidato in Step 11-A CP1a.
+
+**Vocabulary errore (RepositoryError consolidato):**
+- Codici: `DB_UNAVAILABLE` / `TRANSACTION_ABORT` / `CONSTRAINT_VIOLATION` / `NOT_FOUND` / `GENERIC`
+- Severity: `warning` (recoverable, no-op acceptable) / `error` (default, retry suggested) / `critical` (banner persistente, app-blocking)
+- Mapping HTTP futuro Fase 3 (documentato in `IRepository.js` docstring CP1a):
+  - `503` / connection refused → `DB_UNAVAILABLE` + severity `critical`
+  - `409` Conflict → `CONSTRAINT_VIOLATION` + severity `warning`
+  - `404` Not Found → `NOT_FOUND` + severity `error`
+  - `400` / `422` Validation → `GENERIC` + severity `error`
+  - `5xx` (non-503) → `GENERIC` + severity `critical`
+
+**Vincoli contratto API (per ApiRepository):**
+1. **Stessa firma** dei 31 metodi async (Promise<T> o Promise<void>). No breaking signature changes.
+2. **`upsertLogsBatch(logs)` idempotency**: semantica server-side preservata (chiave naturale `(dateStr, farmaco_id, dose_numero)` per upsert).
+3. **`withTransaction(storeNames, fn)` atomicità**: tradotta in transazione DB server-side oppure HTTP batch endpoint (decisione AMB Fase 3).
+4. **`setProfiloAttivoConCleanup(profiloId)` atomicità multi-tabella**: server-side wrap in transazione SQL (vs Dexie in Fase 2).
+5. **`getFarmaci(soloAttivi: boolean)` semantica soft-delete**: server-side filter su `attivo=0` preservato.
+6. **Error wrapping**: tutti gli errori HTTP/network mappati in `RepositoryError` con vocabulary sopra. Fail-loud su mapping miss (default `GENERIC` + severity `critical`).
+
+#### AMB candidati Fase 3 (8 intestazioni pre-frozen come hand-off)
+
+| AMB | Tema | Resolution mode |
+|---|---|---|
+| **F3.A** | Stack backend FastAPI: project layout (single-file vs package), uvicorn config dev/prod, CORS strategy (LAN-only vs Tailscale) | Analisi-first |
+| **F3.B** | Auth: nessuna (LAN-only + Tailscale trust) vs JWT minimal vs sessione cookie | Analisi-first |
+| **F3.C** | Migration dati: bulk export Dexie → SQL seed (one-shot Mac-side) vs migration in-app (PWA invia stato corrente al boot Fase 3) | Analisi-first |
+| **F3.D** | ApiRepository swap strategy: feature-flag runtime (dual-mode 1 settimana, fallback Local→Api) vs hard cutover (deploy day) | Analisi-first |
+| **F3.E** | Networking: Tailscale magic-DNS (trust mesh) vs IP statico LAN vs DNS locale + cert self-signed | Analisi-first |
+| **F3.F** | Deploy: Mac Mini docker-compose vs systemd vs PM2 + nginx reverse proxy | Analisi-first |
+| **F3.G** | Sync conflict resolution: last-write-wins (semplice) vs vector-clock (corretto) vs server-authoritative (no client offline writes) | Analisi-first |
+| **F3.H** | Vista Log e Vista Export: scope minimo Fase 3 (read-only + CSV) vs Fase 4 (filtri + grafici) | Analisi-first |
+
+**Razionale 8 AMB.** Coprono i 4 assi di scope Fase 3: backend (F3.A/B), migration (F3.C/D), networking/deploy (F3.E/F), feature-set + dati (F3.G/H). La sessione Fase 3 analisi-first dedicata pre-freezerà queste in modalità Q&A iterativa pattern §11 v2.5.37/v2.5.40-rc.4.
+
+### 11.X Note operative comuni
+
+- **Pattern §22.26 strict** confermato per tag: tag annotato solo a milestone semanticamente forte (Fase 2 closing reale o Fase 3 milestone), non a closing step intermedio
+- **Bash zsh-safe** invariato (echo single-quoted, no `#`, no apostrofi italiani) per ogni blocco bash consegnato a Mac-side in 11-A e 11-B
+- **Pattern §11 v2.5.37/v2.5.40-rc.4 pre-split** validato anche per Step 11 (split upfront 11-A + 11-B)
+- **Trigger split adaptive automatico**: se durante impl 11-A o 11-B la stima sfora bound espansivo (>22 per 11-A, >17 per 11-B), chiusura sessione + apertura sub-parte (es. 11-A parte 1/2 + parte 2/2), evita anti-pattern lessons 8d
+
+### 11.C Prossimo prompt — Sessione Fase 3 analisi-first dedicata (Q7=B closure)
+
+**Scope alto livello.** Fase 3 introduce backend FastAPI + MariaDB e swap `LocalRepository` → `ApiRepository`. Decisioni Fase 3 sono multi-asse (4 cluster: backend, migration, networking/deploy, feature-set) e meritano sessione analisi-first dedicata pre-impl, come da Q7=B (§22.32). Naming convention demandato a quel momento (12-A vs Fase 3 Step 1 reset).
+
+**Modalità raccomandata.** Q&A iterativa Q1-Q8 su CP0 audit Mac-side opzionale (verifica baseline `step-8` branch, conferma top commit closing 11-B + tag `v2.7.0`, audit ambiente Mac Mini target deploy se già disponibile). Output atteso: 8 AMB Fase 3 (F3.A÷H) ratificate, scope CP planning pre-frozen per prima sessione impl Fase 3, target test/endpoint/migration calibrati, decisione naming convention.
+
+**One-liner apertura Sessione Fase 3 analisi-first:**
+
+```
+Esegui il prompt al §11.C del Changelog (Sessione Fase 3 analisi-first dedicata, Q7=B closure post-Fase 2 milestone).
+```
+
+**Q1-Q8 candidate (raffinabile in apertura sessione, "decidi tu" applicabile):**
+
+| Q | Tema | Opzioni candidate | Default raccomandato |
+|---|---|---|---|
+| **Q1** | Naming convention sessioni Fase 3 | (A) `12-A`, `12-B`... continuità Step 11 / (B) Fase 3 Step 1, Step 2... reset / (C) ibrido `F3-S1`, `F3-S2`... | (B) reset più chiaro per cambio fase |
+| **Q2** | Stack backend FastAPI scope (F3.A) | (A) single-file `main.py` 200-400 righe / (B) package `pharmatimer_api/{routers,services,repository}` modulare / (C) FastAPI + Pydantic models split, no SQLAlchemy (mysql-connector-python diretto come da spec §0.2) | (B) modulare ma minimal: router unico in app.py + repository dedicato + models inline |
+| **Q3** | Auth strategy (F3.B) | (A) nessuna (LAN-only + Tailscale trust mesh) / (B) JWT minimal (single user) / (C) sessione cookie + CSRF | (A) coerente single-user use case + Tailscale pre-esistente |
+| **Q4** | Migration dati Dexie → MariaDB (F3.C) | (A) one-shot Mac-side: PWA esporta JSON snapshot, Python script seeds DB / (B) PWA boot Fase 3 invia stato corrente al backend al primo avvio / (C) dual-write transitorio: PWA scrive entrambi 1 settimana | (A) semplicità + tracciabilità; (C) over-engineering |
+| **Q5** | ApiRepository swap strategy (F3.D) | (A) feature-flag runtime (`useApiRepo` env), dual-mode 1 settimana fallback / (B) hard cutover deploy day / (C) Strangler Fig: per-method swap progressivo | (A) sicurezza + rollback fast |
+| **Q6** | Deploy Mac Mini (F3.F) | (A) docker-compose (FastAPI + MariaDB containers) / (B) systemd service + MariaDB native macOS / (C) PM2 + MariaDB native | (A) reproducibility + isolamento; (B) leggero ma manuale |
+| **Q7** | Networking (F3.E) | (A) Tailscale magic-DNS (`pharmatimer.tailnet`) / (B) IP statico LAN + DNS locale `/etc/hosts` / (C) DNS locale + cert self-signed | (A) coerente F3.B Auth=A trust mesh |
+| **Q8** | Vista Log + Vista Export scope (F3.H) | (A) Vista Log read-only + CSV export → Fase 3 / (B) Vista Log + filtri base → Fase 3, Export → Fase 4 / (C) entrambe minimal Fase 3 | (B) split per dimensione sessioni |
+
+**Stima token analisi-first Fase 3.** Pattern Step 11 analisi-first (§22.32) consumò ~6-8K. Fase 3 è scope più ampio (4 cluster vs 1 cluster polish/Wave-next): stima 10-20K, con possibilità di chiusura singola sessione se Q&A iterativa converge bene su default raccomandati.
+
+**Pre-sessione opzionale Mac-side.**
+- Verifica `git log -1` = `<TBD-closing-commit>` Step 11-B closing
+- Verifica `git tag` mostra `v2.7.0` annotato
+- Verifica `npx vitest run` = 430/430 su 42 file
+- Verifica `cat package.json | grep version` = `"version": "2.7.0"`
+- Audit ambiente Mac Mini target deploy: SSH access, MariaDB 11.x install path, Python 3.12+ availability, Tailscale tailnet status (se già operativo)
+
+**Pattern operativi confermati per Fase 3 analisi-first:**
+- Modalità Q&A iterativa pre-frozen (§11 v2.5.37/v2.5.40-rc.4): Claude raccomanda esplicitamente, utente delega o specifica
+- AMB pre-frozen letterali (8 AMB F3.A÷H sopra) come hand-off a sessione impl
+- Decisioni "decidi tu" su default raccomandati = pattern accettato (validato §22.32 Q1, §22.33 D3)
+- Target test/endpoint/migration calibrati split-aware (se Fase 3 si splitta in F3-S1 + F3-S2)
+- CP0 audit empirico Mac-side opzionale ma raccomandato per dati ambientali
+
+## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3 + 8-pre + 8a + 8b + 8c-parz + 8c-2 + 9-A + 9-B + 9-D + 10-A + 10-B + 10-C + 10-C-fix + 11-A CP1a + 11-A CP1b + 11-B
 
 | File | Step | Note |
 |---|---|---|
@@ -8148,3 +8573,728 @@ Step 10 **NON è chiuso milestone-definitivo**. Status: "code-complete con TODO 
 ```
 Esegui il prompt al §11 del Changelog (Step 10-C-fix esecutiva snella).
 ```
+
+## 22.31 Stato post-Sessione Step 10-C-fix esecutiva snella (P3 verde, §6.157 chiusa, Step 10 milestone-definitivo)
+
+**Data:** 1 maggio 2026.
+**Modalità:** esecutiva snella diretta da prompt §11 v2.6.0, sessione singola completa CP0 + CP1 + CP2 + CP browser P3 + cleanup + bump + commit closing. No split.
+**Token consumati:** ~5-7K (singola sessione, scope minimo come stimato).
+**Esito:** ✅ **P3 verde end-to-end. §6.157 chiusa. Step 10 milestone-definitivo PWA production-ready.**
+
+**Top commit:** `689db5c` "Step 10-C-fix — registerType prompt + skipWaiting:false (chiude 6.157)" (2 file, 4 ins / 2 del). Branch `step-8`. Tree con solo `M PharmaTimer_Changelog_Fase2.md` post-delivery v2.6.1 (asimmetria attesa).
+**Test:** 381/381 su 38 file invariato (config-only change).
+**Tag git milestone:** **non applicato** (decisione A su 3 opzioni: pattern conservativo §22.26 strict; tag rimandato a Fase 2 closing post-Step 11 o Fase 3 milestone). AMB-10-C-fix.E letterale derogata per coerenza decisionale.
+
+### CP0 sanity-light (6 gate)
+
+```
+Gate 1 git status pulito:            ✅ M Changelog only (asimmetria attesa)
+Gate 2 top commit d6719b5:           ✅
+Gate 3 branch step-8:                ✅
+Gate 4 test 381/381 su 38 file:      ✅ 7.56s
+Gate 5 package.json version 2.6.0:   ✅
+Gate 6 vite.config.js registerType:  ✅ "autoUpdate" alla riga 10
+```
+
+### CP1 patcher Python idempotente
+
+Heredoc single-quoted Mac-side `cat > /tmp/patch_vite_config_10cfix.py`. Pattern §6.156 anchor-based:
+- Edit 1: `      registerType: "autoUpdate",` → `      registerType: "prompt",` (AMB-10-C-fix.A)
+- Edit 2: `      workbox: {\n        globPatterns: [...]` → aggiunge `        skipWaiting: false,` + `        clientsClaim: false,` prima di `globPatterns` (AMB-10-C-fix.B)
+
+Backup `vite.config.js.bak.cp10cfix` creato. Pre-validation in sandbox: run-1 applica 2 cambi, run-2 stampa `ALREADY-PATCHED, skip` (idempotenza confermata). Diff Mac-side reale identico a sandbox: 3 cambi netti (1 string change `-/+ registerType` + 2 keys aggiunte `+skipWaiting` + `+clientsClaim`).
+
+### CP2 rebuild + retest unit
+
+```
+npm run build:        ✅ 1.11s, dist/sw.js 2116 byte rigenerato (16 precache 430.53 KiB)
+                          bundle baseline pre-cachebust: index-Dsc43izY.js
+npm test --run:       ✅ 381/381 su 38 file in 7.03s (config change non tocca unit logic)
+dist/sw.js presente:  ✅
+dist/registerSW.js:   non presente (atteso con registerType:"prompt", bootstrap via virtual:pwa-register bundlato)
+```
+
+### CP browser P3 retest end-to-end (Mac-side + Chrome Desktop)
+
+**Setup:** `npx serve dist -l 50727` (porta esplicita lessons §22.30). Tab Chrome regolare (no PWA standalone — DevTools Cmd+Opt+I chiude finestra su macOS Tahoe, `chrome://inspect/#apps` mostra lista vuota anche con PWA aperta — workaround: tab regolare equivalente per scope SW flow).
+
+**Sequence cachebust source-level:**
+1. `printf '\nwindow.__PT_CACHEBUST__ = %d;\n' $(date +%s) >> src/main.jsx` (sopravvive minify, AMB-10-C-fix.D)
+2. `npm run build` → bundle hash `index-Bn-FaMi-.js` (≠ baseline `index-Dsc43izY.js`, +30 byte = `__PT_CACHEBUST__` line)
+3. Restart `npx serve` (Ctrl+C + rilancio identico)
+4. DevTools (tab regolare) → Application → Service Workers → click `Update`
+
+**Pass criterion P3 verificato:**
+- ✅ SW vecchio `#23013 activated and is running` + SW nuovo `#23014 waiting to activate` con bottone `skipWaiting` clickable
+- ✅ Update Cycle nuovo blocco `#23014 Install / Wait / Activate`, **Wait** mostrato come barra estesa rosa (vs trattino verticale di `autoUpdate` dove `Wait` era saltato)
+- ✅ Toast `<UpdatePrompt />` apparso bottom-fixed nella pagina con copy "Nuova versione disponibile" + bottone "Ricarica"
+- ✅ Click "Ricarica" → app refresh + SW `#23014 activated and is running`, vecchio rimosso
+
+Intent dichiarato in `registerSW.js` (`hybrid autoUpdate + prompt UI. User must consciously trigger reload to avoid losing volatile state (e.g. mid-intake) on PWA refresh.`) ora effettivamente realizzato.
+
+### Cleanup post-P3
+
+```
+git checkout HEAD -- src/main.jsx     ✅ revert cachebust scratch
+rm -f vite.config.js.bak.cp10cfix     ✅ cleanup CP1 backup
+sed -i '' '"version": "2.6.0"' → '"version": "2.6.1"'  ✅ AMB-10-C-fix.F bump
+npm run build                          ✅ 1.10s, version 2.6.1 in dist
+npm test --run                         ✅ 381/381 invariato
+git status --short:                    M vite.config.js + M package.json + M Changelog
+```
+
+Tree pre-commit: solo file da committare + Changelog asimmetria.
+
+### Commit closing
+
+```
+git add vite.config.js package.json
+git commit \
+  -m "Step 10-C-fix — registerType prompt + skipWaiting:false (chiude 6.157)" \
+  -m "AMB-10-C-fix.A: registerType autoUpdate -> prompt" \
+  -m "AMB-10-C-fix.B: workbox skipWaiting:false + clientsClaim:false" \
+  -m "AMB-10-C-fix.F: bump 2.6.0 -> 2.6.1" \
+  -m "P3 verde end-to-end: UpdatePrompt scatta correttamente."
+```
+
+Hash commit `689db5c`. Sanity test post-commit: 381/381 ✅.
+
+### Decisioni in-session
+
+1. **Decisione A su tag `v2.6.0`/`v2.6.1`** (Q discusso prima di D2): scelte 3 opzioni (A: nessun tag adesso, raccomandata pattern conservativo §22.26 strict; B: tag `v2.6.0` su nuovo commit con package.json 2.6.1 — mismatch semantico; C: tag retroattivo su `959dc40` Step 10-B closing — storicamente scorretto perché commit aveva config buggy `autoUpdate`). Roberto ha delegato "procedi per il meglio" → applicata A.
+2. **Recovery da deviazione operativa runtime**: durante CP browser, lanciato `vite preview` su porta 4173 anziché `npx serve dist -l 50727` come da §11. Recovery clean slate Mac-side: kill node residui `lsof -ti :4173 -i :50727 | xargs -r kill -9` + reinstall PWA fresh. Non bloccante per P3 esito ma memo template prompt sessioni future: §11 deve raddoppiare l'enforcement della porta esplicita.
+3. **Workaround DevTools PWA standalone macOS Tahoe**: Cmd+Opt+I chiude la finestra (DevTools shortcut anomalo intercettato da PWA standalone), `chrome://inspect/#apps` mostra lista vuota anche con PWA aperta. Workaround applicato: testare flow SW in tab Chrome regolare (equivalente per scope P3 — stesso origin, stesso SW). Non bloccante. Memo per future verifiche browser PWA standalone su Tahoe: tab regolare > PWA standalone se solo scope SW; PWA standalone solo se test richiede ambiente full standalone (es. installprompt, manifest icons home screen).
+4. **Decisione split delivery commit codice + Changelog**: pattern asimmetria KB+local §22.26 confermato. Commit codice `689db5c` (vite.config.js + package.json). Changelog modificato resta `M` post-commit, risolto in delivery v2.6.1 con upload del file completo aggiornato (modalità A su Q3 modalità delivery delta).
+
+### Pattern operativi confermati
+
+- **Bash zsh-safe** rispettato: echo single-quoted, no `#`, no apostrofi italiani in tutti i blocchi consegnati a Mac (CP0 + CP1 heredoc + CP2 + Step B cachebust + cleanup + commit + verifiche).
+- **Patcher Python anchor-based idempotente** (CP1): pre-validation in sandbox SHA-bridge eliminato (file replicato in sandbox via str_replace su input Roberto, validato run-1 + run-2 idempotenza), poi delivery Mac-side via heredoc single-quoted in `/tmp`.
+- **Cachebust source-level reale** (Step B): `printf '\nwindow.__PT_CACHEBUST__ = %d;\n' $(date +%s) >> src/main.jsx`. Pattern coerente con AMB-10-C-fix.D, sopravvive minify, alternativa robusta al bump version-only (lessons §6.157 + §6.146).
+- **`npx serve` con `-l 50727` esplicita** (Step C setup): porta esplicita evita auto-fallback macOS quando 5000 occupata da AirPlay Receiver (lessons §22.30).
+- **Split commit codice vs Changelog** (D2): `git add vite.config.js package.json` (escluso Changelog). Tree post-commit con solo Changelog `M`, atteso per asimmetria KB+local.
+- **Triage 3 punti durante incident operativo** (server `vite preview` non rispondente): `lsof -i :4173`, verifica connettività tab regolare, sanity SW nel tab. Pattern utile per future incident debugging Mac-side senza saltare conclusioni.
+
+### Deviazioni introdotte
+
+**Zero §6.NN nuove.** §6.157 chiusa ✅ con status update da "deferred Step 10-C-fix" a "chiuso ✅ — Step 10-C-fix esecutiva snella (1 maggio 2026, v2.6.1) ha applicato l'opzione 1...". Cross-reference §22.31.
+
+### Backup `.bak.cp10cfix` cleanup
+
+1 file rimosso al closing pre-commit (in linea D1 step 2 cleanup):
+```
+vite.config.js.bak.cp10cfix
+```
+
+`.gitignore` pattern `*.bak` previene tracking; nessuno era staged. Pattern §6.135 confermato esteso a Step 10-C-fix.
+
+### Stato git post-sessione
+
+Branch `step-8`, top `689db5c`, tree con solo `M PharmaTimer_Changelog_Fase2.md` (asimmetria KB+local, risolto al primo commit Changelog post-delivery v2.6.1).
+
+```
+689db5c (HEAD -> step-8) Step 10-C-fix — registerType prompt + skipWaiting:false (chiude 6.157)
+d6719b5 Hot-fix §6.156 — notifications.test.js timezone race (showDoseNotification)
+959dc40 Step 10-B closing — SW autoUpdate+prompt + bump v2.6.0 (PWA production-ready)
+01a553f Rebaseline package.json 0.1.0 -> 2.5.42 (recupero disallineamento storico)
+```
+
+### Stato changelog post-sessione
+
+Versione changelog: v2.6.0 → **v2.6.1** definitivo (allineato a `package.json`). §11 sostituita con stub Step 11 polish + Wave-next analisi-first (Q1-Q8 candidate, modalità Q&A iterativa raccomandata "decidi tu" sui default sensati). §6.157 status updated a "chiuso ✅". §7 roadmap Step 10 da `⏸️ Split` a `✅ Completo milestone PWA production-ready`, riga 10-B `⏳ Pianificata` → `✅ Completo`, nuove righe 10-C ⚠️ Parziale + 10-C-fix ✅ Completo, riga Step 11 con stato `⏳ Analisi-first pending` + backlog tracciato. §12 titolo esteso `+ 10-C + 10-C-fix` (zero nuovi file, modifiche surgicali a vite.config.js + package.json già tracciati). §22 esteso con §22.31 (questa sezione).
+
+### Stato Step 10 nel complesso (riepilogo finale)
+
+```
+Step 10-A (parziale):     ✅ icone + manifest + workbox runtimeCaching scaffold
+Step 10-B:                ✅ SW registration + UpdatePrompt component + 6 unit test + bump v2.6.0
+Step 10-C (parziale):     ⚠️ CP browser P1+P2+P4 verdi, P3 fail genuino §6.157
+Step 10-C-fix:            ✅ §6.157 chiusa, P3 verde end-to-end, bump v2.6.1
+```
+
+**Step 10 ✅ milestone-definitivo PWA production-ready**: install, offline, update flow toast, icone, manifest, service worker. Da Step 10 analisi-first 30/04/2026 (v2.5.40) a release v2.6.1 1/05/2026: 2 giorni, 5 sotto-sessioni (analisi-first + 10-A + 10-B + 10-C + 10-C-fix), da 375 a 381 test (+6 esatto), 5 deviazioni §6.153-§6.157 (tutte chiuse).
+
+### Prossimi passi (post-10-C-fix, pre-Step 11)
+
+1. **Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude.ai** con versione **v2.6.1** (questo delivery).
+2. Aprire **Sessione Step 11 polish + Wave-next analisi-first** (nuova conversazione Claude) con one-liner:
+   ```
+   Esegui il prompt al §11 del Changelog (Step 11 polish + Wave-next analisi-first).
+   ```
+3. **Opzionale pre-sessione**: Roberto esegue CP0 audit Mac-side (5-10min, blocco bash in §11) e fornisce output in apertura per scope concreto Q5/Q8.
+4. Decidere all'apertura Step 11: scope split 11-A polish UI/a11y + 11-B fix Wave-next §6.26/§6.96/meta vs sessione singola monolitica (raccomandato split, opzione B di Q1).
+
+### Riferimenti
+
+- **§11 nuovo** (questa versione): stub Step 11 polish + Wave-next analisi-first (Q1-Q8 candidate)
+- **§22.30**: chiusura Step 10-C esecutiva snella (CP browser P3 fail genuino origine §6.157)
+- **§22.29**: chiusura Step 10-B esecutiva (SW registration + UpdatePrompt + bump v2.6.0)
+- **§22.28**: chiusura Step 10-A esecutiva parziale (icone + manifest + workbox scaffold)
+- **§22.27**: chiusura Step 10 analisi-first + AMB-10 pre-frozen
+- **§22.26**: pattern operativi 9-D (CP browser deferred + bump definitivo + tag conservativo) — riferimento stilistico
+- **§6.157**: deviazione chiusa con applicazione opzione 1 in questa sessione
+- **§6.156**: hot-fix Step 10-C test-only timezone race notifications.test.js (no version bump, commit `d6719b5`)
+- **§6.135**: pattern `.bak.cpN` chiuso con cleanup pre-commit (1 file `.bak.cp10cfix`)
+
+## 22.32 Stato post-Sessione Step 11 analisi-first (Q1-Q8 chiuse, 17 AMB pre-frozen, split 11-A → 11-B definito)
+
+**Data:** 1 maggio 2026 (sera, post-closing Step 10-C-fix).
+**Modalità:** analisi-first pura, Q&A iterativa con CP0 audit Mac-side fornito da Roberto in apertura. Zero codice scritto. Singola sessione completa.
+**Token consumati:** ~6-8K (stima §11 v2.6.1 era 5-15K, atteso centrato).
+**Esito:** ✅ **8 Q congelate, 17 AMB pre-frozen, scope CP esplicitato per 11-A e 11-B, target test split-aware calibrati.**
+
+**Top commit:** `196e599` (delta da baseline §11 v2.6.1 `689db5c`: 1 commit di scarto, contenuto ignoto pre-CP0 11-A — possibile commit di delivery v2.6.1 oppure micro-cleanup post-Step 10-C-fix). Branch `step-8` invariato.
+**Test:** 381/381 su 38 file invariato (sessione analisi-first pura, zero codice).
+
+### CP0 audit Mac-side incorporato (eseguito post-closing Step 10-C-fix)
+
+```
+Punto 1 a11y ARIA labels in src/components/:                    54 hit
+Punto 2 try/catch in actions.js + LocalRepository.js:           10 hit (coverage <20%)
+Punto 3 copy hardcoded JSX in src/components/:                  270 hit
+Punto 4 deprecated meta in index.html:
+  riga 8:  <meta name="apple-mobile-web-app-capable" content="yes" />
+  riga 9:  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  riga 10: <meta name="apple-mobile-web-app-title" content="PharmaTimer" />
+  mancante: <meta name="mobile-web-app-capable">
+Punto 5 cross-midnight handling in OggiView.jsx:                5 hit (righe 64-71), tutti commenti, zero rendering logic
+Punto 6 sticky data separator calibrazione attuale:
+  riga 466: commento "top-[149px] recalibrated in 8d-C (§6.110)"
+  riga 474: className="sticky top-[149px] z-20 my-4 py-1.5 px-3 ..."
+```
+
+**Letture pre-frozen accettate da Claude in apertura sessione:**
+- Punto 2 segnala area di polish significativa (try/catch coverage <20% su thunks+repo) → rilevante per Q5+Q8
+- Punto 3 conferma i18n full fuori scope; revisione copy chiave (modali errore, empty states) realistica per Q5
+- Punto 4 conferma quick-win Q4=A (aggiunta meta W3C affiancata legacy iOS)
+- Punto 5 conferma Q2 necessaria (§6.26 non gestita visivamente, zero rendering logic)
+- Punto 6 conferma Q3 scope (workaround statico §6.110 invariato)
+
+### Q&A iterativa (8 turni)
+
+Pattern §11 v2.5.37/v2.5.40-rc.4: Claude propone raccomandazione esplicita per ciascuna Q, Roberto risponde con preferenza esplicita o "decidi tu" delegando alla raccomandazione.
+
+| Turn | Q | Risposta Roberto |
+|---|---|---|
+| 1 | Q1 split scope | "Procediamo per il meglio" → applicata raccomandata B + ordine 11-A → 11-B |
+| 2 | Q2 §6.26 | "Q2:B" |
+| 3 | Q3 sticky | "Q3: C" |
+| 4 | Q4 meta | "Q4: A" |
+| 5 | Q5 polish QW | "Q5:A" (subset QW1-QW4) |
+| 6 | Q6 tag | "Q6:C" |
+| 7 | Q7 Fase 3 | "Q7:B" |
+| 8 | Q8 target test | "Q8: A-split" |
+
+Decisioni complete sintetizzate in §11.0 della §11 nuova.
+
+### AMB pre-frozen (17 totali)
+
+11 AMB **11.A.1-11.A.11** per Step 11-A (sintetizzati in §11.1 nuovo).
+6 AMB **11.B.1-11.B.6** per Step 11-B (sintetizzati in §11.2 nuovo).
+
+Risoluzione AMB-11.A.4/10 + AMB-11.B.1-5 demandata a CP0 empirico delle rispettive sessioni impl. Risoluzione AMB-11.B.6 (tag) demandata a closing 11-B con scope Fase 3 chiaro post-Q7 sessione dedicata.
+
+### Scope CP esplicitato per sessione impl
+
+Sintetizzato in §11.A e §11.B della §11 nuova: CP0 audit empirico + CP1-CP5 lavoro per ciascuna sessione + CP closing.
+
+### Target test split-aware
+
+| Bound | 11-A | 11-B (post-11-A) | Globale Step 11 |
+|---|---|---|---|
+| Conservativo | 381 + 14 = 395 | 395 + 8 = 403 | 403 |
+| Atteso | 381 + 18 = 399 | 399 + 12 = 411 | 411 |
+| Espansivo | 381 + 22 = 403 | 403 + 17 = 420 | 420 |
+
+Memo intuizione utente "+20-30 test (range 401-411)" da §11 v2.6.1 vs stima atteso=411: bound alto allineato come ordine di grandezza.
+
+### Trigger split adaptive (impegno operativo)
+
+Se durante impl la stima sfora il bound espansivo (>22 per 11-A o >17 per 11-B) → chiusura sessione automatica + apertura sub-parte (es. 11-A parte 1/2 + parte 2/2). Evita anti-pattern lessons 8d (split adaptive intra-sessione produce drift).
+
+### Decisioni in-session
+
+1. **Q1 raccomandata B applicata su delega "procediamo per il meglio"** (turn 1): split upfront 11-A → 11-B con ordine 11-A primo (indurisce primitive UI). Razionale: sia polish (Q5) che cross-midnight UI (Q2) hanno scope sostanziale e indipendente; monolitica probabilmente >70K token contro stima §11 5-15K per singola sessione analisi-first; lessons 8d (§6.99, §6.111) sconsigliano split adaptive intra-sessione.
+2. **Decomposizione interaction Q3+Q2**: Q3=C skip + Q2=B introduce N≥2 separatori data nel rendering, ma calibrazione §6.110 è per UNO solo. Sub-question multi-separator behavior + calibrazione `top-[149px]` con N separatori formalizzati come AMB-11.B.4/5 e demandate a CP0 11-B impl, non risolte in questa sessione.
+3. **Q4 meta W3C affiancata** (non sostitutiva): pattern raccomandato MDN/W3C per transizione, browser moderni preferiscono standard, iOS Safari continua a leggere legacy. B (sostituzione) bocciata per regression risk iOS Safari standalone display mode.
+4. **Q5 subset 4 QW (non 5)**: QW5 focus post-toggle notifiche deferito 11-B opportunistic. Razionale: scope esatto richiede CP0 empirico (in quale stato post-toggle si perde focus?), bassa probabilità scope-creep se rimandato.
+5. **Q6 skip tag con AMB-11.B.6 demandato**: candidato `v2.7.0` su closing 11-B (= Fase 2 closing reale) vs `v3.0.0-alpha` Fase 3 scaffolding; decisione a closing 11-B con scope Fase 3 più chiaro post-Q7 sessione dedicata.
+6. **Q7 sessione Fase 3 analisi-first separata**: scope giga (FastAPI scaffolding, contratto API, swap repository, migration dati, auth, deploy, networking) merita context fresh. Saturare 11-B closing con Fase 3 planning → split adaptive (anti-pattern lessons 8d).
+7. **Q8 target split-aware**: 11-A 395-403 + 11-B 403-420 calibrati su Q5+Q2 finalizzati. Trigger split adaptive automatico se sfora bound espansivo.
+
+### Pattern operativi confermati
+
+- **Modalità Q&A iterativa pre-frozen** (§11 v2.5.37/v2.5.40-rc.4): Claude raccomanda esplicitamente, utente delega o specifica. Pattern efficace per scope split + AMB freeze in sessione singola.
+- **CP0 audit Mac-side pre-sessione** popolato Q5+Q8 con dati empirici (54 ARIA / 10 try-catch / 270 copy / meta legacy / 5 hit cross-midnight 0 logic / sticky `top-[149px]`). Pattern utile per future sessioni analisi-first dove scope dipende da audit empirico filesystem.
+- **Bash zsh-safe** rispettato in CP0 audit fornito da Roberto (echo single-quoted, no `#`, no apostrofi italiani — validato dal fatto che blocco è stato eseguito senza errori e output condiviso).
+
+### Deviazioni introdotte
+
+**Zero §6.NN nuove.** Sessione analisi-first pura non introduce deviazioni codice. La §11 nuova consolida intenti già presenti in §11 v2.6.1 senza divergenza dalla specifica.
+
+### Backup / cleanup
+
+N/A (sessione analisi-first, zero file modificati Mac-side fuori dal Changelog stesso).
+
+### Stato git post-sessione
+
+Branch `step-8`, top `196e599` (Mac-side, delta da `689db5c` da rilevare in CP0 11-A), tree con `M PharmaTimer_Changelog_Fase2.md` (asimmetria KB+local attesa, risolto al primo CP commit Changelog 11-A apertura).
+
+### Stato changelog post-sessione
+
+Versione changelog: v2.6.1 → **v2.6.2-rc.1** (release candidate analisi-first, allineato pattern §22.X analisi-first es. v2.5.41-rc.1). §11 sostituita con tabella decisioni Q1-Q8 + AMB pre-frozen 11.A.1-11 + 11.B.1-6 + sub-sezioni §11.A/§11.B con stub executive prompt. Nuova §22.32 (questa sezione). Roadmap §7 invariata (Step 11 split definito ma stato rimane `⏳ Analisi-first done, impl pending`). Header riga 5 "Ultima modifica" aggiornato.
+
+### Prossimi passi (post-Step 11 analisi-first, pre-Step 11-A impl)
+
+1. **Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude.ai** con versione **v2.6.2-rc.1** (questo delivery).
+2. **Pre-Step 11-A apertura, opzionale Mac-side:** verifica delta commit `689db5c` → `196e599` con `git log 689db5c..196e599 --oneline` per chiarire contenuto del commit di scarto. Se è solo delivery `v2.6.1` Changelog upload commit → benigno, archiviato in CP0 11-A. Se è cleanup/fix → aggiornare baseline §11.A apertura.
+3. Aprire **Sessione Step 11-A polish impl** (nuova conversazione Claude) con one-liner:
+   ```
+   Esegui il prompt al §11.A del Changelog (Step 11-A polish impl).
+   ```
+   (One-liner simbolico in v2.6.2-rc.1; executive prompt completo verrà popolato in §11.A al primo CP commit di apertura 11-A.)
+4. **Pre-sessione 11-A**: Roberto può eseguire CP0 audit empirico aggiuntivo se utile (es. count modali OggiView+ConfigView, count empty states, location `nome_utente`). Output popola AMB-11.A.4/7/10.
+5. **Post-closing 11-A** → apertura **Sessione Step 11-B Wave-next + closing Fase 2** con one-liner `Esegui il prompt al §11.B...`.
+6. **Post-closing 11-B** → apertura **Sessione Fase 3 analisi-first dedicata** (Q7=B); naming convention demandato a quel momento (12-A vs Fase 3 Step 1 reset).
+
+### Riferimenti
+
+- **§11 nuovo** (questa versione): Step 11 split 11-A → 11-B con tabella decisioni Q1-Q8 + AMB pre-frozen + sub-sezioni
+- **§22.31**: chiusura Step 10-C-fix esecutiva snella (P3 verde, §6.157 chiusa, Step 10 milestone-definitivo, baseline §11 v2.6.1 commit `689db5c`)
+- **§22.27**: chiusura Step 10 analisi-first + AMB-10 pre-frozen — riferimento stilistico per pattern Q&A iterativa pre-frozen
+- **§6.26**: deviazione cross-midnight UI rendering, scope principale 11-B Q2=B
+- **§6.96 / §6.107 / §6.110**: deviazioni sticky separator, archive closure 11-B Q3=C
+- **§6.118**: `isCrossMidnightRecalc` ISO-aware, interaction con AMB-11.B.1
+- **§6.119**: bug latente cross-midnight card non bumpata, risolta come effetto collaterale 11-B Q2=B
+- **§6.85 archive**: `nome_utente` anomalia non riprodotta, motiva QW4 defensive guard
+- **§6.92 / §6.103 / §6.105**: storia `useModalA11y` hook, motiva AMB-11.A.8 (no refactor)
+- **§3.8 spec**: `state.plan` orizzonte multi-day [today − PLAN_DAYS_BEFORE, today + PLAN_DAYS_AFTER], razionale Q2=B coerenza
+
+## 22.33 Stato post-Sessione Step 11-A CP1a esecutiva (QW1 chiusa, +24 test, AMB-11.A.1/2/3 chiusi, commit unico `3c2f514`, bump v2.6.3)
+
+**Data:** 2 maggio 2026 (mattina-pomeriggio).
+**Modalità:** esecutiva incrementale 4 step + commit unico finale. Pattern §11 split protezione (D3=A) per CP1b ErrorSurface UI demandato a sessione separata.
+**Token consumati:** ~50-60K (stima sopra centrato §11 atteso 30-50K, sforo +5-15K coerente con 4 step+ 1 fail intra-sessione step 3 + recovery).
+**Esito:** ✅ **QW1 error handling chiusa completamente. AMB-11.A.1/2/3 chiusi. +24 test (sopra bound espansivo +22 di +2, sforo accettato a inizio sessione).**
+
+**Top commit:** `3c2f514` "CP1a Step 11-A: RepositoryError + wrap LocalRepository + severity propagation" su branch `step-8` (8 file changed, 789 insertions / 149 deletions).
+**Test:** 381/381 → **405/405** su 40 file (+24 cumulativo, +18 step 1, +4 step 2, +0 step 3, +2 step 4).
+**Versione:** v2.6.2-rc.1 → **v2.6.3**.
+
+### CP0 audit incrementale (3 round Mac-side)
+
+**Round 1** popolato AMB-11.A.1/4/7/10:
+- `nome_utente`: solo in `ImpostazioniTab.jsx:35` (form edit). NESSUN consumer in OggiView header → AMB-11.A.10 letterale "Header OggiView (CP0 conferma esclusività)" risulta SBAGLIATO al pre-freeze. Greeting "Ciao [nome]" non esiste in produzione, va AGGIUNTO in CP1b (decisione CP0 round 2: Opzione A "aggiungi greeting in OggiView header con defensive guard").
+- ARIA modali: 9 consumer `useModalA11y` retrofit completo (FarmaciTab drawer inline + UnsavedChangesModal + ProfiliTab modal + 5 OggiView modals + ConfirmModal shared). AMB-11.A.8 confermato: NO refactor hook.
+- Empty states: 3 reali (FarmaciTab:155, FarmaciTab:806, OggiView:457). Stima pre-freeze 4-7 → realtà 3 (sotto bound). AMB-11.A.4 risolto.
+- Try/catch coverage: actions.js 11/11 catch blocks già presenti (>90%, non <20% come stima §11 v2.6.1). LocalRepository.js 0/30 (vero gap). AMB-11.A.1 risolto.
+
+**Round 2** popolato thunks pubblici actions.js + ARIA effettivo modali. **Round 3** popolato shape attuale `SET_ERROR` (`{kind: 'init'|'repo'|'domain'|'unknown', message, ...}`) + `state.error` slice (riga 50/197 reducer.js, return spread completo) + verifica `actions.test.js` non esistente (test severity demandato a step 4 `reducer.test.js` esistente).
+
+### 4 step incrementali
+
+**Step 1 (RepositoryError class):**
+- File: `RepositoryError.js` (NEW) + `RepositoryError.test.js` (NEW)
+- Classe `extends Error` per backward-compat `instanceof Error`
+- `SEVERITY_BY_CODE` map: DB_UNAVAILABLE/TRANSACTION_ABORT → critical, NOT_FOUND → warning, CONSTRAINT_VIOLATION/GENERIC → error
+- `wrapRepoError(rawErr, code, message?, severity?)` con idempotency su `RepositoryError instanceof`
+- `classifyRawError` heuristic Dexie-aware
+- `toPayload()` produce shape backward-compat reducer
+- Test: 18/18 verde sandbox + Mac (399/399)
+
+**Step 2 (LocalRepository wrap):**
+- File: `LocalRepository.js` (MOD, 326 → 445 righe +36%) + `LocalRepository.errors.test.js` (NEW)
+- Helper `_wrap(fn, codeOverride = null)` con idempotency `if (rawErr instanceof RepositoryError) throw rawErr`
+- 31 metodi async pubblici wrappati (count effettivo, +1 vs pre-freeze 30)
+- 5 metodi transazionali con `codeOverride='TRANSACTION_ABORT'`: `setProfiloAttivo`, `setProfiloAttivoConCleanup`, `replaceOrariForFarmaco`, `upsertLog`, `upsertLogsBatch`, `withTransaction` (totale 6 ma `withTransaction` è generico)
+- `deleteProfilo` business-rule conversion: `Error("Non si può eliminare il profilo attivo. Attivane un altro prima.")` → `RepositoryError({code:'CONSTRAINT_VIOLATION', severity:'warning', message:<invariata>})`. Backward-compat consumer perché `extends Error` + messaggio identico
+- 4 test errors via `vi.mock('../db.js')` per isolation
+- Test: 22/22 sandbox + Mac (403/403)
+
+**Step 3 (catch sites refactor + IRepository docstring):**
+- File: `actions.js` (MOD, 11 catch sites), `applyHelper.js` (MOD, 3 catch sites), `IRepository.js` (MOD, append docstring)
+- Patcher Python `patcher_step3.py` idempotente con regex DOTALL multi-line + parse Python in callback
+- Pattern uniforme: `payload: { kind, severity: err?.severity ?? 'error', code: err?.code, message }` (heuristic `'err.'`/`'err?.'` in msg → dynamic severity expr; literal `'error'` + `code: undefined` per early-return guards `'Nessuna azione da annullare'`/`'Profilo non trovato'`)
+- DomainError path applyHelper preserva `code: err.code` esistente (regex preserva quando già presente)
+- IRepository.js: appende sezione "Error contract (CP1a Step 11-A, AMB-11.A.1/2)" prima di `export {};` con vocabulary code+severity + mapping HTTP futuro (HTTP 5xx/network → DB_UNAVAILABLE critical, 409 → CONSTRAINT_VIOLATION, 404 → NOT_FOUND, 4xx other → GENERIC)
+- **Patcher v1 fail intra-sessione**: regex single-line non gestiva 7 sites multi-line preesistenti (es. riga 521 `payload: {\n  kind: 'repo',\n  message: ...\n  }`), output rotto con doppia virgola `,,` → 20 test files rotti su parse JS. Rollback automatico via `.bak.cp1a-step3` ripristinava 403/403. Diagnostica via `diff -u`: pattern multi-line scoperto, fix in v2 con DOTALL+parse-Python-in-callback. v2 verde 403/403 dopo apply, idempotency rerun "0 mutazioni reali (X idempotent skip)" (counter cosmetic distinto da match no-op)
+- Test: zero impact diretto (refactor non-breaking). 403 → 403 invariato
+
+**Step 4 (reducer.test.js +2 test severity):**
+- File: `reducer.test.js` (MOD, append 2 test in `describe('reducer — error channel')`)
+- Patcher Python `patcher_step4.py` con anchor-based replace + idempotency marker
+- Test 1: SET_ERROR propaga severity+code dal payload (shape nuova validata fine-end)
+- Test 2: SET_ERROR backward-compat — payload legacy `{kind, message}` accettato, `severity`/`code` undefined non breaking
+- Reducer note: zero modifiche a `reducer.js`. Spread completo `return { ...state, error: action.payload }` propaga automaticamente nuovi campi
+- Test: 405/405 finale, reducer.test.js 29 → 31 test
+
+### Decisioni in-session
+
+1. **Q1 sub-decisione D3=A "split sessione CP1a/CP1b" ratificato da Opzione A** (turn 5): chiusura CP1a con commit unico, CP1b ErrorSurface UI demandato a sessione separata fresh context. Razionale: pattern §11 split protezione anti-drift lessons 8d, scope CP1b è scope nuovo (UI vs error contract), token consumati a fine CP1a già al limite.
+2. **Q2 sub-decisione CP0 round 2 Opzione A "greeting nome_utente in OggiView header"** (turn 4): defensive guard read-side `selectImpostazione(state,'nome_utente') ?? 'Ciao!'` aggiunto al sito che non esiste pre-CP1b, contestualmente AMB-11.A.10 letterale "Header OggiView (CP0 conferma esclusività)" SBAGLIATO ratificato come incongruenza pre-freeze.
+3. **Q3 sub-decisione D3=A "split sessione" applicata + step 4 drop test severity in actions.test.js** (turn 6): file `actions.test.js` non esistente, scaffold da zero per +1-2 test sproporzionato. Coverage spostata in step 4 reducer.test.js esistente (più naturale: reducer è il consumer di severity).
+4. **D1=A severity mapping default in LocalRepository**: `severity='error'` default, `'critical'` solo per `DB_UNAVAILABLE`/`TRANSACTION_ABORT` (recoverability semantics IndexedDB). Coerente AMB-11.A.2 e realtà Dexie (la maggior parte degli errori è recoverable).
+5. **D2=OK `kind='repo'` fisso + `code` granulare**: vocabulary `DB_UNAVAILABLE`/`TRANSACTION_ABORT`/`CONSTRAINT_VIOLATION`/`NOT_FOUND`/`GENERIC`. Mappatura interna in `RepositoryError.js`, esposta come tabella `SEVERITY_BY_CODE` per i test.
+6. **D3=A "split sessione CP1a/CP1b"**: vedi decisione 1.
+7. **Sforo bound espansivo +22 → +24 accettato a inizio sessione (Opzione A "accetta lo sforo, scope su file nuovo isolato basso rischio drift")** in alternativa a B "drop scope LocalRepository write-only" e C "split sessione CP1a in sub-parte".
+
+### Pattern operativi confermati
+
+- **Patcher Python idempotente con dual-counter** (mutazioni reali vs match no-op via closure counter): pattern utile per refactor multi-file con risk regression. Lessons learned: validare regex su fixture sintetico riproducendo BOTH single-line AND multi-line variants prima del delivery Mac-side. Pattern v1 fallito su multi-line non riprodotto in fixture v1 → fix v2 con regex DOTALL + parse Python in callback.
+- **Sandbox vitest pre-delivery**: validation 2 sandbox isolati (RepositoryError + LocalRepository.errors test) con 22/22 verde prima del delivery Mac, e 2/2 verde su reducer test isolato. Lessons learned: il sandbox vitest è cheap e zero-risk, validare sempre il logic prima di consegnare a Mac (specialmente su fixture sintetico se sandbox non riproduce 1:1 il setup reale).
+- **Backup pre-mutazione `.bak.cp1a-stepN`** + cleanup post-commit: pattern §22.X conservativo. Step 3 fail intra-sessione recoverato in <2 minuti grazie a `cp .bak src/` automatico nell'installer.
+- **Bash zsh-safe** rispettato in tutti gli installer (echo single-quoted, no `#`, no apostrofi italiani). Sleep 5s pre-apply step 3 per permettere abort manuale Ctrl-C — pattern utile su patcher rischiosi.
+
+### Deviazioni introdotte
+
+**Zero §6.NN nuove.** Tutte le modifiche backward-compat o estensioni architetturali concordi con AMB-11.A.1/2/3 letterali pre-frozen.
+
+Possibile candidate non aperta (debt esplicito accettato):
+- **`actions.test.js` non esistente** archiviato come pattern: "actions.js senza unit test diretti — coverage indiretta via integration suite (AppContext.test.jsx, OggiView.test.jsx, etc.)". Demandato a Fase 3 setup quando `ApiRepository` introdurrà mock complessi che giustificano scaffold dedicato.
+
+### Backup / cleanup
+
+Backup .bak creati e rimossi durante sessione:
+- `LocalRepository.js.bak.cp1a-step2` (cleanup post-step 2 commit)
+- `actions.js.bak.cp1a-step3`, `applyHelper.js.bak.cp1a-step3`, `IRepository.js.bak.cp1a-step3` (creati 2 volte: prima per v1 fallito + rollback, poi per v2 verde + cleanup post-commit)
+- `reducer.test.js.bak.cp1a-step4` (cleanup post-commit)
+- `patcher_step3.py`, `patcher_step4.py` (cleanup post-commit)
+
+Cleanup eseguito nel CP closing (commit + cleanup blocco bash unico). Working tree post-closing pulito eccetto `M PharmaTimer_Changelog_Fase2.md` (asimmetria KB+local attesa, risolto al successivo upload Changelog v2.6.3).
+
+### Stato git post-sessione
+
+Branch `step-8`, top commit **`3c2f514`** "CP1a Step 11-A: RepositoryError + wrap LocalRepository + severity propagation".
+Tree con `M PharmaTimer_Changelog_Fase2.md` (asimmetria KB+local attesa).
+
+### Stato changelog post-sessione
+
+Versione changelog: v2.6.2-rc.1 → **v2.6.3**. §11.A estesa con sub-sub-sezioni §11.A.a (CP1a chiuso) e §11.A.b (CP1b stub). Roadmap §7 aggiornata con riga `Step 11` aggiornato in corso + nuova riga `11-A CP1a` ✅ Completo. Nuova §22.33 (questa sezione). Header riga 5 "Ultima modifica" aggiornato.
+
+### Prossimi passi (post-CP1a, pre-CP1b)
+
+1. **Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude.ai** con versione **v2.6.3** (questo delivery).
+2. **Pre-CP1b apertura, opzionale Mac-side:** verifica baseline `git log -1` = `3c2f514`, suite `npx vitest run` = 405/405. CP0 audit empirico raccomandato per `useModalA11y` modalProps shape (chiusura AMB-11.A.7 effettivo).
+3. Aprire **Sessione Step 11-A CP1b ErrorSurface UI impl** (nuova conversazione Claude) con one-liner:
+   ```
+   Esegui il prompt al §11.A.b del Changelog (Step 11-A CP1b ErrorSurface UI impl).
+   ```
+   (One-liner simbolico in v2.6.3; executive prompt completo verrà popolato in §11.A.b al primo CP commit di apertura CP1b.)
+4. **Post-closing CP1b** → apertura **Sessione Step 11-B Wave-next + closing Fase 2** con one-liner `Esegui il prompt al §11.B...`.
+5. **Post-closing 11-B** → apertura **Sessione Fase 3 analisi-first dedicata** (Q7=B); naming convention demandato a quel momento (12-A vs Fase 3 Step 1 reset).
+
+### Riferimenti
+
+- **§11.A.a / §11.A.b** (questa versione): sub-sub-sezioni Step 11-A CP1a chiuso + CP1b stub
+- **§22.32**: chiusura Step 11 analisi-first (Q1-Q8 + AMB pre-frozen 11.A.1-11/11.B.1-6, baseline §11 v2.6.2-rc.1 commit `196e599`)
+- **§22.31**: chiusura Step 10-C-fix esecutiva snella, Step 10 milestone-definitivo (baseline pre-§11 v2.6.1 commit `689db5c`)
+- **AMB-11.A.1**: "Tutti thunks pubblici `actions.js` + metodi pubblici `LocalRepository.js`" — chiuso CP1a (31/31 wrap LocalRepo + 11/11 catch actions + 3/3 catch applyHelper)
+- **AMB-11.A.2**: "Campo `severity ∈ {warning, error, critical}`" — chiuso CP1a (vocabulary RepositoryError + propagation thunks + reducer test)
+- **AMB-11.A.3**: "Toast effimero (recoverable) + banner persistente (critical)" — strutturalmente preparato CP1a (reducer accetta severity), UI rendering demandato CP1b
+- **AMB-11.A.7/8/9/10/11**: ARIA + nome_utente + live region — NON toccati CP1a, demandati CP1b
+- **AMB-11.A.10 incongruenza pre-freeze**: letterale "Header OggiView (CP0 conferma esclusività)" SBAGLIATO al pre-freeze — il sito di lettura non esiste, va AGGIUNTO in CP1b (Opzione A approvata CP0 round 2)
+- **§6.85 archive**: `nome_utente` anomalia non riprodotta, motiva QW4 defensive guard CP1b
+
+## 22.34 Stato post-Sessione Step 11-A CP1b esecutiva (ErrorSurface UI + greeting + ARIA live region, +11 test, AMB-11.A.3/7/9/10/11 chiusi, commit unico `755602e`, bump v2.6.4)
+
+**Data:** 3 maggio 2026 (mattina-pomeriggio).
+**Modalità:** esecutiva incrementale 5 CP + commit unico finale. Pattern §22.33 (CP1a) replicato senza drift.
+**Token consumati:** ~70-80K (sopra centrato §11.A.b atteso 50-60K, sforo +15-20K coerente con 5 CP + audit Mac-side multi-round).
+**Esito:** ✅ **CP1b chiuso completamente. AMB-11.A.3/7/9/10/11 chiusi. +11 test (sopra bound espansivo +5-10 di +1 accettato).**
+
+**Top commit:** `755602e` "CP1b Step 11-A: ErrorSurface UI + greeting + ARIA live region (CLEAR_ERROR ricicla DISMISS_ERROR)" su branch `step-8` (7 file changed, 456 insertions / 1 deletion).
+**Test:** 405/405 → **416/416** su 42 file (+11 cumulativo, +6 CP1, +0 CP2, +2 CP3, +3 CP4, +0 CP5).
+**Versione:** v2.6.3 → **v2.6.4**.
+
+### CP0 audit incrementale (4 round Mac-side)
+
+**Round 1** (CP0 apertura): popolato AMB-11.A.7 (9 consumer `useModalA11y` retrofit completo già pre-CP1b). AMB-11.A.10 confermato sbagliato pre-freeze come §22.33 (greeting va aggiunto, non spostato).
+
+**Round 2** (pre-CP2): inspection reducer.js complet → scoperta case `CLEAR_ERROR` pre-esistente da 8a CP4 §6.77. Decisione D3=A "nuova action `DISMISS_ERROR`" ratificata pre-CP1 ribaltata in **D3-bis=A `CLEAR_ERROR` ricicla** post-audit. §6.158 nuova deviazione documentata.
+
+**Round 3** (pre-CP3): inspection OggiView.jsx render header (riga 345-365) + selectors import block (riga 80-84) + OggiView.test.jsx setup `renderWithRealProvider` + DEFAULT_SEED + `makeFakeRepo` impostazioni shape. Pattern test override `hoist.repo = makeFakeRepo({...})` confermato lazy Proxy safe.
+
+**Round 4** (pre-CP4): conferma `sr-only` Tailwind utility disponibile (già usata in `ProfiliTab.jsx:406`, `tailwind.config.js` no `corePlugins` override). Conferma `ErrorSurface.jsx` post-CP2 rename a `CLEAR_ERROR` correctly applied. Tailwind v3 default plugins includono `sr-only`.
+
+### 5 CP incrementali
+
+**CP1 (ErrorSurface componente + test):**
+- File: `ErrorSurface.jsx` (NEW, 153 righe) + `ErrorSurface.test.jsx` (NEW, 6 test).
+- Severity routing: warning/error → toast 4s autodismiss + click-dismiss; critical → banner persistente + click-dismiss + code visibile in font ridotto.
+- Token mapping: warning → amberBg/warnBd/amberTx, error → redBg/red/redTx, critical → modalAlertBg/modalAlertBd/modalAlertTx.
+- Z-index: toast `z-50`, banner `z-[60]` (sopra modali OggiView z-50, livello ConfirmModal).
+- Backward-compat shape legacy CP1a (severity undefined → toast default 'error').
+- Decisione hardcoded `dispatch({type: 'DISMISS_ERROR'})` (D3=A ratificato pre-CP1, ribaltato in D3-bis=A `CLEAR_ERROR` post-CP2 audit).
+- Test: 405 → **411/411** su 41 file.
+
+**CP2 (rename retroattivo + App.jsx mount):**
+- Patcher Python idempotente con 4 mutazioni:
+  1. Rename `DISMISS_ERROR` → `CLEAR_ERROR` in `ErrorSurface.jsx` (2 occorrenze)
+  2. Rename `DISMISS_ERROR` → `CLEAR_ERROR` in `ErrorSurface.test.jsx` (6 occorrenze)
+  3. Add `import ErrorSurface` in `App.jsx`
+  4. Mount `<ErrorSurface />` come primo child di `<ThemedShell>` (anchor: `<ThemedShell>\n      <Routes>` → `<ThemedShell>\n      <ErrorSurface />\n      <Routes>`).
+- Reducer NESSUNA modifica (§6.158).
+- §6.158 deviazione documentata.
+- Test: 411 → **411/411** (+0).
+
+**CP3 (greeting OggiView header):**
+- Patcher Python idempotente con 4 mutazioni:
+  1. Add `selectImpostazione` al selectors import block (anchor: literal multi-line)
+  2. Insert `const nomeUtente / const greeting` prima del main return (anchor: `return (\n    <>\n      <style>{cssString}</style>...`)
+  3. Replace subtitle `<p>{subtitle}</p>` con `<p>{greeting} · {subtitle}</p>`
+  4. Append `describe('OggiView — header greeting (CP1b CP3)', ...)` con 2 test in OggiView.test.jsx.
+- Variant B (greeting sempre visibile, AMB-11.A.10/11 chiusi).
+- Pattern test: lazy Proxy `hoist.repo` override prima di `renderWithRealProvider()`.
+- Discovery RTL: `getByText(/regex/)` matcha textContent intero anche con text node split (verificato in sandbox con 5 strategie alternative — la più semplice funziona).
+- Test: 411 → **413/413** (+2). OggiView.test.jsx 10 → 12 test.
+
+**CP4 (ErrorAnnouncer + 3 test + App.jsx mount):**
+- File: `ErrorAnnouncer.jsx` (NEW, 52 righe) + `ErrorAnnouncer.test.jsx` (NEW, 3 test).
+- sr-only ARIA live region globale: `aria-live` dinamico polite/assertive su severity, `aria-atomic="true"`, riusa `state.error.message`.
+- Pattern A scelto vs B (inline App.jsx — accoppia App() a state) e C (dentro ErrorSurface — bug architetturale: null-render durante transizione null→value rompe race rule live region).
+- Mount **prima** di ErrorSurface in App.jsx (race rule: live region nel DOM prima della transizione null→value, altrimenti screen reader non rileva il change).
+- Default `polite` quando `error===null` per channel sempre attivo (no toggle aria-live runtime).
+- Test: 413 → **416/416** (+3). 41 → 42 file.
+
+**CP5 (verify-only ARIA modali, AMB-11.A.7 ratifica):**
+- Audit Mac-side programmatico: 9 consumer `useModalA11y` (FarmaciTab, UnsavedChangesModal, ProfiliTab, ConfirmModal, AltroModal, RecuperoModal, SaltataModal, SospesaModal, UndoModal).
+- Verifica: `labelId` non-null (titleId variabile / LABEL_ID costante) + `triggerRef` propagato + `{...modalProps}` spread + container link consistente (sempre adiacente a `ref={containerRef}`) + orphan-id check passa (ogni file ha `id="<modal-name>"` JSX corrispondente).
+- Pattern note (non gap, scelte stilistiche): 5 OggiView modals usano costante locale `LABEL_ID`, 4 Config modals usano variabile `titleId` da single-source-of-truth.
+- AMB-11.A.7 ratificato. Zero codice toccato. Zero test nuovi.
+- Test: 416 → **416/416** (+0).
+
+### Decisioni in-session
+
+1. **D1=A single-slot `state.error` extension** (turn 2): `{kind, message, severity, code, dismissible?}` da CP1a, no dual-slot.
+2. **D2=A live region riusa `state.error`** (turn 2): Pattern A componente separato.
+3. **D3=A `DISMISS_ERROR` action nuova** (turn 2) → **ribaltata D3-bis=A `CLEAR_ERROR` ricicla** (CP2 round 2 audit, §6.158).
+4. **Q3-bis=A CP5 verify-only** (turn 2): 9/9 consumer pre-conformi.
+5. **CP3 variant B greeting sempre presente** (turn 7): `Ciao Nome` / `Ciao!` fallback, mai drop completo.
+6. **§6.159 scope ErrorSurface = aggiunta runtime** (CP0 round 4): OggiView:288 INIT screen invariato.
+
+### Deviazioni §6.NN aperte / chiuse
+
+- **§6.158** (CP2 scope collapse `CLEAR_ERROR` ricicla `DISMISS_ERROR`) — chiusa in-session.
+- **§6.159** (ErrorSurface scope additivo, OggiView:288 INIT invariato) — chiusa in-session.
+
+Nessuna §6.NN pending lasciata aperta.
+
+### AMB ratificate / chiuse
+
+- **AMB-11.A.3** (Toast effimero + banner persistente) — chiusa CP1.
+- **AMB-11.A.7** (ARIA modali completion) — chiusa CP5 (verify-only, 9/9 conformi).
+- **AMB-11.A.9** (live region) — chiusa CP4.
+- **AMB-11.A.10/11** (greeting nome_utente) — chiusa CP3 (variant B).
+
+**AMB-11.A.4/5/6/8** (empty states consolidation, error boundary, retry UX, useModalA11y refactor) NON toccate — fuori scope CP1b stretto, candidate Step 11-B.
+
+### Scoperte operative
+
+1. **Pattern audit-CP0-multi-round.** CP0 round 1 in apertura sessione popola la baseline; round 2-4 emergono pre-CP per validare anchor specifici. Round 4 ha rivelato la `sr-only` Tailwind disponibile evitando refactor CSS inline. Round 2 ha rivelato il `CLEAR_ERROR` pre-esistente evitando duplicazione reducer. Round 3 ha mappato il pattern `hoist.repo` override per CP3 test integration.
+
+2. **D3 ribaltato post-CP1 documentato §6.158.** Rinomina retroattiva è azione idempotente "diff-via-rename" — il patcher Python si occupa automaticamente di mantenere consistente il dispatch tra ErrorSurface.jsx (CP1) e reducer (8a CP4). Lezione: gate CP0 deve sempre grep-check action types correnti **prima** di lockare nuove action types come decisione architetturale.
+
+3. **RTL `getByText(/regex/)` matcha textContent intero anche con text node split.** Discovery sandbox CP3: 5 strategie alternative testate (regex semplice, exact:false, container.textContent regex, custom matcher, selector p) — tutte verdi, scelta più semplice viene usata. Pattern replicabile per future asserzioni su JSX con text node split (`{a} · {b}` dentro `<p>`).
+
+4. **Race rule live region.** Pattern A `ErrorAnnouncer` separato + mount **prima** di ErrorSurface in App.jsx critico per non perdere il primo annuncio. Discovery: il live region deve essere già nel DOM quando `state.error` transiziona da null a value, altrimenti screen reader non rileva il change. Documentato in `ErrorAnnouncer.jsx` comment header.
+
+5. **9/9 consumer `useModalA11y` pre-conformi CP5.** Pattern hook stable da 7d-1 + retrofit 8c-2/8d-A/8d-B (§6.92, §6.103, §6.105). CP5 = ratifica pura.
+
+### Stato git post-sessione
+
+Branch `step-8`, top commit **`755602e`** "CP1b Step 11-A: ErrorSurface UI + greeting + ARIA live region (CLEAR_ERROR ricicla DISMISS_ERROR)".
+Tree post-cleanup pulito eccetto `M PharmaTimer_Changelog_Fase2.md` (asimmetria KB+local attesa, risolto al successivo upload Changelog v2.6.4).
+
+### Stato changelog post-sessione
+
+Versione changelog: v2.6.3 → **v2.6.4**. §11.A.b sub-sub-sezione completata (era stub). Roadmap §7 row Step 11 aggiornata con CP1b ✅ + nuova riga `11-A CP1b` ✅. Nuove §6.158 + §6.159. Nuova §22.34 (questa sezione). Header riga 5 "Ultima modifica" aggiornato.
+
+### Prossimi passi (post-CP1b, pre-Step 11-B)
+
+1. **Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude.ai** con versione **v2.6.4** (questo delivery).
+2. **Pre-Step 11-B apertura, opzionale Mac-side:** verifica baseline `git log -1` = `755602e`, suite `npx vitest run` = 416/416. CP0 audit empirico raccomandato per `cross-midnight UI` rendering (AMB-11.B.1/2) + sticky data separator status §6.96/§6.107/§6.110 (chiusura archive AMB-11.B.4/5).
+3. Aprire **Sessione Step 11-B Wave-next + closing Fase 2** (nuova conversazione Claude) con one-liner:
+   ```
+   Esegui il prompt al §11.B del Changelog (Step 11-B Wave-next + closing Fase 2).
+   ```
+   (Executive prompt completo da popolare in §11.B al primo CP commit di apertura Step 11-B.)
+4. **Post-closing 11-B** → apertura **Sessione Fase 3 analisi-first dedicata** (Q7=B); naming convention demandato a quel momento (12-A vs Fase 3 Step 1 reset).
+
+### Riferimenti
+
+- **§22.33**: chiusura Step 11-A CP1a (baseline pre-CP1b commit `3c2f514`)
+- **§22.32**: chiusura Step 11 analisi-first (Q1-Q8 + AMB pre-frozen 11.A.1-11/11.B.1-6)
+- **§11.A.b** (questa versione): sub-sub-sezione completata
+- **§6.158**: CP2 scope collapse `CLEAR_ERROR` ricicla `DISMISS_ERROR` (gate CP0 grep action types)
+- **§6.159**: ErrorSurface scope additivo, OggiView:288 INIT screen invariato (popolazioni `state.status` vs `state.error` distinte)
+- **AMB-11.A.3**: "Toast effimero + banner persistente" — chiusa CP1
+- **AMB-11.A.7**: ARIA modali — ratificata CP5 verify-only (9/9 pre-conformi)
+- **AMB-11.A.9**: live region — chiusa CP4 (Pattern A separato)
+- **AMB-11.A.10/11**: nome_utente greeting — chiusa CP3 (variant B sempre visibile)
+- **AMB-11.A.4/5/6/8**: candidate Step 11-B (empty states consolidation, error boundary, retry UX, useModalA11y refactor)
+- **§6.77 (8a CP4)**: cleanup `nomeUtente` mirror — channel `CLEAR_ERROR` introdotto qui (§6.158 lessons)
+
+
+## 22.35 Stato post-Sessione Step 11-B Wave-next + closing Fase 2 esecutiva (CP1+CP2+CP3 verify-only+CP3-fix+CP4 deferred, +14 test, AMB-11.B.1-7 chiusi, commit unico `<TBD-closing-commit>`, bump v2.7.0 + tag annotato Fase 2 milestone)
+
+**Data:** 3 maggio 2026 (sera, post-Step 11-A CP1b).
+**Modalità:** 2 sotto-sessioni — parte 1/2 implementativa Mac-side (CP1+CP2+CP3 verify-only+CP3-fix+CP4 deferred audit) + parte 2/2 closing dedicata (questa sessione: CP0 sanity + delivery Changelog v2.7.0 + bash installer git ops Mac-side).
+**Token consumati closing:** ~50-70K (stima atteso 30-50K, sforo +10-20K coerente con scope retrospettiva Fase 2 + §11.C nuovo prompt).
+**Esito:** ✅ **Step 11-B chiuso completamente. Step 11 ✅ Completo. Fase 2 PWA standalone milestone raggiunta. AMB-11.B.1/2/3/4/5/6/7 (7 totali, 1 nuova in-session) chiusi. +14 test (atteso +12, espansivo +17, conservativo +8 — sopra centro range).**
+
+**Top commit:** `<TBD-closing-commit>` "Step 11-B closing -- Fase 2 milestone" (atteso 5 file source/test + 1 file PharmaTimer_Changelog_Fase2.md + bump package.json) su branch `step-8`.
+**Tag annotato:** `v2.7.0` "Fase 2 closing milestone PWA standalone" applicato a closing commit.
+**Test:** 416/416 → **430/430** su 42 file (+14 cumulativo, +9 CP1, +3 CP2, +0 CP3, +2 CP3-fix, +0 CP4 deferred).
+**Versione:** package.json 2.6.1 → **2.7.0** (convention AMB-11.B.7 nuova: bump solo a closing Step). Changelog v2.6.4 → **v2.7.0** (cumulato in closing).
+
+### CP0 sanity verde (5/5 gate)
+
+| Gate | Esito | Valore |
+|---|---|---|
+| 1 | tree status | ✅ 6 modificati attesi (5 source/test + Changelog) + 12 untracked attesi (1 .bak.v264 Changelog + 3 patch_cpN_step11b.py + 8 .bak.cpN file) |
+| 2 | top commit | ✅ `755602e` (CP1b Step 11-A) |
+| 3 | branch | ✅ `step-8` |
+| 4 | package.json version | ✅ `2.6.1` (last bump Step 10-C-fix, convention AMB-11.B.7 retroattiva) |
+| 5 | test suite full run | ✅ 430 passed in 42 files (7.70s) |
+
+### CP1+CP2+CP3+CP3-fix+CP4 sintesi (parte 1/2 Mac-side)
+
+| CP | Operazione | Test impact | File |
+|---|---|---|---|
+| **CP1** | Helper `effectiveDateStr` + partition `groupEntriesByDayAndMomento` per effective bucket + prop `bucketDateStr` chain (3 file source) + 9 test (6 uiState + 3 DoseCard) | 416 → 425 (+9) | `src/utils/uiState.js`, `src/utils/uiState.test.js`, `src/components/oggi/DoseCard.jsx`, `src/components/oggi/DoseCard.test.jsx`, `src/components/oggi/OggiView.jsx` |
+| **CP2** | 3 test edge cases multi-day promotion in `uiState.test.js` (stato=ricalcolata cross-midnight, stato=presa non-promotion, anticipo same-day) | 425 → 428 (+3) | `src/utils/uiState.test.js` |
+| **CP3** | Verify-only browser sticky multi-separator AMB-11.B.4/5 — stack-replacement nativo CSS confermato N≥2, no overlap, calibrazione `top-[149px]` preserva | 428 → 428 (+0) | (nessun file modificato, browser CP) |
+| **CP3-fix** | Propagation `getCardState` su `effectiveDateStr` (uiState.js) + 2 regression test — §6.160 scope-creep necessaria | 428 → 430 (+2) | `src/utils/uiState.js`, `src/utils/uiState.test.js` |
+| **CP4** | QW5 audit ImpostazioniTab non-actionable senza navigazione browser, deferred Fase 3 — §6.161 | 430 → 430 (+0) | (nessun file modificato) |
+| **Totale** | | **+14** | 5 file source/test |
+
+### Closing operativo (parte 2/2)
+
+**Pattern delivery:** Changelog v2.7.0 file completo costruito Claude-side via str_replace mirati su 7 sezioni (header v2.6.4→v2.7.0, §6.160+§6.161 inseriti dopo §6.159, §7 roadmap riga Step 11 ✅ + nuova riga 11-B ✅, §11 main title evoluto a Fase 3 hand-off, §11.B stub→closed con executive prompt populated retrospettivo + esiti CP1-CP4 + retrospettiva Fase 2 sub-sub-sezione 11.B.r, §11.C nuovo prompt Fase 3 analisi-first, §22.35 questa sezione appended). Bash installer Mac-side per stage 5 file source/test + cleanup .bak.cpN + cleanup patch_cpN_step11b.py + bump package.json 2.6.1→2.7.0 + commit unico + tag annotato + verifica post-commit.
+
+**Cleanup post-commit:** 8 backup `.bak.cp1`/`.bak.cp2`/`.bak.cp3` + 3 patcher transients `patch_cp1_step11b.py`/`patch_cp2_step11b.py`/`patch_cp3_step11b.py` + `PharmaTimer_Changelog_Fase2.md.bak.v264` rimossi pre-commit. Working tree post-commit pulito eccetto `M PharmaTimer_Changelog_Fase2.md` se asimmetria KB+local persistente (risolto al successivo upload Changelog v2.7.0 in KB Claude.ai).
+
+### Decisioni in-session ratificate
+
+1. **AMB-11.B.6 = `v2.7.0` su closing 11-B** (Fase 2 milestone reale, non `v3.0.0-alpha` Fase 3 prematuro). Razionale: Fase 2 PWA standalone è milestone semanticamente forte autoconsistente (PWA installabile, offline, notifiche, persistenza locale, error handling, ARIA/a11y, cross-midnight rendering). Fase 3 farà nuovo tag dedicato (`v2.8.0` MVP backend o `v3.0.0` integration completa, decisione demandata).
+2. **AMB-11.B.7 NUOVA "package.json bump solo a closing Step"**: convention emersa in-session, ratificata in apertura closing. Il changelog version può divergere dal package.json: changelog avanza ad ogni CP closing significativo (es. v2.6.3 / v2.6.4 intra-step), package.json avanza solo a closing Step. Pattern **§22.35 stabilisce questa convention come legacy retroattiva** — last bump package.json era v2.6.1 a Step 10-C-fix closing, ora v2.7.0 a Step 11-B closing.
+3. **§6.160 scope-creep necessaria classificata visibile**: documentata come deviazione per audit trail, ma è sub-conseguenza tecnica AMB-11.B.1 (non violazione spec). Pattern §6.116b consumer drift replicato 2 cicli successivi.
+4. **§6.161 QW5 deferred Fase 3**: defer coerente con classificazione "opportunistic" originale Q5 (§22.32). Audit pre-CP4 non riproduce → skip è coerente.
+5. **Retrospettiva Fase 2 sub-sub-sezione interna §11.B (11.B.r), no §23 nuova top-level**: ratificato da Roberto pre-closing. Razionale: la retrospettiva è intrinsecamente legata al closing milestone (sub-sub-sezione di §11.B closing è naturale ancoraggio).
+6. **§11 evoluto a hand-off Fase 3**: §11 main title aggiornato a "Sessione Fase 3 analisi-first dedicata (Step 11 ✅ closed Fase 2 milestone)". §11.0/§11.1/§11.2/§11.A.a/§11.A.b/§11.B (closed)/§11.X mantenuti come storico, §11.C aggiunta in coda con Q1-Q8 candidate Fase 3 (F3.A÷H pre-frozen via retrospettiva 11.B.r).
+
+### Pattern operativi confermati
+
+- **Closing dedicato post-impl session dirty tree**: pattern §22.34 (CP1b closing aveva tree dirty, closing pulito) replicato. Working tree dirty all'apertura closing è normale; CP0 sanity verifica gli artefatti attesi (modificati + .bak.cpN + patcher transients).
+- **Bash zsh-safe** rispettato per CP0 audit + bash installer closing (echo single-quoted, no `#`, no apostrofi italiani).
+- **Pattern §22.33 v2 patcher** non utilizzato in questa closing (no patcher Python necessario, solo str_replace Claude-side per Changelog + bash installer Mac-side per git ops).
+- **AMB-11.B.7 nuova in-session**: pattern AMB introdotta dopo pre-freeze legittimo se emerge da decisione architetturale ratificata. Equivalente §6.158 (D3-bis emersa post-CP0 round 3) ma su scope convention versioning, non scope codice.
+
+### Deviazioni introdotte
+
+**2 §6.NN nuove:**
+- **§6.160** — CP3-fix propagation `getCardState` su `effectiveDateStr` (scope-creep necessaria su AMB-11.B.1, distinzione bucketing sezione vs cardState semantico). Chiusa ✅.
+- **§6.161** — QW5 focus post-toggle notifiche deferred Fase 3 (audit non riproduce, classificazione "opportunistic" originale). Deferred ⏳.
+
+**Nessuna deviazione su closing operations.** Bump package.json convention AMB-11.B.7 è ratifica nuova (no §6.NN).
+
+### Backup / cleanup
+
+Backup `.bak.*` creati e rimossi pre-commit closing:
+- `src/components/oggi/DoseCard.jsx.bak.cp1`
+- `src/components/oggi/DoseCard.test.jsx.bak.cp1`
+- `src/components/oggi/OggiView.jsx.bak.cp1`
+- `src/utils/uiState.js.bak.cp1`
+- `src/utils/uiState.js.bak.cp3` (pre-§6.160 fix)
+- `src/utils/uiState.test.js.bak.cp1`
+- `src/utils/uiState.test.js.bak.cp2`
+- `src/utils/uiState.test.js.bak.cp3` (pre-§6.160 regression test)
+- `PharmaTimer_Changelog_Fase2.md.bak.v264` (rollback Changelog pre-closing)
+
+Patcher transients rimossi pre-commit:
+- `patch_cp1_step11b.py`
+- `patch_cp2_step11b.py`
+- `patch_cp3_step11b.py`
+
+Cleanup eseguito nel bash installer closing prima dello stage. Working tree post-commit pulito eccetto `M PharmaTimer_Changelog_Fase2.md` se persistente (asimmetria KB+local risolta al successivo upload Changelog v2.7.0).
+
+### Stato git post-sessione
+
+Branch `step-8`, top commit **`<TBD-closing-commit>`** "Step 11-B closing -- Fase 2 milestone".
+Tag annotato: `v2.7.0` "Fase 2 closing milestone PWA standalone".
+Tree post-cleanup pulito eccetto `M PharmaTimer_Changelog_Fase2.md` (asimmetria KB+local attesa, risolto al successivo upload Changelog v2.7.0).
+
+### Stato changelog post-sessione
+
+Versione changelog: v2.6.4 → **v2.7.0**. §11 evoluto a hand-off Fase 3 (titolo + intro). §11.B sub-sezione completata (era stub) con executive prompt populated retrospettivo + esiti CP1-CP4 + sub-sub-sezione 11.B.r retrospettiva Fase 2 (44 deviazioni cluster tematici + debt deferito Fase 3 + LocalRepository ground truth + AMB candidati Fase 3 F3.A÷H). §11.C nuova "Prossimo prompt Fase 3 analisi-first" con Q1-Q8 candidate. Roadmap §7 row Step 11 aggiornata con 11-B ✅ + Step 11 ✅ Completo Fase 2 milestone + nuova riga 11-B. Nuove §6.160 + §6.161. Nuova §22.35 (questa sezione). §12 titolo aggiornato `+ 11-A CP1a + 11-A CP1b + 11-B`. Header riga 5 "Ultima modifica" aggiornato.
+
+### Step 11 chiusura completa (riepilogo)
+
+```
+Step 11 analisi-first (§22.32):     ✅ Q1-Q8 + 17 AMB pre-frozen, split 11-A → 11-B
+Step 11-A CP1a (§22.33):            ✅ QW1 error handling +24 test (RepositoryError + wrap LocalRepo + severity)
+Step 11-A CP1b (§22.34):            ✅ ErrorSurface UI + greeting + ARIA live region +11 test
+Step 11-B (§22.35 questa):          ✅ Sezione "Domani" cross-midnight + sticky multi-sep verify-only +14 test
+                                       ↓
+Step 11 ✅ Completo Fase 2 milestone
+```
+
+**Da Step 11 analisi-first 1/05/2026 (v2.6.2-rc.1) a closing 11-B 3/05/2026 (v2.7.0):** 2 giorni, 4 sotto-sessioni (analisi-first + 11-A CP1a + 11-A CP1b + 11-B), da 381 a 430 test (+49 cumulativo: +24 CP1a, +11 CP1b, +14 11-B), 4 nuove deviazioni §6.158-§6.161 (3 chiuse, 1 deferred Fase 3), 17 AMB pre-frozen + 1 in-session (AMB-11.B.7) tutti chiusi.
+
+### Fase 2 chiusura completa (riepilogo)
+
+**Da inizio Fase 2 16/04/2026 (v0.1.0 scaffolding Vite) a closing Step 11-B 3/05/2026 (v2.7.0 PWA standalone milestone):** 17 giorni, ~35 sotto-sessioni effettive, da 0 a 430 test, 44 deviazioni §6.115-§6.161 (37 chiuse, 6 deferred Fase 3, 1 in revisione §6.119 effetto risolto §6.160), 17 AMB-11 + ~80 AMB precedenti tutti chiusi.
+
+**Stack delivery:**
+- React 18 + Vite 5 + Tailwind CSS core + React Router 6
+- Dexie 4 IndexedDB + LocalRepository (31 metodi async + withTransaction)
+- Vitest 2 + jsdom + @testing-library/react + 42 file test 430 test passed
+- vite-plugin-pwa + workbox runtimeCaching + service worker + manifest + icone 192/512/maskable-512
+- focus-trap-react + useModalA11y custom hook
+- ErrorSurface + ErrorAnnouncer (toast + banner severity-based + ARIA live region)
+- Notification API foreground-only + scheduling rescheduleAllNotifications
+
+**UX delivery:**
+- Vista Oggi completa con cross-midnight rendering corretto (sezione "Domani" auto-bucket)
+- Vista Config (Profili + Farmaci + Impostazioni)
+- Notifiche locali con rescheduling 8 trigger
+- PWA installabile + offline + update flow toast
+- ARIA modali 9/9 conformi + live region globale
+- Greeting nome_utente + tema dark/light + storage IndexedDB
+
+**Hand-off Fase 3:**
+- LocalRepository contratto API ground truth (31 metodi + vocabulary errore RepositoryError)
+- 8 AMB Fase 3 F3.A÷H pre-frozen (vedi §11.B.r e §11.C)
+- 5 ticket debt Fase 3 (vedi §11.B.r debt deferito)
+- §11.C nuovo prompt analisi-first dedicata Q1-Q8 candidate
+
+### Prossimi passi (post-closing 11-B Fase 2 milestone, pre-Sessione Fase 3 analisi-first)
+
+1. **Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude.ai** con versione **v2.7.0** (questo delivery).
+2. **Verifica Mac-side post-commit closing:**
+   - `git log -1` mostra commit "Step 11-B closing -- Fase 2 milestone" (sostituire `<TBD-closing-commit>` con SHA reale post-bash installer)
+   - `git tag --list` mostra `v2.7.0`
+   - `git tag -n v2.7.0` mostra messaggio annotato "Fase 2 closing milestone PWA standalone"
+   - `cat package.json | grep version` mostra `"version": "2.7.0"`
+   - `npx vitest run` mostra 430/430 su 42 file (invariato post-closing changelog-only)
+3. Aprire **Sessione Fase 3 analisi-first dedicata** (nuova conversazione Claude) con one-liner:
+   ```
+   Esegui il prompt al §11.C del Changelog (Sessione Fase 3 analisi-first dedicata, Q7=B closure post-Fase 2 milestone).
+   ```
+4. **Pre-sessione Fase 3 (opzionale):** Roberto può eseguire CP0 audit Mac-side esteso per popolare AMB F3.E/F dati ambientali (Mac Mini SSH access, MariaDB install path, Tailscale tailnet status, Python 3.12+ availability).
+
+### Riferimenti
+
+- **§22.34**: chiusura Step 11-A CP1b (baseline pre-Step 11-B commit `755602e`)
+- **§22.33**: chiusura Step 11-A CP1a (commit `3c2f514`)
+- **§22.32**: chiusura Step 11 analisi-first (Q1-Q8 + AMB pre-frozen 11.A.1-11/11.B.1-6)
+- **§11.B (questa versione)**: sub-sezione closed con executive prompt populated retrospettivo + esiti CP1-CP4 + sub-sub-sezione 11.B.r retrospettiva Fase 2
+- **§11.B.r (nuova)**: retrospettiva Fase 2 — 44 deviazioni §6.115-§6.161 cluster tematici + debt deferito Fase 3 + LocalRepository ground truth + AMB candidati Fase 3 F3.A÷H
+- **§11.C (nuova)**: prossimo prompt Sessione Fase 3 analisi-first dedicata con Q1-Q8 candidate
+- **§6.160 (nuova)**: CP3-fix propagation `getCardState` su `effectiveDateStr` (scope-creep necessaria su AMB-11.B.1)
+- **§6.161 (nuova)**: QW5 focus post-toggle notifiche deferred Fase 3
+- **AMB-11.B.1/2/3**: cross-midnight UI rendering "Domani" — chiusi CP1+CP2 (Opzione A bucket effective + entry.dateStr invariato + badge originale visibile)
+- **AMB-11.B.4/5**: sticky multi-separator behavior + calibrazione — chiusi CP3 verify-only (stack-replacement nativo CSS preserva)
+- **AMB-11.B.6**: tag `v2.7.0` Fase 2 milestone — chiuso AMB-11.B.6 closing
+- **AMB-11.B.7 (nuova)**: convention package.json bump solo a closing Step — chiusa in-session
+- **§6.119 effetto risolto**: bug visivo cross-midnight card sezione coerente (effetto §6.160 propagation)

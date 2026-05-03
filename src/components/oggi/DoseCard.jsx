@@ -207,6 +207,7 @@ export function DoseCard({
   onSospesaTap,
   onGapTap,
   isLastPreso = false,
+  bucketDateStr,
 }) {
   const { dark, tokens: t } = useTheme();
   const f = entry.farmaco;
@@ -241,6 +242,15 @@ export function DoseCard({
   // §6.118: ISO-aware cross-midnight detector. Reads only the entry — no
   // external "today" arg needed (§6.116a was reverted as wrongly-scoped).
   const crossMidnight = isCrossMidnightRecalc(entry);
+  // 11-B AMB-11.B.2 (a): suppress the "⚠ orario: domani" badge when
+  // the card is rendered in its effective bucket (post-AMB-11.B.1
+  // grouping in groupEntriesByDayAndMomento). Legacy behaviour
+  // preserved when `bucketDateStr` is undefined (older test fixtures
+  // and any caller that does not propagate the bucket key).
+  const badgeBucketSuppressed =
+    bucketDateStr !== undefined &&
+    recalcParsed !== null &&
+    bucketDateStr === recalcParsed.dateStr;
 
   const displayTime = recalcHHMM || entry.ora_prevista;
 
@@ -460,7 +470,7 @@ export function DoseCard({
             border={t.recalcBd}
           />
         )}
-        {crossMidnight && !isDone && (
+        {crossMidnight && !isDone && !badgeBucketSuppressed && (
           <Badge
             label="⚠ orario: domani"
             bg={t.warnBg}

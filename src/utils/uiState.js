@@ -46,6 +46,25 @@ function effHHMM(entry) {
 }
 
 /**
+ * Resolve the entry's effective scheduling date. Reads the ISO date
+ * prefix of `ora_ricalcolata` when present (which may differ from
+ * `entry.dateStr` after a cross-midnight recalc — see §6.119 / 11-B
+ * AMB-11.B.1), otherwise falls back to `entry.dateStr`.
+ *
+ * Symmetric to `effHHMM`: both helpers cover the "post-recalc" reading
+ * of an entry's effective scheduling time, this one for the date.
+ *
+ * @param {import('../domain/types.js').PlanEntry} entry
+ * @returns {string} 'YYYY-MM-DD'
+ */
+function effectiveDateStr(entry) {
+  if (entry.ora_ricalcolata) {
+    return parseIsoDateTime(entry.ora_ricalcolata).dateStr;
+  }
+  return entry.dateStr;
+}
+
+/**
  * Resolve the visual card state for an entry given the current "now".
  *
  * Rules (applied top-down, first match wins):
@@ -68,7 +87,12 @@ export function getCardState(entry, now) {
   if (entry.stato === 'presa') return 'presa';
   if (entry.stato === 'saltata') return 'saltata';
   if (entry.stato === 'sospesa') return 'sospesa';
-  if (entry.dateStr !== now.dateStr) return 'in_attesa';
+  // 11-B CP3 fix (AMB-11.B.1 propagation): use effectiveDateStr to keep
+  // card-state consistent with the visual bucket (post-CP1 grouping
+  // change). Without this, a cross-midnight recalc card lands in
+  // tomorrow's bucket but is rendered as 'in_ritardo' because
+  // effHHMM(entry) is compared against today's now.minutes.
+  if (effectiveDateStr(entry) !== now.dateStr) return 'in_attesa';
 
   const doseMin = timeToMinutes(effHHMM(entry));
   const diff = doseMin - now.minutes;
@@ -218,12 +242,19 @@ export function formatDateLabel(dateStr, refDateStr) {
 export function groupEntriesByDayAndMomento(entries) {
   if (!entries || entries.length === 0) return [];
 
-  // 1. Partition by dateStr. Preserve insertion order inside each bucket;
-  //    the subsequent sort reorders by effective time anyway.
+  // 1. Partition by effective dateStr (11-B AMB-11.B.1: cross-midnight
+  //    recalc promotes the entry into the bucket of ora_ricalcolata's
+  //    date prefix; falls back to entry.dateStr when no recalc). The
+  //    output `dateStr` is therefore the effective bucket key, while
+  //    each entry preserves its original `entry.dateStr` (no mutation,
+  //    React keys remain stable, planBuilder invariant unchanged).
+  //    Preserve insertion order inside each bucket; the subsequent
+  //    sort reorders by effective time anyway.
   const byDate = new Map();
   for (const e of entries) {
-    if (!byDate.has(e.dateStr)) byDate.set(e.dateStr, []);
-    byDate.get(e.dateStr).push(e);
+    const k = effectiveDateStr(e);
+    if (!byDate.has(k)) byDate.set(k, []);
+    byDate.get(k).push(e);
   }
 
   // 2. Build the day-level output: sort the day's entries, then split on

@@ -346,3 +346,63 @@ describe('DoseCard (Sessione 8d-A CP3 — §6.97 regression guard)', () => {
     expect(screen.getByText('Assumere indifferentemente dai pasti')).toBeInTheDocument();
   });
 });
+
+// 11-B AMB-11.B.2 (a): the "⚠ orario: domani" badge is suppressed when the
+// card is rendered in its effective bucket (post-AMB-11.B.1 grouping).
+// Legacy behaviour (no bucketDateStr) preserved.
+describe('DoseCard (11-B AMB-11.B.2 — bucketDateStr suppresses badge in effective bucket)', () => {
+  const crossMidnightEntry = {
+    key: '2026-04-19-1-1',
+    dateStr: '2026-04-19',
+    ora_prevista: '23:30',
+    ora_ricalcolata: '2026-04-20T07:00',
+    ora_effettiva: null,
+    delta_minuti: null,
+    gap_minuti: 0,
+    gap_originale: 0,
+    recupero_minuti: 0,
+    ora_ricalcolata_originale: null,
+    stato: 'prevista',
+    farmaco: {
+      id: 1,
+      nome: 'Demo Med',
+      dosi_giornaliere: 1,
+      tipo_frequenza: 'intervallo',
+      intervallo_ore: 8,
+      relazione_pasto: 'indifferente',
+    },
+    orario: { dose_numero: 1, descrizione_momento: 'sera' },
+  };
+
+  it('shows the badge when bucketDateStr is undefined (legacy behaviour)', () => {
+    renderWithProvider(
+      <DoseCard entry={crossMidnightEntry} state="in_attesa" />,
+      { stateOverrides: THEME_LIGHT }
+    );
+    expect(screen.getByText('⚠ orario: domani')).toBeInTheDocument();
+  });
+
+  it('hides the badge when bucketDateStr matches the recalc effective date', () => {
+    renderWithProvider(
+      <DoseCard
+        entry={crossMidnightEntry}
+        state="in_attesa"
+        bucketDateStr="2026-04-20"
+      />,
+      { stateOverrides: THEME_LIGHT }
+    );
+    expect(screen.queryByText('⚠ orario: domani')).not.toBeInTheDocument();
+  });
+
+  it('shows the badge when bucketDateStr differs from the recalc effective date', () => {
+    renderWithProvider(
+      <DoseCard
+        entry={crossMidnightEntry}
+        state="in_attesa"
+        bucketDateStr="2026-04-19"
+      />,
+      { stateOverrides: THEME_LIGHT }
+    );
+    expect(screen.getByText('⚠ orario: domani')).toBeInTheDocument();
+  });
+});

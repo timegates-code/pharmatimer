@@ -241,3 +241,178 @@ describe('groupEntriesByDayAndMomento', () => {
     expect(out[0].groups[0].primaOra).toBe('07:00');
   });
 });
+
+// 11-B AMB-11.B.1: cross-midnight bucket promotion (§6.119 effetto collaterale).
+// `groupEntriesByDayAndMomento` partiziona per effectiveDateStr (= ora_ricalcolata
+// ISO date prefix when set, fallback entry.dateStr).
+describe('groupEntriesByDayAndMomento (11-B AMB-11.B.1, cross-midnight promotion)', () => {
+  it('promotes a cross-midnight recalc entry into the next day bucket', () => {
+    const entries = [
+      mkEntry({
+        key: 'a',
+        dateStr: '2026-04-19',
+        ora_prevista: '23:30',
+        ora_ricalcolata: '2026-04-20T07:00',
+      }),
+    ];
+    const out = groupEntriesByDayAndMomento(entries);
+    expect(out).toHaveLength(1);
+    expect(out[0].dateStr).toBe('2026-04-20');
+  });
+
+  it('keeps a same-day recalc entry in the original bucket', () => {
+    const entries = [
+      mkEntry({
+        key: 'a',
+        dateStr: '2026-04-19',
+        ora_prevista: '08:00',
+        ora_ricalcolata: '2026-04-19T08:30',
+      }),
+    ];
+    const out = groupEntriesByDayAndMomento(entries);
+    expect(out).toHaveLength(1);
+    expect(out[0].dateStr).toBe('2026-04-19');
+  });
+
+  it('falls back to entry.dateStr when ora_ricalcolata is null', () => {
+    const entries = [
+      mkEntry({ key: 'a', dateStr: '2026-04-19', ora_ricalcolata: null }),
+    ];
+    const out = groupEntriesByDayAndMomento(entries);
+    expect(out).toHaveLength(1);
+    expect(out[0].dateStr).toBe('2026-04-19');
+  });
+
+  it('sorts effective bucket keys ascending across promoted and non-promoted entries', () => {
+    const entries = [
+      mkEntry({
+        key: 'a',
+        dateStr: '2026-04-19',
+        ora_prevista: '23:00',
+        ora_ricalcolata: '2026-04-20T07:00',
+      }),
+      mkEntry({ key: 'b', dateStr: '2026-04-19', ora_prevista: '08:00' }),
+    ];
+    const out = groupEntriesByDayAndMomento(entries);
+    expect(out.map((d) => d.dateStr)).toEqual(['2026-04-19', '2026-04-20']);
+  });
+
+  it('mixes promoted and non-promoted entries on the same target day into one bucket', () => {
+    const entries = [
+      mkEntry({
+        key: 'a',
+        dateStr: '2026-04-19',
+        ora_prevista: '22:00',
+        ora_ricalcolata: '2026-04-20T06:00',
+      }),
+      mkEntry({ key: 'b', dateStr: '2026-04-20', ora_prevista: '09:00' }),
+    ];
+    const out = groupEntriesByDayAndMomento(entries);
+    expect(out).toHaveLength(1);
+    expect(out[0].dateStr).toBe('2026-04-20');
+    const allKeys = out[0].groups.flatMap((g) => g.entries.map((e) => e.key));
+    expect(allKeys).toEqual(expect.arrayContaining(['a', 'b']));
+    expect(allKeys).toHaveLength(2);
+  });
+
+  it('preserves entry.key and entry.dateStr after promotion (no mutation, no remount)', () => {
+    const original = mkEntry({
+      key: '2026-04-19-1-1',
+      dateStr: '2026-04-19',
+      ora_prevista: '23:30',
+      ora_ricalcolata: '2026-04-20T07:00',
+    });
+    const out = groupEntriesByDayAndMomento([original]);
+    expect(out[0].groups[0].entries[0].key).toBe('2026-04-19-1-1');
+    expect(out[0].groups[0].entries[0].dateStr).toBe('2026-04-19');
+  });
+});
+
+// 11-B CP2 - edge cases promotion (AMB-11.B.1 stress post-CP1).
+// Cover stato='ricalcolata' propagation, PRESA non-promotion, and
+// same-day backwards recalc (anticipo).
+describe('groupEntriesByDayAndMomento (11-B CP2 - edge cases promotion)', () => {
+  it('EC1 - promotes entry with stato=ricalcolata + cross-midnight recalc', () => {
+    const entries = [
+      mkEntry({
+        key: 'a',
+        dateStr: '2026-04-19',
+        ora_prevista: '23:00',
+        ora_ricalcolata: '2026-04-20T07:30',
+        stato: 'ricalcolata',
+      }),
+    ];
+    const out = groupEntriesByDayAndMomento(entries);
+    expect(out).toHaveLength(1);
+    expect(out[0].dateStr).toBe('2026-04-20');
+    expect(out[0].groups[0].entries[0].stato).toBe('ricalcolata');
+  });
+
+  it('EC2 - keeps stato=presa entry without ora_ricalcolata in original bucket', () => {
+    // PRESA does not set ora_ricalcolata on the entry itself (the recalc
+    // lands on dose N+1). Even if ora_effettiva crosses midnight, the
+    // taken entry stays in its original day bucket.
+    const entries = [
+      mkEntry({
+        key: 'a',
+        dateStr: '2026-04-19',
+        ora_prevista: '20:00',
+        ora_effettiva: '2026-04-19T23:55',
+        ora_ricalcolata: null,
+        stato: 'presa',
+      }),
+    ];
+    const out = groupEntriesByDayAndMomento(entries);
+    expect(out).toHaveLength(1);
+    expect(out[0].dateStr).toBe('2026-04-19');
+  });
+
+  it('EC3 - keeps entry with same-day backwards recalc (anticipo) in original bucket', () => {
+    // Recalc that anticipates within the same day: ora_prevista 14:00,
+    // ora_ricalcolata 13:30 (negative delta, no cross-midnight).
+    const entries = [
+      mkEntry({
+        key: 'a',
+        dateStr: '2026-04-19',
+        ora_prevista: '14:00',
+        ora_ricalcolata: '2026-04-19T13:30',
+      }),
+    ];
+    const out = groupEntriesByDayAndMomento(entries);
+    expect(out).toHaveLength(1);
+    expect(out[0].dateStr).toBe('2026-04-19');
+  });
+});
+
+// 11-B CP3 fix (AMB-11.B.1 propagation in getCardState).
+// A cross-midnight recalc entry must render as 'in_attesa' on the
+// original day (its effective bucket is tomorrow), not as 'in_ritardo'.
+describe('getCardState (11-B CP3 - cross-midnight recalc effective-day awareness)', () => {
+  it('returns "in_attesa" for a cross-midnight recalc entry on its original day', () => {
+    // entry.dateStr=2026-04-19, ora_ricalcolata=2026-04-20T11:00.
+    // now=2026-04-19 19:30. Pre-fix: 'in_ritardo' (effHHMM=11:00,
+    // diff vs 19:30 = -510min). Post-fix: 'in_attesa' because
+    // effectiveDateStr(entry)='2026-04-20' !== now.dateStr.
+    const entry = mkEntry({
+      dateStr: '2026-04-19',
+      ora_prevista: '20:30',
+      ora_ricalcolata: '2026-04-20T11:00',
+      stato: 'ricalcolata',
+    });
+    const now = { dateStr: '2026-04-19', minutes: 19 * 60 + 30 };
+    expect(getCardState(entry, now)).toBe('in_attesa');
+  });
+
+  it('returns temporal state for a same-day backwards recalc (no cross-midnight)', () => {
+    // Regression guard: same-day recalc must NOT fall through to
+    // 'in_attesa'. effectiveDateStr === now.dateStr, so the function
+    // proceeds to the normal time comparison branch.
+    const entry = mkEntry({
+      dateStr: '2026-04-19',
+      ora_prevista: '14:00',
+      ora_ricalcolata: '2026-04-19T13:30',
+    });
+    const now = { dateStr: '2026-04-19', minutes: 13 * 60 + 30 };
+    expect(getCardState(entry, now)).toBe('prossima');
+  });
+});

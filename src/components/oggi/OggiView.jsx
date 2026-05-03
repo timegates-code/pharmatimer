@@ -520,6 +520,7 @@ export default function OggiView() {
                         <div key={entry.key} style={{ marginTop }}>
                           <DoseCard
                             entry={entry}
+                            bucketDateStr={day.dateStr}
                             state={getCardState(entry, now)}
                             isFlashing={flashingKeys.has(entry.key)}
                             onPresa={() => actions.presa(entry.key)}
