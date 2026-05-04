@@ -22,7 +22,8 @@ import "./index.css";
 
 async function bootstrap() {
   try {
-    const result = await runSeedIfNeeded();
+    // CP4 par.6.172: seed disabled at boot (opt-in via completeOnboarding mode='demo').
+    const result = { seeded: false, reason: 'cp4_opt_in_disabled' };
     if (result.seeded) {
       // eslint-disable-next-line no-console
       console.log("[PharmaTimer] Seed loaded:", result);

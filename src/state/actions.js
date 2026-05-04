@@ -15,6 +15,8 @@ import {
   ricalcolaPianoDaProfilo,
 } from '../domain/recalc.js';
 import { buildMultiDayPlan } from '../domain/planBuilder.js';
+// CP4 par.6.172/175: opt-in seed loader for completeOnboarding('demo').
+import { runSeedIfNeeded } from '../data/seed.js';
 import { addDays } from '../utils/time.js';
 import { resolveNow } from '../utils/now.js';
 import {
@@ -916,7 +918,17 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     const r2 = await setSetting('onboarding_completed', 1);
     if (!r2?.ok) return r2;
 
-    // CP4 TODO (par.6.168): if (mode === 'demo') trigger seed loading.
+    // par.6.168 closure (CP4 par.6.175): demo seed via opt-in.
+    if (mode === 'demo') {
+      try {
+        await runSeedIfNeeded({ force: true });
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('completeOnboarding: seed demo failed', err);
+        // Non blocking: onboarding_completed gia settato, app procede.
+      }
+    }
+
     return { ok: true };
   }
 

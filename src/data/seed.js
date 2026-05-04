@@ -1,16 +1,37 @@
 import { db, SETTINGS_KEYS } from "./db.js";
 
-// ============================================================
-// Seed data — loaded on first app run only.
-// Source: PharmaTimer_Project_Spec.md section 10 (example therapy).
-// Presented to the user as "demo data, removable from Config".
-// ============================================================
+// =============================================================
+// Seed data — neutral demo data (CP4 v3.0.0 Step 1, par.6.172-175).
+// =============================================================
 //
-// All records have a `demo: 1` marker so the user can wipe them
-// in one click from the Config view (Step 8).
-// The flag is 0/1 (not boolean) because IndexedDB cannot index booleans.
+// Replaces the legacy Roberto-personalized seed (11 farmaci + 2
+// profili) with a neutral 3-farmaci demo (Q-UX.6 + par.22.43):
+//
+//   1. Esempio Gastro 40mg       (fisso, 1 dose, prima colazione)
+//   2. Esempio Cardio 5mg        (fisso, 1 dose, durante cena)
+//   3. Esempio Antibiotico 500mg (intervallo 8h, 3 dosi)
+//
+// All records carry `demo: 1` so the user can wipe them via
+// `clearDemoData` from Config (Step 8 legacy + CP6 reset).
+//
+// par.6.172 (CP4): seed is no longer auto-bootstrapped at app
+// boot. The call from main.jsx has been removed; runSeedIfNeeded
+// is invoked only from the `completeOnboarding` thunk when the
+// user picks mode='demo' in the onboarding flow.
+//
+// par.6.173: only one neutral profile "Standard" (was 2 in legacy).
+//
+// par.6.174: data_inizio is computed dynamically as "tomorrow" at
+// seed time — the user sees Mit-A preview (next-day doses)
+// immediately after onboarding, and the seed never goes stale.
+//
+// par.6.175: signature is now runSeedIfNeeded({ force = false } = {}).
+// `force=true` skips the seed_loaded marker check and uses bulkPut
+// to be safe across re-runs (post-CP6 reset). Default `force=false`
+// preserves the legacy idempotent behaviour for devCheck and tests.
+// =============================================================
 
-// --- Daily-rhythm profiles (spec 3.4) ---
+// --- Daily-rhythm profile (single neutral demo, par.6.173) ---
 const PROFILI = [
   {
     nome_profilo: "Standard",
@@ -20,152 +41,179 @@ const PROFILI = [
     ora_cena: "20:30",
     ora_sonno: "23:30",
     attivo: 1,
-    demo: 1
+    demo: 1,
   },
-  {
-    nome_profilo: "Nottambulo",
-    ora_sveglia: "10:00",
-    ora_colazione: "10:30",
-    ora_pranzo: "14:30",
-    ora_cena: "21:30",
-    ora_sonno: "02:00",
-    attivo: 0,
-    demo: 1
-  }
 ];
 
-// --- Medications (spec 3.1, values from spec 10.2 and 10.3) ---
-// `id` is explicit here to keep `orari_base` references stable.
-const FARMACI = [
-  // Chronic (no data_fine)
-  { id: 1,  nome: "Pantorc 40mg", principio_attivo: "pantoprazolo", funzione: "Gastroprotezione",
-    tipo_frequenza: "fisso", intervallo_ore: null, intervallo_minimo_ore: null, dosi_giornaliere: 1,
-    relazione_pasto: "prima", dettaglio_pasto: "30 min prima colazione", note: null,
-    data_inizio: "2024-01-01", data_fine: null, attivo: 1, demo: 1 },
+// --- Compute tomorrow YYYY-MM-DD at seed time (par.6.174) ---
+function tomorrowDateStr() {
+  const d = new Date(Date.now() + 86400000);
+  return d.toISOString().slice(0, 10);
+}
 
-  { id: 2,  nome: "Duoresp Spiromax 1 puff", principio_attivo: "budesonide/formoterolo", funzione: "Broncodilatatore + antinfiammatorio",
-    tipo_frequenza: "fisso", intervallo_ore: null, intervallo_minimo_ore: null, dosi_giornaliere: 1,
-    relazione_pasto: "prima", dettaglio_pasto: "prima di colazione", note: "Sciacquare bocca dopo",
-    data_inizio: "2024-01-01", data_fine: null, attivo: 1, demo: 1 },
-
-  { id: 3,  nome: "Giant 20/5mg", principio_attivo: "olmesartan/amlodipina", funzione: "Antipertensivo",
-    tipo_frequenza: "fisso", intervallo_ore: null, intervallo_minimo_ore: null, dosi_giornaliere: 1,
-    relazione_pasto: "durante", dettaglio_pasto: "durante colazione", note: null,
-    data_inizio: "2024-01-01", data_fine: null, attivo: 1, demo: 1 },
-
-  { id: 4,  nome: "Olevia 1000mg", principio_attivo: "omega-3", funzione: "Omega-3",
-    tipo_frequenza: "intervallo", intervallo_ore: 12.0, intervallo_minimo_ore: 6.0, dosi_giornaliere: 2,
-    relazione_pasto: "durante", dettaglio_pasto: "durante pasto", note: null,
-    data_inizio: "2024-01-01", data_fine: null, attivo: 1, demo: 1 },
-
-  { id: 5,  nome: "Normast 600mg", principio_attivo: "palmitoiletanolamide", funzione: "Neuroprotettore",
-    tipo_frequenza: "fisso", intervallo_ore: null, intervallo_minimo_ore: null, dosi_giornaliere: 1,
-    relazione_pasto: "durante", dettaglio_pasto: "durante colazione", note: null,
-    data_inizio: "2024-01-01", data_fine: null, attivo: 1, demo: 1 },
-
-  { id: 6,  nome: "Movicol", principio_attivo: "macrogol", funzione: "Regolarità intestinale",
-    tipo_frequenza: "fisso", intervallo_ore: null, intervallo_minimo_ore: null, dosi_giornaliere: 1,
-    relazione_pasto: "lontano", dettaglio_pasto: "lontano dai pasti", note: "Sciogliere in acqua",
-    data_inizio: "2024-01-01", data_fine: null, attivo: 1, demo: 1 },
-
-  { id: 7,  nome: "Ezevast 10/20mg", principio_attivo: "ezetimibe/rosuvastatina", funzione: "Statina (colesterolo)",
-    tipo_frequenza: "fisso", intervallo_ore: null, intervallo_minimo_ore: null, dosi_giornaliere: 1,
-    relazione_pasto: "dopo", dettaglio_pasto: "durante/dopo cena", note: null,
-    data_inizio: "2024-01-01", data_fine: null, attivo: 1, demo: 1 },
-
-  { id: 8,  nome: "Lyrica 75mg", principio_attivo: "pregabalin", funzione: "Dolore neuropatico",
-    tipo_frequenza: "fisso", intervallo_ore: null, intervallo_minimo_ore: null, dosi_giornaliere: 1,
-    relazione_pasto: "indifferente", dettaglio_pasto: null, note: "Rallenta i riflessi",
-    data_inizio: "2024-01-01", data_fine: null, attivo: 1, demo: 1 },
-
-  // Temporary (with data_fine)
-  { id: 9,  nome: "Medrol 16mg", principio_attivo: "metilprednisolone", funzione: "Cortisone broncospasmo",
-    tipo_frequenza: "intervallo", intervallo_ore: 6.0, intervallo_minimo_ore: 3.0, dosi_giornaliere: 2,
-    relazione_pasto: "stomaco_pieno", dettaglio_pasto: "a stomaco pieno", note: null,
-    data_inizio: "2026-04-15", data_fine: "2026-04-19", attivo: 1, demo: 1 },
-
-  { id: 10, nome: "Prontinal aerosol 800mcg", principio_attivo: "beclometasone", funzione: "Corticosteroide inalatorio",
-    tipo_frequenza: "intervallo", intervallo_ore: 8.0, intervallo_minimo_ore: 4.0, dosi_giornaliere: 3,
-    relazione_pasto: "indifferente", dettaglio_pasto: null, note: "Sciacquare bocca dopo",
-    data_inizio: "2026-04-14", data_fine: "2026-04-18", attivo: 1, demo: 1 },
-
-  { id: 11, nome: "Levotuss 10ml", principio_attivo: "levodropropizina", funzione: "Sedativo tosse",
-    tipo_frequenza: "intervallo", intervallo_ore: 8.0, intervallo_minimo_ore: 4.0, dosi_giornaliere: 3,
-    relazione_pasto: "indifferente", dettaglio_pasto: null, note: null,
-    data_inizio: "2026-04-14", data_fine: "2026-04-16", attivo: 1, demo: 1 }
-];
+// --- Medications (Q-UX.6 + par.22.43 letterale) ---
+// Exported for unit testing of demo data structure.
+export function buildFarmaciDemo(dataInizio) {
+  return [
+    {
+      id: 1,
+      nome: "Esempio Gastro 40mg",
+      principio_attivo: "esempio",
+      funzione: "Gastroprotettore (esempio)",
+      tipo_frequenza: "fisso",
+      intervallo_ore: null,
+      intervallo_minimo_ore: null,
+      dosi_giornaliere: 1,
+      relazione_pasto: "prima",
+      dettaglio_pasto: "30 min prima colazione",
+      note: "Farmaco di esempio (rimuovibile)",
+      data_inizio: dataInizio,
+      data_fine: null,
+      attivo: 1,
+      demo: 1,
+    },
+    {
+      id: 2,
+      nome: "Esempio Cardio 5mg",
+      principio_attivo: "esempio",
+      funzione: "Cardiovascolare (esempio)",
+      tipo_frequenza: "fisso",
+      intervallo_ore: null,
+      intervallo_minimo_ore: null,
+      dosi_giornaliere: 1,
+      relazione_pasto: "durante",
+      dettaglio_pasto: "durante cena",
+      note: "Farmaco di esempio (rimuovibile)",
+      data_inizio: dataInizio,
+      data_fine: null,
+      attivo: 1,
+      demo: 1,
+    },
+    {
+      id: 3,
+      nome: "Esempio Antibiotico 500mg",
+      principio_attivo: "esempio",
+      funzione: "Antibatterico (esempio)",
+      tipo_frequenza: "intervallo",
+      intervallo_ore: 8.0,
+      intervallo_minimo_ore: 4.0,
+      dosi_giornaliere: 3,
+      relazione_pasto: "indifferente",
+      dettaglio_pasto: null,
+      note: "Farmaco di esempio (rimuovibile)",
+      data_inizio: dataInizio,
+      data_fine: null,
+      attivo: 1,
+      demo: 1,
+    },
+  ];
+}
 
 // --- Base schedules (spec 3.5) ---
-// farmaco_id references FARMACI.id; offset is in minutes from anchor.
 const ORARI_BASE = [
-  { farmaco_id: 1,  dose_numero: 1, offset_minuti: -30, ancora_riferimento: "colazione", descrizione_momento: "prima di colazione" },
-  { farmaco_id: 2,  dose_numero: 1, offset_minuti: 0,   ancora_riferimento: "colazione", descrizione_momento: "colazione" },
-  { farmaco_id: 3,  dose_numero: 1, offset_minuti: 0,   ancora_riferimento: "colazione", descrizione_momento: "colazione" },
-  { farmaco_id: 4,  dose_numero: 1, offset_minuti: 0,   ancora_riferimento: "colazione", descrizione_momento: "colazione" },
-  { farmaco_id: 4,  dose_numero: 2, offset_minuti: 0,   ancora_riferimento: "cena",      descrizione_momento: "cena" },
-  { farmaco_id: 5,  dose_numero: 1, offset_minuti: 0,   ancora_riferimento: "colazione", descrizione_momento: "colazione" },
-  { farmaco_id: 6,  dose_numero: 1, offset_minuti: 150, ancora_riferimento: "colazione", descrizione_momento: "metà mattina" },
-  { farmaco_id: 7,  dose_numero: 1, offset_minuti: 0,   ancora_riferimento: "cena",      descrizione_momento: "cena" },
-  { farmaco_id: 8,  dose_numero: 1, offset_minuti: 0,   ancora_riferimento: "cena",      descrizione_momento: "cena" },
-  { farmaco_id: 9,  dose_numero: 1, offset_minuti: 0,   ancora_riferimento: "colazione", descrizione_momento: "colazione" },
-  { farmaco_id: 9,  dose_numero: 2, offset_minuti: 360, ancora_riferimento: "colazione", descrizione_momento: "pomeriggio" },
-  { farmaco_id: 10, dose_numero: 1, offset_minuti: 30,  ancora_riferimento: "colazione", descrizione_momento: "dopo colazione" },
-  { farmaco_id: 10, dose_numero: 2, offset_minuti: 510, ancora_riferimento: "colazione", descrizione_momento: "pomeriggio" },
-  { farmaco_id: 10, dose_numero: 3, offset_minuti: 990, ancora_riferimento: "colazione", descrizione_momento: "notte" },
-  { farmaco_id: 11, dose_numero: 1, offset_minuti: 30,  ancora_riferimento: "colazione", descrizione_momento: "dopo colazione" },
-  { farmaco_id: 11, dose_numero: 2, offset_minuti: 510, ancora_riferimento: "colazione", descrizione_momento: "pomeriggio" },
-  { farmaco_id: 11, dose_numero: 3, offset_minuti: 990, ancora_riferimento: "colazione", descrizione_momento: "notte" }
+  // Gastro: 30 min prima colazione
+  {
+    farmaco_id: 1,
+    dose_numero: 1,
+    offset_minuti: -30,
+    ancora_riferimento: "colazione",
+    descrizione_momento: "prima di colazione",
+  },
+  // Cardio: durante cena
+  {
+    farmaco_id: 2,
+    dose_numero: 1,
+    offset_minuti: 0,
+    ancora_riferimento: "cena",
+    descrizione_momento: "cena",
+  },
+  // Antibiotico: 30min dopo colazione + 8h + 8h
+  {
+    farmaco_id: 3,
+    dose_numero: 1,
+    offset_minuti: 30,
+    ancora_riferimento: "colazione",
+    descrizione_momento: "dopo colazione",
+  },
+  {
+    farmaco_id: 3,
+    dose_numero: 2,
+    offset_minuti: 510,
+    ancora_riferimento: "colazione",
+    descrizione_momento: "pomeriggio",
+  },
+  {
+    farmaco_id: 3,
+    dose_numero: 3,
+    offset_minuti: 990,
+    ancora_riferimento: "colazione",
+    descrizione_momento: "notte",
+  },
 ];
 
-// ============================================================
-// Seed runner — idempotent.
-// Uses `impostazioni_app[seed_loaded] = 1` as the "already seeded"
-// marker. Calling runSeedIfNeeded() multiple times is a no-op after
-// the first run.
-// ============================================================
-export async function runSeedIfNeeded() {
-  const marker = await db.impostazioni_app.get(SETTINGS_KEYS.SEED_LOADED);
-  if (marker && marker.valore === 1) {
-    return { seeded: false, reason: "already_seeded" };
+// =============================================================
+// Seed runner — opt-in (par.6.172 / par.6.175).
+// =============================================================
+//
+// Default behaviour (no args): legacy idempotent — uses the
+// `seed_loaded` marker, no-op after first invocation. Used by
+// devCheck and ImpostazioniTab tests.
+//
+// `{ force: true }`: invoked from completeOnboarding('demo')
+// thunk. Skips marker check, uses bulkPut so re-runs (post-CP6
+// reset scenarios) are safe.
+//
+// Note: `nome_utente` is NOT seeded here (CP4). The onboarding
+// flow sets it via `completeOnboarding` thunk before calling the
+// seed, so any default would overwrite a real value (ordering bug).
+// =============================================================
+export async function runSeedIfNeeded({ force = false } = {}) {
+  if (!force) {
+    const marker = await db.impostazioni_app.get(SETTINGS_KEYS.SEED_LOADED);
+    if (marker && marker.valore === 1) {
+      return { seeded: false, reason: "already_seeded" };
+    }
   }
 
-  // One transaction covering all five stores — atomic seed.
+  const dataInizio = tomorrowDateStr();
+  const FARMACI = buildFarmaciDemo(dataInizio);
+
   await db.transaction(
     "rw",
     db.farmaci, db.orari_base, db.profilo_utente, db.impostazioni_app,
     async () => {
-      await db.profilo_utente.bulkAdd(PROFILI);
-      await db.farmaci.bulkAdd(FARMACI);
-      await db.orari_base.bulkAdd(ORARI_BASE);
+      await db.profilo_utente.bulkPut(PROFILI);
+      await db.farmaci.bulkPut(FARMACI);
+      await db.orari_base.bulkPut(ORARI_BASE);
       await db.impostazioni_app.bulkPut([
-        { chiave: SETTINGS_KEYS.NOME_UTENTE,      valore: "" },
-        { chiave: SETTINGS_KEYS.SEED_LOADED,      valore: 1 },
-        { chiave: SETTINGS_KEYS.SCHEMA_VERSION,   valore: 1 },
-        // §6.129 (Sessione 9-B parte 2/2): default OFF for Wave B notifications.
-        // Existing DBs (already seeded) do not get this row — selectImpostazione
-        // returns null when the key is absent and `notifiche_attive === 1` is
-        // false, so the toggle defaults to off without explicit migration.
-        { chiave: SETTINGS_KEYS.NOTIFICHE_ATTIVE, valore: 0 }
+        { chiave: SETTINGS_KEYS.SEED_LOADED, valore: 1 },
+        { chiave: SETTINGS_KEYS.SCHEMA_VERSION, valore: 1 },
+        // par.6.129: default OFF for Wave B notifications.
+        { chiave: SETTINGS_KEYS.NOTIFICHE_ATTIVE, valore: 0 },
       ]);
     }
   );
 
-  return { seeded: true, profili: PROFILI.length, farmaci: FARMACI.length, orari: ORARI_BASE.length };
+  return {
+    seeded: true,
+    profili: PROFILI.length,
+    farmaci: FARMACI.length,
+    orari: ORARI_BASE.length,
+  };
 }
 
-// ============================================================
+// =============================================================
 // Demo data cleanup — wipes only records marked `demo: 1`.
-// User-created records are preserved.
-// Called from Config (Step 8).
-// ============================================================
+// User-created records are preserved. Called from Config (Step 8)
+// and reachable via CP6 reset (par.22.43).
+// =============================================================
 export async function clearDemoData() {
   await db.transaction(
     "rw",
     db.farmaci, db.orari_base, db.log_assunzioni, db.profilo_utente,
     async () => {
-      // Find demo farmaci IDs first, then cascade into orari_base and log_assunzioni
       const demoFarmaci = await db.farmaci.where("demo").equals(1).toArray();
-      const demoIds = demoFarmaci.map(f => f.id);
+      const demoIds = demoFarmaci.map((f) => f.id);
 
       if (demoIds.length > 0) {
         await db.orari_base.where("farmaco_id").anyOf(demoIds).delete();
@@ -178,11 +226,9 @@ export async function clearDemoData() {
   );
 }
 
-// ============================================================
-// Full database wipe — for debug / reset. Drops the entire DB.
-// Caller must reload the page afterwards so Dexie re-opens with
-// a fresh schema and re-runs the seed.
-// ============================================================
+// =============================================================
+// Full database wipe — for debug / reset (CP6 reachable).
+// =============================================================
 export async function wipeDatabase() {
   await db.delete();
 }
