@@ -1,8 +1,12 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 2.7.0
+**Versione:** 2.8.0
 **Data inizio fase:** 16 aprile 2026
-**Ultima modifica:** 3 maggio 2026 (Sessione Step 11-B Wave-next + closing Fase 2 esecutiva: chiusura sezione "Domani" cross-midnight rendering + sticky multi-separator verify-only + closing Step 11 / Fase 2 milestone in 4 CP impl + 1 CP closing con commit unico finale `<TBD-closing-commit>`. **CP1** commit grouping: helper `effectiveDateStr` + partition `groupEntriesByDayAndMomento` per effective bucket in `src/utils/uiState.js` + prop `bucketDateStr` propagata in `DoseCard.jsx` con gate `badgeBucketSuppressed` + `OggiView.jsx` propagation chain (+9 test: 6 uiState + 3 DoseCard). **CP2** edge cases: 3 test in `uiState.test.js` (stato=ricalcolata cross-midnight promotion, stato=presa non-promotion, anticipo same-day). **CP3** verify-only no-code: AMB-11.B.4/5 chiusi (sticky stack-replacement nativo CSS confermato browser, `top-[149px]` calibrazione single-separator preserva con N≥2 separatori). **CP3-fix** propagation: `getCardState` in `uiState.js` usa `effectiveDateStr` invece di `entry.dateStr` (+ 2 regression test) — verifica visiva browser confermata Olevia 2a dose cross-midnight mostra stato neutro invece di IN RITARDO. **CP4** QW5 deferred Fase 3: audit ImpostazioniTab non-actionable senza navigazione browser, bug non riproducibile rapidamente, scope opportunistic decade. Cumulativo +14 test (atteso +12, espansivo +17, dentro range). 2 nuove deviazioni §6.NN: §6.160 (CP3-fix propagation `getCardState` come scope-creep necessaria su AMB-11.B.1, distinzione tra bucketing sezione vs cardState semantico) e §6.161 (QW5 deferred Fase 3 backlog). Decisioni in-session ratificate: **AMB-11.B.6** = tag annotato `v2.7.0` su closing 11-B (Fase 2 milestone reale, non stub `v3.0.0-alpha` Fase 3 prematuro), **AMB-11.B.7 nuova** = convention "package.json bump solo a closing Step (non a closing CP intra-step)" — bump 2.6.1 → 2.7.0 in questa closing. Retrospettiva Fase 2 (sub-sub-sezione §11.B closing, non §23 nuova top-level): 44 deviazioni §6.115-§6.161 raggruppate per cluster tematici, debt deferito Fase 3 enumerato, `LocalRepository` come ground truth contratto `ApiRepository` Fase 3, AMB candidati Fase 3 F3.A÷H pre-frozen come hand-off. §11 evoluto a hand-off Sessione Fase 3 analisi-first dedicata (Q7=B). Bump v2.6.4 → **v2.7.0** + tag annotato `v2.7.0` "Fase 2 closing milestone PWA standalone".)
+**Ultima modifica:** 4 maggio 2026 (Sessione Fase 3 Step 1 esecutiva pivot strategico a Closure scenario Z: Fase 2 prodotto chiuso, Fase 3 in pausa indefinita riapribile. Apertura prevedeva CP0 audit Mac Studio + analisi-first 8 sub-AMB F3-S1.A-H + sequenziale CP1-CP5 + closing per backend FastAPI scaffolding. Eseguito CP0 audit (Python 3.13.12 target >=3.12 OK, MariaDB assente, MySQL 9.6.0 nativo /usr/local/mysql/ in produzione dal 24/04/2026, Docker assente, port 3306/8000 libere, branch step-8 top ae33b1f tag v2.7.0). Tentativo CP0-alpha install MariaDB 12.2.2 brew fallito a regime per conflitto socket TCP 3306 con MySQL legacy -> cleanup CP0-alpha-bis (uninstall + 10 deps autoremove + datadir + plist, 250.6 MB reclaimed). 4 round Q&A iterativa hanno ratificato pivot Z: round 1 Mac Mini vs Studio dev DB -> C ibrida raccomandata, Roberto sceglie Studio; round 2 ruolo MySQL Studio (solo dev) vs Mini (prod); round 3 architettura client-side Fase 2 standalone vs Fase 3 client thin server-authoritative; round 4 fork code rigettato in favore di git tag + feature flag (Q5=A gia pianificata), Roberto chiarisce intent reale "chiudere Fase 2 prodotto finito iPhone/Android, no degrado, riapribile" -> opzione Z scelta vs X (branch fase-3) vs Y (pausa informale). Decisioni: distribuzione PWA via GitHub Pages free tier (beta repo pubblico timegates-code/pharmatimer + meta noindex per hygiene); branch consolidation main fast-forward step-8 +61 commit; tag v2.8.0 annotato closure; README v1.0 con sezioni Stato progetto + Installazione PWA + Reset dati esempio (5.B nessun hotfix v2.7.1, seed Roberto invariato) + Riapertura Fase 3; package.json bumped 2.7.0 -> 2.8.0 (eccezione AMB-11.B.7 perche closure phase-level non Step impl). Riferimenti riapertura preservati intatti: par.11.D prompt esecutivo, par.11.C.closed sub-AMB F3-S1.A-H frozen, par.22.36 Q1-Q9 ratificate. Bump v2.7.1-rc.1 -> v2.8.0 (closure formale, no -rc.1). Nuova par.22.37 (closure scenario Z) + par.22.38 (lessons learned pivot strategico in-session, estensione AMB-11.B.7). Backward-history: sessione precedente "Sessione Fase 3 analisi-first dedicata" demotata a "Changelog versione 2.7.1-rc.1 (rispetto alla 2.7.0)" sotto.)
+
+**Changelog versione 2.7.1-rc.1 (rispetto alla 2.7.0):** Sessione Fase 3 analisi-first dedicata: chiusura Q1-Q9 ratificate (Q1=B naming Fase 3 Step 1/2..., Q2=B FastAPI package modulare minimal, Q3=A no-auth LAN+Tailscale trust mesh, Q4=A migration one-shot Mac-side JSON+Python seed, Q5=A feature-flag VITE_USE_API_REPO dual-mode 1 settimana fallback, Q6=A docker-compose FastAPI+MariaDB containers, Q7=A Tailscale magic-DNS + TLS auto, Q8=B Log read-only Fase 3 + Export Fase 4 split, **Q9 nuova=C server-authoritative** copertura F3.G non in par.11.C originale). Output: 9 AMB Fase 3 ratificate (F3.A-H + Q9), scope CP Step 1 pre-frozen (CP0 audit + CP1 layout + CP2 schema + CP3 seed + CP4 FastAPI skeleton + CP5 pytest + CP closing), naming convention "Fase 3 Step 1, Step 2..." applicata. Sub-AMB Step 1 (Python/MariaDB version, pool size, CORS, config strategy, Docker base, dev DB isolation, pytest test DB) demandate ad analisi-first apertura Step 1. Sessione token-light ~10K, single-round Q&A "decidi tu" su default raccomandati par.11.C. Zero deviazioni par.6.NN. CP0 baseline minimo verde: branch step-8, top ae33b1f tag v2.7.0, package.json 2.7.0, 430/430 test su 42 file. Bump v2.7.0 -> v2.7.1-rc.1 (analisi-first pattern -rc.1 par.22.32). package.json invariato 2.7.0 (AMB-11.B.7 convention).
+
+**Changelog versione 2.7.0 (rispetto alla 2.6.4):** Sessione Step 11-B Wave-next + closing Fase 2 esecutiva: chiusura sezione "Domani" cross-midnight rendering + sticky multi-separator verify-only + closing Step 11 / Fase 2 milestone in 4 CP impl + 1 CP closing con commit unico finale `<TBD-closing-commit>`. **CP1** commit grouping: helper `effectiveDateStr` + partition `groupEntriesByDayAndMomento` per effective bucket in `src/utils/uiState.js` + prop `bucketDateStr` propagata in `DoseCard.jsx` con gate `badgeBucketSuppressed` + `OggiView.jsx` propagation chain (+9 test: 6 uiState + 3 DoseCard). **CP2** edge cases: 3 test in `uiState.test.js` (stato=ricalcolata cross-midnight promotion, stato=presa non-promotion, anticipo same-day). **CP3** verify-only no-code: AMB-11.B.4/5 chiusi (sticky stack-replacement nativo CSS confermato browser, `top-[149px]` calibrazione single-separator preserva con N≥2 separatori). **CP3-fix** propagation: `getCardState` in `uiState.js` usa `effectiveDateStr` invece di `entry.dateStr` (+ 2 regression test) — verifica visiva browser confermata Olevia 2a dose cross-midnight mostra stato neutro invece di IN RITARDO. **CP4** QW5 deferred Fase 3: audit ImpostazioniTab non-actionable senza navigazione browser, bug non riproducibile rapidamente, scope opportunistic decade. Cumulativo +14 test (atteso +12, espansivo +17, dentro range). 2 nuove deviazioni §6.NN: §6.160 (CP3-fix propagation `getCardState` come scope-creep necessaria su AMB-11.B.1, distinzione tra bucketing sezione vs cardState semantico) e §6.161 (QW5 deferred Fase 3 backlog). Decisioni in-session ratificate: **AMB-11.B.6** = tag annotato `v2.7.0` su closing 11-B (Fase 2 milestone reale, non stub `v3.0.0-alpha` Fase 3 prematuro), **AMB-11.B.7 nuova** = convention "package.json bump solo a closing Step (non a closing CP intra-step)" — bump 2.6.1 → 2.7.0 in questa closing. Retrospettiva Fase 2 (sub-sub-sezione §11.B closing, non §23 nuova top-level): 44 deviazioni §6.115-§6.161 raggruppate per cluster tematici, debt deferito Fase 3 enumerato, `LocalRepository` come ground truth contratto `ApiRepository` Fase 3, AMB candidati Fase 3 F3.A÷H pre-frozen come hand-off. §11 evoluto a hand-off Sessione Fase 3 analisi-first dedicata (Q7=B). Bump v2.6.4 → **v2.7.0** + tag annotato `v2.7.0` "Fase 2 closing milestone PWA standalone".)
 
 **Changelog versione 2.6.4 (rispetto alla 2.6.3, retroattiva):** Sessione Step 11-A CP1b esecutiva chiusura ErrorSurface UI + greeting nome_utente + ARIA live region in 5 CP incrementali con commit unico finale `755602e`. **CP1**: nuovo `src/components/shared/ErrorSurface.jsx` (severity-based runtime surface — toast 4s autodismiss per warning/error, banner persistente per critical, click-dismiss manuale via `CLEAR_ERROR`) + `ErrorSurface.test.jsx` 6 test (null/toast/banner/autodismiss/click-dismiss/legacy-shape backward-compat). Variant decisione D3-bis: `DISMISS_ERROR` action originalmente prevista rinominata a `CLEAR_ERROR` post-CP0 round 4 audit reducer (CP1a-era audit incompleto, §6.158). +6 → 411/411. **CP2**: rename retroattivo `DISMISS_ERROR` → `CLEAR_ERROR` (8 occorrenze totali in ErrorSurface.jsx + .test.jsx) via patcher Python idempotente + mount globale `<ErrorSurface />` in App.jsx come primo child di `<ThemedShell>`. Reducer NESSUNA modifica (case `CLEAR_ERROR` pre-esistente da 8a CP4 §6.77 assorbe semantica DISMISS_ERROR per zero duplicazione, §6.158). 411 → 411 (+0, scope collapse). **CP3**: greeting "Ciao [nome]" / "Ciao!" fallback in OggiView header subtitle prepended (variant B sempre presente, AMB-11.A.10/11 risolti) + `selectImpostazione` esportato dal selectors block + 2 test integration in `OggiView.test.jsx` (default fallback + custom nome via `hoist.repo = makeFakeRepo({impostazioni: {nome_utente: 'Roberto'}})` override pattern lazy Proxy). +2 → 413/413. **CP4**: nuovo `src/components/shared/ErrorAnnouncer.jsx` (sr-only ARIA live region globale, `aria-live="polite"` per warning/error/null, `aria-live="assertive"` per critical, `aria-atomic="true"`, riusa `state.error.message` zero nuovo state slice — Q2=A) + `ErrorAnnouncer.test.jsx` 3 test (null+polite, polite+message, assertive+message) + mount in App.jsx PRIMA di `<ErrorSurface />` (race rule: live region deve essere mounted prima della transizione null→value). +3 → 416/416. **CP5**: verify-only AMB-11.A.7 ratifica 9/9 consumer `useModalA11y` conformi (`labelId` non-null + `triggerRef` propagato + `{...modalProps}` spread + container link consistente + orphan-id check passa) — zero codice, zero test, scope creep evitato. Cumulativo CP1b +11 test (sopra bound espansivo +5-10 di +1 accettato). Pattern 5 CP impl + closing unico. 2 nuove deviazioni §6.NN: §6.158 (scope collapse `CLEAR_ERROR` ricicla `DISMISS_ERROR`, audit CP0 round 3 incompleto su action types, lezione: gate CP0 deve grep-check action types correnti pre-lock D3) e §6.159 (CP1b ErrorSurface scope = aggiunta runtime, OggiView:288 INIT failure screen invariato — popolazioni `state.status='error'` vs `state.error≠null` distinte, stub §22.33 letterale "sostituzione inline render error riga 288" rivelato sbagliato post-audit empirico). Commit Mac-side `755602e` "CP1b Step 11-A: ErrorSurface UI + greeting + ARIA live region (CLEAR_ERROR ricicla DISMISS_ERROR)" (7 file, 456 ins / 1 del, branch `step-8`). Cleanup `.bak.cp2/cp3/cp4` + patcher transients post-commit. Bump v2.6.3 → **v2.6.4**. AMB-11.A.3/7/9/10/11 chiusi. AMB-11.A.4/5/6/8 (empty states consolidation, error boundary, retry UX, useModalA11y refactor) NON toccati — fuori scope CP1b, candidati Step 11-B. CP1b apertura ha documentato D3-bis come §6.158 inline post-CP1, eseguita rinomina retroattiva senza touch del reducer.)
 **Ambito:** Sviluppo PWA React standalone con persistenza locale, preparata per futuro swap verso backend FastAPI+MariaDB.
@@ -3993,7 +3997,33 @@ Senza riproduzione runtime browser-side, fix mirato non è componibile.
 
 ---
 
-## 7. Roadmap Fase 2 — avanzamento
+## 6.162 — SezioneInfo branding "by timegates" in ImpostazioniTab (closure scenario Z)
+
+**Sessione:** Closure scenario Z v2.8.0 (4 maggio 2026, parte di P2.B-bis pre-deploy GitHub Pages).
+
+**Contesto.** La distribuzione PWA pubblica via GitHub Pages (β repo pubblico timegates-code/pharmatimer + meta noindex, vedi §22.37) richiede branding minimo per riconoscibilità app. Sostituisce la mancanza di splash/loading screen brandizzata (out of scope Fase 2).
+
+**Decisione.** Aggiunta nuova sezione `<SezioneInfo />` in `src/components/config/ImpostazioniTab.jsx`:
+- Versione `PharmaTimer 2.8.0` (synced con package.json post-bump P2.C)
+- Credit `by timegates` in `<em>` (italic), separatore middle dot
+- Posizionamento: ultimo, dopo SezioneAvanzate (DEV-only) e SezioneNotifiche (PROD)
+- Stile: `text-xs` + `opacity: 0.6` su `t.textPrimary` token, centrato, separatore `border-t` con `t.headerBorder` (stesso pattern visivo Avanzate)
+- Visibilità: PROD + DEV (sempre presente, a differenza di Avanzate gated `import.meta.env.DEV`)
+
+**Razionale opzioni alternative scartate.**
+- Footer permanente sotto NavBar: ruba spazio a Oggi/Config viste, non discreto.
+- Splash screen brandizzata: out of scope (componenti loading sono semplici spinner senza branding, refactor non giustificato in closure).
+- Solo "by timegates" senza versione: perde info contestuale utile per feedback futuri.
+
+**Test impact.** 430/430 attesi invariati (nuova sezione è render-only, no logica condizionale, no nuovi token, no breaking change su selettori test esistenti). Test dedicato per `<SezioneInfo />` non aggiunto in P2.B-bis: validazione visiva manuale in P5 (CP browser test installazione PWA). Eventuale test unit candidato in sessione post-deploy guida utente (bundling con altri TODO §22.37 Roadmap post-deploy).
+
+**Status: chiusa ✅** in P2.B-bis. Validazione runtime in P5 (browser, app installata).
+
+**Riferimenti:** §22.37 closure scenario Z + §22.37 decision 8 (branding) + §22.37 Roadmap post-deploy (guida utente con screenshot, sessione dedicata).
+
+---
+
+## 7. Roadmap Fase 2 (closed v2.7.0) + Fase 3 — avanzamento
 
 | Step | Contenuto | Stato | Note |
 |---|---|---|---|
@@ -4043,6 +4073,9 @@ Senza riproduzione runtime browser-side, fix mirato non è componibile.
 | **11-A CP1a** | QW1 error handling thunks + repo + reducer test (4 step incrementali con commit unico finale `3c2f514`): RepositoryError typed class + wrapRepoError + classifyRawError → wrap 31 metodi `LocalRepository.js` con `_wrap(fn, codeOverride)` → catch sites SET_ERROR `actions.js`+`applyHelper.js` propagano `severity`+`code` → `IRepository.js` docstring Error contract → `reducer.test.js` +2 test severity propagation + backward-compat | ✅ **Completo** | 381 → **405/405** test (+24, sforo bound espansivo +22 di +2 accettato a inizio sessione). Commit Mac-side `3c2f514` (8 file, 789 ins / 149 del, branch `step-8`). Zero nuove deviazioni §6.NN. AMB-11.A.1/2/3 chiusi. AMB-11.A.7/8/9/10/11 (ARIA, nome_utente, live region) NON toccati — demandati a sessioni separate. Patcher v1 step 3 fail intra-sessione su pattern multi-line con rollback automatico, fix in v2 con DOTALL+parse-in-callback. Bump v2.6.2-rc.1 → v2.6.3 |
 | **11-A CP1b** | ErrorSurface UI + greeting nome_utente + ARIA live region (5 CP + closing, commit unico finale `755602e`): ErrorSurface.jsx severity-based runtime surface (toast 4s autodismiss warning/error, banner persistente critical) + ErrorAnnouncer.jsx sr-only ARIA live region globale (polite/assertive su severity, riusa `state.error` Q2=A) + greeting `Ciao [nome]` / `Ciao!` fallback in OggiView header subtitle (variant B AMB-11.A.10/11) + verify-only ARIA modali 9/9 (AMB-11.A.7 ratifica). 2 deviazioni §6.158 (CP2 scope collapse `CLEAR_ERROR` ricicla `DISMISS_ERROR`, lezione gate CP0 grep action types) + §6.159 (ErrorSurface scope additivo, OggiView:288 INIT screen invariato) | ✅ **Completo** | 405 → **416/416** test (+11, sopra bound espansivo +5-10 di +1 accettato). Commit Mac-side `755602e` (7 file, 456 ins / 1 del, branch `step-8`). AMB-11.A.3/7/9/10/11 chiusi. AMB-11.A.4/5/6/8 (empty states consolidation, error boundary, retry UX, useModalA11y refactor) demandati Step 11-B. Pattern 5 CP impl + closing unico replicato senza drift. Bump v2.6.3 → v2.6.4 |
 | **11-B** | Wave-next + closing Fase 2: CP1 commit grouping `effectiveDateStr` helper + bucket partition + `bucketDateStr` prop chain (uiState.js + DoseCard.jsx + OggiView.jsx) + CP2 edge cases multi-day promotion + CP3 verify-only sticky multi-separator AMB-11.B.4/5 + CP3-fix propagation `getCardState` su `effectiveDateStr` (§6.160) + CP4 QW5 deferred (§6.161) | ✅ **Completo** Fase 2 milestone | 416 → **430/430** test (+14, atteso +12 espansivo +17 dentro range). 5 file modificati (`src/utils/uiState.js`, `src/utils/uiState.test.js`, `src/components/oggi/DoseCard.jsx`, `src/components/oggi/DoseCard.test.jsx`, `src/components/oggi/OggiView.jsx`). 2 nuove deviazioni §6.160 + §6.161. AMB-11.B.1/2/3/4/5/6/7 tutti chiusi. AMB-11.B.6 = tag annotato `v2.7.0` su closing 11-B (Fase 2 milestone reale). AMB-11.B.7 nuova = convention package.json bump solo a closing Step. Bump v2.6.4 → **v2.7.0** (cumulato in closing) + tag annotato `v2.7.0` "Fase 2 closing milestone PWA standalone" |
+| **— Fase 2 chiusa milestone v2.7.0 —** | — | — | — |
+| **— Closure scenario Z v2.8.0 —** | — | — | — |
+| **Fase 3** | Backend FastAPI + MariaDB + swap LocalRepository → ApiRepository | ⏸️ **Pausa indefinita scenario Z** (riapribile) | Step 1 pre-pianificato §11.D + Q1-Q9 ratificate §11.C.closed restano frozen come riferimento. Riapertura: prompt §11.D + ratifica nuovo prompt nuova sessione. Riferimenti §22.37 (closure) + §22.38 (lessons learned) |
 
 
 ### Setup testing (Step 4a–4b + 7a)
@@ -4155,9 +4188,11 @@ Chiarimenti risolti pre-Step 4b (AMB-1/2/3):
 ---
 
 
-## 11. Prossimo step — Sessione Fase 3 analisi-first dedicata (Step 11 ✅ closed Fase 2 milestone)
+## 11. Closure scenario Z ✅ v2.8.0 — Fase 2 prodotto chiuso, Fase 3 in pausa indefinita (riapribile via §11.D)
 
 **Stato baseline:** v2.7.0 (post-closing Step 11-B Wave-next + Fase 2 closing milestone). 430/430 su 42 file. Branch `step-8`. Top commit Mac-side `<TBD-closing-commit>` (Step 11-B closing -- Fase 2 milestone) + tag annotato `v2.7.0` "Fase 2 closing milestone PWA standalone".
+
+**Stato post-closure Z:** v2.8.0 closure (4 maggio 2026). Branch `main` consolidato (fast-forward step-8 +61 commit) + tag annotato `v2.8.0` "Closure scenario Z — Fase 2 prodotto chiuso, Fase 3 in pausa indefinita". 430/430 invariato. Repo pubblicato `https://github.com/timegates-code/pharmatimer` (visibility public + meta noindex). PWA distribuita `https://timegates-code.github.io/pharmatimer/` (GitHub Pages free tier). Vedi §22.37 per dettagli.
 
 **Step 11 closed.** Tutti i 17 AMB pre-frozen 11.A.1-11/11.B.1-7 sono chiusi (16 originali + 1 nuova AMB-11.B.7 in-session). Step 11-A ✅ + Step 11-B ✅ completati, Fase 2 PWA standalone milestone raggiunta.
 
@@ -4491,7 +4526,7 @@ CP closing materiale:
 - **Pattern §11 v2.5.37/v2.5.40-rc.4 pre-split** validato anche per Step 11 (split upfront 11-A + 11-B)
 - **Trigger split adaptive automatico**: se durante impl 11-A o 11-B la stima sfora bound espansivo (>22 per 11-A, >17 per 11-B), chiusura sessione + apertura sub-parte (es. 11-A parte 1/2 + parte 2/2), evita anti-pattern lessons 8d
 
-### 11.C Prossimo prompt — Sessione Fase 3 analisi-first dedicata (Q7=B closure)
+### 11.C Sub-sezione — Sessione Fase 3 analisi-first dedicata ✅ CLOSED (Q1-Q9 ratificate, scope CP Step 1 pre-frozen)
 
 **Scope alto livello.** Fase 3 introduce backend FastAPI + MariaDB e swap `LocalRepository` → `ApiRepository`. Decisioni Fase 3 sono multi-asse (4 cluster: backend, migration, networking/deploy, feature-set) e meritano sessione analisi-first dedicata pre-impl, come da Q7=B (§22.32). Naming convention demandato a quel momento (12-A vs Fase 3 Step 1 reset).
 
@@ -4531,6 +4566,100 @@ Esegui il prompt al §11.C del Changelog (Sessione Fase 3 analisi-first dedicata
 - Decisioni "decidi tu" su default raccomandati = pattern accettato (validato §22.32 Q1, §22.33 D3)
 - Target test/endpoint/migration calibrati split-aware (se Fase 3 si splitta in F3-S1 + F3-S2)
 - CP0 audit empirico Mac-side opzionale ma raccomandato per dati ambientali
+
+### 11.C.closed Esiti Sessione Fase 3 analisi-first (3 maggio 2026 sera, v2.7.1-rc.1)
+
+**Modalità realizzata.** Q&A iterativa Q1-Q8 (§11.C originale) + **Q9 nuova in apertura** (copertura F3.G "Sync conflict resolution" non mappata da Q1-Q8 originali — segnalata come incongruenza in apertura, ratificata aggiunta esplicita per disambiguare scrittura offline single-client). Modalità batch unico con default raccomandati §11.C, "decidi tu" applicato globalmente da Roberto in unico round.
+
+**CP0 baseline minimo (Mac Studio Ultra `~/Sviluppo/pharmatimer`):**
+- Branch: `step-8` ✅
+- Top commit: `ae33b1f` "Step 11-B closing -- Fase 2 milestone" ✅ (sostituisce `<TBD-closing-commit>` letterale §11.C originale)
+- Tag: `v2.7.0` annotato "Fase 2 closing milestone PWA standalone" ✅
+- package.json: 2.7.0 ✅
+- Test: 430/430 su 42 file ✅
+- CP0 esteso (audit Mac Mini target deploy): SKIPPED (Mac Mini non disponibile o non strettamente necessario; Q6=A docker-compose runnable anche su Mac Studio dev → audit Mac Mini posticipato a pre-Step 6 deploy)
+
+**Q1-Q9 ratificate.**
+
+| Q | AMB | Decisione | Razionale stretto |
+|---|---|---|---|
+| Q1 | — | **B** Naming "Fase 3 Step 1, Step 2..." reset | Cambio fase semantically forte, rimuove ambiguità Step ≥12 |
+| Q2 | F3.A | **B** Package modulare minimal `pharmatimer_api/{routers,services,repository,db,models}/` + Pydantic inline + mysql-connector-python diretto | Spec §0.2 no-SQLAlchemy preserved; modulare facilita testing per-router senza over-engineering; (A) single-file scala male, (C) split aggressivo prematuro |
+| Q3 | F3.B | **A** No auth (LAN-only + Tailscale trust mesh) | Single-user use case; (B)/(C) over-engineering |
+| Q4 | F3.C | **A** Migration one-shot Mac-side: PWA debug-export JSON snapshot → Python script `seed_from_dexie_export.py` → MariaDB | Tracciabile, isolabile, idempotente; (B) PWA-boot-driven mescola stato; (C) dual-write over-engineering single-user |
+| Q5 | F3.D | **A** Feature-flag runtime `VITE_USE_API_REPO` + dual-mode 1 settimana + fallback Local→Api su HTTP error | Sicurezza + rollback fast; preserva contratto LocalRepository ground truth (31 metodi + vocabulary RepositoryError, §11.B.r) |
+| Q6 | F3.F | **A** Docker-compose (FastAPI container + MariaDB container) | Reproducibility + isolamento; Docker Desktop su Apple Silicon supportato; (B) systemd non esiste su macOS (richiede launchd → complica); (C) PM2 + native MariaDB richiede gestione manuale lifecycle |
+| Q7 | F3.E | **A** Tailscale magic-DNS (`pharmatimer.tailnet`) + TLS automatico via Tailscale serve | Coerente Q3=A trust mesh; HTTPS automatico necessario per PWA install + Notification API; elimina gestione certificati lato client |
+| Q8 | F3.H | **B** Vista Log read-only + filtri base → Fase 3; Vista Export CSV/JSON → Fase 4 | Dimensiona sessioni Fase 3; Log = core dipendenza storico letture; Export ortogonale |
+| **Q9** | **F3.G** | **C** Server-authoritative (no client offline writes in regime, server single source-of-truth scrittura, client riconcilia da GET post-online) | Coerente Q3=A single-user + Q5=A feature-flag dual-mode + Q4=A migration one-way; collassa F3.G come non-problema by-design ma ratificato esplicitamente per disambiguare impl (assunzione offline → server vince al ritorno online, client GET aggiorna stato) |
+
+**Naming convention applicata.**
+- Sessione corrente: **Sessione Fase 3 analisi-first dedicata** (chiusa con questa ratifica).
+- Sessione successiva: **Fase 3 Step 1** (impl backend scaffolding + schema + seed + smoke endpoint).
+- One-liner §11.D: vedi sotto.
+
+**Scope CP planning Fase 3 Step 1 pre-frozen.**
+
+| CP | Tema | File-target |
+|---|---|---|
+| **CP0** | Audit Mac Studio Ultra: Python ≥3.12 venv check, MariaDB install path / version, Docker Desktop installato + running, port 3306/8000 liberi, working tree pulito branch `step-8` post-v2.7.0 | — |
+| **CP1** | Project layout `~/Sviluppo/pharmatimer/backend/` con package `pharmatimer_api/{__init__.py, main.py, db/__init__.py, db/connection.py, routers/__init__.py, routers/health.py, services/__init__.py, repository/__init__.py, models/__init__.py, models/farmaco.py}` + `requirements.txt` (fastapi, uvicorn, mysql-connector-python, pytest, pytest-asyncio, httpx, pydantic-settings) + `.env.example` (DB_HOST/PORT/USER/PASSWORD/NAME, API_HOST/PORT) + `pyproject.toml` minimal versioning | ~10-12 file |
+| **CP2** | Schema MariaDB SQL `migrations/01_schema.sql` (spec §3 — 6 tabelle: profilo_utente, farmaci, orari_base, log_assunzioni, impostazioni_app + indici) | 1 file |
+| **CP3** | Seed iniziale SQL `migrations/02_seed.sql` (profili Roberto: settimana / vacanza, farmaci esempio spec §10, orari_base associati, impostazioni_app default `nome_utente`/`tema`/`notifiche_attive`) | 1 file |
+| **CP4** | FastAPI app skeleton: `main.py` lifespan + CORS dev permissivo (prod restrittivo demandato) + `db/connection.py` (mysql-connector-python pool con `pool_size=5`) + `routers/health.py` (GET /api/health → status+db_ping + GET /api/farmaci read-only smoke) + Pydantic `models/farmaco.py` (FarmacoResponse) | ~5 file |
+| **CP5** | pytest minimal: `tests/conftest.py` (fixture test DB + cleanup) + `tests/test_health.py` (200 OK + db_ping) + `tests/test_farmaci_read.py` (lista vuota + lista popolata via seed test) | ~3 file |
+| **CP closing** | Bash installer Mac-side + `docker-compose.yml` v0.1 minimal (mariadb:11 service + healthcheck) + commit unico + bump (TBD: backend versioning separato `pyproject.toml` 0.1.0 vs unificato; package.json invariato 2.7.0 conv. AMB-11.B.7) + decisione apertura `PharmaTimer_Changelog_Fase3.md` separato vs continuazione Fase2 | — |
+
+**Target Step 1 calibrati:**
+- pytest: +**10-15** test (espansivo +18, conservativo +6).
+- Endpoint smoke: 2 (GET /api/health + GET /api/farmaci).
+- SQL applicati: 2 file (schema + seed) su DB locale `pharmatimer_dev`.
+- Token consumati attesi: 50-80K (analogo Step 1 Fase 2 scaffolding).
+
+**Sub-AMB Step 1 demandate ad analisi-first apertura Step 1 (CP0 round, 8 sub-AMB):**
+1. **F3-S1.A** Python version exact (3.12 vs 3.13)
+2. **F3-S1.B** MariaDB version exact (11.x latest stable, 11.4 LTS)
+3. **F3-S1.C** Connection pool size (default 5 vs sized su workload)
+4. **F3-S1.D** CORS dev/prod policy (dev permissivo localhost:5173 / prod restrictive Tailscale FQDN)
+5. **F3-S1.E** Config strategy (Pydantic Settings vs env vars puri vs python-decouple)
+6. **F3-S1.F** Docker base images (python:3.12-slim vs python:3.12-alpine)
+7. **F3-S1.G** Dev DB isolation (locale Mac Studio nativo vs container)
+8. **F3-S1.H** Pytest test DB strategy (transaction rollback vs DB ephemeral truncate)
+
+**AMB Fase 3 alto livello F3.A÷H + Q9 ratificate.** Vedi tabella Q1-Q9 sopra. Decisioni di Step 1 si limitano a F3.A (Q2=B), F3.B (Q3=A), F3.C (Q4=A demandato a Step ≥3 quando dati locali sono produzione-ready), F3.F (Q6=A — docker-compose scaffolding minimal in CP closing). F3.D (Q5=A swap), F3.E (Q7=A networking), F3.G (Q9=C server-authoritative), F3.H (Q8=B Log/Export) impattano Step ≥2.
+
+**Decisioni in-session ratificate:**
+1. **Q9 nuova "F3.G server-authoritative"** in apertura: §11.C originale aveva 8 Q ma F3.G non era mappata. Aggiunta come Q9 con default (C) server-authoritative. Pattern AMB-11.B.7 convalida (AMB nuova in-session legittima se emerge da incongruenza ratificata in apertura).
+2. **CP0 esteso skipped**: Mac Mini target deploy non disponibile o non strettamente necessario; Q6=A docker-compose runnable anche su Mac Studio dev → audit Mac Mini posticipato a pre-Step 6 deploy.
+3. **Decisione separazione `PharmaTimer_Changelog_Fase3.md` vs continuazione Fase2**: demandata a CP closing Step 1. Tendenza: spinare nuovo file a Step 1 closing per coerenza naming Fase 2 vs Fase 3. Questa sessione (analisi-first) resta nel file Fase2 per continuità con §11.C originale.
+4. **Backend versioning convention** (`pyproject.toml` separato vs unificato `package.json`): demandato a CP closing Step 1.
+
+**Pattern operativi confermati:**
+- Modalità Q&A iterativa pre-frozen (§11.C originale) + "decidi tu" su default raccomandati single-round → token-light ~10K, pattern §22.32 replicato.
+- AMB nuova in-session legittima se emerge da incongruenza ratificata in apertura (AMB-11.B.7 lessons → Q9 in questa sessione).
+- CP0 minimo Mac-side (verifica baseline + version + tag + test) come pre-Q&A operativo: token cost basso, popola conferma stato post-closing precedente.
+
+**Deviazioni introdotte.** **Zero §6.NN nuove.** Sessione analisi-first pura, zero file source/test/config modificati. Q9 aggiunta in apertura per copertura F3.G non è deviazione — F3.G era già in §11.B.r intestazioni AMB candidati Fase 3 con tema "Sync conflict resolution"; §11.C originale aveva gap mappatura nel Q-set, segnalato in apertura sessione e ratificato esplicitamente.
+
+### 11.D Prossimo prompt — Sessione Fase 3 Step 1 esecutiva (backend scaffolding + schema + seed + smoke)
+
+**Scope alto livello.** Implementazione CP0-CP5 + closing per Fase 3 Step 1 backend MVP read-only: project layout `pharmatimer_api`, schema MariaDB (spec §3), seed iniziale (profili Roberto), FastAPI app skeleton + 2 endpoint smoke (`GET /api/health`, `GET /api/farmaci`), pytest minimal +10-15 test, docker-compose v0.1.
+
+**Modalità raccomandata.** Apertura con CP0 audit Mac Studio Ultra (Python ≥3.12 venv, MariaDB install path/version, Docker Desktop running, port 3306/8000 liberi, working tree pulito) + analisi-first apertura per chiudere 8 sub-AMB F3-S1.A÷H (vedi §11.C.closed). Poi sequenziale CP1→CP5 con commit unico finale (pattern §22.33-§22.35). Stima token 50-80K.
+
+**One-liner apertura Sessione Fase 3 Step 1:**
+
+```
+Esegui il prompt al §11.D del Changelog (Sessione Fase 3 Step 1 esecutiva — backend scaffolding + schema + seed + smoke endpoint).
+```
+
+**Decisioni in-session candidate:**
+1. **Spin-off `PharmaTimer_Changelog_Fase3.md`** vs continuazione `PharmaTimer_Changelog_Fase2.md`: a CP closing Step 1.
+2. **Backend versioning** (`pyproject.toml` 0.1.0 separato vs unificato `package.json`): a CP closing Step 1.
+3. **Sub-AMB F3-S1.A÷H** (vedi §11.C.closed): in apertura analisi-first Step 1.
+4. **Tag Step 1** (skip vs `v2.8.0-alpha` vs altro): a CP closing Step 1.
+
+**Pattern operativi confermati per Step 1 esecutiva.** Pattern §22.33-§22.35 (CP impl + commit unico finale + bash installer Mac-side + cleanup `.bak.*` + Changelog delivery con bump versione). Bash zsh-safe (echo single-quoted, no `#`, no apostrofi italiani).
 
 ## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3 + 8-pre + 8a + 8b + 8c-parz + 8c-2 + 9-A + 9-B + 9-D + 10-A + 10-B + 10-C + 10-C-fix + 11-A CP1a + 11-A CP1b + 11-B
 
@@ -9298,3 +9427,253 @@ Step 11 ✅ Completo Fase 2 milestone
 - **AMB-11.B.6**: tag `v2.7.0` Fase 2 milestone — chiuso AMB-11.B.6 closing
 - **AMB-11.B.7 (nuova)**: convention package.json bump solo a closing Step — chiusa in-session
 - **§6.119 effetto risolto**: bug visivo cross-midnight card sezione coerente (effetto §6.160 propagation)
+
+
+## 22.36 Stato post-Sessione Fase 3 analisi-first dedicata (Q1-Q9 ratificate "decidi tu" su default raccomandati, scope CP Step 1 pre-frozen, zero deviazioni, bump v2.7.1-rc.1)
+
+**Data:** 3 maggio 2026 sera (post-closing Step 11-B + Fase 2 milestone v2.7.0).
+**Modalità:** Q&A iterativa Q1-Q9 batch unico con "decidi tu" globale su default raccomandati §11.C originale + Q9 nuova in apertura. Pattern §22.32 (Step 11 analisi-first chiuso single-round, ~6-8K) replicato con scope leggermente più ampio (4 cluster vs 1).
+**Token consumati:** ~10K (stima §11.C era 10-20K, lower bound centrato grazie a "decidi tu" globale).
+**Esito:** ✅ **9 AMB ratificate (F3.A÷H + Q9 server-authoritative). Scope CP Fase 3 Step 1 pre-frozen. Naming convention "Fase 3 Step 1, Step 2..." applicata.**
+
+**Top commit:** N/A (sessione analisi-first pura, zero file source/test/config modificati Mac-side).
+**Tree state Mac-side:** invariato post-CP0, branch `step-8`, top commit `ae33b1f` "Step 11-B closing -- Fase 2 milestone", tag `v2.7.0` annotato, package.json 2.7.0, 430/430 test.
+**Versione changelog:** v2.7.0 → **v2.7.1-rc.1** (analisi-first pattern -rc.1, pattern §22.32 v2.6.2-rc.1).
+**package.json:** invariato 2.7.0 (AMB-11.B.7 convention).
+
+### CP0 baseline minimo (eseguito Mac-side da Roberto in apertura)
+
+```
+1) Branch corrente: step-8
+2) Top commit: ae33b1f (HEAD -> step-8, tag: v2.7.0) Step 11-B closing -- Fase 2 milestone
+3) Tag v2.7.0 annotato: "Fase 2 closing milestone PWA standalone"
+4) package.json version: "2.7.0"
+5) Test run: 42 passed (42) / 430 passed (430), Duration 8.12s
+```
+
+CP0 esteso (audit Mac Mini target deploy) skipped: target non disponibile o non strettamente necessario perché Q6=A docker-compose runnable anche su Mac Studio dev. Posticipato a pre-Step 6 deploy.
+
+### Q1-Q9 ratificate (default §11.C accettati globalmente via "decidi tu" + Q9 nuova)
+
+| Q | AMB | Decisione |
+|---|---|---|
+| Q1 | — | **B** Naming "Fase 3 Step 1, Step 2..." reset |
+| Q2 | F3.A | **B** Package modulare minimal `pharmatimer_api/{routers,services,repository,db,models}/` + Pydantic inline + mysql-connector-python diretto |
+| Q3 | F3.B | **A** No auth (LAN-only + Tailscale trust mesh) |
+| Q4 | F3.C | **A** Migration one-shot Mac-side (PWA export JSON → Python seed script) |
+| Q5 | F3.D | **A** Feature-flag runtime `VITE_USE_API_REPO` + dual-mode 1 settimana + fallback Local→Api |
+| Q6 | F3.F | **A** Docker-compose (FastAPI + MariaDB containers) |
+| Q7 | F3.E | **A** Tailscale magic-DNS + TLS automatico |
+| Q8 | F3.H | **B** Log read-only + filtri base → Fase 3; Export → Fase 4 |
+| **Q9** | **F3.G** | **C** Server-authoritative (no client offline writes in regime, server SSoT) |
+
+Vedi §11.C.closed per razionale stretto + scope CP Step 1 + sub-AMB F3-S1.A÷H demandate.
+
+### Decisioni in-session ratificate
+
+1. **Q9 nuova "F3.G server-authoritative"** in apertura per coprire gap mappatura §11.C originale (8 Q ma F3.G non mappata). Pattern AMB-11.B.7 (AMB nuova in-session legittima se emerge da incongruenza ratificata in apertura).
+2. **CP0 esteso skipped** (Mac Mini audit). Posticipato pre-Step 6 deploy.
+3. **Naming convention "Fase 3 Step 1, Step 2..."** applicata (Q1=B reset).
+4. **Decisione spin-off `PharmaTimer_Changelog_Fase3.md`** demandata a CP closing Step 1 (tendenza: spinare nuovo file).
+5. **Backend versioning** (`pyproject.toml` separato) demandato a CP closing Step 1.
+
+### Pattern operativi confermati
+
+- **CP0 minimo Mac-side pre-Q&A** (verifica baseline + version + tag + test): token cost basso, popola conferma stato post-closing precedente.
+- **Modalità "decidi tu" globale single-round su default raccomandati** §11.C: token-light, evita over-deliberation quando default sono ben argomentati.
+- **AMB nuova in-session legittima** (Q9 / AMB-11.B.7 lesson) se emerge da incongruenza ratificata in apertura.
+- **Bash zsh-safe** rispettato per CP0 audit (echo single-quoted, no `#`, no apostrofi italiani).
+
+### Deviazioni introdotte
+
+**Zero §6.NN nuove.** Sessione analisi-first pura, zero file source/test/config modificati. Q9 aggiunta non è deviazione (F3.G era già in §11.B.r intestazioni AMB candidati Fase 3, §11.C originale aveva gap nel Q-set).
+
+### Backup / cleanup
+
+N/A (sessione analisi-first, zero file modificati Mac-side fuori dal Changelog stesso).
+
+### Stato git post-sessione
+
+Branch `step-8`, top `ae33b1f` (Mac-side, invariato), tree con `M PharmaTimer_Changelog_Fase2.md` (asimmetria KB+local attesa, risolto al successivo upload Changelog v2.7.1-rc.1).
+
+### Stato changelog post-sessione
+
+Versione changelog: v2.7.0 → **v2.7.1-rc.1** (analisi-first). §11 main title evoluto a "Sessione Fase 3 Step 1 esecutiva (analisi-first ✅ Q1-Q9 chiuse v2.7.1-rc.1, impl pending)". §11.C marcato ✅ CLOSED, §11.C.closed nuova sub-sub-sezione con esiti dettagliati (Q1-Q9 + scope CP Step 1 + sub-AMB F3-S1.A÷H + decisioni in-session). §11.D nuova con stub executive prompt Fase 3 Step 1. §7 titolo aggiornato "Roadmap Fase 2 (closed v2.7.0) + Fase 3 — avanzamento" con riga separator "Fase 2 chiusa milestone v2.7.0" + nuova riga **F3-S1**. Header riga 5 "Ultima modifica" aggiornato + v2.7.0 description demotata a "Changelog versione 2.7.0 (rispetto alla 2.6.4)". Nuova §22.36 (questa sezione).
+
+### Prossimi passi (post-Sessione Fase 3 analisi-first, pre-Sessione Fase 3 Step 1 esecutiva)
+
+1. **Sostituire `PharmaTimer_Changelog_Fase2.md` nella KB Claude.ai** con versione **v2.7.1-rc.1** (questo delivery).
+2. **Pre-sessione Step 1 (opzionale Mac-side):** verifica ambiente locale (`python3 --version`, `which mariadb`, `docker --version`, `lsof -i :3306 -i :8000`) per pre-popolare sub-AMB F3-S1.A÷H.
+3. Aprire **Sessione Fase 3 Step 1 esecutiva** (nuova conversazione Claude) con one-liner:
+   ```
+   Esegui il prompt al §11.D del Changelog (Sessione Fase 3 Step 1 esecutiva — backend scaffolding + schema + seed + smoke endpoint).
+   ```
+
+### Riferimenti
+
+- **§22.35**: chiusura Step 11-B + Fase 2 milestone (baseline pre-Fase 3 commit `ae33b1f` tag `v2.7.0`)
+- **§22.32**: chiusura Step 11 analisi-first — pattern -rc.1 replicato
+- **§11 main title** (questa versione): evoluto a "Sessione Fase 3 Step 1 esecutiva (analisi-first ✅)"
+- **§11.B.r** (v2.7.0 §22.35): retrospettiva Fase 2 + LocalRepository ground truth + AMB candidati Fase 3 F3.A÷H + debt deferito
+- **§11.C originale** (v2.7.0 §22.35): prompt Sessione Fase 3 analisi-first dedicata Q1-Q8 candidate
+- **§11.C.closed** (questa versione): esiti Q1-Q9 ratificate + scope CP Step 1 + sub-AMB F3-S1.A÷H + decisioni in-session
+- **§11.D** (questa versione): stub executive prompt Sessione Fase 3 Step 1 esecutiva
+- **AMB F3.A**: stack backend FastAPI — chiuso Q2=B
+- **AMB F3.B**: auth — chiuso Q3=A
+- **AMB F3.C**: migration dati — chiuso Q4=A
+- **AMB F3.D**: ApiRepository swap — chiuso Q5=A
+- **AMB F3.E**: networking — chiuso Q7=A
+- **AMB F3.F**: deploy — chiuso Q6=A
+- **AMB F3.G**: sync conflict — chiuso Q9=C (nuova in-session)
+- **AMB F3.H**: Log+Export scope — chiuso Q8=B
+
+## 22.37 Stato post-Sessione Fase 3 Step 1 esecutiva → Closure scenario Z (pivot strategico in-session, prodotto chiuso v2.8.0, Fase 3 in pausa indefinita riapribile, repo + PWA pubblicati GitHub)
+
+**Data:** 4 maggio 2026 (post-§22.36 Sessione Fase 3 analisi-first dedicata).
+**Modalità:** Sessione esecutiva pianificata §11.D (CP0 audit + 8 sub-AMB F3-S1.A÷H + CP1→CP5 + closing) → **pivot strategico a Closure scenario Z** in 4 round Q&A iterativa post-CP0 audit.
+**Token consumati:** ~30-40K (range pivot strategico, sotto stima §11.D 50-80K esecutivo perché senza impl backend).
+**Esito:** ✅ **Closure scenario Z formalizzata. Fase 2 prodotto chiuso v2.8.0. Fase 3 in pausa indefinita, riapribile via §11.D.** Repo pubblicato GitHub `timegates-code/pharmatimer` (public + meta noindex β). PWA distribuita `https://timegates-code.github.io/pharmatimer/`. Branch consolidato `main` (fast-forward step-8 +61 commit). Tag `v2.8.0` annotato closure. README v1.0 con istruzioni installazione + reset dati esempio (5.B). Zero deviazioni §6.NN.
+
+### CP0 audit Mac Studio Ultra (eseguito Mac-side da Roberto in apertura)
+
+- Python 3.13.12 (`/opt/homebrew/opt/python@3.13/`) ✅ target ≥3.12
+- MariaDB ASSENTE (solo MySQL 9.6.0 nativo `/usr/local/mysql/` dal 24/04/2026)
+- Docker Desktop ASSENTE
+- Port 3306 LIBERA, port 8000 LIBERA
+- Git: branch step-8, top `ae33b1f` + tag `v2.7.0`, working tree clean
+- macOS Tahoe 26.3.1, disk free 893 GB
+
+**Anomalia rilevata post-tentativo CP0-α install MariaDB brew:** versione 12.2.2 installata e avviata via `brew services`, ma fallita ad ascoltare TCP 3306 per conflitto con MySQL legacy già in ascolto dal 24/04/2026. Client `mariadb` ha connesso al socket condiviso `/tmp/mysql.sock` di MySQL 9.6 → DB `pharmatimer_dev`/`pharmatimer_test` + user `pharmatimer@localhost` creati su MySQL invece che MariaDB. Diagnostica completa: log `/opt/homebrew/var/mysql/Robertos-Mac-Studio.local.err` riga "Can't start server: Bind on TCP/IP port. Got error: 48: Address already in use".
+
+**Cleanup CP0-α-bis eseguito:** `brew services stop mariadb` + `brew uninstall mariadb` + autoremove 10 dipendenze (lz4, mecab, mecab-ipadic, msgpack, onigmo, simdjson, zstd, groonga, lzo, pcre2) + cleanup `/opt/homebrew/var/mysql` datadir + cleanup launchd plist. **Reclaimed:** 250.6 MB MariaDB + ~95 MB dipendenze. DBs `pharmatimer_dev`/`pharmatimer_test` su MySQL 9.6 nativo NON eliminati (residuo CP0-α tentato, candidate `DROP DATABASE` esplicito in eventuale riapertura Fase 3).
+
+### Pivot strategico in-session (4 round Q&A)
+
+**Round 1 — Setup DB Mac Mini vs Studio:** pre-execute CP0-α-bis, Roberto domanda alternativa "MySQL Mac Mini 192.168.1.167:3306 (sempre acceso) vs MySQL Studio (off-tolerant)?" Probe LAN: latenza 0.87ms ✅, port 3306 ✅, MySQL handshake riconosce client Studio. Bilanciamento 7 assi (velocità Step 1/2/3, deploy Step 6, continuità Studio off, robustezza, coerenza Q6=A) → **opzione C ibrida** (Locale Studio Step 1-2, switch Mini Step 3) raccomandata + alternative B/A. Roberto sceglie Studio.
+
+**Round 2 — Ruolo MySQL Studio vs Mini in produzione:** Roberto chiarisce confusione architettura. Risposta: Studio = solo dev (`pharmatimer_dev` + `pharmatimer_test`), Mini = prod (`pharmatimer` post-Step 6). Tabella lifecycle 3 DB su 2 macchine.
+
+**Round 3 — App smartphone necessita server?** Roberto domanda implicazioni client-side. Risposta: Fase 2 oggi standalone IndexedDB (zero server), Fase 3 post-Step 6 client thin (sempre server Mini raggiungibile, Tailscale fuori casa, Q9=C server-authoritative ratificata §22.36). Trade-off enumerati (offline-no-write, dipendenze, backup critico, multi-utente Fase 4).
+
+**Round 4 — Versione standalone permanente?** Roberto: "fork del progetto: standalone vs cloud futuro?" Risposta: distinzione fork vs feature-flag (Q5=A `VITE_USE_API_REPO` già copre dual-mode build) vs git tag (release management standard). Fork rigettato come overhead permanente non giustificato per sole-developer. Roberto chiarisce intent reale: "chiudere Fase 2 prodotto finito iPhone/Android, no degrado, riapribile". 3 opzioni X/Y/Z presentate, Roberto sceglie **Z** (closure formale).
+
+### Decisioni in-session ratificate
+
+1. **Pivot strategico Closure Z** vs X (branch `fase-3` parallelo) vs Y (pausa informale). Razionale Z: onestà sull'intent, eliminazione lavoro fittizio, protezione v2.7.0 da regressioni, formalizzazione decisione rivedibile. Pattern AMB nuova in-session esteso a pivot strategico (vedi §22.38 lessons).
+2. **Distribution stack:** GitHub Pages free tier su repo pubblico `timegates-code/pharmatimer` + meta `<meta name="robots" content="noindex">` per hygiene (β = "obscurity" sufficiente per uso amico/familiare, scenario Z stretto, no GitHub Pro paid). Default URL `username.github.io/pharmatimer/`. No custom domain.
+3. **Hotfix v2.7.1 ASSENTE** (opzione 5.B): seed Roberto invariato, README documenta reset dati esempio (3 min setup primo avvio). Aderenza Z stretta.
+4. **Branch consolidation main:** fast-forward `step-8` → `main` (61 commit, zero divergenza). `sessione-5b` archiviato locale, non pushato.
+5. **Tag pushati:** `v2.7.0` (Fase 2 milestone) + `v2.8.0` (closure Z). Tag `step-7-complete` non pushato (interno).
+6. **package.json bump 2.7.0 → 2.8.0** in closing (allineamento tag, eccezione AMB-11.B.7 perché closure phase-level non Step impl).
+7. **Account GitHub:** `timegates-code` esistente (creato pre-progetto StockFusion). SSH key `id_ed25519_github` dedicata, `~/.ssh/config` già configurata `Host github.com IdentityFile ~/.ssh/id_ed25519_github`.
+8. **Branding "by timegates" in ImpostazioniTab → SezioneInfo** (§6.162): versione `PharmaTimer 2.8.0` + credit `by timegates` in italic, posizionato ultimo dopo Avanzate, sempre visibile in PROD/DEV. Stile discreto (text-xs + opacity 0.6 su `t.textPrimary` token, separatore `border-t` con `t.headerBorder`). Test impact 430/430 invariato (render-only, no logica condizionale).
+
+### Pattern operativi confermati
+
+- **Pivot strategico in-session legittimo se emerge da reframing dell'intent reale** (estensione AMB-11.B.7). Vedi §22.38 lessons.
+- **Q&A iterativa 4 round** con presentazione opzioni (raccomandata-prima) + ratifica esplicita pre-execute. Token cost medio (~30K) ma evita commit di scaffolding poi inutilizzato (cost asimmetrico per anti-pivot).
+- **Bash zsh-safe** rispettato per tutti CP0/CP0-α/CP0-α-bis/probe/diagnostic blocks (echo single-quoted, no `#`, no apostrofi italiani).
+- **Probe Mac-side multi-step** come pre-Q&A operativo: CP0 audit + diagnostic coexistence MariaDB-MySQL + probe Mac Mini LAN + probe GitHub setup + mini-probe branch state. Token-light, decisioni informate.
+- **Soluzione "fork code" → "git tag + branch + feature-flag"** chiarita: release management standard fa già quello che fork sembra promettere, senza overhead doppia manutenzione.
+
+### Deviazioni introdotte
+
+**1 §6.NN nuova: §6.162 (SezioneInfo branding "by timegates" in ImpostazioniTab).** Sessione di pivot strategico + closure + branding minimo. Modifiche: uninstall MariaDB brew, bump changelog v2.7.1-rc.1 → v2.8.0 + nuove §22.37 + §22.38 + §6.162, README v1.0 nuovo, LICENSE MIT nuovo, package.json bump 2.7.0 → v2.8.0, ImpostazioniTab.jsx +SezioneInfo render-only, branch consolidation main fast-forward step-8, tag annotato v2.8.0 closure, push GitHub primo deployment + GitHub Pages config + meta noindex in index.html.
+
+### Backup / cleanup
+
+- MariaDB brew uninstalled: 250.6 MB + 10 deps autoremoved + datadir + plist. Configs orphan `/opt/homebrew/etc/groonga`, `/opt/homebrew/etc/mecabrc` lasciati (innocui, ignorabili).
+- DBs `pharmatimer_dev`/`pharmatimer_test` su MySQL 9.6 nativo: NON cleanati (residuo CP0-α tentato). Candidate `DROP DATABASE` esplicito post-closing Z se Roberto desidera ambiente pristino. NON eseguito automaticamente per principio "minimizzare azioni distruttive su DB".
+
+### Stato git post-sessione
+
+Branch `main` (default GitHub), top commit `<TBD-closure-commit>` (Closure scenario Z + bump v2.8.0 + README v1.0), tag annotato `v2.8.0` "Closure scenario Z — Fase 2 prodotto chiuso, Fase 3 in pausa indefinita". Tag `v2.7.0` preservato (Fase 2 milestone). Branch `step-8` mantenuto locale (label storica) + `sessione-5b` archivio intermedio (entrambi non pushati, non rimossi). Remote `origin git@github.com:timegates-code/pharmatimer.git` configurato.
+
+### Stato changelog post-sessione
+
+Versione changelog: v2.7.1-rc.1 → **v2.8.0** (closure Z, no -rc.1 perché closure formale non analisi-first). §11 main title evoluto a "Closure scenario Z ✅ v2.8.0". §7 nuova riga separator "— Closure scenario Z v2.8.0 —" + riga F3-S1 promossa a "Fase 3 — Pausa indefinita scenario Z". Header riga 5 "Ultima modifica" aggiornato + v2.7.1-rc.1 description demotata sotto. Nuova §22.37 (questa sezione) + §22.38 (lessons learned).
+
+### Roadmap post-deploy (TODO Fase 2 closure-extended)
+
+Lavori candidati dopo deploy GitHub Pages, fuori scope sessione closure ma documentati per non perderli:
+
+1. **Guida utente con screenshot reali**. Sessione dedicata post-rilascio: Roberto installa app sul telefono → cattura 3-5 screenshot chiave (primo avvio, OggiView con dosi, modale recupero gap, ConfigView profili/farmaci/impostazioni) → Claude produce pagina HTML standalone (`guide.html`) con screenshot annotati + step installazione passo-passo (Android Chrome + iPhone Safari) + reset dati esempio dettagliato → deploy affianco alla PWA su GitHub Pages (URL `https://timegates-code.github.io/pharmatimer/guide.html`). Stima: 30-45 min sessione dedicata.
+2. **Test unit per `<SezioneInfo />`** (§6.162). Bundling con sessione guida utente: aggiungi 1 test minimal in `ImpostazioniTab.test.jsx` per verificare render statico (testid + version text + `<em>by timegates</em>`). Target 430 → 431.
+3. **Eventuali hotfix scoperti durante uso amico/familiare**. Branch `hotfix-2.8.x` da tag `v2.8.0`, fix mirato, tag `v2.8.1` annotato, redeploy GitHub Pages. Pattern release management standard.
+
+Questi item NON triggerano riapertura Fase 3 (resta in pausa indefinita per scenario Z): sono lavori di rifinitura della distribuzione v2.8.0.
+
+### Riferimenti per riapertura Fase 3 (preservati intatti)
+
+- **§11.D** prompt Sessione Fase 3 Step 1 esecutiva — eseguibile invariato. Sub-AMB F3-S1.A÷H demandate.
+- **§11.C.closed** Q1-Q9 ratificate (F3.A÷H + Q9 server-authoritative).
+- **§22.36** stato post-Sessione Fase 3 analisi-first dedicata, Q1-Q9 + scope CP Step 1 + sub-AMB.
+- **§11.B.r** retrospettiva Fase 2 + LocalRepository ground truth + AMB candidati Fase 3 F3.A÷H.
+
+**Procedura riapertura.** Nuova sessione Claude.ai con one-liner `Esegui il prompt al §11.D del Changelog (Sessione Fase 3 Step 1 esecutiva — backend scaffolding + schema + seed + smoke endpoint)` con ratifica iniziale "stato corrente è v2.8.0 closure Z, riapro Fase 3" + eventuale rivisitazione sub-AMB F3-S1.A÷H se contesto cambiato (es. MySQL Studio vs MariaDB brew, ratifica nuova in-session legittima per pattern AMB-11.B.7).
+
+### Riferimenti
+
+- **§22.36**: chiusura Sessione Fase 3 analisi-first dedicata (baseline pre-pivot Z, Q1-Q9 ratificate, scope CP Step 1 pre-frozen, bump v2.7.1-rc.1)
+- **§22.35**: chiusura Step 11-B + Fase 2 milestone (baseline pre-Fase 3 commit `ae33b1f` tag `v2.7.0`)
+- **§11 main title**: evoluto a "Closure scenario Z ✅ v2.8.0 — Fase 2 prodotto chiuso, Fase 3 in pausa indefinita"
+- **§11.D**: prompt Sessione Fase 3 Step 1 esecutiva (eseguibile per riapertura)
+- **§22.38**: lessons learned pivot strategico in-session
+
+
+## 22.38 Lessons learned — Pivot strategico in-session legittimo come estensione AMB-11.B.7
+
+**Data:** 4 maggio 2026 (concorrente §22.37).
+
+**Tema.** La Sessione Fase 3 Step 1 esecutiva era pianificata in §11.D come scaffolding backend (CP0 + analisi 8 sub-AMB + CP1→CP5 + closing). Esiti reali: post-CP0 audit, 4 round Q&A hanno ratificato pivot strategico a Closure scenario Z senza scrivere una sola riga di backend code. La sessione si è chiusa con bump v2.7.1-rc.1 → v2.8.0 closure invece che v2.7.0 → v2.8.0-alpha post-Step 1.
+
+### Lesson 1 — Pivot strategico in apertura sessione esecutiva è legittimo
+
+Pattern AMB-11.B.7 originale (§22.35): "AMB nuova in-session legittima se emerge da incongruenza ratificata in apertura". **Estensione naturale: decisione strategica nuova in-session legittima se emerge da reframing dell'intent reale ratificato in apertura.**
+
+Razionale: l'apertura sessione è il momento ottimo per testare se il piano §11 corrisponde all'intent corrente. Se emergono domande "ma serve davvero questa fase?" o "abbiamo già abbastanza?", trattarle come bloccanti è più saggio di forzare l'esecuzione del prompt. Costo asimmetrico: pivot a chiusura vs commit di scaffolding poi abbandonato.
+
+**Indicatori di legittimo pivot strategico:** (a) intent originale emerge in apertura come non più allineato con intent corrente; (b) reframing arriva da domande utente "ma è davvero necessario?" o "che limitazioni ha la versione attuale?"; (c) decisione finale è formalmente ratificabile (vs. drift indeciso); (d) nessun lavoro di codice già committato in sessione corrente (zero rollback necessario).
+
+**Indicatori di pivot illegittimo (anti-pattern):** (a) pivot mid-CP per evitare debug difficile; (b) pivot motivato da fatica o stanchezza, non da intent realignment; (c) pivot dopo committment significativo di codice (rollback costoso, conferma originale meglio).
+
+### Lesson 2 — Soluzione "fork code" è quasi sempre soluzione sbagliata per sole-developer
+
+Domanda utente "fork del progetto per avere standalone + cloud futuro" rivelava confusione tra: **fork** = doppia codebase divergente nel tempo (overhead manutenzione permanente); **feature flag** = build-time variants stessa codebase (Q5=A già pianificata); **git tag + branch** = release management (standard practice, gratuito).
+
+Per sole-developer, fork code è quasi mai giustificato. Le esigenze "due prodotti" si risolvono di solito con tag stabile su versione released (`v2.7.0`) + branch dedicato per feature future + feature flag per build-time variants.
+
+**Lesson:** chiarire pre-emptive "fork vs branch vs tag vs feature-flag" quando utente menziona "fork" senza specificare semantica desiderata.
+
+### Lesson 3 — Probe-first multi-step pre-Q&A è efficace anche per pivot
+
+Sessione ha eseguito 5 probe Mac-side prima di concludere il pivot:
+1. CP0 audit Studio (Python/MariaDB/Docker/port/git)
+2. Diagnostic coexistence MariaDB-MySQL (post-CP0-α anomalia)
+3. Probe Mac Mini LAN (alternativa dev DB)
+4. Probe GitHub setup pre-pubblicazione (account/SSH/branch)
+5. Mini-probe branch state (consolidation feasibility)
+
+Token cost cumulato dei probe: ~3-5K. Beneficio: ogni decisione ratificata era informata, no assunzioni cieche. Pattern raccomandato per sessioni esecutive complesse.
+
+### Lesson 4 — Closure formale > pausa informale
+
+Opzione Y (pausa informale) era tentazione naturale ("non chiudo, lascio aperto, magari riprendo"). Ma è asimmetricamente peggiore di Z: Y crea ambiguità persistente nel changelog (Fase 3 "in corso" indefinitamente); Z formalizza una decisione ratificata, rivedibile esplicitamente; Z protegge v2.7.0 da derive incrementali ("aggiungo solo questo piccolo fix poi chiudo").
+
+**Lesson:** per progetti sole-developer, la formalizzazione delle pause è disciplina, non burocrazia.
+
+### Pattern operativi consolidati
+
+- Sessioni esecutive devono avere CP0 audit obbligatorio (anche minimo) per validare allineamento piano vs realtà.
+- Reframing dell'intent va testato esplicitamente in apertura, non dopo aver scritto codice.
+- Opzioni di pivot devono essere presentate con default raccomandato + alternative esplicite.
+- Pivot ratificato deve essere formalizzato con bump versione + nuova §22.NN dedicata.
+- Lessons learned stand-alone (§22.NN+1 a parte) per pattern riusabili futuri.
+
+### Riferimenti
+
+- **§22.37**: closure scenario Z (sessione gemella di questa)
+- **§22.36**: §11.C.closed (sessione precedente analisi-first Fase 3)
+- **§22.35**: AMB-11.B.7 originale ("AMB nuova in-session")
+- **AMB-11.B.7**: convention "AMB nuova in-session legittima se emerge da incongruenza ratificata in apertura" — base per estensione pivot strategico
+- **§22.32**: pattern Q&A iterativa "decidi tu" su default raccomandati single-round

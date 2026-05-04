@@ -317,6 +317,35 @@ function SezioneAvanzate() {
   );
 }
 
+// ============================================================
+// SezioneInfo — branding e versione (visibile in PROD).
+// ============================================================
+//
+// Scope closure Z v2.8.0 (§22.37 decision 8 + §6.162 deviation).
+//   - Versione PharmaTimer 2.8.0 (synced con package.json post-bump P2.C)
+//     + credit "by timegates" in <em> (italic) con middle dot.
+//   - Posizionamento: ultimo, dopo SezioneAvanzate (DEV-only) e
+//     SezioneNotifiche (PROD).
+//   - Visibilita: PROD + DEV (sempre presente, a differenza di
+//     Avanzate gated import.meta.env.DEV).
+//   - Stile: text-xs + opacity 0.6 su t.textPrimary, separatore border-t
+//     con t.headerBorder (stesso pattern visivo SezioneAvanzate).
+
+function SezioneInfo() {
+  const { tokens: t } = useTheme();
+  return (
+    <section
+      data-testid="sezione-info"
+      className="py-4 mt-4 border-t pt-4 text-center"
+      style={{ borderTopColor: t.headerBorder }}
+    >
+      <p className="text-xs" style={{ color: t.textPrimary, opacity: 0.6 }}>
+        PharmaTimer 2.8.0 · <em className="italic">by timegates</em>
+      </p>
+    </section>
+  );
+}
+
 export default function ImpostazioniTab(props) {
   // Wrapper-level dirty flag. CP7 Sessione 8a introduces optional
   // external dirty/setDirty props (lifted to ConfigView for cross-tab
@@ -334,6 +363,7 @@ export default function ImpostazioniTab(props) {
       <SezioneTema />
       <SezioneNotifiche />
       {import.meta.env.DEV && <SezioneAvanzate />}
+      <SezioneInfo />
     </section>
   );
 }
