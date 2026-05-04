@@ -27,6 +27,7 @@
 
 import { resolveNow } from '../utils/now.js';
 import { TOLLERANZA_MIN } from '../domain/constants.js';
+import { groupEntriesByDayAndMomento, formatDateLabel } from '../utils/uiState.js';
 
 /** Convert 'HH:MM' to minutes-from-midnight. */
 function hhmmToMinutes(hhmm) {
@@ -339,4 +340,42 @@ export function selectProfiloAttivo(state) {
  */
 export function selectProfiloById(state, id) {
   return state.profili.find((p) => p.id === id) ?? null;
+}
+/**
+ * §6.171 (CP3 v3.0.0 Step 1) — Preview giorno successivo (Q-UX.4).
+ *
+ * Returns the first day in `state.plan` strictly later than `today`
+ * with at least one entry, grouped by momento via the existing
+ * `groupEntriesByDayAndMomento` helper. Used by OggiView to render
+ * the "PROSSIMA TERAPIA" preview when oggi is empty but at least
+ * one farmaco is active.
+ *
+ * Trigger logic (par.6.171): plan-based instead of explicit
+ * `data_inizio_terapia > today` (allocated to CP5). The two are
+ * functionally equivalent for the first-day case (the only
+ * scenario Q-UX.4 was designed for).
+ *
+ * @param {object} state    AppState root.
+ * @param {string} today    'YYYY-MM-DD' date string for "today".
+ * @returns {{dateStr:string, dateLabel:string, groups:Array}|null}
+ */
+export function selectProssimoGiornoConDosi(state, today) {
+  const farmaciAttivi = (state.farmaci ?? []).filter((f) => f.attivo);
+  if (farmaciAttivi.length === 0) return null;
+
+  const futureEntries = (state.plan ?? []).filter((e) => e.dateStr > today);
+  if (futureEntries.length === 0) return null;
+
+  const grouped = groupEntriesByDayAndMomento(futureEntries);
+  if (grouped.length === 0) return null;
+
+  // Defensive sort: ensure the earliest day comes first.
+  grouped.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+  const firstDay = grouped[0];
+
+  return {
+    dateStr: firstDay.dateStr,
+    dateLabel: formatDateLabel(firstDay.dateStr, today),
+    groups: firstDay.groups,
+  };
 }

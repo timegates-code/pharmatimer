@@ -100,6 +100,10 @@ import { SaltataModal } from './modals/SaltataModal.jsx';
 import { SospesaModal } from './modals/SospesaModal.jsx';
 import { RecuperoModal } from './modals/RecuperoModal.jsx';
 import { UndoModal } from './modals/UndoModal.jsx';
+// CP3 v3.0.0 Step 1 (par.6.169-171): empty states + preview giorno successivo.
+import { selectFarmaciAttivi, selectProssimoGiornoConDosi } from '../../state/selectors.js';
+import EmptyStateZeroFarmaci from './EmptyStateZeroFarmaci.jsx';
+import PreviewBlock from './PreviewBlock.jsx';
 
 const IS_DEV = import.meta.env.DEV;
 
@@ -202,6 +206,13 @@ export default function OggiView() {
   const todayEntries = useMemo(
     () => state.plan.filter((e) => e.dateStr === today),
     [state.plan, today]
+  );
+
+  // CP3 v3.0.0 Step 1 (par.6.171): preview giorno successivo se oggi vuoto.
+  // Returns null when farmaci_attivi.length===0 OR plan ha 0 entries future.
+  const proxData = useMemo(
+    () => selectProssimoGiornoConDosi(state, today),
+    [state.farmaci, state.plan, today]
   );
 
   // Auto-beep on dose crossings. Returns the Set of flashing entry keys
@@ -458,10 +469,17 @@ export default function OggiView() {
 
         {/* MULTI-DAY CARDS */}
         <div className="px-4 mt-1">
-          {groupedDays.length === 0 ? (
-            <p className="text-center text-sm mt-8" style={{ color: t.textSecondary }}>
-              Nessuna dose programmata.
-            </p>
+          {todayEntries.length === 0 ? (
+            // CP3 (par.6.169-171): triplo branch empty state
+            selectFarmaciAttivi(state).length === 0 ? (
+              <EmptyStateZeroFarmaci />
+            ) : proxData ? (
+              <PreviewBlock proxData={proxData} />
+            ) : (
+              <p className="text-center text-sm mt-8" style={{ color: t.textSecondary }}>
+                Nessuna dose programmata.
+              </p>
+            )
           ) : (
             groupedDays.map((day) => (
               <div key={day.dateStr}>
