@@ -1,8 +1,8 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 2.8.2-rc.1
+**Versione:** 2.8.2-rc.2
 **Data inizio fase:** 16 aprile 2026
-**Ultima modifica:** 4 maggio 2026 sera tardi (Sessione cumulativa ~7-8 ore: closure scenario Z v2.8.0 → P2-P5 deploy GitHub Pages → hotfix v2.8.1 routing → smoke test live → riapertura UX-extended ratificata v2.8.2-rc.1). Round 2 pivot strategico post-evidence: smoke test su PWA live ha rilevato 2 bug residui (sticky calibration top-[149px] regressione, icone manifest 404) + 1 problema strutturale (UX non-ready per utenti novizi: farmaci di Roberto preconfigurati confondono, dosi giorno-precedente apparenti come "in ritardo" senza contesto, niente onboarding). Disambiguazione 4 round Q&A: Bug 2 dosi-ieri = feature pianificazione rolling window per Roberto vs bug semantico per nuovi utenti; data_inizio_terapia da sola NON risolve UX problem; onboarding modale e' la soluzione corretta. Closure Z riconosciuta prematura rispetto intent UX originale ("fin dall'inizio progetto privilegiare UX"). Strada B ratificata: riapertura formale UX-extended target v3.0.0 milestone "PharmaTimer UX-ready for novices". Scope frozen lista chiusa 14 punti par.22.40 decisione 3 (OnboardingModal 2-step, gating logic, empty state guidante OggiView, empty state Mit-A "prossima dose [DATA]", toast Mit-C post-aggiunta, seed neutro depersonalizzato 3 farmaci esempio, seed opt-in, data_inizio campo form FarmaciTab default domani Q-S6=a, data_inizio_terapia auto-calc planBuilder Q-S5=2, reset bottone Avanzate, sticky calibration useLayoutEffect+ResizeObserver, icone manifest 404 fix, test +15-20, guida HTML esterna). Sub-AMB Q-S1÷Q-S7 ratificate: Q-S1=a un dispositivo per persona, Q-S2=c seed neutro depersonalizzato opt-in, Q-S3=guida HTML invece di tutorial in-app, Q-S4=DB pulito da capo (Roberto compreso), Q-S5=2 auto-calc, Q-S6=a domani default, Q-S7=OK perdita DB attuale (test only). Bumping 2.8.1 → v2.8.2-rc.1 (analisi-first ratificata, no impl ancora). Sessione successiva: prompt par.11.E "Sessione 1 analisi-first v3.0.0 UX onboarding multi-utente" eseguibile in nuova sessione fresca (one-liner: Esegui il prompt al par.11.E del Changelog). Atteso 90-150 min wall-clock + 8-15K token, output AMB UX-1÷N + scope CP Sessione 2 + prompt par.11.F. Stima totale v3.0.0 cumulativa 8-15 ore lavoro distribuibili 1-3 sessioni dedicate. Backward-history demote v2.8.1 description sotto.)
+**Ultima modifica:** 4 maggio 2026 sera tardi (Sessione cumulativa ~7-8 ore: closure scenario Z v2.8.0 → P2-P5 deploy GitHub Pages → hotfix v2.8.1 routing → smoke test live → riapertura UX-extended ratificata v2.8.2-rc.1). Round 2 pivot strategico post-evidence: smoke test su PWA live ha rilevato 2 bug residui (sticky calibration top-[149px] regressione, icone manifest 404) + 1 problema strutturale (UX non-ready per utenti novizi: farmaci di Roberto preconfigurati confondono, dosi giorno-precedente apparenti come "in ritardo" senza contesto, niente onboarding). Disambiguazione 4 round Q&A: Bug 2 dosi-ieri = feature pianificazione rolling window per Roberto vs bug semantico per nuovi utenti; data_inizio_terapia da sola NON risolve UX problem; onboarding modale e' la soluzione corretta. Closure Z riconosciuta prematura rispetto intent UX originale ("fin dall'inizio progetto privilegiare UX"). Strada B ratificata: riapertura formale UX-extended target v3.0.0 milestone "PharmaTimer UX-ready for novices". Scope frozen lista chiusa 14 punti par.22.40 decisione 3 (OnboardingModal 2-step, gating logic, empty state guidante OggiView, empty state Mit-A "prossima dose [DATA]", toast Mit-C post-aggiunta, seed neutro depersonalizzato 3 farmaci esempio, seed opt-in, data_inizio campo form FarmaciTab default domani Q-S6=a, data_inizio_terapia auto-calc planBuilder Q-S5=2, reset bottone Avanzate, sticky calibration useLayoutEffect+ResizeObserver, icone manifest 404 fix, test +15-20, guida HTML esterna). Sub-AMB Q-S1÷Q-S7 ratificate: Q-S1=a un dispositivo per persona, Q-S2=c seed neutro depersonalizzato opt-in, Q-S3=guida HTML invece di tutorial in-app, Q-S4=DB pulito da capo (Roberto compreso), Q-S5=2 auto-calc, Q-S6=a domani default, Q-S7=OK perdita DB attuale (test only). Bumping 2.8.1 → v2.8.2-rc.1 (analisi-first ratificata, no impl ancora). Sessione successiva: prompt par.11.E "Sessione 1 analisi-first v3.0.0 UX onboarding multi-utente" eseguibile in nuova sessione fresca (one-liner: Esegui il prompt al par.11.E del Changelog). Atteso 90-150 min wall-clock + 8-15K token, output AMB UX-1÷N + scope CP Sessione 2 + prompt par.11.F. Stima totale v3.0.0 cumulativa 8-15 ore lavoro distribuibili 1-3 sessioni dedicate. Backward-history demote v2.8.1 description sotto. Sessione 1 partial v3.0.0 (4 maggio 2026 sera tardi, prosieguo cumulativo): Q-UX.1-7 ratificate (onboarding modale layout+copy 2-step, empty states OggiView 0-farmaci + Mit-A preview, toast Mit-C post-aggiunta, seed neutro 3 farmaci esempio, reset bottone Avanzate Ricomincia-da-capo). AMB-UX-frequencyModel emersa (intervallo > 24h non garantito by design, audit Mac-side demandato sub-sessione, vedi par.11.E-bis). Q-UX.8-12 deferite a Sessione 1 chiusura, vedi par.11.E-ter. v2.8.2-rc.1 invariato. Stato post-sessione par.22.41. Sub-sessione audit frequencyModel (5 maggio 2026 mattina, dedicata): AUDIT.1-5 chiuse su file source Mac-side, opt B' modulare branch isolato ratificata (rivista da schema A/B/C originale §22.41), AMB EXT.1-5 chiuse blanket decidi tu, modello UI giorni+ore proposto da Roberto turno 5 (sostituisce EXT.3 originale, persistenza intervallo_ore singola, range illimitato), Q-UX.13 nuovo empty state off-day extended in scope v3.0.0 (scope frozen 14->16 punti). Stima Sessione 2 esecutiva +120 LOC +13 test wall-clock 2-3h. v2.8.2-rc.1 -> v2.8.2-rc.2. Stato post-sessione par.22.42.)
 
 **Changelog versione 2.8.1 (rispetto alla 2.8.0):** Hotfix v2.8.1 BrowserRouter basename per GitHub Pages subpath. Bug emerso in P5 smoke test: hard refresh (Cmd+Shift+R) o accesso diretto a URL `https://timegates-code.github.io/pharmatimer/oggi` produceva 404 GitHub Pages. Diagnosi: Vite buildava asset con base /pharmatimer/ correttamente ma React Router usava BrowserRouter standard senza basename, navigando client-side a /oggi (path assoluto root-relative) invece di /pharmatimer/oggi. Discrepanza dev/prod: in dev (base default /) BrowserRouter senza basename funzionava, bug si manifestava solo dopo deploy a subpath. Fix: vite.config.js base /pharmatimer/ permanente (eviti rischio future build senza flag CLI), src/main.jsx aggiunto basename={import.meta.env.BASE_URL} a BrowserRouter. Test impact 430/430 invariato. Bug deploy-only, scoperto post-deploy quindi hotfix branch-less su main legittimo (scope minimal 2 file 2 righe). Bump package.json 2.8.0 → 2.8.1 + tag annotato v2.8.1 + push origin main + redeploy gh-pages forzato. Cache SW v2.8.0 stale ha richiesto Clear site data DevTools per propagazione fix. par.6.163 deviation + par.22.39 closure hotfix.
 
@@ -9983,4 +9983,481 @@ Sessione 1 ratifica AMB seguenti tramite Q&A iterativa "decidi tu" su default ra
 - Output: changelog +~3-5K caratteri (§11.F + §22.41), zero file source
 
 **Importante.** Sessione 1 è **fully analytical**. ZERO codice, ZERO build, ZERO test runs. Solo Q&A iterativa + ratifica + scrittura prompt §11.F. Pattern §22.36 strict.
+
+---
+
+## 22.41 Stato post-Sessione 1 analisi-first v3.0.0 partial (Q-UX.1-7 ratificate, AMB-UX-frequencyModel emersa demandata sub-sessione audit §11.E-bis, Q-UX.8-12 deferite a §11.E-ter)
+
+**Data:** 4 maggio 2026 sera tardi (continuazione cumulativa post-§22.40 ratifica analisi-first riapertura UX-extended).
+
+**Modalità:** Sessione 1 dedicata analisi-first per UX onboarding multi-utente. Modalità Q&A iterativa pattern §22.36 strict + cluster tematici 6 turni (cluster A ratificato in apertura vs strict Q-by-Q vs single-shot tabellare). Esito partial: 7/12 Q-UX chiuse + 1 AMB-NEW emersa che richiede code audit Mac-side. Decisione path α (split sessione) ratificata pattern §22.38 lesson 1 (pivot in apertura sessione fresca > pivot in continuazione sessione lunga).
+
+**Token consumati:** ~25-30K (stretta vs stima §11.E 8-15K originale, estesa per AMB-NEW emergente).
+
+**Esito:** ✅ partial. Q-UX.1-7 ratificate. AMB-UX-frequencyModel demandata §11.E-bis (sub-sessione code audit Mac-side, scope ristretto). Q-UX.8-12 demandate §11.E-ter (Sessione 1 chiusura). Bumping invariato **v2.8.2-rc.1** (no chiusura formale ancora). Zero deviazioni §6.NN, una deviazione documentale risolta in-session (vedi sotto).
+
+### Q-UX.1-7 ratificate — default raccomandati con override puntuali
+
+#### Q-UX.1 — Onboarding modale layout
+
+| Sub-Q | Decisione ratificata |
+|---|---|
+| 1.a | 2-step (nome → modalità) |
+| 1.b | No-skip |
+| 1.c | "1 / 2" top-right discreto (testo, opacity 0.6) |
+| 1.d | Back attivo step 2 |
+| 1.e (sub-AMB nuova in-session) | focus-trap-react su modale + Esc disabilitato + `aria-labelledby` sul title (riusa `useModalA11y` esistente §11.B) |
+
+#### Q-UX.2 — Copy italiano onboarding
+
+**Step 1 — Saluto + nome**
+
+```
+[Header]    Ciao 👋
+[Sub]       PharmaTimer ti ricorda ogni dose della tua terapia quotidiana.
+[Progress]  1 / 2  (top-right, opacity 0.6)
+
+[Label]     Come ti chiami?
+[Input]     placeholder="Il tuo nome"
+[NO HINT]   (override punto 2 = no, hint privacy non incluso)
+
+[Btn primario]  Avanti  (disabled se trim(nome) === '')
+```
+
+**Step 2 — Modalità**
+
+```
+[Header]   Ciao [nome]! Come vuoi iniziare?
+[Progress] 2 / 2
+
+[Card 1 — primaria, evidenziata]
+   Aggiungo i miei farmaci
+   Parto da un'app vuota e configuro la terapia adesso.
+
+[Card 2 — secondaria]
+   Mostrami un esempio
+   Carico 3 farmaci di esempio. Posso cancellarli quando voglio.
+
+[Btn secondario]  ← Indietro   (bottom-left)
+[Btn primario]    Inizia       (bottom-right, abilitato dopo selezione card)
+```
+
+**Pattern selezione step 2:** card cliccabili che diventano selezionate + bottone "Inizia" esplicito (simmetria con step 1, evita tap accidentali su seed irreversibile).
+
+**Deviazione documentale risolta:** §11.E recitava "Default raccomandato: copy proposto in §22.40 tabella riassuntiva fluxes" — tabella inesistente in §22.40. Risolto con copy ratificato esplicito qui §22.41. Self-reference §11.E superseded da §22.41.
+
+#### Q-UX.3 — Empty state OggiView con 0 farmaci
+
+```
+[Icona]    📋  (centrata, large, opacity 0.5)
+[Titolo]   Nessun farmaco configurato
+[Sub]      Aggiungi il tuo primo farmaco per iniziare a ricevere
+           promemoria sulle dosi.
+[CTA]      [ + Aggiungi il tuo primo farmaco ]   (primary button)
+```
+
+**Behavior CTA:** navigate `/config?tab=farmaci&action=new` (deep-link, ConfigView monta con tab Farmaci attiva e form aggiunta già aperto).
+
+#### Q-UX.4 — Empty state preview giorno successivo (Mit-A)
+
+**Trigger:** `data_inizio_terapia > today` (= `min(farmaci_attivi.data_inizio) > today`). NON gap intermedi (solo first-day case).
+
+**Layout:**
+
+```
+[Header sezione]   PROSSIMA TERAPIA · DOMANI · MARTEDÌ 5 MAGGIO
+                   (font heading, opacity 1.0, full color)
+
+[Lista dosi prossimo giorno valido, raggruppate per momento:]
+
+   ORE 07:00 · COLAZIONE
+     [DoseCard read-only — opacity 0.7, no bottone Presa, no Altro]
+     ...
+
+   ORE 13:00 · PRANZO
+     [DoseCard read-only ...]
+   ...
+```
+
+**DoseCard read-only:** rimosso `onPresaClick` + `onAltroClick`. Visivamente bordo grigio neutro, no hover/tap affordance. Badge ricalcolo/gap NON renderizzati (preview vuoto, no log).
+
+**Empty header oggi:** nessun messaggio "oggi nulla" (preview autoesplicativa).
+
+#### Q-UX.5 — Toast Mit-C post-aggiunta farmaco
+
+| Aspetto | Decisione |
+|---|---|
+| Posizione | top-center sotto sticky header |
+| Durata | 4 sec auto-dismiss |
+| Dismiss manuali | tap/click + swipe-up (mobile pattern standard) |
+| Stile | bg `t.greenBg`, border verde 1px, testo `t.greenTx`, shadow soft, max-width 90vw mobile / 480px desktop |
+
+**Copy condizionale (3 casi, ratificato override punto 8):**
+
+| Caso | Formato toast |
+|---|---|
+| `data_inizio === today` (edge) | `✅ [Nome] aggiunto. Prima dose: oggi, lunedì 4 maggio, alle 13:00.` |
+| `data_inizio === tomorrow` (default Q-S6=a) | `✅ [Nome] aggiunto. Prima dose: domani, martedì 5 maggio, alle 07:30.` |
+| `data_inizio > tomorrow` (utente ha modificato) | `✅ [Nome] aggiunto. Prima dose: martedì 12 maggio alle 07:30.` |
+
+**Locale:** `it-IT`. Mese minuscolo, giorno settimana minuscolo. Anno omesso default, aggiunto solo se `data.year !== current_year`.
+
+**Implementazione:** helper puro `formatPrimaDose(dateISO, hhmm, today)` in `utils/copy.js` con ramo if-else sui 3 casi + check anno. Test: 4 unit (today / tomorrow / future / future-cross-year).
+
+#### Q-UX.6 — Seed neutro depersonalizzato
+
+**Quantità:** 3 farmaci.
+
+**Naming convention:** prefisso obbligatorio `Esempio` + categoria + dosaggio plausibile.
+
+| # | Nome | Funzione | Frequenza | Dosi | Orari | Pasto | Pattern |
+|---|---|---|---|---|---|---|---|
+| 1 | Esempio Gastro 40mg | Gastroprotettore | fisso | 1 | 30 min prima colazione | "30 min prima colazione" (ambra) | Anchor colazione, offset −30, badge timing pre-pasto |
+| 2 | Esempio Cardio 5mg | Cardiovascolare | fisso | 1 | durante cena | "durante cena" (grigio) | Anchor cena, offset 0, dose serale |
+| 3 | Esempio Antibiotico 500mg | Antibatterico | intervallo 8h | 3 | dopo colazione + 8h + 8h | "indifferente" (viola) | tipo_frequenza=intervallo, ricalcolo, gap recovery, multi-dose |
+
+**`data_inizio` di default:** tutti e 3 a `tomorrow` (coerente con Q-S6=a). Utente vede subito Mit-A preview.
+
+**Flag DB:** ogni record con `demo: 1` (riusa flag già presente nello schema, vedi §6.NN "Configurabilità utente"). Permette future query selettiva "elimina solo demo" senza wipe completo (extension naturale, non scope v3.0.0 ma non blocca).
+
+**Ordine FarmaciTab post-seed:** ordine prima dose del giorno (Gastro 06:30 → Cardio 20:30 → Antibiotico 08:00). Coerenza con timeline OggiView.
+
+#### Q-UX.7 — Reset bottone Avanzate
+
+**Posizione UI:** `Config → Impostazioni → Avanzate → Dati`. Sempre visibile (PROD + DEV), in fondo a SezioneAvanzate, separato da border-top + spacing.
+
+**Etichetta bottone:** `Ricomincia da capo`. Stile destructive sobrio: testo `t.redTx`, border `t.redBd`, background trasparente fino a hover.
+
+**Modale conferma:**
+
+```
+[Titolo]   Vuoi davvero ricominciare?
+
+[Body]     Tutti i farmaci, i profili e lo storico delle assunzioni
+           saranno cancellati definitivamente.
+           Vedrai di nuovo la schermata di benvenuto.
+
+[Btn dx]   Sì, cancella tutto       (destructive: bg t.redBg, testo bianco)
+[Btn sx]   Annulla                  (secondary)
+```
+
+**Scope wipe:**
+
+| Risorsa | Cancellata? | Note |
+|---|---|---|
+| `farmaci` | ✅ | demo + custom |
+| `orari_base` | ✅ | cascade su farmaci |
+| `log_assunzioni` | ✅ | storico completo |
+| `profili` | ✅ | inclusi Standard/Nottambulo (ricreati al prossimo seed se opt-in) |
+| `impostazioni_app` (`nome_utente`, `onboarding_completed`, `tema`, ...) | ✅ | onboarding_completed=null forza re-onboarding |
+| `localStorage` | ✅ | simmetria, future-proof |
+| Permessi notifiche browser | ❌ | OS-level, fuori scope Dexie |
+| Service Worker cache | ❌ | regression risk se forzato, reload basta |
+
+**Flusso impl:**
+1. User tap "Sì, cancella tutto"
+2. `await db.delete()` (Dexie wipe completo)
+3. `localStorage.clear()`
+4. `window.location.href = import.meta.env.BASE_URL` (full reload con basename)
+5. Niente `runSeedIfNeeded` automatico: utente ripassa da onboarding step 2
+
+### AMB-UX-frequencyModel — scope strategico v3.0.0 vs v3.1.0 (demandata §11.E-bis)
+
+**Contesto:** Roberto ha sollevato in turno 3 la domanda "l'app, così come è disegnata, consente l'assunzione di un farmaco che prevede una dose ogni 48h?". Spec §3.1 (`tipo_frequenza` ENUM `fisso`/`intervallo`) NON vincola upper bound `intervallo_ore`. §10 (terapia originale Roberto) ha solo intervalli ≤ 24h. Onboarding multi-utente apre l'app a casi reali a frequenza non quotidiana (metotrexato settimanale, biologici bisettimanali, intervalli > 24h in genere).
+
+**Audit preliminare in-session ha identificato 3 gap potenziali (non risolvibili senza lettura code Mac-side):**
+
+1. **planBuilder iteration model:** per `tipo_frequenza='intervallo'`, itera per-giorno × farmaci (assumendo ≥1 dose/giorno) o per-farmaco × dosi-da-intervallo? Se primo, bug latente: per 48h genererebbe 1 dose ogni 24h.
+2. **First dose anchor per intervallo > 24h:** `orari_base` con `dose_numero=1 + ancora_riferimento` lo supporta semanticamente o serve nuovo campo `data_prima_dose`?
+3. **OggiView empty state branch matrix:** Q-UX.4 trigger è `data_inizio_terapia > today`. NON copre "data_inizio passata, ≥1 farmaco attivo, intervallo > 24h, oggi non cade su giorno-dose" (caso "off-day intervallo"). Servirebbe Q-UX.13 nuovo empty state.
+
+**3 strade:**
+
+| Opt | Descrizione | Costo v3.0.0 | Trade-off |
+|---|---|---|---|
+| **A** | NON supportato. Vincolo `1 ≤ intervallo_ore ≤ 24` documentato spec §3.1 + validazione form FarmaciTab | +0 punti scope | Onesto, semplice. Chiude porta a use case reali |
+| **B** | Supportato in v3.0.0. +Q-UX.13 nuovo empty state "oggi off-day" + audit planBuilder Mac-side + eventuale fix iterazione + 2-3 test | +2 punti scope (15→17, AMB-11.B.7 estensione) | Completo. Allunga Sessione 2 di ~1-2 ore |
+| **C** (pre-raccomandata in-session) | Posticipato a v3.1.0 con limitazione documentata in §3.1 + nota guida HTML "frequenze multi-giornaliere arriveranno in versione futura" | +0 v3.0.0, +ticket v3.1.0 | Mantiene scope chiuso §22.40. Roadmap esplicita |
+
+**Roberto ha richiesto valutazione approfondita opt B.** Sub-sessione audit dedicata §11.E-bis (path α split sessione ratificato).
+
+### Q-UX.8-12 deferite a §11.E-ter
+
+- Q-UX.8: sticky calibration tecnica (useLayoutEffect + ResizeObserver fallback)
+- Q-UX.9: icone manifest 404 (vite-plugin-pwa paths)
+- Q-UX.10: migration utenti esistenti (NO wipe automatico, schema upgrade Dexie)
+- Q-UX.11: strategia test (target 445-455)
+- Q-UX.12: guida HTML esterna (path/stile/timing)
+
+### Pattern operativi confermati
+
+- **Cluster tematici Q&A (modalità A) > strict Q-by-Q (modalità B) > single-shot tabellare (modalità C)**: confermato token-efficient + qualità mantenuta a parità di output. Pattern raccomandato per future sessioni analisi-first multi-domanda.
+- **"Decidi tu" iterativo single-round con override puntuali** = pattern §22.32 esteso a Q-UX cluster tematici. Roberto ha esercitato override su 2 punti (Q-UX.2 hint privacy = no, Q-UX.5 punto 8 = formato esteso "domani, martedì 12 maggio, alle 07:30"). Confermato che il pattern non collassa in blanket-yes.
+- **AMB-NEW in-session legittima quando emerge da domanda dell'utente che rivela gap non coperto da scope frozen** (Roberto: "1 dose ogni 48h?"). Estensione AMB-11.B.7 + §22.38 lesson 1.
+- **Path α (split sessione) > path β (continuazione lunga)**: tutela qualità Q-UX.8-12 + permette code audit dedicato senza priming UX (lezione §22.38 lesson 1+3 applicata).
+
+### Deviazioni introdotte
+
+- **Zero §6.NN nuove.** Sessione fully analytical, zero file source/test/config modificati.
+- **1 deviazione documentale risolta in-session:** §11.E rimanda a "tabella riassuntiva fluxes §22.40" inesistente. Risolto con copy onboarding ratificato esplicito in Q-UX.2 sopra. Self-reference §11.E superseded da §22.41 Q-UX.2.
+
+### Stato git post-sessione
+
+Branch `main` HEAD invariato `c8060a4` (post-§22.40 commit "Mit-A refine"). v2.8.2-rc.1 invariato. Branch `step-8` + `sessione-5b` invariati locali. Tag `v2.7.0`/`v2.8.0`/`v2.8.1` preservati.
+
+### Stato changelog post-sessione
+
+Versione changelog: v2.8.2-rc.1 → **v2.8.2-rc.1** (invariato, ratifica only senza chiusura formale). Riga "Ultima modifica" estesa cumulativamente. Nuova **§22.41** (questa sezione) con sub-sezioni **§11.E-bis** (prompt audit) + **§11.E-ter** (prompt chiusura).
+
+---
+
+### 11.E-bis Prompt sub-sessione audit frequencyModel intervallo > 24h (nuova sessione dedicata)
+
+**Modalità:** Sub-sessione code audit Mac-side dedicata per AMB-UX-frequencyModel (vedi §22.41). Scope ristretto: 5 domande tecniche su file source → ratifica opt A/B/C definitiva. Pattern §22.36 adattato a code audit. **ZERO codice scritto in questa sessione**: solo audit + ratifica + documentazione decisione.
+
+**Stato baseline atteso:** v2.8.2-rc.1 (invariato post-§22.41). Branch `main` clean. 430/430 test verdi.
+
+**Apertura sessione one-liner:**
+
+```
+Esegui il prompt al §11.E-bis del Changelog (sub-sessione audit frequencyModel intervallo > 24h).
+```
+
+**Pre-letture obbligatorie (Claude in apertura):**
+
+1. **§22.41** integrale (questa sezione, AMB-UX-frequencyModel descrizione + 3 opt)
+2. **§22.40** integrale (scope frozen v3.0.0 lista chiusa 14 punti + sub-AMB Q-S1÷Q-S7)
+3. **§11.E** (prompt originale Sessione 1, Q-UX.1-12 + default)
+4. Spec **§3.1** (`farmaci` schema + `tipo_frequenza` ENUM) + **§3.4** (`orari_base` schema)
+5. Spec **§4** (algoritmo ricalcolo + recupero gap, sez. 4.1-4.6)
+6. Spec **§10** (terapia originale Roberto, range intervalli osservati)
+
+**CP0 baseline obbligatorio Mac-side:**
+
+```bash
+echo '=== CP0 baseline audit frequencyModel ==='
+cd ~/Sviluppo/pharmatimer
+echo 'Branch:' && git branch --show-current
+echo 'Top:' && git log -1 --oneline
+echo 'Tag latest:' && git describe --tags --abbrev=0
+echo 'Working tree:' && git status --short
+echo 'Test count:' && npm test -- --run 2>&1 | grep -E 'Tests.*passed' | tail -1
+echo '=== CP0 completato ==='
+```
+
+**File Mac-side da incollare in chat (Roberto via `cat`):**
+
+1. `src/domain/planBuilder.js`
+2. `src/domain/recalc.js`
+3. `src/domain/orarioResolver.js`
+4. `src/components/oggi/OggiView.jsx` (estratto blocco empty state attuale + render branches)
+5. `src/components/config/FarmaciTab.jsx` (estratto validazione `intervallo_ore` form)
+6. `src/domain/__tests__/planBuilder.test.js`
+7. `src/domain/__tests__/recalc.test.js`
+
+**5 domande di audit:**
+
+| # | Domanda | Output atteso |
+|---|---|---|
+| AUDIT.1 | planBuilder iteration model: per `tipo_frequenza='intervallo'`, itera per-giorno × farmaci (assumendo ≥1 dose/giorno) o per-farmaco × dosi-da-intervallo? | Identificazione blocco di codice + verdetto: bug latente sì/no per intervallo > 24h |
+| AUDIT.2 | First dose anchor per intervallo > 24h: `orari_base` con `dose_numero=1 + ancora_riferimento + offset_minuti` lo supporta semanticamente o serve nuovo campo (es. `data_prima_dose`)? | Decisione: schema sufficiente sì/no; se no, scope migration Dexie + nuova §6.NN |
+| AUDIT.3 | recalc.js cross-multi-day funzionante as-is post-§6.115a-§6.118 ISO datetime? | Verifica con 2 scenari unit (dose 48h presa Lun 08:00 → ora_ricalcolata Mer 08:00) |
+| AUDIT.4 | OggiView empty state branch matrix attuale: caso "≥1 farmaco attivo + data_inizio passata + 0 dosi oggi (off-day intervallo)" è coperto, fallback generico, o blank? | Snapshot rendering attuale + decisione: serve Q-UX.13 nuovo empty state |
+| AUDIT.5 | `rescheduleAllNotifications` proietta correttamente notifiche multi-day per intervallo > 24h? | Verifica: se planBuilder genera entries multi-day OK, notifiche seguono naturalmente |
+
+**Output atteso Sessione audit:**
+
+1. Decisione **opt A / B / C ratificata** con motivazione tecnica concreta basata su evidence code (non più speculativa)
+2. **Se opt A:** spec §3.1 update (vincolo upper) + scope validazione FarmaciTab da estendere in CP Sessione 2 (1 punto scope esistente esteso, no nuovi)
+3. **Se opt B:** scope CP nuovi/aggiornati per Sessione 2 esecutiva pre-frozen + eventuali §6.NN candidate documentate + Q-UX.13 nuovo empty state da chiudere in §11.E-ter
+4. **Se opt C:** ticket v3.1.0 documentato + nota guida HTML opportune + scope v3.0.0 invariato
+5. Bump v2.8.2-rc.1 → **v2.8.2-rc.2** (chiusura ratifica AMB-UX-frequencyModel)
+6. Nuova **§22.42** stato post-audit
+7. Update §11.E-ter pre-letture/scope se decisione impatta Q-UX.8-12 (es. opt B aggiunge Q-UX.13)
+
+**Stima sessione audit:**
+
+- Token: 15-25K (lettura ~600-1200 righe code + audit + decisione)
+- Tempo wall-clock: 30-60 min
+- Output: changelog +~2-4K caratteri (§22.42 + opzionale §6.NN candidate + update §11.E-ter)
+
+**Importante.** Audit-first **fully analytical**. ZERO codice scritto, ZERO build, ZERO test runs. Solo lettura + reasoning + ratifica + scrittura §22.42. Pattern §22.36 strict adattato a code audit.
+
+---
+
+### 11.E-ter Prompt Sessione 1 chiusura analisi-first (Q-UX.8-12 + closing v3.0.0)
+
+**Modalità:** Sessione 1 chiusura analisi-first (continuation post-§11.E-bis audit). Q-UX.8-12 ratifica + closing finale + scope CP Sessione 2 pre-frozen + draft prompt **§11.F** per Sessione 2 esecutiva. Pattern §22.36 strict + cluster tematici (modalità A confermata da §22.41).
+
+**Stato baseline atteso:** v2.8.2-rc.2 post-§22.42 audit (opt B' modulare ratificata). Branch `main` clean. 430/430 test verdi.
+
+**Apertura sessione one-liner:**
+
+```
+Esegui il prompt al §11.E-ter del Changelog (Sessione 1 chiusura analisi-first Q-UX.8-12 + closing v3.0.0).
+```
+
+**Pre-letture obbligatorie (Claude in apertura):**
+
+1. **§22.42** integrale (esito audit frequencyModel + decisione opt B' modulare ratificata + AMB EXT.1-5 + UI giorni+ore + Q-UX.13 in scope)
+2. **§22.41** integrale (Q-UX.1-7 ratificate + AMB-UX-frequencyModel context)
+3. **§22.40** integrale (scope frozen v3.0.0 + sub-AMB Q-S1÷Q-S7)
+4. **§11.E** originale (Q-UX.8-12 default raccomandati)
+5. **§6.162** + **§6.163** (stato file post-closure: SezioneInfo + BrowserRouter basename)
+6. Q-UX.13 specifica (in §22.42 §"Q-UX.13 nuovo empty state off-day extended")
+
+**Q-UX da chiudere in cluster tematici:**
+
+- **Turno 1**: Q-UX.8 (sticky calibration) + Q-UX.9 (icone manifest 404) — bug tecnici
+- **Turno 2**: Q-UX.10 (migration utenti esistenti) + Q-UX.11 (strategia test) — strategici
+- **Turno 3**: Q-UX.12 (guida HTML) + closing
+- **+ Q-UX.13** (off-day empty state intervallo > 24h, **opt B' modulare ratificata in §22.42**) — inserito in turno 1 cluster bug tecnici (alternativa: turno proprio se turno 1 satura)
+
+**Output atteso:**
+
+1. Q-UX.8-12 + Q-UX.13 ratificate con default + eccezioni puntuali
+2. Lista impl finale congelata (eventuali aggiunte/rimozioni vs §22.40 lista 14 punti documentate AMB nuove)
+3. **Scope CP Sessione 2 esecutiva pre-frozen** (CP0 audit + CP1 OnboardingModal + CP2 gating + CP3 empty states + CP4 seed neutro + CP5 data_inizio + CP6 reset + CP7 bug fix + CP8 test polish + CP closing). Nominativa esplicita per ogni CP.
+4. Naming convention "v3.0.0 Step 1, Step 2..." se necessario splittare Sessione 2 in più sessioni esecutive (probabile data l'ampiezza)
+5. **Prompt §11.F** per Sessione 2 esecutiva (post-§11.E-ter chiusura)
+6. Bump v2.8.2-rc.2 → **v2.9.0-rc.1** oppure **v3.0.0-rc.1** (decisione naming demandata Sessione 1 chiusura: rc dell'ultimo target o rc del nuovo major?)
+7. Nuova **§22.43** stato post-Sessione 1 chiusura completa
+
+**Stima sessione chiusura:**
+
+- Token: 8-12K (Q-UX.8-12 + closing, no audit code)
+- Tempo wall-clock: 30-60 min
+- Output: changelog +~3-5K caratteri (§22.43 + §11.F + eventuali §6.NN candidate)
+
+**Importante.** Sessione 1 chiusura **fully analytical**. ZERO codice scritto, ZERO build, ZERO test runs. Solo Q&A iterativa + ratifica + scrittura §22.43 + §11.F. Pattern §22.36 strict.
+
+### Riferimenti §22.41
+
+- **§22.40**: ratifica analisi-first riapertura UX-extended (baseline pre-Sessione 1)
+- **§11.E**: prompt esecutivo Sessione 1 (parzialmente eseguito, Q-UX.1-7 chiuse, supersede in §11.E-bis + §11.E-ter)
+- **§11.E-bis** (sopra): prompt sub-sessione audit frequencyModel
+- **§11.E-ter** (sopra): prompt Sessione 1 chiusura
+- **§22.38 lesson 1**: pivot in apertura sessione fresca > pivot in continuazione (applicato qui in path α)
+- **§22.32**: pattern Q&A iterativa "decidi tu" (esteso a cluster tematici Q-UX)
+- **AMB-11.B.7**: convention bump version (rispettata, nessun nuovo tag)
+
+---
+
+### 22.42 Esito audit frequencyModel intervallo > 24h + ratifica opt B' modulare (Sessione audit dedicata, 5 maggio 2026)
+
+Sub-sessione code audit dedicata triggerata da AMB-UX-frequencyModel emersa in §22.41 turno 3 (Roberto: "l'app, così come è disegnata, consente l'assunzione di un farmaco che prevede una dose ogni 48h?"). Pattern §22.36 strict adattato a code audit: 5 domande tecniche su file source Mac-side (`planBuilder.js`, `recalc.js`, `orarioResolver.js`, `OggiView.jsx` empty state, `FarmaciTab.jsx` validazione, `planBuilder.test.js`, `recalc.test.js` — path effettivo `src/domain/*.test.js` colocated, non `__tests__/` come scritto in §11.E-bis pre-letture, deviation documentale risolta in-session) → ratifica decisione strategica. **ZERO codice scritto in questa sessione**: solo audit + ratifica + scrittura §22.42. CP0 baseline verde: branch `main`, top `c8060a4`, tag `v2.8.1`, 430/430 test verdi, working tree con `M PharmaTimer_Changelog_Fase2.md` + `.bak.pre-22.41` atteso.
+
+#### Esito 5 domande audit
+
+| # | Verdetto | Sintesi tecnica |
+|---|---|---|
+| **AUDIT.1** | ❌ **Bug latente confermato** | `buildMultiDayPlan` itera **per-giorno × farmaci × orari_base**. Ogni giorno attivo per il farmaco genera 1 entry per ciascuna riga di `orari_base`. Per `intervallo_ore > 24h` con `dosi_giornaliere=1`, `orari_base` ha 1 riga → **1 dose/giorno** invece che 1 ogni N giorni. Frequenza effettiva = `dosi_giornaliere × giorni-orizzonte`, non `dosi_giornaliere × stride(intervallo_ore)`. Funziona correttamente solo per `intervallo_ore ≤ 24h` perché `dosi_giornaliere` è il vincolo dominante. |
+| **AUDIT.2** | ⚠️ **Schema parzialmente sufficiente** | `farmaci.data_inizio` (DATE) + `orari_base.{offset_minuti, ancora_riferimento}` *possono* ancorare la prima dose se si accetta semantica overloaded di `data_inizio` (oggi: gate attivazione → diventerebbe anche "anchor temporale del calcolo occorrenze"). **Nessun nuovo campo richiesto**, ma serve **nuovo iteration algorithm** in planBuilder (stride aritmetico da `data_inizio + N × intervallo_ore`, non day-loop). Il problema non è schema: è iterazione. |
+| **AUDIT.3** | ❌ **Aritmetica OK, slot sbagliato** | `addMinutesToIso(effIso, intervallo_ore × 60)` calcola correttamente per intervalli arbitrari (Date arithmetic JS). Es. Lun 08:00 + 48h = Mer 08:00 ✅ (verificato by static analysis su test §6.115b cross-midnight, T06 cross-day). Ma `findNextDose` cerca: same-day `dose_numero+1` (non esiste con dosi_giornaliere=1) → cross-day **primo giorno con dose_numero=1**. Per intervallo=48h dosi=1, planBuilder ha generato (per AUDIT.1) un entry erroneo su giorno+1 dose=1; `findNextDose` lo aggancia a giorno+1 (24h dopo) e ci scrive `ora_ricalcolata=giorno+2`. Doppio bug visivo: giorno+1 mostra dose ricalcolata su giorno+2; giorno+2 ha già la sua entry naturale. Il fix richiede AUDIT.1 risolto a monte. |
+| **AUDIT.4** | ⚠️ **Branch matrix incompleta** | OggiView ready ha sub-stati: `groupedDays.length===0` ("Nessuna dose programmata.") vs render normale. Oggi il caso "off-day intervallo" non emerge perché AUDIT.1 genera comunque 1 dose/giorno. **Post-fix planBuilder** emergerebbe: farmaco attivo + data_inizio passata + oggi non cade su giorno-dose → 0 entries → cade sul branch generico, non informativo. Per opt B' serve **Q-UX.13 nuovo empty state "off-day"** che computa e mostra la prossima dose successiva (es. "Oggi nessuna assunzione. Prossima: domani 13/05 ore 07:30, Olevia 1000mg"). |
+| **AUDIT.5** | ✅ **Pass-through** | `rescheduleAllNotifications` opera su `state.plan` foreground-only. Se planBuilder genera entries corrette multi-day (post-fix opt B'), le notifiche seguono naturalmente. Nessuna modifica `services/notifications.js`. |
+
+#### Decisione opt B' modulare branch isolato (rivista da §22.41 schema A/B/C)
+
+§22.41 aveva proposto 3 strade: opt A (vincolo upper bound 1≤intervallo≤24, no support), opt B (rewrite iteration model unificato, +2 punti scope, "+1-2 ore Sessione 2"), opt C (posticipato a v3.1.0 con doc).
+
+**Audit ha rivelato:** opt C "puro" è clinicamente inaccettabile (utente configura 48h, app pianifica 24h: rischio sovra-dosaggio). Opt B unificato è strutturale (rewrite iteration model + findNextDose), costo rivisto **3-5h Sessione 2 + 8-15 test + rischio regressione su 430 esistenti**, sottostimato in §22.41.
+
+**Roberto ha proposto in turno 4 una decomposizione architetturale alternativa**: gestione separata dei farmaci con `intervallo_ore > 24` come branch isolato, lasciando il path standard intoccato. Questa è la strada che chiamiamo qui **opt B' modulare**.
+
+**Vantaggi B' rispetto a B unificato:**
+
+- **Path standard intoccato**: il loop `for (let d = 0; d < numDays; d++) for (const farmaco of farmaci)` esistente non cambia comportamento per farmaci ≤24h. Si aggiunge solo `if (isExtendedInterval(farmaco)) continue;`. **Zero rischio regressione su 430 test esistenti** (la branch condizionale non altera flow per il path standard).
+- **Helper isolato testabile**: `domain/extendedFrequency.js` con `computeExtendedOccurrencesInWindow(farmaco, orario, profilo, startDate, numDays)` che ritorna 0..N entries via stride aritmetico. Self-contained, testabile in isolamento (5-6 unit test fixture-only).
+- **Schema entries identico** post-helper: log merge + sort + DoseCard + recalc.findNextDose funzionano naturalmente sulle entries extended. Nessuna modifica `recalc.js` oltre al gate EXT.4 (1 riga).
+- **Cost stima rivista 2-3h Sessione 2 dedicata**, ~120 LOC totali, +13 test mirati.
+
+**Roberto ha ulteriormente proposto in turno 5 modello giorni+ore** (sostituzione EXT.3): UX nativa "ogni N giorni e H ore" invece di "ogni N ore". Persistenza singola via `intervallo_ore` (zero migration), conversione UI banale al save/load. Range upper bound rimosso (limite naturale del DECIMAL(4,1) ≈ 9999.9h ben oltre clinico). Questa decisione **enabler** semplificazione: il branch extended non ha vincoli "multiplo di 24" hardcoded, l'aritmetica resta ISO datetime.
+
+**Decisione finale ratificata:** **opt B' modulare branch isolato + UI giorni+ore**. AMB-UX-frequencyModel risolta. Q-UX.13 confermata in scope v3.0.0. Costo: +1 punto scope vs §22.40 lista 14 (15→16 con Q-UX.13).
+
+#### AMB EXT.1-5 ratificate (sub-fase analitica, blanket "decidi tu" su default raccomandati)
+
+| AMB | Decisione | Razionale |
+|---|---|---|
+| **EXT.1** | opt **(c)** convenzione `data_inizio` = anchor calcolo occorrenze documentata in spec §3.1 | Zero migration. Semantica esplicitata come convenzione: chi prescrive metotrexato martedì 5 maggio mette `data_inizio='2026-05-05'`. Naturale. |
+| **EXT.2** | Sì, validazione `dosi_giornaliere=1` forzato (auto-set readonly) per branch extended (`intervallo_ore > 24`) | Combinazione "più dosi/die con intervallo multi-giorno" semanticamente incoerente. |
+| **EXT.2.a** | Cascade ConfirmModal (pattern §6.67) al cambio tipo da intervallo<24h (dosi>1) a >24h | Drop righe `orari_base` extra con conferma utente. |
+| **EXT.3'** (sostituisce EXT.3 originale) | Form coppia giorni+ore. Persistenza singola via `intervallo_ore`. Vincolo `giorni*24+ore > 0`, ore in `[0..23]`. Threshold extended `intervallo_ore > 24`. Nessun upper bound hardcoded. | UX nativa, range illimitato, zero migration, conversione UI ~10 LOC. Q1=(b) riuso `intervallo_ore`, Q2=(a) threshold strettamente >24, Q3=(a) 2 input numerici affiancati, Q4 validazione min ratificata, Q5 invariato. |
+| **EXT.3'.a** | Helper `selectProssimaDoseExtendedFuoriPlan(state, today)` calcola anchor + k×intervallo direttamente da `farmaci` + `orari_base` senza passare da `state.plan` | Necessario perché `PLAN_DAYS_TOTAL=3` può non contenere la prossima occorrenza per intervalli ≥72h. Helper consumed da Q-UX.13 empty state. |
+| **EXT.4** | Gap recovery **disabilitato** per branch extended. Gate `target.farmaco.intervallo_ore <= 24` su 3 punti: recalc.js prompt emit, DoseCard TapBadge gap render, FarmaciTab field `intervallo_minimo_ore` nascosto | Recupero N min su intervallo 168h è 0.18%, clinicamente irrilevante. UX confonde. ~10 LOC totali. |
+| **EXT.5** | Confermato: zero modifiche `recalc.js` oltre al gate EXT.4. `addMinutesToIso` aritmeticamente corretto per qualsiasi intervallo. `findNextDose` cross-day path già esistente. | Verificato by static analysis su test §6.115b cross-midnight + T06 cross-day. |
+
+#### Scope CP Sessione 2 esecutiva v3.0.0 — impatto extended
+
+| Componente | LOC | Test | Note |
+|---|---|---|---|
+| `src/domain/extendedFrequency.js` (nuovo helper) | ~50 | 5-6 | `isExtendedInterval(farmaco)` + `computeExtendedOccurrencesInWindow(farmaco, orario, profilo, startDate, numDays)`. Self-contained, fixture-only test. |
+| `src/domain/planBuilder.js` (branch isolato) | +5 | 1 | `if (isExtendedInterval(farmaco)) continue;` nel loop per-giorno + loop separato post-iter `for (const farmaco of farmaci.filter(isExtendedInterval))`. |
+| `src/domain/recalc.js` (gate EXT.4) | +1 | 1 | Prompt emit gate `target.farmaco.intervallo_ore <= 24`. |
+| `src/components/config/FarmaciTab.jsx` (giorni+ore + dosi=1 readonly + cascade ConfirmModal) | ~30 | 3 | 2 input numerici affiancati con conversione save/load, validazione bordi, cascade su cambio tipo. |
+| `src/components/oggi/DoseCard.jsx` (gate TapBadge gap EXT.4) | +1 | 0 | Render condizionale TapBadge gap su `entry.farmaco.intervallo_ore <= 24`. |
+| `src/state/selectors.js` (`selectProssimaDoseExtendedFuoriPlan`) | ~20 | 2 | Computa anchor + k×intervallo da farmaci+orari_base senza state.plan. |
+| `src/components/oggi/OggiView.jsx` (Q-UX.13 empty state) | ~15 | 1 | Branch nuovo `groupedDays.length===0 && hasFarmaciAttivi` → render copy "Oggi nessuna assunzione. Prossima dose: [data] alle [hhmm], [farmaco]." |
+| Spec §3.1 + guida HTML | doc | 0 | Documenta convenzione data_inizio + supporto giorni+ore. |
+| **Totale** | **~120 LOC** | **+13** | Wall-clock 2-3h Sessione 2 dedicata |
+
+Impact su §22.40 scope frozen 14 punti: **15→16 (+Q-UX.13)**. AMB-11.B.7 estensione test count target globale (366→379 atteso).
+
+#### Q-UX.13 nuovo empty state off-day extended (copy proposto, ratifica §11.E-ter)
+
+Trigger: `groupedDays.length === 0` (nessuna dose oggi) **AND** esiste ≥1 farmaco attivo con `data_inizio ≤ today` (terapie iniziate). Esegue `selectProssimaDoseExtendedFuoriPlan(state, today)` per trovare la prossima occorrenza.
+
+**Copy proposto (ratifica in §11.E-ter Q-UX.13):**
+
+```
+📅 Oggi nessuna assunzione programmata.
+
+Prossima dose:
+[data formattata estesa, es. "domani, martedì 12 maggio"] alle [HH:MM]
+[Nome Farmaco]
+```
+
+Edge case: se `selectProssimaDoseExtendedFuoriPlan` ritorna null (nessun farmaco attivo extended con prossima occorrenza calcolabile), fallback al copy esistente "Nessuna dose programmata." (no regressione).
+
+#### Deviazioni preview §6.NN candidate (in v3.0.0 impl, allocate post-impl)
+
+1. **`extendedFrequency.js` helper isolato + branch condizionale planBuilder**: deviation strutturale ma additiva (non altera path standard). Pattern §6.116b consumer drift evitato by-design (no modifica `recalc.js`/`OggiView` core flow).
+2. **Convenzione `data_inizio` = anchor calcolo occorrenze**: deviation documentale spec §3.1, semantica overloaded esplicitata. Coerente con uso storico (chi mette `data_inizio` futura per terapia rinviata già esercita la semantica anchor implicitamente).
+3. **Gate EXT.4 gap recovery disabilitato per intervallo > 24h**: 3 punti gate (recalc.js prompt, DoseCard TapBadge, FarmaciTab field nascosto). Pattern simile a §6.18 stato `sospesa` non propaga gap.
+4. **UI giorni+ore con persistenza `intervallo_ore` singola**: deviation form-layer only, schema invariato. Conversione bidirezionale al save/load.
+5. **`dosi_giornaliere=1` forzato readonly per branch extended**: validazione form. Cascade ConfirmModal al cambio tipo (pattern §6.67 esteso 3° consumer).
+
+Allocazione §6.NN concrete a Sessione 2 esecutiva (numerazione progressiva da §6.163).
+
+#### Pattern operativi confermati
+
+- **Sub-sessione audit dedicata > continuazione lunga**: pattern §22.36 strict adattato a code audit. Token spent ~12-15K, decisione robusta basata su evidence code, ZERO ambiguità residue. §11.E-bis path α validato.
+- **AMB-NEW in-session legittima quando emerge da pivot tecnico utente**: Roberto turno 4 ha proposto opt B' modulare, turno 5 ha proposto giorni+ore. Entrambi hanno spostato significativamente il trade-off rispetto alle 3 strade originali §22.41. Pattern §22.38 lesson 1 esteso: "pivot post-evidence è più solido di pivot in-apertura, e pivot durante audit code-driven è ancora più solido perché basato su lettura sorgenti, non solo discussione."
+- **"Decidi tu" globale dopo Q&A iterativa**: ratifica blanket dei default raccomandati (5 AMB EXT.1-5 + sub-AMB) con eventuali eccezioni puntuali. Token-efficient (1 turno solo per ratifica), zero collasso in blanket-yes (Roberto ha già esercitato override architetturali in turno 4-5).
+- **Audit code-driven > audit speculativo**: §22.41 audit preliminare in-session aveva identificato 3 gap "potenziali, non risolvibili senza lettura code Mac-side". §22.42 audit con file source ha confermato 2 gap su 3 e ha rivelato sotto-stima costo opt B unificato. Lezione: per decisioni architetturali, leggere il codice prima di pre-frizzare scope è obbligatorio.
+- **Test path convention discovery**: prompt §11.E-bis citava `src/domain/__tests__/*.test.js` (convention assunta). Path effettivo è `src/domain/*.test.js` colocated. Deviation documentale, no impatto, vincit `vitest.config.js include: ['src/**/*.{test,spec}.{js,jsx,ts,tsx}']`.
+
+#### Stato git post-sessione
+
+Branch `main` HEAD invariato `c8060a4` (post-§22.40 commit "Mit-A refine"). v2.8.2-rc.1 → **v2.8.2-rc.2** post-patcher. Working tree pre-patcher: `M PharmaTimer_Changelog_Fase2.md` (modificato in §22.41) + `.bak.pre-22.41` (atteso). Branch `step-8` + `sessione-5b` invariati locali. Tag `v2.7.0`/`v2.8.0`/`v2.8.1` preservati.
+
+#### Stato changelog post-sessione
+
+Versione changelog: v2.8.2-rc.1 → **v2.8.2-rc.2** (chiusura ratifica AMB-UX-frequencyModel). Riga "Ultima modifica" estesa cumulativamente con sessione audit. Nuova **§22.42** (questa sezione). **§11.E-ter** pre-letture aggiornate: rimossi "se opt B scelta" conditionals (opt B' modulare ratificata definitivamente in §22.42), Q-UX.13 inserita in turno 1 cluster bug tecnici (alternativa: turno proprio se cluster turno 1 satura).
+
+#### Riferimenti §22.42
+
+- **§22.41**: ratifica analisi-first Q-UX.1-7 + AMB-UX-frequencyModel emersa (baseline pre-audit)
+- **§11.E-bis**: prompt sub-sessione audit (eseguito in questa sessione)
+- **§11.E-ter**: prompt Sessione 1 chiusura (post-§22.42, pre-letture aggiornate da questa sezione)
+- **§22.40**: scope frozen v3.0.0 14 punti → 16 con Q-UX.13 + AMB-UX-frequencyModel risolta
+- **§6.115b**: ISO datetime cross-midnight (audit ha verificato compatibilità con intervalli arbitrari)
+- **§6.67**: ConfirmModal pattern (esteso 3° consumer per cascade EXT.2.a)
+- **§22.32**: pattern Q&A iterativa "decidi tu" (esteso a sub-fase analitica EXT.1-5)
+- **§22.36**: pattern sub-sessione dedicata (adattato a code audit, validato)
+- **§22.38 lesson 1**: pivot in apertura sessione fresca > pivot in continuazione (esteso "pivot durante audit code-driven più solido")
+- **AMB-11.B.7**: convention bump version (rispettata, no nuovo tag, package.json invariato 2.8.1)
+
+
 
