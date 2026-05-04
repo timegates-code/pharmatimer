@@ -10,6 +10,9 @@
 //     triggerRef,        // optional: ref to the element that opened the modal (manual opens)
 //     fallbackEntryKey,  // optional: entry.key used to locate the originating card
 //                        //           for auto-opened modals (RecuperoModal auto-prompt)
+//     escapeDeactivates, // optional bool, default true (CP1 v3.0.0 par.6.164):
+//                        //           pass-through to focus-trap. Set false for
+//                        //           no-skip modals (e.g. OnboardingModal).
 //   })
 //     => { containerRef, modalProps }
 //
@@ -36,6 +39,7 @@ export function useModalA11y({
   describedById,
   triggerRef = null,
   fallbackEntryKey = null,
+  escapeDeactivates = true,
 }) {
   const containerRef = useRef(null);
 
@@ -50,7 +54,7 @@ export function useModalA11y({
     if (!node) return undefined;
 
     const trap = createFocusTrap(node, {
-      escapeDeactivates: true,
+      escapeDeactivates,
       clickOutsideDeactivates: false,
       // Allow outside clicks to propagate (default is false: focus-trap
       // would stopPropagation/preventDefault on overlay clicks, killing
