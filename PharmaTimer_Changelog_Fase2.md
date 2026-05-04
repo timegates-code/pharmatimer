@@ -9796,7 +9796,7 @@ Versione changelog: v2.8.0 → **v2.8.1** (hotfix routing). §22.37 closure Z pr
    - `OnboardingModal.jsx` — modale 2-step (nome utente + modalità configura/esempio)
    - Gating logic in `App.jsx` o `main.jsx` (chiave `onboarding_completed` in impostazioni_app)
    - Empty state guidante in `OggiView` (lista vuota → prompt "+ Aggiungi il tuo primo farmaco")
-   - Empty state condizionale "prossima dose [DATA]" quando ≥1 farmaco con data_inizio futura ma 0 dosi oggi (Mit-A)
+   - Empty state condizionale **"preview giorno successivo"** quando ≥1 farmaco con data_inizio futura ma 0 dosi oggi (Mit-A): mostra **lista completa** delle dosi del prossimo giorno valido (organizzate per orario/momento), distinta visivamente dalla vista Oggi (es. opacità ridotta + label "DOMANI - [GIORNO DATA]"). Razionale: appena aggiunti i farmaci con data_inizio = domani, l'utente vede SUBITO le sue dosi di domani in formato preview, NON deve aspettare di riaprire l'app il giorno dopo. Distingue UX tra "informazione visibile" (sempre, immediatamente) e "card cliccabile per registrare presa" (solo dal giorno effettivo). Q-UX.4 Sessione 1 raffinerà layout esatto preview vs oggi.
    - Toast post-aggiunta farmaco "Farmaco aggiunto! Prima dose [DATA]" (Mit-C)
    - Seed neutro depersonalizzato (3 farmaci generici, sostituisce seed Roberto specifico)
    - Seed opt-in (controllato da scelta onboarding, non automatico)
@@ -9915,10 +9915,12 @@ Sessione 1 ratifica AMB seguenti tramite Q&A iterativa "decidi tu" su default ra
 - Copy esatto?
 - Default raccomandato: "📭 Nessun farmaco ancora. Aggiungi il tuo primo farmaco per iniziare. [+ Aggiungi il tuo primo farmaco]" (CTA link a Config → Farmaci form aggiunta).
 
-**Q-UX.4 — Empty state OggiView Mit-A (≥1 farmaco ma 0 dosi oggi)**
+**Q-UX.4 — Empty state OggiView Mit-A "preview giorno successivo" (≥1 farmaco ma 0 dosi oggi)**
 - Quando renderizzare? Solo se data_inizio_terapia > today, oppure anche per gap intermedi (es. domani Pantorc, dopodomani niente, terzo giorno altre)?
-- Copy esatto?
-- Default raccomandato: render solo quando data_inizio_terapia > today nel primo blocco. Copy: "✅ La tua prima dose sarà: [DATA] - [Farmaco] alle [ORA] ([momento])"
+- Layout: lista completa delle dosi del prossimo giorno valido, raggruppate per momento (PRIMA DI COLAZIONE, COLAZIONE, ecc.) come la vista Oggi normale ma con styling distinto (opacità ridotta + label "DOMANI - [GIORNO DATA]" prominente).
+- Cards interattive nella preview? (potrebbero essere read-only, non cliccabili per "Presa" finché non è il loro giorno effettivo)
+- Copy header preview esatto?
+- Default raccomandato: render quando data_inizio_terapia > today (NON per gap intermedi: solo first-day case). Layout: stessa struttura visiva di OggiView normale ma con `opacity: 0.7` + label "DOMANI · MARTEDÌ 5 MAGGIO 2026" in alto + cards read-only (no bottoni Presa/Altro). Distingue chiaramente preview da oggi mantenendo familiarità visiva. Render dopo eventuali "ORE 07:00" sezione header dedicata "PROSSIMA TERAPIA · DOMANI [DATA]".
 
 **Q-UX.5 — Toast Mit-C post-aggiunta farmaco**
 - Durata?
