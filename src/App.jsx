@@ -5,7 +5,10 @@ import NavBar from "./components/shared/NavBar.jsx";
 import UpdatePrompt from "./components/shared/UpdatePrompt.jsx";
 import ErrorSurface from "./components/shared/ErrorSurface.jsx";
 import ErrorAnnouncer from "./components/shared/ErrorAnnouncer.jsx";
+import OnboardingModal from "./components/onboarding/OnboardingModal.jsx";
 import { useTheme } from "./hooks/useTheme.js";
+import { useApp } from "./state/AppContext.jsx";
+import { selectImpostazione, selectFarmaciAttivi } from "./state/selectors.js";
 
 // Shell with bottom nav and route outlets.
 // Only Oggi and Config are implemented in Fase 2; Log and Export stub to redirect.
@@ -35,6 +38,7 @@ export default function App() {
     <ThemedShell>
       <ErrorAnnouncer />
       <ErrorSurface />
+      <OnboardingGate />
       <Routes>
         <Route path="/" element={<Navigate to="/oggi" replace />} />
         <Route path="/oggi" element={<OggiView />} />
@@ -46,6 +50,34 @@ export default function App() {
       <UpdatePrompt />
       <NavBar />
     </ThemedShell>
+  );
+}
+
+function OnboardingGate() {
+  const { state, actions } = useApp();
+  const onboardingCompleted = selectImpostazione(state, "onboarding_completed");
+  const farmaciAttivi = selectFarmaciAttivi(state);
+
+  // Gate: only when init is complete AND onboarding flag not set.
+  // par.6.167: mounted in App.jsx (not AppProvider, which is a state-only shell).
+  const open = state.status === "ready" && onboardingCompleted !== 1;
+  if (!open) return null;
+
+  // Q-UX.3 (migration users): pre-populate nome from existing setting
+  // so a user who already had `nome_utente` can confirm rather than retype.
+  const defaultNome = selectImpostazione(state, "nome_utente") ?? "";
+
+  const handleComplete = ({ nome, mode }) => {
+    actions.completeOnboarding(nome, mode);
+  };
+
+  return (
+    <OnboardingModal
+      open={open}
+      defaultNome={defaultNome}
+      farmaciAttiviCount={farmaciAttivi.length}
+      onComplete={handleComplete}
+    />
   );
 }
 

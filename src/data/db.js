@@ -84,5 +84,6 @@ export const SETTINGS_KEYS = {
   NOME_UTENTE: "nome_utente",
   SEED_LOADED: "seed_loaded",      // boolean: first-run seed already executed
   SCHEMA_VERSION: "schema_version",// future-proofing for data migrations
-  NOTIFICHE_ATTIVE: "notifiche_attive" // 0/1: master switch for Wave B notifications (§6.129)
+  NOTIFICHE_ATTIVE: "notifiche_attive", // 0/1: master switch for Wave B notifications (§6.129)
+  ONBOARDING_COMPLETED: "onboarding_completed" // 0/1: gates OnboardingModal mount (§6.165, CP2 v3.0.0 Step 1)
 };

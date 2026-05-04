@@ -885,6 +885,41 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     return { ok: true, ora_prevista, farmacoId: farmaco.id };
   }
 
+  /**
+   * §6.168 (CP2 v3.0.0 Step 1) — Onboarding completion thunk.
+   *
+   * Captures `nome_utente` (if non-empty after trim) and flips the
+   * `onboarding_completed` gating flag. Reuses the local `setSetting`
+   * thunk for IDB persistence + optimistic dispatch + rollback on
+   * repo failure (no duplicate I/O logic).
+   *
+   * `mode='demo'` is a no-op in CP2: the demo seed is allocated to
+   * CP4 (par.6.168 carry-over). The mode argument is validated and
+   * stored in scope but does not trigger any side-effect here.
+   *
+   * @param {string} nome    User-typed name (will be trimmed; empty
+   *                         skips the nome_utente write).
+   * @param {'empty'|'demo'} mode  Onboarding outcome.
+   * @returns {Promise<{ok: true} | {ok: false}>}
+   */
+  async function completeOnboarding(nome, mode) {
+    if (mode !== 'empty' && mode !== 'demo') {
+      throw new Error(`completeOnboarding: invalid mode "${mode}"`);
+    }
+
+    const trimmed = (nome ?? '').trim();
+    if (trimmed.length > 0) {
+      const r = await setSetting('nome_utente', trimmed);
+      if (!r?.ok) return r;
+    }
+
+    const r2 = await setSetting('onboarding_completed', 1);
+    if (!r2?.ok) return r2;
+
+    // CP4 TODO (par.6.168): if (mode === 'demo') trigger seed loading.
+    return { ok: true };
+  }
+
   return {
     init,
     rebuildPlan,
@@ -905,6 +940,7 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     cambiaProfilo,
     dismissPrompt,
     setSetting,
+    completeOnboarding,
     setSimulatedNow,
     scheduleTestDose,
   };
