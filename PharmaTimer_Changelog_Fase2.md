@@ -1,8 +1,10 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 2.8.1
+**Versione:** 2.8.2-rc.1
 **Data inizio fase:** 16 aprile 2026
-**Ultima modifica:** 4 maggio 2026 (Sessione Fase 3 Step 1 esecutiva pivot strategico a Closure scenario Z: Fase 2 prodotto chiuso, Fase 3 in pausa indefinita riapribile. Apertura prevedeva CP0 audit Mac Studio + analisi-first 8 sub-AMB F3-S1.A-H + sequenziale CP1-CP5 + closing per backend FastAPI scaffolding. Eseguito CP0 audit (Python 3.13.12 target >=3.12 OK, MariaDB assente, MySQL 9.6.0 nativo /usr/local/mysql/ in produzione dal 24/04/2026, Docker assente, port 3306/8000 libere, branch step-8 top ae33b1f tag v2.7.0). Tentativo CP0-alpha install MariaDB 12.2.2 brew fallito a regime per conflitto socket TCP 3306 con MySQL legacy -> cleanup CP0-alpha-bis (uninstall + 10 deps autoremove + datadir + plist, 250.6 MB reclaimed). 4 round Q&A iterativa hanno ratificato pivot Z: round 1 Mac Mini vs Studio dev DB -> C ibrida raccomandata, Roberto sceglie Studio; round 2 ruolo MySQL Studio (solo dev) vs Mini (prod); round 3 architettura client-side Fase 2 standalone vs Fase 3 client thin server-authoritative; round 4 fork code rigettato in favore di git tag + feature flag (Q5=A gia pianificata), Roberto chiarisce intent reale "chiudere Fase 2 prodotto finito iPhone/Android, no degrado, riapribile" -> opzione Z scelta vs X (branch fase-3) vs Y (pausa informale). Decisioni: distribuzione PWA via GitHub Pages free tier (beta repo pubblico timegates-code/pharmatimer + meta noindex per hygiene); branch consolidation main fast-forward step-8 +61 commit; tag v2.8.0 annotato closure; README v1.0 con sezioni Stato progetto + Installazione PWA + Reset dati esempio (5.B nessun hotfix v2.7.1, seed Roberto invariato) + Riapertura Fase 3; package.json bumped 2.7.0 -> 2.8.0 (eccezione AMB-11.B.7 perche closure phase-level non Step impl). Riferimenti riapertura preservati intatti: par.11.D prompt esecutivo, par.11.C.closed sub-AMB F3-S1.A-H frozen, par.22.36 Q1-Q9 ratificate. Bump v2.7.1-rc.1 -> v2.8.0 (closure formale, no -rc.1). Nuova par.22.37 (closure scenario Z) + par.22.38 (lessons learned pivot strategico in-session, estensione AMB-11.B.7). Backward-history: sessione precedente "Sessione Fase 3 analisi-first dedicata" demotata a "Changelog versione 2.7.1-rc.1 (rispetto alla 2.7.0)" sotto.)
+**Ultima modifica:** 4 maggio 2026 sera tardi (Sessione cumulativa ~7-8 ore: closure scenario Z v2.8.0 → P2-P5 deploy GitHub Pages → hotfix v2.8.1 routing → smoke test live → riapertura UX-extended ratificata v2.8.2-rc.1). Round 2 pivot strategico post-evidence: smoke test su PWA live ha rilevato 2 bug residui (sticky calibration top-[149px] regressione, icone manifest 404) + 1 problema strutturale (UX non-ready per utenti novizi: farmaci di Roberto preconfigurati confondono, dosi giorno-precedente apparenti come "in ritardo" senza contesto, niente onboarding). Disambiguazione 4 round Q&A: Bug 2 dosi-ieri = feature pianificazione rolling window per Roberto vs bug semantico per nuovi utenti; data_inizio_terapia da sola NON risolve UX problem; onboarding modale e' la soluzione corretta. Closure Z riconosciuta prematura rispetto intent UX originale ("fin dall'inizio progetto privilegiare UX"). Strada B ratificata: riapertura formale UX-extended target v3.0.0 milestone "PharmaTimer UX-ready for novices". Scope frozen lista chiusa 14 punti par.22.40 decisione 3 (OnboardingModal 2-step, gating logic, empty state guidante OggiView, empty state Mit-A "prossima dose [DATA]", toast Mit-C post-aggiunta, seed neutro depersonalizzato 3 farmaci esempio, seed opt-in, data_inizio campo form FarmaciTab default domani Q-S6=a, data_inizio_terapia auto-calc planBuilder Q-S5=2, reset bottone Avanzate, sticky calibration useLayoutEffect+ResizeObserver, icone manifest 404 fix, test +15-20, guida HTML esterna). Sub-AMB Q-S1÷Q-S7 ratificate: Q-S1=a un dispositivo per persona, Q-S2=c seed neutro depersonalizzato opt-in, Q-S3=guida HTML invece di tutorial in-app, Q-S4=DB pulito da capo (Roberto compreso), Q-S5=2 auto-calc, Q-S6=a domani default, Q-S7=OK perdita DB attuale (test only). Bumping 2.8.1 → v2.8.2-rc.1 (analisi-first ratificata, no impl ancora). Sessione successiva: prompt par.11.E "Sessione 1 analisi-first v3.0.0 UX onboarding multi-utente" eseguibile in nuova sessione fresca (one-liner: Esegui il prompt al par.11.E del Changelog). Atteso 90-150 min wall-clock + 8-15K token, output AMB UX-1÷N + scope CP Sessione 2 + prompt par.11.F. Stima totale v3.0.0 cumulativa 8-15 ore lavoro distribuibili 1-3 sessioni dedicate. Backward-history demote v2.8.1 description sotto.)
+
+**Changelog versione 2.8.1 (rispetto alla 2.8.0):** Hotfix v2.8.1 BrowserRouter basename per GitHub Pages subpath. Bug emerso in P5 smoke test: hard refresh (Cmd+Shift+R) o accesso diretto a URL `https://timegates-code.github.io/pharmatimer/oggi` produceva 404 GitHub Pages. Diagnosi: Vite buildava asset con base /pharmatimer/ correttamente ma React Router usava BrowserRouter standard senza basename, navigando client-side a /oggi (path assoluto root-relative) invece di /pharmatimer/oggi. Discrepanza dev/prod: in dev (base default /) BrowserRouter senza basename funzionava, bug si manifestava solo dopo deploy a subpath. Fix: vite.config.js base /pharmatimer/ permanente (eviti rischio future build senza flag CLI), src/main.jsx aggiunto basename={import.meta.env.BASE_URL} a BrowserRouter. Test impact 430/430 invariato. Bug deploy-only, scoperto post-deploy quindi hotfix branch-less su main legittimo (scope minimal 2 file 2 righe). Bump package.json 2.8.0 → 2.8.1 + tag annotato v2.8.1 + push origin main + redeploy gh-pages forzato. Cache SW v2.8.0 stale ha richiesto Clear site data DevTools per propagazione fix. par.6.163 deviation + par.22.39 closure hotfix.
 
 **Changelog versione 2.7.1-rc.1 (rispetto alla 2.7.0):** Sessione Fase 3 analisi-first dedicata: chiusura Q1-Q9 ratificate (Q1=B naming Fase 3 Step 1/2..., Q2=B FastAPI package modulare minimal, Q3=A no-auth LAN+Tailscale trust mesh, Q4=A migration one-shot Mac-side JSON+Python seed, Q5=A feature-flag VITE_USE_API_REPO dual-mode 1 settimana fallback, Q6=A docker-compose FastAPI+MariaDB containers, Q7=A Tailscale magic-DNS + TLS auto, Q8=B Log read-only Fase 3 + Export Fase 4 split, **Q9 nuova=C server-authoritative** copertura F3.G non in par.11.C originale). Output: 9 AMB Fase 3 ratificate (F3.A-H + Q9), scope CP Step 1 pre-frozen (CP0 audit + CP1 layout + CP2 schema + CP3 seed + CP4 FastAPI skeleton + CP5 pytest + CP closing), naming convention "Fase 3 Step 1, Step 2..." applicata. Sub-AMB Step 1 (Python/MariaDB version, pool size, CORS, config strategy, Docker base, dev DB isolation, pytest test DB) demandate ad analisi-first apertura Step 1. Sessione token-light ~10K, single-round Q&A "decidi tu" su default raccomandati par.11.C. Zero deviazioni par.6.NN. CP0 baseline minimo verde: branch step-8, top ae33b1f tag v2.7.0, package.json 2.7.0, 430/430 test su 42 file. Bump v2.7.0 -> v2.7.1-rc.1 (analisi-first pattern -rc.1 par.22.32). package.json invariato 2.7.0 (AMB-11.B.7 convention).
 
@@ -4217,7 +4219,7 @@ Chiarimenti risolti pre-Step 4b (AMB-1/2/3):
 ---
 
 
-## 11. Closure scenario Z ✅ v2.8.0 — Fase 2 prodotto chiuso, Fase 3 in pausa indefinita (riapribile via §11.D)
+## 11. Closure UX-extended ✅ v2.8.2-rc.1 — Fase 2 prodotto chiuso, Fase 3 in pausa, target v3.0.0 UX onboarding multi-utente (§11.E prompt esecutivo Sessione 1 analisi-first)
 
 **Stato baseline:** v2.7.0 (post-closing Step 11-B Wave-next + Fase 2 closing milestone). 430/430 su 42 file. Branch `step-8`. Top commit Mac-side `<TBD-closing-commit>` (Step 11-B closing -- Fase 2 milestone) + tag annotato `v2.7.0` "Fase 2 closing milestone PWA standalone".
 
@@ -9765,3 +9767,218 @@ Versione changelog: v2.8.0 → **v2.8.1** (hotfix routing). §22.37 closure Z pr
 - **§22.37**: closure scenario Z (sessione precedente)
 - **§22.38**: lessons learned pivot strategico
 - **AMB-11.B.7**: convention bump package.json eccezione closure/hotfix phase-level
+
+## 22.40 Stato post-Sessione Fase 3 Step 1 esecutiva → Closure Z → Hotfix v2.8.1 → Riapertura UX-extended ratificata (closure prematura riconosciuta in P5, scope UX onboarding multi-utente formalizzato)
+
+**Data:** 4 maggio 2026 (post-§22.39 hotfix v2.8.1 routing + smoke test live).
+
+**Modalità:** Continuazione sessione corrente (~7-8 ore cumulate). Post-hotfix v2.8.1 deployato e funzionante, ulteriore smoke test su PWA live ha rilevato 2 bug residui + 1 problema strutturale UX:
+
+1. **Bug 1** — sticky data-separator `top-[149px]` magic number copre cards (regressione §6.96/§6.107/§6.110 fix Step 11-B perché header height cambiata in Step 11-A con ErrorSurface + counter row variable + greeting Ciao!)
+2. **Bug 3** — icone manifest 404 (`https://timegates-code.github.io/icons/icon-192.png` mancante prefix `/pharmatimer/`)
+3. **Problema UX strutturale** — app NON è prodotto-ready per utenti novizi non-tecnici. Chi installa fresh trova: farmaci di Roberto preconfigurati (Pantorc, Duoresp, Giant, ecc.) → confusione "non sono i miei!"; dosi marcate "in ritardo" di giorni passati → confusione "che ritardo? io non ho mai preso queste cose"; nessun onboarding per spiegare cosa fare.
+
+### Pivot strategico round 2 (4 round Q&A iterativa post-P5 smoke test)
+
+**Round 1 — natura Bug 2 (dosi ieri).** Initial diagnosis era "sticky calibration" (Bug 1 solo). Re-lettura screenshot 02:53 + nuovo screenshot 10:47 ha rivelato: dosi domenica 20:30 visibili nel piano lunedì = NON è artefatto sticky, è feature pianificazione (rolling window per correzioni retroattive). Bug 2 confermato come problema separato.
+
+**Round 2 — disambiguazione: bug o feature?** Roberto chiarito: "rolling window è solo per correggere mancate registrazioni utente esistente. Per chi installa fresh, il giorno precedente non dovrebbe comparire." Diagnosi: bug semantico per utenti nuovi, by-design per Roberto. Soluzione embedding `data_inizio_terapia` in settings.
+
+**Round 3 — disambiguazione UX: data_inizio_terapia vs onboarding.** Roberto chiarito: "il progetto doveva privilegiare la UX". Re-analisi opzioni N1-N4 dal punto di vista novizio. Conclusione: `data_inizio_terapia` da sola NON risolve il problema vero del novizio (vedere farmaci di Roberto + dosi confuse). Onboarding modale è la soluzione corretta. **Closure Z riconosciuta come prematura** rispetto all'intent UX originale del progetto.
+
+**Round 4 — scope strada B (riapertura formale UX-extended).** Roberto ratifica strada B = riapertura formale per UX onboarding multi-utente come obiettivo definito. Stima 8-15 ore lavoro distribuibili su 1-3 sessioni dedicate. Scelto **Q2 = sessione 1 analisi-first dedicata adesso** (chiusura sessione corrente con prompt §11.E pronto, niente codice oggi).
+
+### Decisioni in-session ratificate
+
+1. **Riapertura formale Closure Z → "Closure UX-extended"**: scenario Z resta concettualmente valido (Fase 3 backend in pausa indefinita), ma estende lo scope per includere UX onboarding multi-utente. NON è "drift dalla closure" — è ratifica esplicita di nuovo scope con lista chiusa.
+2. **Target milestone v3.0.0**: "PharmaTimer UX-ready for novices". Tipologia bumping major (3.0.0 vs 2.x.x) appropriata data l'ampiezza del cambiamento UX (onboarding + empty state + reset + DB pulito da capo).
+3. **Scope frozen v3.0.0** (lista chiusa, no creep ulteriore):
+   - `OnboardingModal.jsx` — modale 2-step (nome utente + modalità configura/esempio)
+   - Gating logic in `App.jsx` o `main.jsx` (chiave `onboarding_completed` in impostazioni_app)
+   - Empty state guidante in `OggiView` (lista vuota → prompt "+ Aggiungi il tuo primo farmaco")
+   - Empty state condizionale "prossima dose [DATA]" quando ≥1 farmaco con data_inizio futura ma 0 dosi oggi (Mit-A)
+   - Toast post-aggiunta farmaco "Farmaco aggiunto! Prima dose [DATA]" (Mit-C)
+   - Seed neutro depersonalizzato (3 farmaci generici, sostituisce seed Roberto specifico)
+   - Seed opt-in (controllato da scelta onboarding, non automatico)
+   - Campo `data_inizio` form `FarmaciTab` pre-popolato a domani (Q-S6=a), modificabile, validazione ≥ oggi
+   - `data_inizio_terapia` calcolata dinamicamente in `planBuilder` come `min(farmaci_attivi.data_inizio)` (Q-S5=2, no settings UI dedicata)
+   - Bottone reset in `Config → Impostazioni → Avanzate → Dati` (visibile sempre, non DEV-only): wipe IndexedDB + reload + ritriggera onboarding
+   - Bug 1 sticky calibration: header altezza dinamica via `useLayoutEffect` + `ResizeObserver` + CSS variable
+   - Bug 3 icone manifest 404: vite-plugin-pwa config check + correzione paths
+   - Test minimi: onboarding flow + empty state + reset + data_inizio_terapia auto-calc
+   - Guida HTML esterna `https://timegates-code.github.io/pharmatimer/guide.html` con screenshot annotati (deliverable post-impl, sostituisce tutorial in-app deferred Q-S3)
+
+4. **Sub-AMB Q-S1÷Q-S7 ratificate**:
+   - Q-S1 = (a) un dispositivo per persona, no multi-profilo (Fase 4 originale)
+   - Q-S2 = (c) seed neutro depersonalizzato opt-in
+   - Q-S3 = guida HTML esterna invece di tutorial in-app
+   - Q-S4 = DB pulito da capo per tutti (Roberto compreso, deal accettato)
+   - Q-S5 = (2) data_inizio_terapia auto-calcolata da min(farmaci_attivi.data_inizio)
+   - Q-S6 = (a) data_inizio default = domani (today + 1 day)
+   - Q-S7 = OK perdita DB attuale (puramente test, no terapia attiva reale)
+
+5. **Bumping 2.8.1 → 2.8.2-rc.1** (analisi-first pattern -rc.1 §22.32). Niente nuovo tag (ratifica solo, no impl ancora). package.json invariato 2.8.1 (AMB-11.B.7 convention).
+
+6. **Eliminazione "Reset bottone" come feature standalone**: sostituito da reset integrato in §11.E scope (parte di `Config → Impostazioni → Avanzate → Dati`). Concettualmente unificato sotto "ricomincia da capo".
+
+7. **Roadmap post-deploy §22.37 superseded**: gli item 1-2 (guida utente + test SezioneInfo) ora sono in scope v3.0.0 §11.E lista chiusa, non più "post-deploy opzionali".
+
+### Pattern operativi confermati
+
+- **Pivot strategico round 2 legittimo se emerge da smoke test reale**: il primo pivot (closure Z) era basato su intent dichiarato. Il secondo pivot (riapertura UX) è basato su evidenza empirica (smoke test su PWA live). Entrambi legittimi; il secondo è particolarmente forte perché radicato nei dati, non in opinione. Estende §22.38 lesson "pivot strategico in-session" con sotto-pattern "pivot post-evidence è più solido di pivot in-apertura".
+- **Closure prematura riconosciuta in modo onesto**: la lesson §22.38 lesson 4 ("Closure formale > pausa informale") resta valida, ma con caveat: la closure va calibrata sull'intent reale, e l'intent reale può emergere solo da uso reale. Vedi §22.40-bis lessons (deferred a v3.0.0 closing).
+- **"Decidi tu" pattern per Q-S1÷Q-S7**: ratifica blanket dei default raccomandati con eccezioni puntuali per Q-S5/Q-S6/Q-S7 specifiche dell'utente. Token-efficient, evita over-specifying.
+- **Lista chiusa di scope con nominativa esplicita**: critico per evitare il drift incrementale di cui §22.38 metteva in guardia. La lista §11.E ha 14 punti elencati nominativamente (no "etc"), ognuno con tema + AMB di riferimento.
+
+### Stato git post-sessione (target post-patcher)
+
+Branch `main` HEAD post-§22.40-commit `<TBD-22.40-commit>`. Tag `v2.8.1` (hotfix routing) preservato. Branch `step-8` + `sessione-5b` invariati locali. Niente nuovo tag (ratifica only, impl pending).
+
+### Stato changelog post-sessione
+
+Versione changelog: v2.8.1 → **v2.8.2-rc.1** (analisi-first riapertura ratificata, no -final perché impl pending). §11 main title evoluto a "Closure UX-extended ✅ v2.8.2-rc.1 — Fase 2 prodotto chiuso, Fase 3 in pausa, target v3.0.0 UX onboarding multi-utente". Nuova §22.40 (questa sezione) + nuova **§11.E** (prompt esecutivo Sessione 1 analisi-first v3.0.0). §22.37 Roadmap post-deploy superseded (link). §22.38 lesson 4 ammendata (caveat closure-revisitable).
+
+### Riferimenti
+
+- **§22.39**: hotfix v2.8.1 routing (sessione precedente nella stessa sessione cumulativa)
+- **§22.37**: closure scenario Z (rivedibile da §22.40)
+- **§22.38**: lessons learned pivot strategico (lesson 4 ammendata)
+- **§11.E**: prompt esecutivo Sessione 1 analisi-first v3.0.0 (vedi sotto, nuova sub-sezione)
+- **§11.D**: prompt Sessione Fase 3 Step 1 esecutivo (preservato per eventuale riapertura Fase 3 futura, NON triggerato da v3.0.0 UX scope)
+
+---
+
+### 11.E Prompt esecutivo Sessione 1 analisi-first v3.0.0 UX onboarding multi-utente (nuova sessione dedicata)
+
+**Modalità:** **Sessione 1 dedicata analisi-first** per UX onboarding multi-utente. Scope frozen lista chiusa 14 punti §22.40 decisione 3. Output: AMB ratificate UX-1 ÷ UX-N, scope CP Sessione 2 impl pre-frozen, prompt §11.F per Sessione 2 esecutiva.
+
+**Stato baseline atteso:** v2.8.2-rc.1 (post-§22.40 ratifica). Branch `main` con working tree clean. Tag `v2.7.0`/`v2.8.0`/`v2.8.1` preservati. PWA live `https://timegates-code.github.io/pharmatimer/`. 430/430 test verdi.
+
+**Apertura sessione one-liner:**
+
+```
+Esegui il prompt al §11.E del Changelog (Sessione 1 analisi-first v3.0.0 UX onboarding multi-utente).
+```
+
+**Pre-letture obbligatorie (Claude in apertura):**
+
+1. **§22.40** integrale (questa sezione + decisione 3 lista chiusa scope frozen + decisione 4 sub-AMB Q-S1÷Q-S7)
+2. **§22.37** integrale (closure Z, contesto preservato)
+3. **§22.38** integrale (lessons learned, lesson 4 ammendata)
+4. **§22.39** integrale (hotfix v2.8.1, contesto deploy attuale)
+5. **§11.B.r** retrospettiva Fase 2 + ground truth componenti esistenti
+6. **§6.162** (SezioneInfo) + **§6.163** (router basename) per stato file post-closure
+
+**CP0 obbligatorio Mac-side prima di procedere:**
+
+```bash
+echo '=== CP0 baseline v3.0.0 Sessione 1 analisi-first ==='
+cd ~/Sviluppo/pharmatimer
+echo 'Branch:' && git branch --show-current
+echo 'Top:' && git log -1 --oneline
+echo 'Tag latest:' && git describe --tags --abbrev=0
+echo 'Working tree:' && git status --short
+echo 'Test count:' && npm test -- --run 2>&1 | grep -E 'Tests.*passed' | tail -1
+echo 'Branch list (atteso main + step-8 + sessione-5b):' && git branch
+echo 'Remote tags:' && git ls-remote --tags origin | head -10
+echo 'Remote branches:' && git ls-remote --heads origin
+echo '=== CP0 completato ==='
+```
+
+Atteso baseline:
+- branch `main`, top `<TBD-22.40-commit>`, tag latest `v2.8.1`
+- working tree clean
+- 430/430 test verdi
+- 3 branch locali (main, step-8, sessione-5b)
+- Remote: 3 tag annotati (v2.7.0/v2.8.0/v2.8.1) + 2 branch (main, gh-pages)
+
+### Q-UX 1÷N analisi-first scope (ordine raccomandato per Sessione 1)
+
+Sessione 1 ratifica AMB seguenti tramite Q&A iterativa "decidi tu" su default raccomandati. Range token atteso: 8-15K (analisi-first dedicata pattern §22.36, no codice).
+
+**Q-UX.1 — Onboarding modale: layout esatto**
+- Q-UX.1.a: 2-step (nome → modalità) come pre-frozen §22.40, oppure 1-step compresso?
+- Q-UX.1.b: Possibilità di "skip" onboarding? (rischio: utente skippa ma poi confuso)
+- Q-UX.1.c: Come indicare progress? (1/2 in alto, dots, niente)
+- Q-UX.1.d: Bottone back tra step?
+- Default raccomandato: 2-step + no-skip + "1/2" testo discreto + back attivo step 2.
+
+**Q-UX.2 — Copy italiano onboarding**
+- Saluto esatto schermata 1?
+- Domanda nome esatto?
+- Domanda modalità esatto?
+- Bottoni esatti?
+- Default raccomandato: copy proposto in §22.40 tabella riassuntiva fluxes.
+
+**Q-UX.3 — Empty state OggiView quando 0 farmaci**
+- Layout esatto: icon + titolo + sottotitolo + CTA?
+- Copy esatto?
+- Default raccomandato: "📭 Nessun farmaco ancora. Aggiungi il tuo primo farmaco per iniziare. [+ Aggiungi il tuo primo farmaco]" (CTA link a Config → Farmaci form aggiunta).
+
+**Q-UX.4 — Empty state OggiView Mit-A (≥1 farmaco ma 0 dosi oggi)**
+- Quando renderizzare? Solo se data_inizio_terapia > today, oppure anche per gap intermedi (es. domani Pantorc, dopodomani niente, terzo giorno altre)?
+- Copy esatto?
+- Default raccomandato: render solo quando data_inizio_terapia > today nel primo blocco. Copy: "✅ La tua prima dose sarà: [DATA] - [Farmaco] alle [ORA] ([momento])"
+
+**Q-UX.5 — Toast Mit-C post-aggiunta farmaco**
+- Durata?
+- Posizione?
+- Dismiss?
+- Copy?
+- Default raccomandato: 4 sec auto-dismiss, top-center, click-to-dismiss, "✅ [Nome] aggiunto. Prima dose: [DATA]"
+
+**Q-UX.6 — Seed neutro depersonalizzato**
+- Quanti farmaci? 3 (raccomandato §22.40), 5, 7?
+- Quali categorie? (es. cardiovascolare, metabolico, antinfiammatorio, vitamina, generico)
+- Nomi: "Farmaco 1", "Esempio A", o nomi neutri tipo "Cardio 50mg", "Multivit"?
+- Default raccomandato: 3 farmaci, categorie diverse (gastroprotettore generico + antipertensivo generico + vitamina D), nomi "neutri" tipo "Esempio Gastro 40mg" / "Esempio Cardio 5mg" / "Esempio Vit D 25mcg" (chiari come esempio, non confondibili con farmaci reali).
+
+**Q-UX.7 — Reset bottone Avanzate**
+- Etichetta? "Ricomincia da capo" vs "Cancella tutti i dati" vs "Reset"?
+- Modale conferma: copy esatto?
+- Cosa cancella esattamente? (Tutto incluso `nome_utente` e `onboarding_completed`)
+- Default raccomandato: "Ricomincia da capo" (less aggressive di "Cancella"), modale "Tutti i tuoi farmaci, profili e dati saranno cancellati. Riapparirà la schermata di benvenuto. Continua?", cancella TUTTO (effettivamente fa `db.delete()` + `runSeedIfNeeded` non chiamato + redirect a `/` che triggera onboarding).
+
+**Q-UX.8 — Bug 1 sticky calibration tecnica**
+- useLayoutEffect + ResizeObserver come §22.40 decisione 3 punto sticky? Oppure approccio alternativo (collassato unico sticky, top: var dinamica)?
+- Test strategy?
+- Default raccomandato: useLayoutEffect + ResizeObserver con fallback 149px se ref non monta. Test: 1 nuovo unit test che mocka `getBoundingClientRect` e verifica `top` style aggiornato.
+
+**Q-UX.9 — Bug 3 icone manifest 404**
+- Verifica config vite-plugin-pwa: paths icone con `/pharmatimer/` prefix esplicito o solo `/icons/`?
+- Decisione: cambia in vite.config (preferred) o forziamo prefix esplicito nel manifest options?
+- Default raccomandato: lascia paths relativi `/icons/...`, vite-plugin-pwa dovrebbe combinarli con base `/pharmatimer/` automaticamente. Probabile bug del plugin se non lo fa, in tal caso workaround paths assoluti `/pharmatimer/icons/...`.
+
+**Q-UX.10 — Migration utenti esistenti (Q-S4=DB pulito ratificato ma confermare strategia exec)**
+- v3.0.0 al primo boot post-update fa `db.delete()` + ricrea schema vuoto, oppure check esplicito "DB version vecchia → wipe"?
+- Avvisare l'utente prima del wipe? "Questa versione richiede DB nuovo. I tuoi dati saranno cancellati. OK?" oppure silenzioso?
+- Default raccomandato: NO wipe automatico (rischio dati persi senza consenso). Schema upgrade Dexie con nuova versione che aggiunge `onboarding_completed` chiave senza cancellare nulla. `onboarding_completed` assente al primo boot post-v3.0.0 → triggera onboarding. Roberto vedrà onboarding la prima volta + verrà avvisato di considerare reset se vuole DB pulito (questione UX: per Roberto specifico potrebbe essere annoying ma rispetta principio "don't destroy user data without consent").
+
+**Q-UX.11 — Strategia test v3.0.0**
+- Numero target test ammessi? (430 attuali → ~445-460?)
+- Strategia: aggiunta test mirati per nuovi componenti (OnboardingModal, EmptyState) senza toccare test esistenti, oppure riscrittura test che assumono seed automatico?
+- Default raccomandato: target 445-455. Aggiunta nuovi test (4-6 onboarding flow + 2-3 empty states + 2 toast + 2 reset + 4 data_inizio_terapia auto-calc + 1 sticky + 1 manifest = ~15-20 nuovi). Rifinitura minimal test esistenti che assumono seed automatico (presumibilmente 2-4 test in `actions.init.test.js` e simili).
+
+**Q-UX.12 — Guida HTML esterna (deliverable post-impl)**
+- File path? `dist/guide.html` standalone, o `public/guide.html` integrato in build?
+- Stile? Markdown convertito a HTML, HTML hand-written, o Notion-export?
+- Quando? Post-impl v3.0.0 con screenshot reali, oppure draft testuale già in v3.0.0?
+- Default raccomandato: `public/guide.html` integrato (deploya con app, accessibile via `https://timegates-code.github.io/pharmatimer/guide.html`). HTML hand-written semplice (no framework) con screenshot embedded base64 o linkati a `/icons/screenshots/`. Draft testuale in v3.0.0 commit, screenshot reali aggiunti in v3.0.1 patch dopo aver installato app finita.
+
+### Output atteso Sessione 1
+
+1. AMB UX-1 ÷ UX-12 ratificate con default + eccezioni puntuali
+2. Lista impl finale congelata (eventuali aggiunte/rimozioni vs §22.40 lista 14 punti documentate come AMB nuove §6.NN se incongruenze emergono)
+3. Scope CP Sessione 2 esecutiva pre-frozen (CP0 audit + CP1 OnboardingModal + CP2 gating + CP3 empty states + CP4 seed neutro + CP5 data_inizio + CP6 reset + CP7 bug fix + CP8 test polish + CP closing)
+4. Naming convention "v3.0.0 Step 1, Step 2..." se necessario splittare Sessione 2 in più sessioni esecutive (probabile data l'ampiezza)
+5. **Prompt §11.F** per Sessione 2 esecutiva (post-§11.E chiusura con bump v2.8.2-rc.2 → 2.8.3-alpha.1 o simile naming)
+6. CP closing Sessione 1 con bump v2.8.2-rc.1 → **v2.8.2-rc.2** o **v2.9.0-rc.1** (decisione naming demandata Sessione 1).
+
+### Stima Sessione 1
+
+- Token: 8-15K (analisi-first dedicata, no codice)
+- Tempo wall-clock: 90-150 min
+- Output: changelog +~3-5K caratteri (§11.F + §22.41), zero file source
+
+**Importante.** Sessione 1 è **fully analytical**. ZERO codice, ZERO build, ZERO test runs. Solo Q&A iterativa + ratifica + scrittura prompt §11.F. Pattern §22.36 strict.
+
