@@ -1,6 +1,6 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 2.8.0
+**Versione:** 2.8.1
 **Data inizio fase:** 16 aprile 2026
 **Ultima modifica:** 4 maggio 2026 (Sessione Fase 3 Step 1 esecutiva pivot strategico a Closure scenario Z: Fase 2 prodotto chiuso, Fase 3 in pausa indefinita riapribile. Apertura prevedeva CP0 audit Mac Studio + analisi-first 8 sub-AMB F3-S1.A-H + sequenziale CP1-CP5 + closing per backend FastAPI scaffolding. Eseguito CP0 audit (Python 3.13.12 target >=3.12 OK, MariaDB assente, MySQL 9.6.0 nativo /usr/local/mysql/ in produzione dal 24/04/2026, Docker assente, port 3306/8000 libere, branch step-8 top ae33b1f tag v2.7.0). Tentativo CP0-alpha install MariaDB 12.2.2 brew fallito a regime per conflitto socket TCP 3306 con MySQL legacy -> cleanup CP0-alpha-bis (uninstall + 10 deps autoremove + datadir + plist, 250.6 MB reclaimed). 4 round Q&A iterativa hanno ratificato pivot Z: round 1 Mac Mini vs Studio dev DB -> C ibrida raccomandata, Roberto sceglie Studio; round 2 ruolo MySQL Studio (solo dev) vs Mini (prod); round 3 architettura client-side Fase 2 standalone vs Fase 3 client thin server-authoritative; round 4 fork code rigettato in favore di git tag + feature flag (Q5=A gia pianificata), Roberto chiarisce intent reale "chiudere Fase 2 prodotto finito iPhone/Android, no degrado, riapribile" -> opzione Z scelta vs X (branch fase-3) vs Y (pausa informale). Decisioni: distribuzione PWA via GitHub Pages free tier (beta repo pubblico timegates-code/pharmatimer + meta noindex per hygiene); branch consolidation main fast-forward step-8 +61 commit; tag v2.8.0 annotato closure; README v1.0 con sezioni Stato progetto + Installazione PWA + Reset dati esempio (5.B nessun hotfix v2.7.1, seed Roberto invariato) + Riapertura Fase 3; package.json bumped 2.7.0 -> 2.8.0 (eccezione AMB-11.B.7 perche closure phase-level non Step impl). Riferimenti riapertura preservati intatti: par.11.D prompt esecutivo, par.11.C.closed sub-AMB F3-S1.A-H frozen, par.22.36 Q1-Q9 ratificate. Bump v2.7.1-rc.1 -> v2.8.0 (closure formale, no -rc.1). Nuova par.22.37 (closure scenario Z) + par.22.38 (lessons learned pivot strategico in-session, estensione AMB-11.B.7). Backward-history: sessione precedente "Sessione Fase 3 analisi-first dedicata" demotata a "Changelog versione 2.7.1-rc.1 (rispetto alla 2.7.0)" sotto.)
 
@@ -4020,6 +4020,35 @@ Senza riproduzione runtime browser-side, fix mirato non è componibile.
 **Status: chiusa ✅** in P2.B-bis. Validazione runtime in P5 (browser, app installata).
 
 **Riferimenti:** §22.37 closure scenario Z + §22.37 decision 8 (branding) + §22.37 Roadmap post-deploy (guida utente con screenshot, sessione dedicata).
+
+---
+
+## 6.163 — BrowserRouter basename per GitHub Pages subpath (hotfix v2.8.1)
+
+**Sessione:** Hotfix v2.8.1 (4 maggio 2026 ore 10, post-deploy GitHub Pages → P5 smoke test).
+
+**Bug.** Hard refresh (Cmd+Shift+R) o accesso diretto a URL `https://timegates-code.github.io/pharmatimer/oggi` produceva 404 GitHub Pages "There isn't a GitHub Pages site here." App si caricava correttamente da home `https://timegates-code.github.io/pharmatimer/` ma navigava client-side a `/oggi` (path assoluto root-relative) invece di `/pharmatimer/oggi`. Refresh successivo perdeva il prefisso → 404.
+
+**Diagnosi.** Vite buildava asset (CSS/JS/manifest) con base `/pharmatimer/` correttamente via flag CLI `--base=/pharmatimer/` (P4), ma React Router usava `BrowserRouter` standard con `<Navigate to="/oggi">` e `<Route path="/oggi">` come path assoluti dal root del dominio. Vite popola `import.meta.env.BASE_URL` automaticamente con il valore di `base`, ma React Router lo ignora a meno che non venga passato esplicitamente come `basename`.
+
+**Discrepanza dev vs prod.** In `npm run dev` Vite serviva da `http://localhost:5173/` (base default `/`), quindi BrowserRouter senza basename funzionava perfettamente. Bug si manifestava solo dopo deploy a subpath GitHub Pages.
+
+**Fix.** Due edit minimi:
+
+1. **`vite.config.js`**: aggiunta `base: '/pharmatimer/'` permanente in `defineConfig({...})`. Razionale rendere permanente vs flag CLI: evita rischio di build futuri senza flag che romperebbero deploy. Default permanente coerente con repository name fisso.
+2. **`src/main.jsx`**: aggiunto attributo `basename={import.meta.env.BASE_URL}` al `<BrowserRouter>`. In dev Vite serve da `http://localhost:5173/pharmatimer/` (post-fix) e router funziona uguale a prod. Dev/prod parity ristabilita.
+
+**Discussione strategie alternative scartate.**
+- **HashRouter**: cambia URL a `/pharmatimer/#/oggi`. Pro: zero issue GitHub Pages. Contro: URL meno belli, possibile regressione subtle (deep linking, link condivisi). Rejected.
+- **`404.html` con redirect script SPA-Redirect**: `404.html` JS-script cattura path 404 e re-instrada a `index.html?p=...`. Pro: lascia BrowserRouter intatto. Contro: hack fragile, una richiesta extra al primo direct URL, complica state. Rejected (vedi anche Step 7 below).
+
+**`404.html` mantenuto come copia di `index.html`.** Pattern standard PWA SPA: GitHub Pages serve `404.html` per qualsiasi path non matchato (es. `/pharmatimer/oggi/dose-123` se mai esistera deep linking) → il file ricevuto e' index.html identico → React Router prende il controllo e renderizza la route corretta. Funziona post-fix perche' router ora conosce il prefix.
+
+**Test impact.** 430/430 invariato (i test usano memory router custom in `renderHelpers`, non BrowserRouter reale).
+
+**Status: chiusa ✅** in hotfix v2.8.1. Verifica visiva post-redeploy: hard refresh `https://timegates-code.github.io/pharmatimer/oggi` deve caricare app correttamente.
+
+**Riferimenti:** §22.39 closure hotfix v2.8.1 + §6.162 (precedente fix in closure Z stesso file `main.jsx` non touched) + Vite docs `base` config + React Router v6 docs `basename` prop.
 
 ---
 
@@ -9677,3 +9706,62 @@ Opzione Y (pausa informale) era tentazione naturale ("non chiudo, lascio aperto,
 - **§22.35**: AMB-11.B.7 originale ("AMB nuova in-session")
 - **AMB-11.B.7**: convention "AMB nuova in-session legittima se emerge da incongruenza ratificata in apertura" — base per estensione pivot strategico
 - **§22.32**: pattern Q&A iterativa "decidi tu" su default raccomandati single-round
+
+## 22.39 Hotfix v2.8.1 — BrowserRouter basename for GitHub Pages subpath (deploy validation post-mortem)
+
+**Data:** 4 maggio 2026 ore 10 (post-§22.37 closure scenario Z + P5 smoke test fallito).
+
+**Modalita:** Hotfix dedicato emerso da bug deploy in P5 smoke test. Sessione §22.37 chiusa con app live ma routing rotto. Ratifica utente "fix immediato" → hotfix branch-less su `main` (deviazione minima vs convenzione "hotfix-2.8.x").
+
+**Esito:** ✅ **Bug routing fixato. URL hard-refresh corretto. App pienamente accessibile da qualsiasi path.** Tag `v2.8.1` annotato + push GitHub. Redeploy gh-pages con dist post-fix.
+
+### Bug context
+
+P5 smoke test su `https://timegates-code.github.io/pharmatimer/`:
+- App caricava correttamente da home URL.
+- Hard refresh (Cmd+Shift+R) su qualsiasi route generava 404 GitHub Pages.
+- URL bar mostrava `https://timegates-code.github.io/oggi` invece di `/pharmatimer/oggi` post-navigazione client.
+
+Bug bloccante: chiunque facesse refresh o avesse bookmark di route specifica avrebbe avuto 404.
+
+### Diagnosi
+
+`BrowserRouter` standard React Router non legge automaticamente `import.meta.env.BASE_URL` di Vite. Necessario passaggio esplicito di `basename`. In dev (base default `/`) il bug non si manifestava, da cui mancato test pre-deploy.
+
+### Fix applicati
+
+1. `vite.config.js`: `base: '/pharmatimer/'` permanente in `defineConfig`.
+2. `src/main.jsx`: `<BrowserRouter basename={import.meta.env.BASE_URL} future={...}>`.
+
+Vedi §6.163 per analisi completa e strategie alternative scartate.
+
+### Decisioni in-session
+
+1. **Hotfix branch-less su `main`** vs convenzione "hotfix-2.8.x" branch dedicato. Razionale: bug bloccante post-deploy, fix minimal (2 file, 2 righe), nessun rischio merge conflict. Branch dedicato sarebbe overhead per fix di 5 minuti. Pattern accettato per hotfix urgent + minimal scope.
+2. **Bump `package.json` 2.8.0 → 2.8.1** (allineamento tag, eccezione AMB-11.B.7 perche hotfix phase-level non Step impl).
+3. **`<SezioneInfo />` mantiene "PharmaTimer 2.8.0"** — NON aggiornata a 2.8.1. Razionale: la SezioneInfo mostra la milestone version (closure Z), non patch version. Eventuali hotfix patch non triggerano aggiornamento UI. Decisione documentata qui per evitare confusion in eventuali hotfix futuri.
+
+### Pattern operativi confermati
+
+- **Smoke test deploy obbligatorio**: scoprire bug routing solo post-deploy e' costoso (gia in produzione, gia 1 redeploy speso). Pattern raccomandato per future closure: prima del push gh-pages, smoke test locale via `npm run preview` con base path applicato. (Decisione futura: aggiungere step P4.5 in roadmap riapertura.)
+- **Hotfix branch-less su `main` per fix minimal urgent**: legittimo se scope e' 1-3 file con fix sotto 30 righe totali e zero rischio regressione.
+- **Discrepanza dev/prod e' costosa**: tutti i bug "funziona in dev, rotto in prod" hanno root cause in setup/build differente. Standard: rendere setup il piu identico possibile (es. `vite.config.js base` permanente vs flag CLI).
+
+### Deviazioni introdotte
+
+**1 §6.NN nuova: §6.163 (BrowserRouter basename)**. Modifiche: `vite.config.js` +base, `src/main.jsx` +basename, `package.json` 2.8.0 → 2.8.1, changelog +§6.163 +§22.39, redeploy gh-pages con dist post-fix, tag annotato v2.8.1, push origin main + v2.8.1.
+
+### Stato git post-hotfix
+
+Branch `main` HEAD post-hotfix-commit `<TBD-hotfix-commit>`, tag annotato `v2.8.1` "Hotfix v2.8.1 — BrowserRouter basename for GitHub Pages subpath". Tag `v2.7.0` (Fase 2 milestone) + `v2.8.0` (closure Z) preservati. Branch `step-8` + `sessione-5b` invariati locali.
+
+### Stato changelog post-hotfix
+
+Versione changelog: v2.8.0 → **v2.8.1** (hotfix routing). §22.37 closure Z preservata intatta (riferimento storico). Nuova §6.163 + §22.39 (questa sezione).
+
+### Riferimenti
+
+- **§6.163**: deviation hotfix routing (analisi tecnica completa)
+- **§22.37**: closure scenario Z (sessione precedente)
+- **§22.38**: lessons learned pivot strategico
+- **AMB-11.B.7**: convention bump package.json eccezione closure/hotfix phase-level

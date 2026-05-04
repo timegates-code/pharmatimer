@@ -4,6 +4,7 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // Vite config with PWA plugin. Service worker is auto-generated (generateSW strategy).
 export default defineConfig({
+  base: '/pharmatimer/',
   plugins: [
     react(),
     VitePWA({
