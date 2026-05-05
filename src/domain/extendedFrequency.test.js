@@ -166,3 +166,53 @@ describe('buildMultiDayPlan extended branch integration', () => {
     expect(extendedEntries[0].key).toBe('2026-05-06-20-1');
   });
 });
+
+
+// ---- CP9 §6.187 EXT.4 — applyAssunzione gap_recovery prompt gate --------
+
+import { applyAssunzione } from './recalc.js';
+
+describe('applyAssunzione gap_recovery prompt gate (CP9 §6.187 EXT.4)', () => {
+  it('does NOT emit gap_recovery prompt for extended-frequency farmaco even when newGap exceeds SOGLIA', () => {
+    // Setup: 168h farmaco, gap_minuti pre-presa = 200 (well above
+    // SOGLIA_PROMPT_RECUPERO=30). delta = 0 -> newGap = 200 -> would
+    // normally emit gap_recovery prompt for a standard-interval farmaco.
+    // CP9 §6.187 EXT.4: extended-frequency -> prompt suppressed.
+    const farmaco = makeFarmaco({
+      id: 99,
+      intervallo_ore: 168,
+      data_inizio: '2026-04-01',
+    });
+    const orario = makeOrario(99, 1, 0, 'colazione');
+
+    // Two-entry plan: target with gap=200, next dose 7 days later.
+    const plan = [
+      {
+        key: '2026-04-08-99-1', dateStr: '2026-04-08', farmaco, orario,
+        ora_prevista: '07:30', ora_ricalcolata: null, ora_ricalcolata_originale: null,
+        ora_effettiva: null, delta_minuti: null,
+        gap_minuti: 200, gap_originale: 200, recupero_minuti: 0,
+        stato: 'prevista', dose_prec_saltata: false,
+      },
+      {
+        key: '2026-04-15-99-1', dateStr: '2026-04-15', farmaco, orario,
+        ora_prevista: '07:30', ora_ricalcolata: null, ora_ricalcolata_originale: null,
+        ora_effettiva: null, delta_minuti: null,
+        gap_minuti: 0, gap_originale: 0, recupero_minuti: 0,
+        stato: 'prevista', dose_prec_saltata: false,
+      },
+    ];
+
+    const result = applyAssunzione(plan, {
+      entryKey: '2026-04-08-99-1',
+      dataEffettiva: '2026-04-08',
+      oraEffettiva: '07:30',
+    });
+
+    // Sanity: recalculation chain still runs. Only the prompt is suppressed.
+    expect(result.prompt).toBeNull();
+    const nextEntry = result.plan.find((e) => e.key === '2026-04-15-99-1');
+    expect(nextEntry.stato).toBe('ricalcolata');
+    expect(nextEntry.gap_minuti).toBe(200);
+  });
+});

@@ -17,6 +17,13 @@
  * See Changelog Fase 2 §6.8–6.16 for design decisions.
  * Sessione 9-A (§6.115b): `ora_ricalcolata` carries an ISO datetime
  * 'YYYY-MM-DDTHH:MM' instead of bare HH:MM, fixing §6.18 cross-midnight.
+ *
+ * CP9 v3.0.0 Step 2 (§6.187): gap recovery prompt emit gated on
+ * `target.farmaco.intervallo_ore <= 24` per §22.42 EXT.4. Recovering N
+ * minuti su intervallo > 24h e clinicamente irrilevante (~0.18% per 168h)
+ * e confonde UX. `applyRecupero` stesso non riceve gate (matematicamente
+ * valido per qualsiasi intervallo, AUDIT.5 §22.42); il gate UI in DoseCard
+ * + FarmaciTab impedisce trigger user-side per farmaci extended.
  */
 
 import { calcolaDelta, composeIsoDateTime, addMinutesToIso } from '../utils/time.js';
@@ -377,7 +384,13 @@ export function applyAssunzione(plan, input) {
       p = p2;
       logWrites.push(buildLogWrite(nextPatched));
 
-      if (newGap > SOGLIA_PROMPT_RECUPERO) {
+      // CP9 §6.187 EXT.4: gate prompt su intervallo_ore <= 24.
+      // Extended (>24h) -> gap_recovery clinicamente irrilevante e UI-hidden
+      // via DoseCard gate; emettere prompt punterebbe ad affordance invisibile.
+      if (
+        newGap > SOGLIA_PROMPT_RECUPERO &&
+        target.farmaco.intervallo_ore <= 24
+      ) {
         prompt = { kind: 'gap_recovery', entryKey: nextPatched.key };
       }
     }

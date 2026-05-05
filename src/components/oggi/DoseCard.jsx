@@ -95,6 +95,12 @@
 //     than entry.dateStr=tomorrow. The badge is the UI mitigation; the
 //     full fix (entry.dateStr bump) is scheduled for post-9-A or 9-B.
 //
+// CP9 v3.0.0 Step 2 (§6.187): gap recovery affordance suppressed for
+// extended-frequency farmaci (intervallo_ore > 24h). §22.42 EXT.4
+// ratified — clinically irrilevante (~0.18% per 168h) and UX-confusing.
+// `isExtendedFarmaco` derived locally; gap badge mount gated. Pairs with
+// recalc.js gate that suppresses the gap_recovery prompt at domain layer.
+//
 // Reads:
 //   - Theme tokens via `useTheme()` (same pattern as NavBar / DevTimeSlider).
 //   - Enum-aligned token keys from CP1 rename (§6.28): cardBg/cardBorder
@@ -218,6 +224,15 @@ export function DoseCard({
   const isDone = isPresa || isSaltata || isSospesa;
   const isInRitardo = state === 'in_ritardo';
 
+  // CP9 §6.187 EXT.4 (§22.42): gap recovery is hidden for extended-frequency
+  // farmaci (intervallo_ore > 24h). Threshold strict ">24" simmetrico al
+  // gate domain in recalc.js. Tipo guard preserves "fisso" behaviour
+  // (gap badge already off for fisso since gap_minuti stays 0 by spec).
+  const isExtendedFarmaco =
+    f.tipo_frequenza === 'intervallo' &&
+    typeof f.intervallo_ore === 'number' &&
+    f.intervallo_ore > 24;
+
   // Border styling per state (7a enum keys post-§6.28 rename).
   const borderLeft = state === 'in_attesa'
     ? 'none'
@@ -287,7 +302,7 @@ export function DoseCard({
   const hasSospesaTap = typeof onSospesaTap === 'function';
   // Gap tap wiring (7c-1 + 7d-2 CP6 §6.47a): mount only when a handler is
   // provided AND the residual gap (after any applied recupero) is positive.
-  const hasGapTap = typeof onGapTap === 'function' && gapResiduo > 0;
+  const hasGapTap = typeof onGapTap === 'function' && gapResiduo > 0 && !isExtendedFarmaco;
   // 7d-2 CP5: Card body wrapper for isPresa state opens UndoModal.
   const undoTapEnabled = isPresa && typeof onUndoTap === 'function';
 
@@ -478,7 +493,8 @@ export function DoseCard({
             border={t.warnBd}
           />
         )}
-        {gapResiduo > 0 && !isDone && (
+        {/* CP9 §6.187 EXT.4: gap badge hidden for extended-frequency farmaci. */}
+        {gapResiduo > 0 && !isDone && !isExtendedFarmaco && (
           hasGapTap ? (
             <TapBadge
               label={formatGapLabel(gapResiduo)}
