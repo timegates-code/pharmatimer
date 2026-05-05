@@ -15,6 +15,10 @@
 //   12. standalone+granted+enabled=true → toggle on, click → disable
 //   13. standalone+denied → banner permesso negato + toggle disabilitato
 //
+// Scope CP6 v3.0.0 Step 1 (§6.180): +2 test sezione Dati
+//   14. Click "Ricomincia da capo" → ConfirmModal apre con copy danger
+//   15. Click "Cancella tutto" nel modale → actions.resetAllData chiamato
+//
 // Pattern: renderWithProvider stub context con `stateOverrides` e
 // `actions` spy. Niente MemoryRouter (sezione non usa routing
 // interno). useNotifications hook is mocked at module level (CP5):
@@ -22,7 +26,7 @@
 // affect the 9 pre-existing tests; CP5 tests override per-case.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProvider } from '../../test/renderHelpers.jsx';
 import ImpostazioniTab from './ImpostazioniTab.jsx';
@@ -264,5 +268,67 @@ describe('ImpostazioniTab — Sezione Notifiche (CP5 9-B)', () => {
     expect(toggle).toHaveAttribute('aria-checked', 'false');
     expect(screen.getByText(/permesso negato/i)).toBeInTheDocument();
     expect(screen.getByText(/impostazioni di sistema/i)).toBeInTheDocument();
+  });
+});
+
+// ============================================================
+// Sezione Dati — "Ricomincia da capo" reset (CP6 v3.0.0 Step 1, §6.180)
+// ============================================================
+//
+// 2 test sulla UI flow del reset:
+//   - (a) tap sul bottone apre ConfirmModal con copy danger §6.180.
+//   - (b) tap "Cancella tutto" nel modale invoca actions.resetAllData
+//         esattamente 1 volta.
+//
+// Il thunk `resetAllData` interno (db.transaction + addProfilo Standard
+// + init re-fetch) NON è oggetto di test in questo file: la transazione
+// vive sotto repo abstraction, e il test integration end-to-end
+// (browser CP) la copre. Qui mockiamo `resetAllData` come spy e
+// validiamo solo il wiring UI ↔ thunk.
+
+describe('ImpostazioniTab — Sezione Dati "Ricomincia da capo" (CP6 §6.180)', () => {
+  it('tap "Ricomincia da capo" apre ConfirmModal con copy danger', async () => {
+    const user = userEvent.setup();
+    renderWithProvider(<ImpostazioniTab />, {
+      stateOverrides: { impostazioni: {} },
+    });
+
+    // Bottone presente in PROD-visibile (non gated DEV come SezioneAvanzate).
+    const resetBtn = screen.getByRole('button', { name: /ricomincia da capo/i });
+    expect(resetBtn).toBeInTheDocument();
+
+    // Modale assente prima del click.
+    expect(screen.queryByTestId('confirm-modal')).not.toBeInTheDocument();
+
+    await user.click(resetBtn);
+
+    // ConfirmModal aperto con copy §6.180.
+    const confirm = screen.getByTestId('confirm-modal');
+    expect(within(confirm).getByRole('heading', { name: /ricomincia da capo/i })).toBeInTheDocument();
+    expect(within(confirm).getByText(/tutti i tuoi dati saranno cancellati/i)).toBeInTheDocument();
+    expect(within(confirm).getByText(/non può essere annullata/i)).toBeInTheDocument();
+    expect(within(confirm).getByRole('button', { name: /^cancella tutto$/i })).toBeInTheDocument();
+    expect(within(confirm).getByRole('button', { name: /^annulla$/i })).toBeInTheDocument();
+  });
+
+  it('tap "Cancella tutto" nel modale invoca actions.resetAllData esattamente 1 volta', async () => {
+    const user = userEvent.setup();
+    const resetAllData = vi.fn().mockResolvedValue({ ok: true });
+
+    renderWithProvider(<ImpostazioniTab />, {
+      stateOverrides: { impostazioni: {} },
+      actions: { resetAllData },
+    });
+
+    // Apri ConfirmModal.
+    await user.click(screen.getByRole('button', { name: /ricomincia da capo/i }));
+    const confirm = screen.getByTestId('confirm-modal');
+
+    // Tap conferma.
+    await user.click(within(confirm).getByRole('button', { name: /^cancella tutto$/i }));
+
+    // Thunk invocato esattamente 1 volta, senza argomenti.
+    expect(resetAllData).toHaveBeenCalledTimes(1);
+    expect(resetAllData).toHaveBeenCalledWith();
   });
 });

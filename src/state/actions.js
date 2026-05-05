@@ -17,6 +17,11 @@ import {
 import { buildMultiDayPlan } from '../domain/planBuilder.js';
 // CP4 par.6.172/175: opt-in seed loader for completeOnboarding('demo').
 import { runSeedIfNeeded } from '../data/seed.js';
+// CP6 v3.0.0 Step 1 (§6.180-181): direct db access for resetAllData
+// thunk transaction (clear+re-add atomic). The repo abstraction does
+// not expose a clear-all primitive, and adding one for a single
+// 1-shot use-case would be scope-creep. Documented as deviation.
+import { db } from '../data/db.js';
 import { addDays } from '../utils/time.js';
 import { resolveNow } from '../utils/now.js';
 import {
@@ -959,6 +964,88 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     return { ok: true };
   }
 
+  /**
+   * §6.180 (CP6 v3.0.0 Step 1) — "Ricomincia da capo" reset thunk.
+   *
+   * Atomic wipe + re-init. Triggered by SezioneDati in ImpostazioniTab
+   * after user confirms the danger ConfirmModal (Q-UX.7 §22.41).
+   *
+   * Flow:
+   *   1. db.transaction('rw', 5 stores, ...): clear all user-mutable
+   *      tables AND profilo_utente, then re-add a default "Standard"
+   *      profilo with attivo:1. The re-add inside the same transaction
+   *      avoids the NO_ACTIVE_PROFILE error that would otherwise be
+   *      raised by init() on a profili-empty DB.
+   *   2. await init(): re-reads everything from the now-empty (except
+   *      Standard profilo) DB, dispatches INIT_SUCCESS with empty
+   *      farmaci/orari/plan + impostazioni={}. presoStack also cleared
+   *      via SET_PRESO_STACK with empty array (init filters by date
+   *      range; logAssunzioni is empty post-wipe).
+   *   3. OnboardingGate (App.jsx) automatically reopens: it watches
+   *      `selectImpostazione(state, 'onboarding_completed')`, which is
+   *      now null (key absent from impostazioni_app cleared in step 1),
+   *      so the gate condition `null !== 1` becomes true and the
+   *      OnboardingModal is mounted.
+   *
+   * §6.181 — Direct db access (db.transaction) instead of going through
+   * `repo.withTransaction`. Rationale: clear+re-add is a one-shot
+   * operation that does not warrant adding a `clearAllData()` method
+   * to IRepository (which would propagate to LocalRepository,
+   * eventually ApiRepository, with attendant test surface). The
+   * deviation is contained inside this thunk and documented inline.
+   *
+   * Defensive DISMISS_PROMPT before init() guards against a stale
+   * gap_recovery prompt whose entryKey no longer resolves post-wipe.
+   */
+  async function resetAllData() {
+    try {
+      await db.transaction(
+        'rw',
+        db.farmaci, db.orari_base, db.log_assunzioni,
+        db.impostazioni_app, db.profilo_utente,
+        async () => {
+          await db.farmaci.clear();
+          await db.orari_base.clear();
+          await db.log_assunzioni.clear();
+          await db.impostazioni_app.clear();
+          await db.profilo_utente.clear();
+          // Re-add default "Standard" profilo so init() finds an
+          // attivo profile (else throws NO_ACTIVE_PROFILE → INIT_ERROR
+          // → OnboardingGate cannot open since gate requires status
+          // === 'ready'). Defaults match the seed.js neutral profile
+          // (§6.173 CP4 v3.0.0): same canonical Mediterranean rhythm
+          // a generic user might recognise.
+          await db.profilo_utente.add({
+            nome_profilo: 'Standard',
+            ora_sveglia: '07:00',
+            ora_colazione: '07:30',
+            ora_pranzo: '13:00',
+            ora_cena: '20:30',
+            ora_sonno: '23:30',
+            attivo: 1,
+            demo: 0,
+          });
+        }
+      );
+      // Defensive prompt clear before re-init (any open prompt is now
+      // semantically stale — its entryKey no longer resolves).
+      dispatch({ type: 'DISMISS_PROMPT' });
+      await init();
+      return { ok: true };
+    } catch (err) {
+      dispatch({
+        type: 'SET_ERROR',
+        payload: {
+          kind: 'repo',
+          severity: 'error',
+          code: err?.code,
+          message: err?.message ?? 'Errore nel reset dei dati',
+        },
+      });
+      return { ok: false };
+    }
+  }
+
   return {
     init,
     rebuildPlan,
@@ -985,5 +1072,7 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     // CP5 v3.0.0 Step 1 (§6.176-177) — Toast Mit-C dispatchers.
     showToast,
     dismissToast,
+    // CP6 v3.0.0 Step 1 (§6.180-181) — "Ricomincia da capo" reset.
+    resetAllData,
   };
 }

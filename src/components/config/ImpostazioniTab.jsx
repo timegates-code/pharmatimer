@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAppContext } from '../../state/AppContext.jsx';
 import { selectImpostazione } from '../../state/selectors.js';
 import { db } from '../../data/db.js';
 import { useTheme } from '../../hooks/useTheme.js';
 import { useNotifications } from '../../hooks/useNotifications.js';
+import ConfirmModal from '../shared/ConfirmModal.jsx';
 
 // ============================================================
 // ImpostazioniTab — sezioni Config utente.
@@ -24,6 +25,13 @@ import { useNotifications } from '../../hooks/useNotifications.js';
 //     + banner per !isStandalone e permission denied.
 //   - Pending notifications count integrato in SezioneAvanzate (DEV)
 //     come 4° campo read-only diagnostic (Q-CP5.3).
+//
+// Scope CP6 v3.0.0 Step 1 (§6.180-181, Q-UX.7):
+//   - SezioneDati (PROD-visibile, non gated DEV) con bottone
+//     "Ricomincia da capo" → ConfirmModal danger → thunk resetAllData.
+//   - Distinta da SezioneAvanzate esistente (DEV-only diagnostic):
+//     "Dati" è dedicata all'azione utente di reset, non al diagnostic
+//     panel sviluppo.
 //
 // L'outer <section data-testid="config-tab-impostazioni"> è la
 // convenzione stabile CP2→CP6: i test routing in ConfigView.test.jsx
@@ -253,6 +261,94 @@ function SezioneNotifiche() {
 }
 
 // ============================================================
+// SezioneDati — reset "Ricomincia da capo" (CP6 v3.0.0 Step 1).
+// ============================================================
+//
+// Scope CP6 (§11.F + Q-UX.7 §22.41 punto 7):
+//   - Bottone "Ricomincia da capo" full-width, stile danger (border
+//     + color t.red, background t.modalBg per contrast con SezioneInfo
+//     sotto).
+//   - Tap apre <ConfirmModal danger> (3° consumer dopo FarmaciTab
+//     delete + data_fine-past). Copy §6.180:
+//       title:   "Ricomincia da capo?"
+//       body:    "Tutti i tuoi dati saranno cancellati: farmaci,
+//                 profili personalizzati, log assunzioni. L'azione
+//                 non può essere annullata."
+//       confirm: "Cancella tutto"
+//       cancel:  "Annulla"
+//   - Conferma → actions.resetAllData() (§6.180 thunk):
+//       1. db.transaction wipe atomico 5 tabelle + re-add profilo
+//          "Standard" attivo:1 (evita NO_ACTIVE_PROFILE post-reset).
+//       2. await init() ricarica state pulito.
+//       3. OnboardingGate riapre automaticamente:
+//          impostazioni_app cleared → onboarding_completed assente
+//          → gate testa null !== 1 → modale apre (§22.41 Q-UX.7 path
+//          ratificato).
+//   - PROD-visibile (NON gated import.meta.env.DEV): l'azione è
+//     destinata all'utente finale, non è uno strumento sviluppo.
+//     Distinta da SezioneAvanzate diagnostic (DEV-only) sopra.
+//   - triggerRef sul bottone per restore-focus post-modale (§6.105
+//     pattern, useModalA11y già montato in ConfirmModal shared).
+
+function SezioneDati() {
+  const { actions } = useAppContext();
+  const { tokens: t } = useTheme();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const triggerRef = useRef(null);
+
+  async function handleConfirm() {
+    setSubmitting(true);
+    try {
+      await actions.resetAllData();
+      // Su success il modale lo chiudiamo comunque; lo state si è già
+      // riallineato via init() interno al thunk, e OnboardingGate
+      // riapre automaticamente se il reset è andato a buon fine.
+      setConfirmOpen(false);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <section className="py-4 mt-4 border-t pt-4" style={{ borderTopColor: t.headerBorder }}>
+      <h3 className="text-sm font-medium mb-2">Dati</h3>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => setConfirmOpen(true)}
+        disabled={submitting}
+        className="px-4 py-2 rounded border w-full max-w-sm text-sm font-semibold disabled:opacity-50"
+        style={{
+          background: t.modalBg,
+          color: t.red,
+          borderColor: t.red,
+        }}
+      >
+        Ricomincia da capo
+      </button>
+
+      <ConfirmModal
+        open={confirmOpen}
+        triggerRef={triggerRef}
+        title="Ricomincia da capo?"
+        body={
+          <p>
+            Tutti i tuoi dati saranno cancellati: farmaci, profili personalizzati,
+            log assunzioni. L'azione non può essere annullata.
+          </p>
+        }
+        confirmLabel="Cancella tutto"
+        cancelLabel="Annulla"
+        danger={true}
+        onConfirm={handleConfirm}
+        onCancel={() => setConfirmOpen(false)}
+      />
+    </section>
+  );
+}
+
+// ============================================================
 // SezioneAvanzate — DEV-only read-only diagnostic panel.
 // ============================================================
 //
@@ -362,6 +458,7 @@ export default function ImpostazioniTab(props) {
       <SezioneNome dirty={dirty} setDirty={setDirty} />
       <SezioneTema />
       <SezioneNotifiche />
+      <SezioneDati />
       {import.meta.env.DEV && <SezioneAvanzate />}
       <SezioneInfo />
     </section>
