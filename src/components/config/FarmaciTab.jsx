@@ -1,5 +1,5 @@
 // ============================================================
-// FarmaciTab — CP5 v3.0.0 Step 1 (data_inizio default tomorrow + Mit-C toast).
+// FarmaciTab — CP8 v3.0.0 Step 2 (UI giorni+ore extended branch).
 // ============================================================
 //
 // CP5 (Sessione 8c-2 baseline) extended CP4 with:
@@ -24,22 +24,38 @@
 //     side, only mode === 'create'). Computes ora_prevista from
 //     orariPreview[0] (already in scope) and dispatches
 //     actions.showToast with formatPrimaDose-formatted message.
-//     Defensive: skips toast if oraPrevista is null (no profilo
-//     attivo, computeOraPrevista threw, etc.) — toast is UX nicety,
-//     not contract; failing silently is preferable to "Prima dose: ".
+//
+// CP8 v3.0.0 Step 2 layer (§6.183-185):
+//   - §6.183: form-state internal split intervallo into
+//     `intervallo_giorni` (0..365 step 1) + `intervallo_ore_residue`
+//     (0..23.5 step 0.5). DB column `intervallo_ore` rebuilt at
+//     normalize-time as giorni*24 + ore_residue. Single source of
+//     truth on disk preserved (§22.42 EXT.3' Q1=b).
+//   - §6.184: `dosi_giornaliere` auto-locked to '1' (readonly) when
+//     form is extended (giorni*24 + ore_residue > 24 strict).
+//     Re-editable when user reverts under threshold (§22.42 EXT.2).
+//   - §6.185: cascade ConfirmModal (4° consumer of shared, post-
+//     §6.180 ImpostazioniTab promoted 3°; §11.G nominazione "3°"
+//     superata by §22.44 timeline). Triggered at handleSalva when
+//     form is extended AND form.orari.length > 1: warns about N-1
+//     orari rows being trimmed. On confirm proceeds through normal
+//     data_fine-past interceptor chain (§22.42 EXT.2.a).
+//   - micro: `formatFrequencyLabel` in FarmacoCard renders "ogni
+//     7 giorni" / "ogni 1g 6h" instead of "ogni 168h" / "ogni 30h"
+//     for extended intervals (UX-readable for v3.0.0 novices).
 //
 // Deviations consumed by this file:
 //   §6.88 (CP3)      — campo attivo OMESSO dal form.
 //   §6.91 (CP2)      — badge Temporaneo t.orange vs amber letterale.
 //   §6.89 (CP5)      — ConfirmModal shared promozione 2° consumer.
-//   §6.92 (CP5)      — ConfirmModal shared mounts useModalA11y
-//                      (asymmetric with ConfirmDeleteProfiloModal,
-//                      retrofit target 8d).
-//   §6.93 (CP5)      — thunks farmaci also dispatch SET_ORARI
-//                      (orari refetch needed for rebuildPlan coherence).
+//   §6.92 (CP5)      — ConfirmModal shared mounts useModalA11y.
+//   §6.93 (CP5)      — thunks farmaci also dispatch SET_ORARI.
 //   §6.177 (CP5 v3)  — Mit-C trigger caller-side.
 //   §6.178 (CP5 v3)  — data_inizio default tomorrow + validation
 //                      mode-gated.
+//   §6.183 (CP8 v3)  — form-state intervallo split giorni+ore.
+//   §6.184 (CP8 v3)  — dosi_giornaliere auto-locked extended.
+//   §6.185 (CP8 v3)  — cascade ConfirmModal 4° consumer + sequencing.
 // ============================================================
 
 import { useId, useMemo, useRef, useState } from 'react';
@@ -75,6 +91,12 @@ const ANCORA_OPTIONS = [
   { value: 'assoluto',  label: 'Orario assoluto' },
 ];
 
+// CP8 §6.183: extended threshold strict > 24h (§22.42 EXT.3' Q2=a).
+const EXTENDED_THRESHOLD_HOURS = 24;
+const GIORNI_MAX = 365;
+const ORE_RESIDUE_MAX = 23.5;
+const ORE_RESIDUE_STEP = 0.5;
+
 function makeDefaultOrario(doseNumero) {
   return {
     dose_numero: doseNumero,
@@ -84,16 +106,15 @@ function makeDefaultOrario(doseNumero) {
   };
 }
 
-// CP5 v3.0.0 Step 1 (§6.178): default `data_inizio` flipped to
-// tomorrow so the "Mit-A preview giorno successivo" empty state in
-// OggiView (CP3 §6.171) fires naturally on a freshly-added farmaco.
-// User can override in the Avanzate section if they want today.
 const EMPTY_FORM = {
   nome: '',
   principio_attivo: '',
   funzione: '',
   tipo_frequenza: '',
-  intervallo_ore: '',
+  // CP8 §6.183: split intervallo in giorni + ore residue (form-only).
+  // Persisted in DB as giorni*24 + ore_residue via normalizeForm.
+  intervallo_giorni: '',
+  intervallo_ore_residue: '',
   intervallo_minimo_ore: '',
   custom_minimo: false,
   dosi_giornaliere: '1',
@@ -113,15 +134,68 @@ function todayIso() {
   return `${y}-${m}-${dd}`;
 }
 
-// CP5 v3.0.0 Step 1 (§6.178): tomorrow-as-ISO helper, parallel to
-// todayIso. Used by EMPTY_FORM.data_inizio default + form re-init in
-// FarmacoDrawer for create mode.
 function tomorrowIso() {
   const d = new Date(Date.now() + 86400000);
   const y  = d.getFullYear();
   const m  = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${dd}`;
+}
+
+// ------------------------------------------------------------
+// Intervallo conversion helpers (CP8 §6.183).
+// ------------------------------------------------------------
+
+/**
+ * Split a DB `intervallo_ore` (number, hours, may be decimal) into
+ * { giorni, ore_residue } for form display. Inverse of
+ * `joinIntervalloHours`.
+ *
+ * Round-trip safe: join(split(x)) === x for any non-negative finite x.
+ */
+function splitIntervalloHours(totalHours) {
+  if (totalHours == null || !Number.isFinite(totalHours)) {
+    return { giorni: 0, ore_residue: 0 };
+  }
+  const giorni = Math.floor(totalHours / 24);
+  // Round residue to 1 decimal to absorb FP error from subtraction.
+  const ore_residue = Math.round((totalHours - giorni * 24) * 10) / 10;
+  return { giorni, ore_residue };
+}
+
+function joinIntervalloHours(giorni, oreResidue) {
+  const g = Number.isFinite(giorni) ? giorni : 0;
+  const o = Number.isFinite(oreResidue) ? oreResidue : 0;
+  // Round to 1 decimal to match DECIMAL(4,1) DB column.
+  return Math.round((g * 24 + o) * 10) / 10;
+}
+
+/**
+ * Whether the current form represents an extended-frequency drug.
+ * Strict: intervallo_ore_total > 24, tipo_frequenza === 'intervallo'.
+ *
+ * Both intervallo_giorni and intervallo_ore_residue may be empty
+ * strings while user is typing — treated as 0 for the threshold check.
+ */
+function isExtendedFromForm(form) {
+  if (form.tipo_frequenza !== 'intervallo') return false;
+  const g = form.intervallo_giorni === '' ? 0 : Number(form.intervallo_giorni);
+  const o = form.intervallo_ore_residue === '' ? 0 : Number(form.intervallo_ore_residue);
+  if (!Number.isFinite(g) || !Number.isFinite(o)) return false;
+  return joinIntervalloHours(g, o) > EXTENDED_THRESHOLD_HOURS;
+}
+
+/**
+ * Render a human-readable frequency label for FarmacoCard.
+ * (CP8 micro-extension: replaces "ogni 168h" with "ogni 7 giorni".)
+ */
+function formatFrequencyLabel(intervalloOre) {
+  if (intervalloOre == null) return null;
+  if (intervalloOre <= EXTENDED_THRESHOLD_HOURS) return `ogni ${intervalloOre}h`;
+  const giorni = Math.floor(intervalloOre / 24);
+  const ore = Math.round((intervalloOre - giorni * 24) * 10) / 10;
+  if (ore === 0) return giorni === 1 ? 'ogni giorno' : `ogni ${giorni} giorni`;
+  return `ogni ${giorni}g ${ore}h`;
 }
 
 // ============================================================
@@ -133,15 +207,10 @@ export default function FarmaciTab(props) {
   const { tokens: t } = useTheme();
   const farmaci = selectFarmaci(state);
 
-  // Dirty lifted via useUnsavedChanges hook (CP4 AMB-8c.I).
-  // Parent setDirty (from ConfigView) is wired via `onChange`.
   // eslint-disable-next-line no-unused-vars
   const [_isDirty, setDirty] = useUnsavedChanges({ onChange: props?.setDirty });
 
-  // Drawer state: null = closed; { mode: 'create' } | { mode: 'edit', id }.
   const [drawer, setDrawer] = useState(null);
-
-  // Ref to the button that opened the drawer (focus restore via useModalA11y).
   const openerRef = useRef(null);
 
   const sortedFarmaci = useMemo(
@@ -218,7 +287,8 @@ export default function FarmaciTab(props) {
 }
 
 // ============================================================
-// FarmacoCard — compact card (unchanged since CP2).
+// FarmacoCard — compact card.
+// CP8: uses formatFrequencyLabel for human-readable extended copy.
 // ============================================================
 
 function FarmacoCard({ farmaco, theme: t, onOpen }) {
@@ -226,6 +296,7 @@ function FarmacoCard({ farmaco, theme: t, onOpen }) {
   const accent = cronico ? t.green : t.orange;
   const badgeLabel = cronico ? 'Cronico' : 'Temporaneo';
   const isIntervallo = farmaco.tipo_frequenza === 'intervallo';
+  const frequencyLabel = isIntervallo ? formatFrequencyLabel(farmaco.intervallo_ore) : null;
 
   return (
     <li
@@ -274,8 +345,8 @@ function FarmacoCard({ farmaco, theme: t, onOpen }) {
           style={{ color: t.textSecondary }}
         >
           {farmaco.dosi_giornaliere}×/die
-          {isIntervallo && farmaco.intervallo_ore != null && (
-            <span> · ogni {farmaco.intervallo_ore}h</span>
+          {frequencyLabel && (
+            <span> · {frequencyLabel}</span>
           )}
         </p>
       </button>
@@ -284,7 +355,7 @@ function FarmacoCard({ farmaco, theme: t, onOpen }) {
 }
 
 // ============================================================
-// FarmacoDrawer — CP4 (AMB-8c.B–I + §6.86 modal-first).
+// FarmacoDrawer — CP4-CP5-CP8.
 // ============================================================
 
 function FarmacoDrawer({
@@ -293,9 +364,6 @@ function FarmacoDrawer({
   const { state, actions } = useAppContext();
   const titleId = useId();
 
-  // Active profilo for ora_prevista preview + order warning.
-  // Defensive derive: state.profiloAttivo may be id-or-object depending
-  // on the reducer contract; fall back to attivo=1 filtering.
   const profiloAttivo = useMemo(() => {
     const direct = state.profiloAttivo;
     if (direct && typeof direct === 'object' && direct.ora_colazione) return direct;
@@ -317,20 +385,25 @@ function FarmacoDrawer({
             ancora_riferimento: o.ancora_riferimento ?? 'colazione',
             descrizione_momento: o.descrizione_momento ?? '',
           }));
-        // Prefer rehydrated count if state diverges from farmaco.dosi_giornaliere
-        // (runtime inconsistency will self-heal on next user edit of dosi).
         const orariInit = filtered.length > 0
           ? filtered
           : [makeDefaultOrario(1)];
         const dosi = filtered.length > 0
           ? String(filtered.length)
           : (f.dosi_giornaliere != null ? String(f.dosi_giornaliere) : '1');
+        // CP8 §6.183: split intervallo_ore (DB) into giorni + ore_residue (form).
+        const split = f.intervallo_ore != null
+          ? splitIntervalloHours(Number(f.intervallo_ore))
+          : { giorni: 0, ore_residue: 0 };
+        const intervalloGiorniStr = f.intervallo_ore != null ? String(split.giorni) : '';
+        const intervalloOreResStr = f.intervallo_ore != null ? String(split.ore_residue) : '';
         return {
           nome: f.nome ?? '',
           principio_attivo: f.principio_attivo ?? '',
           funzione: f.funzione ?? '',
           tipo_frequenza: f.tipo_frequenza ?? '',
-          intervallo_ore: f.intervallo_ore != null ? String(f.intervallo_ore) : '',
+          intervallo_giorni: intervalloGiorniStr,
+          intervallo_ore_residue: intervalloOreResStr,
           intervallo_minimo_ore: f.intervallo_minimo_ore != null ? String(f.intervallo_minimo_ore) : '',
           custom_minimo: f.intervallo_minimo_ore != null,
           dosi_giornaliere: dosi,
@@ -343,28 +416,42 @@ function FarmacoDrawer({
         };
       }
     }
-    // CP5 v3.0.0 Step 1 (§6.178): create mode → fresh EMPTY_FORM with
-    // tomorrow as data_inizio (re-evaluated at drawer mount, not at
-    // module load, so the default tracks the actual current date).
     return { ...EMPTY_FORM, data_inizio: tomorrowIso(), orari: [makeDefaultOrario(1)] };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [form, setForm] = useState(initial);
-
-  // Undo banner state (trim feedback).
   const [removedOrari, setRemovedOrari] = useState([]);
+
+  // CP8 §6.184: derive isExtendedForm live; used to lock dosi_giornaliere
+  // and to gate the cascade ConfirmModal at save-time.
+  const isExtendedForm = useMemo(() => isExtendedFromForm(form), [form]);
 
   function updateField(name, value) {
     setForm((f) => {
-      const next = { ...f, [name]: value };
+      let next = { ...f, [name]: value };
+
+      // CP8 §6.184: when a change pushes form into extended state,
+      // auto-lock dosi_giornaliere to '1' (UI-only; orari trim
+      // deferred to cascade ConfirmModal at save-time, §6.185).
+      // Consider both intervallo edits AND tipo_frequenza change
+      // since both can flip the extended boundary.
+      if (
+        name === 'intervallo_giorni' ||
+        name === 'intervallo_ore_residue' ||
+        name === 'tipo_frequenza'
+      ) {
+        if (isExtendedFromForm(next) && next.dosi_giornaliere !== '1') {
+          next = { ...next, dosi_giornaliere: '1' };
+        }
+      }
 
       // Sync orari rows when dosi_giornaliere changes (AMB-8c.C).
-      if (name === 'dosi_giornaliere') {
+      // Skip when extended (dosi locked at 1, no sync needed).
+      if (name === 'dosi_giornaliere' && !isExtendedFromForm(next)) {
         const desired = Math.max(1, Number(value) || 1);
         const current = f.orari.length;
         if (desired > current) {
-          // Add rows with defaults; clears any pending undo banner.
           const added = [];
           for (let i = current + 1; i <= desired; i++) {
             added.push(makeDefaultOrario(i));
@@ -372,7 +459,6 @@ function FarmacoDrawer({
           next.orari = [...f.orari, ...added];
           setRemovedOrari([]);
         } else if (desired < current) {
-          // Trim last rows; expose undo banner.
           const keep = f.orari.slice(0, desired);
           const dropped = f.orari.slice(desired);
           next.orari = keep;
@@ -409,13 +495,20 @@ function FarmacoDrawer({
   }
 
   function updateTipoFrequenza(value) {
-    setForm((f) => ({
-      ...f,
-      tipo_frequenza: value,
-      intervallo_ore: value === 'fisso' ? '' : f.intervallo_ore,
-      custom_minimo: value === 'fisso' ? false : f.custom_minimo,
-      intervallo_minimo_ore: value === 'fisso' ? '' : f.intervallo_minimo_ore,
-    }));
+    setForm((f) => {
+      const next = {
+        ...f,
+        tipo_frequenza: value,
+        intervallo_giorni: value === 'fisso' ? '' : f.intervallo_giorni,
+        intervallo_ore_residue: value === 'fisso' ? '' : f.intervallo_ore_residue,
+        custom_minimo: value === 'fisso' ? false : f.custom_minimo,
+        intervallo_minimo_ore: value === 'fisso' ? '' : f.intervallo_minimo_ore,
+      };
+      // If switching to fisso, also unlock dosi (no longer extended).
+      // If switching to intervallo with previously-set extended values,
+      // re-evaluate isExtended on next render (covered by useMemo).
+      return next;
+    });
     setDirty(true);
   }
 
@@ -428,21 +521,6 @@ function FarmacoDrawer({
     setDirty(true);
   }
 
-  // §6.98 (CP4 Sessione 8d-A-continue): close path split into
-  // `doAnnulla` (silent primitive: restore initial + close) and
-  // `handleAnnulla` (gated: prompts via UnsavedChangesModal when
-  // form is dirty). All close triggers (X button, Annulla footer,
-  // Escape via useModalA11y) funnel through handleAnnulla; the
-  // backdrop click is already `!isDirty`-gated (§6.86.1), so dirty
-  // backdrop is a no-op and doesn't need routing here.
-  //
-  // Pattern reference note: prompt §11 cited "ProfiliTab::handleClose
-  // §6.86.3" but ProfiliTab does silent close on Annulla and §6.86.3
-  // is the z-index bump of the shared UnsavedChangesModal. The
-  // actual precedent for prompt-on-dirty is ConfigView mounting
-  // UnsavedChangesModal for the cross-tab guard; FarmacoDrawer is
-  // the 2° consumer here (candidate §6.102 — focus-trap retrofit
-  // of UnsavedChangesModal deferred to 8d-B tier C).
   function doAnnulla() {
     setForm(initial);
     setRemovedOrari([]);
@@ -459,9 +537,6 @@ function FarmacoDrawer({
 
   // --- CP5: normalization helpers + thunks wire -----------------
 
-  // Convert the form state (strings/empty-string for empty) into the
-  // repo-shape payloads expected by add/updateFarmaco(farmacoData,
-  // orari). Pure: no side effects.
   function normalizeForm(f) {
     const trimOrNull = (s) => {
       const v = (s ?? '').trim();
@@ -473,12 +548,22 @@ function FarmacoDrawer({
       return Number.isFinite(n) ? n : null;
     };
     const tipo = f.tipo_frequenza;
+    // CP8 §6.183: rebuild DB column intervallo_ore from form split.
+    let intervalloOre = null;
+    if (tipo === 'intervallo') {
+      const g = numOrNull(f.intervallo_giorni);
+      const o = numOrNull(f.intervallo_ore_residue);
+      if (g != null || o != null) {
+        intervalloOre = joinIntervalloHours(g ?? 0, o ?? 0);
+        if (intervalloOre === 0) intervalloOre = null;
+      }
+    }
     const farmacoData = {
       nome: (f.nome ?? '').trim(),
       principio_attivo: trimOrNull(f.principio_attivo),
       funzione: trimOrNull(f.funzione),
       tipo_frequenza: tipo,
-      intervallo_ore: tipo === 'intervallo' ? numOrNull(f.intervallo_ore) : null,
+      intervallo_ore: intervalloOre,
       intervallo_minimo_ore: (tipo === 'intervallo' && f.custom_minimo)
         ? numOrNull(f.intervallo_minimo_ore)
         : null,
@@ -498,24 +583,19 @@ function FarmacoDrawer({
     return { farmacoData, orari };
   }
 
-  // ConfirmModal state — 2 independent flows (§6.68 + §6.67).
-  //
-  // `dataFinePendingPayload` holds the normalised save payload while
-  // the user decides on the data_fine-past confirm. On cancel we
-  // discard it (drawer stays open, dirty preserved). On confirm we
-  // pass it to the appropriate thunk.
+  // --- ConfirmModal state — 3 independent flows -----------------
+  // §6.68 data_fine-past, §6.67 delete, §6.185 cascade extended trim.
+
   const [dataFineConfirmOpen, setDataFineConfirmOpen] = useState(false);
-  // 8d-B CP2 (§6.105): ref al button Salva (drawer footer). useModalA11y
-  // restore-focus nel ConfirmModal data_fine-past torna sul button Salva
-  // che ha originato l'interceptor. Senza ref il focus cade su body.
   const salvaTriggerRef = useRef(null);
   const [dataFinePendingPayload, setDataFinePendingPayload] = useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  // 8d-B CP2 (§6.105): ref al button Elimina (drawer footer, edit mode).
   const deleteTriggerRef = useRef(null);
-  // §6.98: unsaved-changes guard on close path (dirty-gated).
   const [unsavedConfirmOpen, setUnsavedConfirmOpen] = useState(false);
-  // Submit-lock so rapid taps / Enter chord cannot fire the thunk twice.
+  // CP8 §6.185: cascade ConfirmModal state for extended trim.
+  const [cascadeConfirmOpen, setCascadeConfirmOpen] = useState(false);
+  const [cascadePendingPayload, setCascadePendingPayload] = useState(null);
+  const [cascadeOrariCount, setCascadeOrariCount] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
   function isoToday() {
@@ -529,14 +609,6 @@ function FarmacoDrawer({
         ? await actions.addFarmaco(farmacoData, orari)
         : await actions.updateFarmaco(editingId, farmacoData, orari);
       if (result?.ok) {
-        // CP5 v3.0.0 Step 1 (§6.177): Mit-C toast trigger caller-side.
-        // Only on 'create' (Q-UX.5 "post-aggiunta manuale"); edit/delete
-        // have no Mit-C. Defensive guard: skip if oraPrevista cannot be
-        // computed (no profilo attivo, computeOraPrevista threw, etc.) —
-        // toast is UX nicety, not contract; failing silently is preferable
-        // to showing a broken "Prima dose: " line.
-        // Seed flow (runSeedIfNeeded) bypasses this thunk via direct
-        // db.farmaci.bulkPut, so no spurious toast on demo seed (§6.177).
         if (mode === 'create') {
           const oraPrevista = orariPreview[0];
           if (oraPrevista) {
@@ -550,25 +622,57 @@ function FarmacoDrawer({
         }
         onClose();
       }
-      // On failure the thunk already dispatched SET_ERROR; the drawer
-      // stays open so the user can retry or adjust.
       return result;
     } finally {
       setSubmitting(false);
     }
   }
 
-  async function handleSalva() {
-    const payload = normalizeForm(form);
-    // Data_fine-past interceptor (§6.68). Applies to both create and
-    // edit (AMB-8c-2.D): the semantic "dose successive scompariranno"
-    // does not distinguish mode.
+  /**
+   * Apply data_fine-past interceptor (§6.68) and delegate to commitSave.
+   * Extracted so cascade-confirmed payloads can re-enter the chain
+   * without duplicating the past-date check (§6.185 sequencing).
+   */
+  async function proceedSaveOrIntercept(payload) {
     if (payload.farmacoData.data_fine && payload.farmacoData.data_fine < isoToday()) {
       setDataFinePendingPayload(payload);
       setDataFineConfirmOpen(true);
       return;
     }
     await commitSave(payload);
+  }
+
+  async function handleSalva() {
+    const payload = normalizeForm(form);
+    // CP8 §6.185: cascade interceptor — extended form with >1 orari rows
+    // means user added rows before flipping to extended (or imported
+    // legacy). Trim payload.orari to first row, surface confirm modal.
+    if (isExtendedForm && form.orari.length > 1) {
+      const trimmed = {
+        ...payload,
+        orari: payload.orari.slice(0, 1),
+      };
+      setCascadeOrariCount(form.orari.length - 1);
+      setCascadePendingPayload(trimmed);
+      setCascadeConfirmOpen(true);
+      return;
+    }
+    await proceedSaveOrIntercept(payload);
+  }
+
+  async function confirmCascade() {
+    const payload = cascadePendingPayload;
+    setCascadeConfirmOpen(false);
+    setCascadePendingPayload(null);
+    setCascadeOrariCount(0);
+    if (payload) await proceedSaveOrIntercept(payload);
+  }
+
+  function cancelCascade() {
+    setCascadeConfirmOpen(false);
+    setCascadePendingPayload(null);
+    setCascadeOrariCount(0);
+    // Drawer stays open; form dirty preserved.
   }
 
   async function confirmDataFine() {
@@ -581,7 +685,6 @@ function FarmacoDrawer({
   function cancelDataFine() {
     setDataFineConfirmOpen(false);
     setDataFinePendingPayload(null);
-    // Drawer stays open; form dirty preserved.
   }
 
   async function confirmDelete() {
@@ -607,16 +710,32 @@ function FarmacoDrawer({
 
   // --- Validation -----------------------------------------------
 
-  const hasIntervalloOreRequired =
-    form.tipo_frequenza !== 'intervallo' ||
-    (form.intervallo_ore !== '' && Number(form.intervallo_ore) > 0);
+  // CP8 §6.183: intervallo total > 0 required when tipo='intervallo'.
+  const intervalloOreTotal = useMemo(() => {
+    if (form.tipo_frequenza !== 'intervallo') return 0;
+    const g = form.intervallo_giorni === '' ? 0 : Number(form.intervallo_giorni);
+    const o = form.intervallo_ore_residue === '' ? 0 : Number(form.intervallo_ore_residue);
+    if (!Number.isFinite(g) || !Number.isFinite(o)) return 0;
+    return joinIntervalloHours(g, o);
+  }, [form.tipo_frequenza, form.intervallo_giorni, form.intervallo_ore_residue]);
 
-  // CP5 v3.0.0 Step 1 (§6.178): validation `data_inizio >= today` is
-  // **mode-gated**. In edit mode we accept any (legitimate) past date
-  // — the user might be editing a farmaco started months ago, and a
-  // blanket >=today rule would disable Salva for routine edits. In
-  // create mode the rule enforces Q-S6=a (default tomorrow, no
-  // backdating allowed at insertion).
+  const hasIntervalloOreRequired =
+    form.tipo_frequenza !== 'intervallo' || intervalloOreTotal > 0;
+
+  const intervalloGiorniValid = useMemo(() => {
+    if (form.intervallo_giorni === '') return true;
+    const g = Number(form.intervallo_giorni);
+    return Number.isFinite(g) && g >= 0 && g <= GIORNI_MAX && Number.isInteger(g);
+  }, [form.intervallo_giorni]);
+
+  const intervalloOreResidueValid = useMemo(() => {
+    if (form.intervallo_ore_residue === '') return true;
+    const o = Number(form.intervallo_ore_residue);
+    if (!Number.isFinite(o) || o < 0 || o > ORE_RESIDUE_MAX) return false;
+    // Step 0.5: value*2 must be integer.
+    return Number.isInteger(o * 2);
+  }, [form.intervallo_ore_residue]);
+
   const dataInizioValid = mode === 'edit' || form.data_inizio >= todayIso();
 
   const allRequiredFilled =
@@ -626,7 +745,9 @@ function FarmacoDrawer({
     form.relazione_pasto !== '' &&
     form.data_inizio !== '' &&
     dataInizioValid &&
-    hasIntervalloOreRequired;
+    hasIntervalloOreRequired &&
+    intervalloGiorniValid &&
+    intervalloOreResidueValid;
 
   const duplicateMatch = useMemo(() => {
     const q = form.nome.trim().toLowerCase();
@@ -641,10 +762,8 @@ function FarmacoDrawer({
   const minimoInvalid =
     form.custom_minimo &&
     form.intervallo_minimo_ore !== '' &&
-    form.intervallo_ore !== '' &&
-    Number(form.intervallo_minimo_ore) >= Number(form.intervallo_ore);
-
-  // --- Orari preview + soft warning ordine wrap-aware -----------
+    intervalloOreTotal > 0 &&
+    Number(form.intervallo_minimo_ore) >= intervalloOreTotal;
 
   const orariPreview = useMemo(() => {
     if (!profiloAttivo) return form.orari.map(() => null);
@@ -676,14 +795,12 @@ function FarmacoDrawer({
     for (let i = 1; i < mins.length; i++) {
       if (mins[i] < mins[i - 1]) wrapCount++;
     }
-    // 0 wraps = monotonic OK; 1 wrap = mezzanotte crossing OK; 2+ = disordered.
     return wrapCount > 1
       ? 'Ordine orari anomalo: più di un attraversamento di mezzanotte'
       : null;
   }, [orariPreview]);
 
   const isDirty = useMemo(() => {
-    // Shallow compare on all form fields + deep compare on orari array.
     for (const k of Object.keys(EMPTY_FORM)) {
       if (k === 'orari') continue;
       if (form[k] !== initial[k]) return true;
@@ -722,7 +839,6 @@ function FarmacoDrawer({
       className="fixed inset-0 z-50 flex items-end justify-center"
       style={{ background: t.modalOverlay }}
       onClick={(e) => {
-        // §6.86.1/.4: backdrop click closes only when non-dirty.
         if (e.target === e.currentTarget && !isDirty) handleAnnulla();
       }}
     >
@@ -815,14 +931,70 @@ function FarmacoDrawer({
         </fieldset>
 
         {isIntervallo && (
-          <FormField
-            id="farmaco-intervallo-ore"
-            label="Intervallo (ore)"
-            value={form.intervallo_ore}
-            onChange={(v) => updateField('intervallo_ore', v)}
-            type="number"
-            theme={t}
-          />
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium" style={{ color: t.textPrimary }}>
+              Intervallo
+            </span>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex flex-col gap-1">
+                <label
+                  htmlFor="farmaco-intervallo-giorni"
+                  className="text-xs font-medium"
+                  style={{ color: t.textSecondary }}
+                >
+                  Giorni
+                </label>
+                <input
+                  id="farmaco-intervallo-giorni"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={GIORNI_MAX}
+                  step={1}
+                  value={form.intervallo_giorni}
+                  onChange={(e) => updateField('intervallo_giorni', e.target.value)}
+                  className="rounded px-3 py-2 border tabular-nums"
+                  style={{
+                    background: t.modalBg,
+                    color: t.textPrimary,
+                    borderColor: intervalloGiorniValid ? t.tapBd : t.red,
+                  }}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label
+                  htmlFor="farmaco-intervallo-ore-residue"
+                  className="text-xs font-medium"
+                  style={{ color: t.textSecondary }}
+                >
+                  Ore
+                </label>
+                <input
+                  id="farmaco-intervallo-ore-residue"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  max={ORE_RESIDUE_MAX}
+                  step={ORE_RESIDUE_STEP}
+                  value={form.intervallo_ore_residue}
+                  onChange={(e) => updateField('intervallo_ore_residue', e.target.value)}
+                  className="rounded px-3 py-2 border tabular-nums"
+                  style={{
+                    background: t.modalBg,
+                    color: t.textPrimary,
+                    borderColor: intervalloOreResidueValid ? t.tapBd : t.red,
+                  }}
+                />
+              </div>
+            </div>
+            {(!intervalloGiorniValid || !intervalloOreResidueValid) && (
+              <p className="text-xs" role="status" style={{ color: t.red }}>
+                {!intervalloGiorniValid
+                  ? `Giorni: numero intero tra 0 e ${GIORNI_MAX}`
+                  : `Ore: tra 0 e ${ORE_RESIDUE_MAX}, passo 0.5`}
+              </p>
+            )}
+          </div>
         )}
 
         {isIntervallo && (
@@ -851,14 +1023,34 @@ function FarmacoDrawer({
           />
         )}
 
-        <FormField
-          id="farmaco-dosi-giornaliere"
-          label="Dosi giornaliere"
-          value={form.dosi_giornaliere}
-          onChange={(v) => updateField('dosi_giornaliere', v)}
-          type="number"
-          theme={t}
-        />
+        <div className="flex flex-col gap-1">
+          <label
+            htmlFor="farmaco-dosi-giornaliere"
+            className="text-sm font-medium"
+            style={{ color: t.textPrimary }}
+          >
+            Dosi giornaliere
+          </label>
+          <input
+            id="farmaco-dosi-giornaliere"
+            type="number"
+            value={form.dosi_giornaliere}
+            onChange={(e) => updateField('dosi_giornaliere', e.target.value)}
+            disabled={isExtendedForm}
+            data-testid="farmaco-dosi-giornaliere-input"
+            className="rounded px-3 py-2 border disabled:opacity-50"
+            style={{
+              background: t.modalBg,
+              color: t.textPrimary,
+              borderColor: t.tapBd,
+            }}
+          />
+          {isExtendedForm && (
+            <p className="text-xs italic" style={{ color: t.textSecondary }}>
+              Fissata a 1 per intervalli oltre le 24 ore.
+            </p>
+          )}
+        </div>
 
         {/* --- Sezione 3: Orari di assunzione ------------------- */}
         <SectionHeading theme={t}>Orari di assunzione</SectionHeading>
@@ -923,10 +1115,6 @@ function FarmacoDrawer({
         )}
 
         {/* --- Sezione 4: Avanzate ------------------------------ */}
-        {/* §6.88 — campo `attivo` OMESSO dal form. Soft-delete
-            (§6.67) diventa unico canale user-level di
-            disattivazione. Schema DB invariato: il flag resta
-            per infrastruttura filtering (GET_FARMACI_SOLO_ATTIVI). */}
         <SectionHeading theme={t}>Avanzate</SectionHeading>
 
         <FormSelect
@@ -1019,6 +1207,28 @@ function FarmacoDrawer({
         </footer>
       </div>
 
+      {/* --- ConfirmModal: cascade extended trim (§6.185) ----------- */}
+      <ConfirmModal
+        open={cascadeConfirmOpen}
+        triggerRef={salvaTriggerRef}
+        title="Intervallo oltre le 24 ore"
+        body={
+          <p>
+            Per intervalli oltre le 24 ore è prevista una sola dose per ciclo.
+            {' '}
+            {cascadeOrariCount === 1
+              ? 'Verrà rimosso 1 orario aggiuntivo.'
+              : `Verranno rimossi ${cascadeOrariCount} orari aggiuntivi.`}
+            {' '}
+            Confermi?
+          </p>
+        }
+        confirmLabel="Conferma"
+        cancelLabel="Annulla"
+        onConfirm={confirmCascade}
+        onCancel={cancelCascade}
+      />
+
       {/* --- ConfirmModal: data_fine nel passato (§6.68) ------------ */}
       <ConfirmModal
         open={dataFineConfirmOpen}
@@ -1072,7 +1282,7 @@ function FarmacoDrawer({
 }
 
 // ============================================================
-// OrarioRow — single dose timing row (CP4 AMB-8c.C).
+// OrarioRow — single dose timing row.
 // ============================================================
 
 function OrarioRow({ index, orario, oraPreview, onChange, theme: t }) {
@@ -1178,7 +1388,7 @@ function OrarioRow({ index, orario, oraPreview, onChange, theme: t }) {
 }
 
 // ============================================================
-// Internal form helpers (inline — promozione shared 8d candidata).
+// Internal form helpers.
 // ============================================================
 
 function SectionHeading({ children, theme: t }) {

@@ -132,11 +132,11 @@ describe('FarmaciTab — CP3 drawer + form', () => {
     });
     await user.click(screen.getByRole('button', { name: /nuovo farmaco/i }));
 
-    expect(screen.queryByLabelText('Intervallo (ore)')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Giorni')).not.toBeInTheDocument();
     await user.click(screen.getByLabelText('A intervallo'));
-    expect(screen.getByLabelText('Intervallo (ore)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Giorni')).toBeInTheDocument();
     await user.click(screen.getByLabelText('Fisso'));
-    expect(screen.queryByLabelText('Intervallo (ore)')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Giorni')).not.toBeInTheDocument();
   });
 });
 
