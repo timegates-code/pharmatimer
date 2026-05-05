@@ -5,7 +5,6 @@ import {
   computeExtendedOccurrencesInWindow,
 } from './extendedFrequency.js';
 import { buildMultiDayPlan } from './planBuilder.js';
-import { applyAssunzione } from './recalc.js';
 
 // ---- Fixtures ------------------------------------------------------------
 
@@ -73,6 +72,9 @@ describe('isExtendedInterval', () => {
 
 describe('computeExtendedOccurrencesInWindow', () => {
   it('168h weekly with anchor before window: computes correct kStart and lands on the right weekday', () => {
+    // Anchor: 2026-04-01 (Wed) at 07:30 (colazione).
+    // Window: 2026-05-04 (Mon) for 3 days [Mon, Tue, Wed].
+    // Expected occurrence: 2026-05-06 (Wed) 07:30 — k = (35 days) / 7 days = 5.
     const farmaco = makeFarmaco({
       intervallo_ore: 168,
       data_inizio: '2026-04-01',
@@ -92,6 +94,9 @@ describe('computeExtendedOccurrencesInWindow', () => {
   });
 
   it('respects data_fine cutoff (occurrences after data_fine are excluded)', () => {
+    // Anchor: 2026-05-04 (Mon) 07:30, intervallo 48h, data_fine 2026-05-07 (Thu).
+    // Without cutoff: k=0 May 4, k=1 May 6, k=2 May 8 (out by data_fine).
+    // Expected: [May 4, May 6].
     const farmaco = makeFarmaco({
       intervallo_ore: 48,
       data_inizio: '2026-05-04',
@@ -113,6 +118,7 @@ describe('computeExtendedOccurrencesInWindow', () => {
 
 describe('buildMultiDayPlan extended branch integration', () => {
   it('mixes standard daily entries with extended weekly entries without altering the standard path', () => {
+    // Standard farmaco: tipo='fisso', 1 dose/day at colazione = 07:30.
     const standard = makeFarmaco({
       id: 10,
       nome: 'Pantorc 40mg',
@@ -122,6 +128,7 @@ describe('buildMultiDayPlan extended branch integration', () => {
     });
     const standardOrario = makeOrario(10, 1, 0, 'colazione');
 
+    // Extended farmaco: 168h weekly, anchor 2026-04-01 (Wed) 07:30.
     const extended = makeFarmaco({
       id: 20,
       nome: 'Metotrexato',
@@ -131,6 +138,7 @@ describe('buildMultiDayPlan extended branch integration', () => {
     });
     const extendedOrario = makeOrario(20, 1, 0, 'colazione');
 
+    // Window: 2026-05-04 (Mon) for 3 days [Mon, Tue, Wed].
     const plan = buildMultiDayPlan({
       profilo: profiloStandard,
       farmaci: [standard, extended],
@@ -140,6 +148,7 @@ describe('buildMultiDayPlan extended branch integration', () => {
       numDays: 3,
     });
 
+    // Standard: 3 entries (Mon/Tue/Wed). Extended: 1 entry on Wed (k=5).
     const standardEntries = plan.filter((e) => e.farmaco.id === 10);
     const extendedEntries = plan.filter((e) => e.farmaco.id === 20);
 
@@ -155,53 +164,5 @@ describe('buildMultiDayPlan extended branch integration', () => {
     expect(extendedEntries[0].ora_prevista).toBe('07:30');
     expect(extendedEntries[0].stato).toBe('prevista');
     expect(extendedEntries[0].key).toBe('2026-05-06-20-1');
-  });
-});
-
-// ---- CP9 §6.187 EXT.4 — applyAssunzione gap_recovery prompt gate --------
-
-describe('applyAssunzione gap_recovery prompt gate (CP9 §6.187 EXT.4)', () => {
-  it('does NOT emit gap_recovery prompt for extended-frequency farmaco even when newGap exceeds SOGLIA', () => {
-    // Setup: 168h farmaco, gap_minuti pre-presa = 200 (well above
-    // SOGLIA_PROMPT_RECUPERO=30). delta = 0 ⇒ newGap = 200 ⇒ would
-    // normally emit gap_recovery prompt for a standard-interval farmaco.
-    // CP9 §6.187 EXT.4: extended-frequency → prompt suppressed.
-    const farmaco = makeFarmaco({
-      id: 99,
-      intervallo_ore: 168,
-      data_inizio: '2026-04-01',
-    });
-    const orario = makeOrario(99, 1, 0, 'colazione');
-
-    // Two-entry plan: target with gap=200, next dose 7 days later.
-    const plan = [
-      {
-        key: '2026-04-08-99-1', dateStr: '2026-04-08', farmaco, orario,
-        ora_prevista: '07:30', ora_ricalcolata: null, ora_ricalcolata_originale: null,
-        ora_effettiva: null, delta_minuti: null,
-        gap_minuti: 200, gap_originale: 200, recupero_minuti: 0,
-        stato: 'prevista', dose_prec_saltata: false,
-      },
-      {
-        key: '2026-04-15-99-1', dateStr: '2026-04-15', farmaco, orario,
-        ora_prevista: '07:30', ora_ricalcolata: null, ora_ricalcolata_originale: null,
-        ora_effettiva: null, delta_minuti: null,
-        gap_minuti: 0, gap_originale: 0, recupero_minuti: 0,
-        stato: 'prevista', dose_prec_saltata: false,
-      },
-    ];
-
-    const result = applyAssunzione(plan, {
-      entryKey: '2026-04-08-99-1',
-      dataEffettiva: '2026-04-08',
-      oraEffettiva: '07:30',
-    });
-
-    // Sanity: the recalculation chain still runs (interval-based farmaco,
-    // N+1 found and patched). Only the prompt is suppressed.
-    expect(result.prompt).toBeNull();
-    const nextEntry = result.plan.find((e) => e.key === '2026-04-15-99-1');
-    expect(nextEntry.stato).toBe('ricalcolata');
-    expect(nextEntry.gap_minuti).toBe(200);
   });
 });

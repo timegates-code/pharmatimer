@@ -44,19 +44,6 @@
 //     7 giorni" / "ogni 1g 6h" instead of "ogni 168h" / "ogni 30h"
 //     for extended intervals (UX-readable for v3.0.0 novices).
 //
-// CP9 v3.0.0 Step 2 layer (§6.187):
-//   - §6.187: gap recovery affordance hidden for extended-frequency
-//     farmaci. Two effects in this file:
-//       (a) JSX gate `!isExtendedForm` on the `custom_minimo` checkbox
-//           and `intervallo_minimo_ore` field — they have no semantic
-//           meaning for intervalli > 24h (§22.42 EXT.4 ratified).
-//       (b) `updateField` cleanup: when transitioning into extended
-//           state, clear `custom_minimo` and `intervallo_minimo_ore`
-//           form fields. Prevents ghost values leaking via normalizeForm
-//           if user later reverts back under 24h.
-//     Pairs with `recalc.js` gate (gap_recovery prompt suppressed) +
-//     `DoseCard.jsx` gate (gap badge hidden).
-//
 // Deviations consumed by this file:
 //   §6.88 (CP3)      — campo attivo OMESSO dal form.
 //   §6.91 (CP2)      — badge Temporaneo t.orange vs amber letterale.
@@ -69,7 +56,6 @@
 //   §6.183 (CP8 v3)  — form-state intervallo split giorni+ore.
 //   §6.184 (CP8 v3)  — dosi_giornaliere auto-locked extended.
 //   §6.185 (CP8 v3)  — cascade ConfirmModal 4° consumer + sequencing.
-//   §6.187 (CP9 v3)  — gate UI custom_minimo + cleanup form-state extended.
 // ============================================================
 
 import { useId, useMemo, useRef, useState } from 'react';
@@ -455,17 +441,8 @@ function FarmacoDrawer({
         name === 'intervallo_ore_residue' ||
         name === 'tipo_frequenza'
       ) {
-        if (isExtendedFromForm(next)) {
-          if (next.dosi_giornaliere !== '1') {
-            next = { ...next, dosi_giornaliere: '1' };
-          }
-          // CP9 §6.187 EXT.4: extended branch has no gap recovery, so
-          // custom_minimo / intervallo_minimo_ore fields are hidden in UI.
-          // Cleanup form state to avoid ghost values that could leak via
-          // normalizeForm when user toggles back to standard later.
-          if (next.custom_minimo || next.intervallo_minimo_ore !== '') {
-            next = { ...next, custom_minimo: false, intervallo_minimo_ore: '' };
-          }
+        if (isExtendedFromForm(next) && next.dosi_giornaliere !== '1') {
+          next = { ...next, dosi_giornaliere: '1' };
         }
       }
 
@@ -1020,7 +997,7 @@ function FarmacoDrawer({
           </div>
         )}
 
-        {isIntervallo && !isExtendedForm && (
+        {isIntervallo && (
           <FormCheckbox
             id="farmaco-custom-minimo"
             label="Personalizza limite minimo"
@@ -1030,7 +1007,7 @@ function FarmacoDrawer({
           />
         )}
 
-        {isIntervallo && !isExtendedForm && form.custom_minimo && (
+        {isIntervallo && form.custom_minimo && (
           <FormField
             id="farmaco-intervallo-minimo-ore"
             label="Limite minimo (ore)"
