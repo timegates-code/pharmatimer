@@ -80,25 +80,15 @@
 //     isCrossMidnightRecalc workaround pair removed.
 //   - §6.116: tear-down of the §6.26 cross-midnight HH:MM heuristic
 //     workaround. Replaced with an ISO-aware detector.
-//   - §6.116a (REVERTED in §6.118): had introduced a `todayDateStr` prop
-//     wired through OggiView. CP browser punto 2 showed the gate
-//     `entry.dateStr > todayDateStr` had inverted semantics: it FIRED on
-//     dose-naturali di domani (correctly placed already, badge redundant)
-//     and MISSED the §6.18 case (entry.dateStr stays "today" while
-//     ora_ricalcolata points to tomorrow). Prop removed.
 //   - §6.118 (current): badge gates on `isCrossMidnightRecalc(entry)` —
 //     ISO-aware compare on the recalc's own date prefix vs the entry's
 //     planning date. No external arg needed; the Card is self-sufficient.
-//   - §6.119 (deferred, NOT closed by CP4): the underlying §6.18 visual
-//     bug persists at the planBuilder layer — a recalc that crosses
-//     midnight still attaches to the original entry.dateStr=today rather
-//     than entry.dateStr=tomorrow. The badge is the UI mitigation; the
-//     full fix (entry.dateStr bump) is scheduled for post-9-A or 9-B.
 //
-// Reads:
-//   - Theme tokens via `useTheme()` (same pattern as NavBar / DevTimeSlider).
-//   - Enum-aligned token keys from CP1 rename (§6.28): cardBg/cardBorder
-//     now index as {presa, prossima, in_attesa, in_ritardo, saltata, sospesa}.
+// CP9 v3.0.0 Step 2 (§6.187): gap recovery affordance suppressed for
+// extended-frequency farmaci (intervallo_ore > 24h). §22.42 EXT.4
+// ratified — clinically irrilevante (~0.18% per 168h) and UX-confusing.
+// `isExtendedFarmaco` derived locally; gap badge mount gated. Pairs with
+// recalc.js gate that suppresses the gap_recovery prompt at domain layer.
 //
 // pulse-border keyframe:
 //   The `pulse-border 2s infinite` animation on the check button is defined
@@ -149,23 +139,12 @@ function getPastoText(f) {
 
 // ---------- display helpers ----------
 
-/**
- * Accept either 'HH:MM' or ISO datetime 'YYYY-MM-DDTHH:MM:SS' (per types.js).
- * Returns HH:MM for display. Used for `entry.ora_effettiva` (ISO with seconds).
- * For `entry.ora_ricalcolata` (ISO without seconds, post-§6.117a) prefer the
- * already-parsed `recalcParsed.hhmm`.
- */
 function extractHHMM(s) {
   if (!s) return '';
   const t = s.indexOf('T');
   return t >= 0 ? s.slice(t + 1, t + 6) : s.slice(0, 5);
 }
 
-/**
- * Mockup-exact formatter for the "Ritardo/Anticipo" value under ora_effettiva.
- * Narrow column = terse strings: "45 min", "1h 15", "2h". NOT the same as
- * formatDuration() from uiState.js (which always appends "min").
- */
 function formatPresaValue(abs) {
   if (abs < 60) return `${abs} min`;
   const h = Math.floor(abs / 60);
@@ -175,26 +154,6 @@ function formatPresaValue(abs) {
 
 // ---------- component ----------
 
-/**
- * @param {{
- *   entry: import('../../domain/types.js').PlanEntry,
- *   state: 'presa'|'prossima'|'in_attesa'|'in_ritardo'|'saltata'|'sospesa',
- *   isFlashing?: boolean,
- *   onPresa?: (entry: import('../../domain/types.js').PlanEntry) => void,
- *   onUndo?:  (entry: import('../../domain/types.js').PlanEntry) => void,
- *   onUndoTap?: (entry: import('../../domain/types.js').PlanEntry, triggerEl: HTMLElement) => void,
- *   onAltro?: (entry: import('../../domain/types.js').PlanEntry, triggerEl: HTMLElement) => void,
- *   onSaltataTap?: (entry: import('../../domain/types.js').PlanEntry, triggerEl: HTMLElement) => void,
- *   onSospesaTap?: (entry: import('../../domain/types.js').PlanEntry, triggerEl: HTMLElement) => void,
- *   onGapTap?: (entry: import('../../domain/types.js').PlanEntry, triggerEl: HTMLElement | undefined) => void,
- *   isLastPreso?: boolean,
- * }} props
- *
- * All `on*` props are OPTIONAL by contract. Existing 7b-1 tests that render
- * DoseCard without any handler must keep passing. When a handler is absent,
- * the corresponding affordance is NOT mounted (no "ghost" button with a
- * detached onClick).
- */
 export function DoseCard({
   entry,
   state,
@@ -218,6 +177,15 @@ export function DoseCard({
   const isDone = isPresa || isSaltata || isSospesa;
   const isInRitardo = state === 'in_ritardo';
 
+  // CP9 §6.187 EXT.4 (§22.42): gap recovery is hidden for extended-frequency
+  // farmaci (intervallo_ore > 24h). Threshold strict ">24" simmetrico al
+  // gate domain in recalc.js. Tipo guard preserves "fisso" behaviour
+  // (gap badge already off for fisso since gap_minuti stays 0 by spec).
+  const isExtendedFarmaco =
+    f.tipo_frequenza === 'intervallo' &&
+    typeof f.intervallo_ore === 'number' &&
+    f.intervallo_ore > 24;
+
   // Border styling per state (7a enum keys post-§6.28 rename).
   const borderLeft = state === 'in_attesa'
     ? 'none'
@@ -230,23 +198,13 @@ export function DoseCard({
   const freqLabel = f.tipo_frequenza === 'intervallo' ? ` · ogni ${f.intervallo_ore}h` : '';
   const pastoColor = getPastoColor(f.relazione_pasto, dark);
 
-  // §6.116/§6.116b (9-A): ora_ricalcolata is ISO 'YYYY-MM-DDTHH:MM' (CP3).
-  // Parse once for both displayTime (HH:MM portion) and recalcDiff
-  // (full date + HH:MM for cross-midnight-aware diff via calcolaDelta).
   const recalcParsed = entry.ora_ricalcolata
     ? parseIsoDateTime(entry.ora_ricalcolata)
     : null;
   const recalcHHMM = recalcParsed?.hhmm ?? null;
   const isRecalc = recalcHHMM !== null;
   const isTimeDifferent = isRecalc && recalcHHMM !== entry.ora_prevista;
-  // §6.118: ISO-aware cross-midnight detector. Reads only the entry — no
-  // external "today" arg needed (§6.116a was reverted as wrongly-scoped).
   const crossMidnight = isCrossMidnightRecalc(entry);
-  // 11-B AMB-11.B.2 (a): suppress the "⚠ orario: domani" badge when
-  // the card is rendered in its effective bucket (post-AMB-11.B.1
-  // grouping in groupEntriesByDayAndMomento). Legacy behaviour
-  // preserved when `bucketDateStr` is undefined (older test fixtures
-  // and any caller that does not propagate the bucket key).
   const badgeBucketSuppressed =
     bucketDateStr !== undefined &&
     recalcParsed !== null &&
@@ -254,16 +212,8 @@ export function DoseCard({
 
   const displayTime = recalcHHMM || entry.ora_prevista;
 
-  // 7d-2 CP6 (§6.47a): gap residuo = gap_minuti − recupero_minuti. When a
-  // RecuperoModal application partially (or fully) covers the gap, the badge
-  // label reflects what's left. The `?? 0` fallbacks keep the expression
-  // numeric even for plan entries shaped before the recupero_minuti column
-  // existed (defensive — types.js always produces numbers).
   const gapResiduo = (entry.gap_minuti ?? 0) - (entry.recupero_minuti ?? 0);
 
-  // Recalculation diff via domain helper (§6.11). Date portion is read
-  // directly from the parsed ora_ricalcolata ISO (§6.116: no more
-  // crossMidnight / addDays branching).
   let recalcDiff = null;
   if (isTimeDifferent) {
     recalcDiff = calcolaDelta({
@@ -276,24 +226,18 @@ export function DoseCard({
 
   // ---------- action-area gating ----------
 
-  // Undo is actually enabled only if BOTH conditions hold.
   const undoEnabled = isPresa && isLastPreso && typeof onUndo === 'function';
-  // PRESA button shown only for non-done states AND only when onPresa is provided.
   const showPresaButton = !isDone && typeof onPresa === 'function';
-  // ALTRO pill shown only for non-done states AND only when onAltro is provided (7c-1).
   const showAltroButton = !isDone && typeof onAltro === 'function';
-  // Saltata / sospesa tap wiring (7c-1).
   const hasSaltataTap = typeof onSaltataTap === 'function';
   const hasSospesaTap = typeof onSospesaTap === 'function';
-  // Gap tap wiring (7c-1 + 7d-2 CP6 §6.47a): mount only when a handler is
-  // provided AND the residual gap (after any applied recupero) is positive.
-  const hasGapTap = typeof onGapTap === 'function' && gapResiduo > 0;
-  // 7d-2 CP5: Card body wrapper for isPresa state opens UndoModal.
+  // CP9 §6.187: gate also on !isExtendedFarmaco. Outer JSX guard repeats it
+  // so the static-Badge fallback (when onGapTap is missing) is also hidden
+  // for extended farmaci, not just the TapBadge.
+  const hasGapTap = typeof onGapTap === 'function' && gapResiduo > 0 && !isExtendedFarmaco;
   const undoTapEnabled = isPresa && typeof onUndoTap === 'function';
 
   // ---------- TIME / SEPARATOR / CONTENT extracted as JSX vars ----------
-  // Extraction is necessary so the three blocks can be conditionally wrapped
-  // in a `<button>` (7d-2 CP5) without duplicating markup per branch.
 
   const timeColumn = (
     <div className="flex-shrink-0 w-14 text-center">
@@ -375,10 +319,6 @@ export function DoseCard({
             const delta = entry.delta_minuti ?? 0;
             const abs = Math.abs(delta);
             const color = abs <= TOLLERANZA_MIN ? t.green : t.red;
-            // 7d-2 CP6 (§6.45): "in orario" copre tutta la finestra di
-            // tolleranza |delta| ≤ TOLLERANZA_MIN. Pre-CP6 solo delta===0
-            // mostrava "in orario"; un anticipo di 1-15 min restava etichettato
-            // "Anticipo" pur essendo già colorato verde → incoerenza UI.
             if (abs <= TOLLERANZA_MIN) {
               return (
                 <span className="text-xs font-medium block" style={{ color }}>
@@ -478,7 +418,8 @@ export function DoseCard({
             border={t.warnBd}
           />
         )}
-        {gapResiduo > 0 && !isDone && (
+        {/* CP9 §6.187 EXT.4: gap badge hidden for extended-frequency farmaci. */}
+        {gapResiduo > 0 && !isDone && !isExtendedFarmaco && (
           hasGapTap ? (
             <TapBadge
               label={formatGapLabel(gapResiduo)}
@@ -513,11 +454,6 @@ export function DoseCard({
     </div>
   );
 
-  // 7d-2 CP5: conditionally wrap TIME / SEP / CONTENT in a button.
-  // The wrapper reproduces the parent flex layout (`flex items-center
-  // gap-2 flex-1 min-w-0`) so the visual result is identical to the
-  // non-wrapped branch. ACTION AREA remains a sibling of the wrapper,
-  // avoiding nested <button> HTML invalidity.
   const body = undoTapEnabled ? (
     <button
       type="button"
