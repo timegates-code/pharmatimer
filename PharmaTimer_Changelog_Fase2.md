@@ -10587,6 +10587,122 @@ Versione changelog: v2.8.2-rc.2 → **v3.0.0-rc.1** (analisi-first finale). Riga
 - **AMB-11.B.7**: convention bump version (`package.json` invariato 2.8.1, changelog v3.0.0-rc.1)
 ---
 
+### 22.44 Stato post-Sessione 2 v3.0.0 Step 1 esecutiva (CP1-CP6 chiusi, tag v3.0.0-alpha.1, merge fast-forward main)
+
+**Data:** 5 maggio 2026 sera (continuazione cumulativa post-§22.43 chiusura analisi-first).
+
+**Modalità:** Sessione 2 esecutiva Step 1/2 pattern §11.F — UX core impl. CP0→CP6 + CP closing nominativa esplicita pre-frozen. Branch dedicato `step-9-v3-step-1` derivato da `main`, merge fast-forward al closing. Convention "decidi tu" estesa intra-CP per ratifiche di sub-Q minori (Q-CP1.x...Q-CP6.x), con stop-and-report rispettato per scoperte critiche (Q-CP5.1 = pre-implementato, validation `data_inizio >= today` mode-gated per non rompere edit di farmaci legacy).
+
+**Token consumati:** ~70K cumulativi (stima §11.F 30-50K, fascia upper). Sessione singola ~6h wall-clock distribuite su 7 turni esecutivi. Una compaction context window intermedia tra CP4 e CP5 (transcript backup integro).
+
+**Esito:** ✅ **CP1-CP6 chiusi, target test centrato esattamente: 430 → 452 (+22). 18 deviazioni §6.164-181 allocate. Tag annotato `v3.0.0-alpha.1`. Merge fast-forward `step-9-v3-step-1` → `main` pulito.**
+
+#### Lifecycle branch + commit hashes
+
+```
+e998959  CP0 v3.0.0 Step 1 baseline (branch step-9-v3-step-1, bump 2.8.1 → 3.0.0-alpha.1)
+b5f7c8e  CP1 v3.0.0 Step 1: OnboardingModal 2-step + useModalA11y escapeDeactivates (§6.164, +5 tests)
+78bc09e  CP2 v3.0.0 Step 1: AppProvider gating + completeOnboarding thunk + ONBOARDING_COMPLETED setting (§6.165-168, +3 tests)
+8cea824  CP3 v3.0.0 Step 1: empty states OggiView Q-UX.3 + Q-UX.4 preview giorno successivo (§6.169-171, +4 tests)
+4196986  CP4 v3.0.0 Step 1: seed neutro 3 farmaci demo + opt-in via completeOnboarding mode='demo' (§6.172-175, +2 tests)
+af0fbaa  CP5 v3.0.0 Step 1: data_inizio default tomorrow + Toast Mit-C + formatPrimaDose helper (§6.176-179, +6 tests)
+84de7c0  CP6 v3.0.0 Step 1: SezioneDati Ricomincia-da-capo + resetAllData thunk (§6.180-181, +2 tests)  ← tag v3.0.0-alpha.1
+```
+
+Merge fast-forward su `main` da `d1dc465` (top pre-Step 1) a `84de7c0`, +29 file (1899 ins / 150 del). 10 file nuovi creati: `OnboardingModal.{jsx,test.jsx}`, `EmptyStateZeroFarmaci.{jsx,test.jsx}`, `PreviewBlock.{jsx,test.jsx}`, `Toast.jsx`, `seed.test.js`, `actions.completeOnboarding.test.js`, `selectors.prossimoGiorno.test.js`. Branch `step-9-v3-step-1` preservato post-merge per audit storico.
+
+#### 18 deviazioni §6.164-181 allocate per CP
+
+| CP | §6.NN | Sintesi |
+|---|---|---|
+| CP1 | §6.164 | `useModalA11y` esteso con prop `escapeDeactivates` (default true; OnboardingModal forza false: Esc non chiude modale di onboarding obbligatorio) |
+| CP2 | §6.165 | Schema Dexie v3 upgrade no-wipe (Q-UX.10): aggiunge solo `onboarding_completed` setting senza toccare farmaci/profili esistenti |
+| CP2 | §6.166 | `getOnboardingCompleted` / `setOnboardingCompleted` repo methods (1 sola chiave generic-typed via setSetting/selectImpostazione, no metodi dedicati) |
+| CP2 | §6.167 | `OnboardingGate` mountato in `App.jsx` (non in `AppProvider`): il provider è state-only shell, il gate è UI-aware e legge `state.status === 'ready'` prima di aprire |
+| CP2 | §6.168 | Thunk `completeOnboarding(nome, mode)` riusa `setSetting` come primitive interna invece di emettere proprie `SET_IMPOSTAZIONE` (no duplicazione I/O + rollback semantics) |
+| CP3 | §6.169 | `EmptyStateZeroFarmaci` componente self-contained con CTA deep-link `/config?tab=farmaci&action=new` (URLSearchParams in ConfigView) |
+| CP3 | §6.170 | `PreviewBlock` componente self-contained per Mit-A "prossima dose [DATA]" (Q-UX.4): renderizza day group + DoseCard `readonly` |
+| CP3 | §6.171 | `selectProssimoGiornoConDosi` plan-based (filtra `state.plan` per `dateStr > today`, raggruppa via `groupEntriesByDayAndMomento`). NON usa explicit `data_inizio_terapia > today` (allocato a CP5 ma poi superato — vedi §6.179) |
+| CP4 | §6.172 | Seed NON auto-bootstrap a boot: rimossa chiamata da `main.jsx`. `runSeedIfNeeded` invocato SOLO da `completeOnboarding` thunk con `mode='demo'` |
+| CP4 | §6.173 | Seed neutro 1 profilo "Standard" (vs 2 legacy Roberto+Nottambulo): nome generico Mediterranean rhythm, demo:1 |
+| CP4 | §6.174 | Seed `data_inizio` calcolato dinamicamente come "tomorrow" a runtime (mai stale, Mit-A preview garantito post-onboarding demo) |
+| CP4 | §6.175 | `runSeedIfNeeded({ force = false })` signature: `force: true` skippa marker `seed_loaded` + usa `bulkPut` (safe per re-run post-CP6 reset) |
+| CP5 | §6.176 | `state.toast: {key, message} \| null` slice + `SHOW_TOAST` / `DISMISS_TOAST` actions (infrastruttura UI globale, non in spec) |
+| CP5 | §6.177 | Trigger Mit-C in `FarmaciTab.commitSave` (caller-side, solo `mode==='create'`), NON in thunk `addFarmaco`. Seed bypassa naturalmente via `db.farmaci.bulkPut` |
+| CP5 | §6.178 | `EMPTY_FORM.data_inizio` default `tomorrowIso()` + validazione `>= today` **mode-gated** (`mode === 'edit' \|\| form.data_inizio >= todayIso()`) — preserva editing farmaci legacy con data_inizio passata |
+| CP5 | §6.179 | `selectDataInizioTerapia(state)` selector puro derivato (Q-S5=2 ratificato). Filtro per-farmaco era già attivo in `planBuilder.isFarmacoActiveOn` da Step 4a — selector è purely additive per UI/debug |
+| CP6 | §6.180 | Thunk `actions.resetAllData()`: `db.transaction` atomico clear 5 stores + re-add profilo "Standard" attivo:1 + `init()`. OnboardingGate riapre auto via `onboarding_completed` assente |
+| CP6 | §6.181 | Bypass `repo.withTransaction` per usare `db.transaction` direct in `resetAllData`. Aggiungere `clearAllData()` al repo per uno use-case 1-shot sarebbe scope-creep maggiore (propagazione IRepository → LocalRepository → futuro ApiRepository) |
+
+#### Sub-AMB consumate Step 1
+
+| Sub-AMB | Esito |
+|---|---|
+| **10.b** | Card "Mostrami un esempio" disabled in OnboardingModal step 2 quando `farmaci_attivi.length > 0` — preserva consenso utenti migration (CP1) |
+| **11.b** | Audit CP0 grep test esistenti — eseguito empirico Mac-side. 1 hit non-impattante in `FarmaciTab.test.jsx:156` (commento). Cambio `EMPTY_FORM.data_inizio` default safe (CP5) |
+
+#### Test growth per CP
+
+| CP | Δ test | Cumulativo | File toccati |
+|---|---|---|---|
+| CP1 | +5 | 435 | `useModalA11y.js` + `OnboardingModal.{jsx,test.jsx}` |
+| CP2 | +3 | 438 | `db.js` + `actions.js` + `actions.completeOnboarding.test.js` + `App.jsx` |
+| CP3 | +4 | 442 | `OggiView.jsx` + 4 nuovi file empty states + `selectors.js` + `selectors.prossimoGiorno.test.js` |
+| CP4 | +2 | 444 | `seed.js` riscritto + `seed.test.js` + `main.jsx` + `actions.js` (mode='demo' branch) |
+| CP5 | +6 | 450 | `copy.{js,test.js}` + `reducer.{js,test.js}` + `actions.js` + `selectors.{js,test.js}` + `Toast.jsx` (NEW) + `App.jsx` + `FarmaciTab.{jsx,test.jsx}` |
+| CP6 | +2 | 452 | `ImpostazioniTab.{jsx,test.jsx}` + `actions.js` |
+
+Target §11.F: 430→**452** atteso, range conservativo 449, espansivo 455. **Centrato esattamente**.
+
+#### Scoperte chiave durante esecuzione
+
+1. **Q-CP5.1 pre-implementata**: `planBuilder.isFarmacoActiveOn` aveva già il guard `farmaco.data_inizio && farmaco.data_inizio > dateStr` da Step 4a (sessioni 8c-2). §6.176 originale "data_inizio planBuilder filter" annullata, sostituita con §6.179 selector additive. Stop-and-report rispettato.
+2. **`FarmacoDrawer` privato dentro `FarmaciTab.jsx`** (non file separato come ipotizzato §11.F sotto-task A). Modifica diretta del file FarmaciTab.jsx, no nuovo file `FarmacoDrawer.jsx`.
+3. **`SezioneAvanzate` esistente è DEV-only diagnostic** (4 campi read-only con db.verno, simulatedNow, seed_loaded, pending notifications). Il "SezioneAvanzate Dati" del prompt §11.F è una NUOVA `SezioneDati` PROD-visibile. Distinte semanticamente.
+4. **Validation `data_inizio >= today` mode-gated** (CP5 §6.178): scoperta browsando il flow editing farmaci. Senza il gate `mode==='edit' \|\|`, l'edit di un farmaco con `data_inizio` 6 mesi fa avrebbe disabilitato Salva. Regressione UX evitata in design.
+5. **Compaction context window intermedia tra CP4 e CP5**: senza perdita di stato — transcript file (`/mnt/transcripts/...`) preservato con full source dump e sanity-test outputs. Pattern recovery validato.
+
+#### Patch follow-up flagged (non bloccante per Step 1)
+
+`src/test/renderHelpers.jsx` `defaultNoopActions()` non include `showToast`, `dismissToast`, `resetAllData` come noops. Al momento i 452 test verdi non lo richiedono (i 3 test che usano questi thunks li mockano esplicitamente via `actions: {...}` override). Per future test che mountano FarmaciTab create-mode o ImpostazioniTab senza override, aggiungere:
+
+```js
+showToast: () => {},
+dismissToast: () => {},
+resetAllData: async () => ({ ok: true }),
+```
+
+a `defaultNoopActions`. Patch ~3 LOC, da fare quando serve. Pattern §6.94 (CP2 8d-A-continue).
+
+#### CP browser smoke 4 punti deferito
+
+§11.F prevedeva CP browser test 4 punti subset Step 1 al closing. Non eseguito in questa sessione (richiede dispositivo + ispezione visiva, fuori scope flow git/test automatici). Da fare prima di tag `v3.0.0` final post-Step 2:
+1. Onboarding nuovo utente (DB vuoto post-reset) → modale appare → completeOnboarding mode='empty' → app pronta vuota → click "+ Nuovo" farmaco → toast Mit-C appare con copy corretta
+2. Onboarding nuovo utente con seed demo → 3 farmaci esempio in Oggi + profilo Standard, no toast spuri
+3. Migration utente esistente (Roberto) → modale appare con `defaultNome` precompilato → conferma → app riprende con dati esistenti
+4. Reset "Ricomincia da capo" da ImpostazioniTab → ConfirmModal danger → Cancella tutto → onboarding riapre
+
+#### Backward-history demote
+
+§22.43 description in "Ultima modifica" header demotata sotto questa entry come "Changelog versione v3.0.0-rc.1 (rispetto a v2.8.1)" — bump cumulativo `package.json` 2.8.1 → 3.0.0-alpha.1 effettuato in CP0 (`e998959`).
+
+#### Riferimenti incrociati
+
+- **§22.43**: stato pre-Step 1 (ratifiche analisi-first, lista impl 18 punti, scope CP split)
+- **§11.F**: prompt Sessione 2 Step 1 (consumato in questa sessione)
+- **§11.G**: prompt Sessione 2 Step 2 (extended frequency + bug fix + guida HTML — prossima sessione)
+- **AMB-11.B.7**: convention bump `package.json` rispettata (bump fatto in CP0, no bump intra-CP)
+- **§6.71/§6.85**: deviazioni storiche immutabili — nessuna retro-correzione su §6.NN allocate
+
+#### Sessione successiva
+
+`Esegui il prompt al §11.G del Changelog (Sessione 2 v3.0.0 Step 2 esecutiva — extended + finalizzazione).`
+
+Stato baseline atteso: branch `main`, top `84de7c0`, tag latest `v3.0.0-alpha.1`, working tree clean, 452/452 verdi, `package.json` 3.0.0-alpha.1. Sessione separata su nuovo branch `step-9-v3-step-2`. Stima ~2-3h, +15 test, target 467 (range 463-471).
+
+**Tag annotato v3.0.0-alpha.1 push remoto deferito a discrezione utente** (può essere fatto subito con `git push origin main && git push origin v3.0.0-alpha.1` per pubblicare su GitHub Pages, oppure aspettare Step 2 closing per push cumulativo con `v3.0.0-rc.2`).
+---
+
 ### 11.F Prompt Sessione 2 v3.0.0 Step 1 esecutiva (UX core: onboarding + empty states + seed + reset)
 
 **Modalità:** Sessione 2 esecutiva Step 1/2 v3.0.0 — UX core impl. Pattern §11 v2.5.37/v2.5.40-rc.4 pre-split (split upfront Step 1 → Step 2 ratificato §22.43). CP1-CP6 + CP closing nominativa esplicita pre-frozen.
