@@ -1,5 +1,9 @@
 import { timeToMinutes } from '../utils/time.js';
 import { computeOraPrevista } from './orarioResolver.js';
+import {
+  isExtendedInterval,
+  computeExtendedOccurrencesInWindow,
+} from './extendedFrequency.js';
 
 // Re-export for backward compatibility with existing consumers and tests
 // that import { computeOraPrevista } from './planBuilder.js'.
@@ -12,6 +16,13 @@ export { computeOraPrevista };
  *
  * Purity rule: no Date.now(), no DB, no globals. Everything comes from ctx.
  * Input contract: data is well-formed (Step 4a — no defensive validation).
+ *
+ * Two-branch iteration model (§22.42 opt B' modulare):
+ *   - Standard branch (tipo_frequenza='fisso' OR intervallo_ore<=24): per-day
+ *     loop, one entry per orario_base row per active day.
+ *   - Extended branch (intervallo_ore>24): post-loop pass via
+ *     computeExtendedOccurrencesInWindow(). Path standard intoccato
+ *     (zero rischio regressione su test esistenti).
  */
 
 /**
@@ -97,10 +108,13 @@ export function buildMultiDayPlan(ctx) {
   /** @type {import('./types.js').Plan} */
   const plan = [];
 
+  // ----- Standard branch: per-day loop (intervallo_ore <= 24h or fisso) -----
   for (let d = 0; d < numDays; d++) {
     const dateStr = addDaysLocal(startDate, d);
     for (const farmaco of farmaci) {
       if (!isFarmacoActiveOn(farmaco, dateStr)) continue;
+      // Extended branch: skip here, handled in post-loop pass below (§22.42 opt B').
+      if (isExtendedInterval(farmaco)) continue;
       const orariF = orariByFarmaco.get(farmaco.id) || [];
       for (const orario of orariF) {
         /** @type {import('./types.js').PlanEntry} */
@@ -124,6 +138,43 @@ export function buildMultiDayPlan(ctx) {
         if (log) mergeLogIntoEntry(entry, log);
         plan.push(entry);
       }
+    }
+  }
+
+  // ----- Extended branch: post-loop pass (intervallo_ore > 24h) -----
+  // Defensive attivo guard kept (cheap), data_inizio/data_fine handled inside helper.
+  for (const farmaco of farmaci) {
+    if (!isExtendedInterval(farmaco)) continue;
+    if (!farmaco.attivo) continue;
+    const orariF = orariByFarmaco.get(farmaco.id) || [];
+    const occurrences = computeExtendedOccurrencesInWindow(
+      farmaco,
+      orariF,
+      profilo,
+      startDate,
+      numDays,
+    );
+    for (const occ of occurrences) {
+      /** @type {import('./types.js').PlanEntry} */
+      const entry = {
+        key: entryKey(occ.dateStr, farmaco.id, occ.orario.dose_numero),
+        dateStr: occ.dateStr,
+        farmaco,
+        orario: occ.orario,
+        ora_prevista: occ.oraPrevista,
+        ora_ricalcolata: null,
+        ora_ricalcolata_originale: null,
+        ora_effettiva: null,
+        delta_minuti: null,
+        gap_minuti: 0,
+        gap_originale: 0,
+        recupero_minuti: 0,
+        stato: 'prevista',
+        dose_prec_saltata: false,
+      };
+      const log = logByKey.get(entry.key);
+      if (log) mergeLogIntoEntry(entry, log);
+      plan.push(entry);
     }
   }
 
