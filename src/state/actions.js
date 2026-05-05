@@ -508,6 +508,33 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
   }
 
   // ----------------------------------------------------------
+  // Toast (CP5 v3.0.0 Step 1, §6.176-177)
+  // ----------------------------------------------------------
+  //
+  // Synchronous dispatchers — no I/O. `key` is Date.now() so the
+  // <Toast /> consumer can `useEffect([state.toast?.key])` to re-arm
+  // the auto-dismiss timer when the same message is fired twice in
+  // succession (key changes even when message is identical).
+  //
+  // §6.177: the trigger for Mit-C (post-aggiunta farmaco) lives in
+  // FarmaciTab.commitSave caller-side, NOT in addFarmaco thunk. This
+  // avoids contaminating the thunk with profiloAttivo dependency for
+  // computeOraPrevista, and ensures the seed flow (runSeedIfNeeded
+  // bypasses addFarmaco via direct bulkPut) does not trigger spurious
+  // toasts on the 3 demo farmaci.
+
+  function showToast(message) {
+    dispatch({
+      type: 'SHOW_TOAST',
+      payload: { key: Date.now(), message },
+    });
+  }
+
+  function dismissToast() {
+    dispatch({ type: 'DISMISS_TOAST' });
+  }
+
+  // ----------------------------------------------------------
   // Action bag
   // ----------------------------------------------------------
 
@@ -955,5 +982,8 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     completeOnboarding,
     setSimulatedNow,
     scheduleTestDose,
+    // CP5 v3.0.0 Step 1 (§6.176-177) — Toast Mit-C dispatchers.
+    showToast,
+    dismissToast,
   };
 }

@@ -1,8 +1,8 @@
 // ============================================================
-// FarmaciTab — CP5 Sessione 8c-2 (thunks CRUD + delete + data_fine-past).
+// FarmaciTab — CP5 v3.0.0 Step 1 (data_inizio default tomorrow + Mit-C toast).
 // ============================================================
 //
-// CP5 extends CP4 with:
+// CP5 (Sessione 8c-2 baseline) extended CP4 with:
 //   - actions.addFarmaco / updateFarmaco / deleteFarmaco wiring
 //     via useAppContext (pessimistic thunks, §6.93 refetch orari).
 //   - "Elimina" button in drawer footer (edit mode only, danger).
@@ -11,6 +11,22 @@
 //   - handleSalva normalises the form payload, routes through the
 //     data_fine-past check when applicable, and delegates to
 //     add/update thunks.
+//
+// CP5 v3.0.0 Step 1 layer (§6.176-179):
+//   - §6.178: `EMPTY_FORM.data_inizio` default flipped from
+//     `todayIso()` to `tomorrowIso()` (Q-UX.4 Mit-A preview garantito
+//     out-of-the-box, Q-S6=a). Validation `>= today` added but
+//     **mode-gated** (`mode === 'edit' || form.data_inizio >= todayIso()`)
+//     to preserve editing of legacy farmaci with past data_inizio
+//     — without this gate, editing a farmaco started 6 months ago
+//     would disable Salva (regressione UX inaccettabile).
+//   - §6.177: post-save Mit-C toast trigger in commitSave (caller-
+//     side, only mode === 'create'). Computes ora_prevista from
+//     orariPreview[0] (already in scope) and dispatches
+//     actions.showToast with formatPrimaDose-formatted message.
+//     Defensive: skips toast if oraPrevista is null (no profilo
+//     attivo, computeOraPrevista threw, etc.) — toast is UX nicety,
+//     not contract; failing silently is preferable to "Prima dose: ".
 //
 // Deviations consumed by this file:
 //   §6.88 (CP3)      — campo attivo OMESSO dal form.
@@ -21,6 +37,9 @@
 //                      retrofit target 8d).
 //   §6.93 (CP5)      — thunks farmaci also dispatch SET_ORARI
 //                      (orari refetch needed for rebuildPlan coherence).
+//   §6.177 (CP5 v3)  — Mit-C trigger caller-side.
+//   §6.178 (CP5 v3)  — data_inizio default tomorrow + validation
+//                      mode-gated.
 // ============================================================
 
 import { useId, useMemo, useRef, useState } from 'react';
@@ -30,6 +49,7 @@ import { useTheme } from '../../hooks/useTheme.js';
 import { useModalA11y } from '../../hooks/useModalA11y.js';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges.js';
 import { computeOraPrevista } from '../../domain/planBuilder.js';
+import { formatPrimaDose } from '../../utils/copy.js';
 import ConfirmModal from '../shared/ConfirmModal.jsx';
 import UnsavedChangesModal from './UnsavedChangesModal.jsx';
 
@@ -64,6 +84,10 @@ function makeDefaultOrario(doseNumero) {
   };
 }
 
+// CP5 v3.0.0 Step 1 (§6.178): default `data_inizio` flipped to
+// tomorrow so the "Mit-A preview giorno successivo" empty state in
+// OggiView (CP3 §6.171) fires naturally on a freshly-added farmaco.
+// User can override in the Avanzate section if they want today.
 const EMPTY_FORM = {
   nome: '',
   principio_attivo: '',
@@ -76,13 +100,24 @@ const EMPTY_FORM = {
   relazione_pasto: '',
   dettaglio_pasto: '',
   note: '',
-  data_inizio: todayIso(),
+  data_inizio: tomorrowIso(),
   data_fine: '',
   orari: [makeDefaultOrario(1)],
 };
 
 function todayIso() {
   const d = new Date();
+  const y  = d.getFullYear();
+  const m  = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+
+// CP5 v3.0.0 Step 1 (§6.178): tomorrow-as-ISO helper, parallel to
+// todayIso. Used by EMPTY_FORM.data_inizio default + form re-init in
+// FarmacoDrawer for create mode.
+function tomorrowIso() {
+  const d = new Date(Date.now() + 86400000);
   const y  = d.getFullYear();
   const m  = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
@@ -308,7 +343,10 @@ function FarmacoDrawer({
         };
       }
     }
-    return { ...EMPTY_FORM, orari: [makeDefaultOrario(1)] };
+    // CP5 v3.0.0 Step 1 (§6.178): create mode → fresh EMPTY_FORM with
+    // tomorrow as data_inizio (re-evaluated at drawer mount, not at
+    // module load, so the default tracks the actual current date).
+    return { ...EMPTY_FORM, data_inizio: tomorrowIso(), orari: [makeDefaultOrario(1)] };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -491,6 +529,25 @@ function FarmacoDrawer({
         ? await actions.addFarmaco(farmacoData, orari)
         : await actions.updateFarmaco(editingId, farmacoData, orari);
       if (result?.ok) {
+        // CP5 v3.0.0 Step 1 (§6.177): Mit-C toast trigger caller-side.
+        // Only on 'create' (Q-UX.5 "post-aggiunta manuale"); edit/delete
+        // have no Mit-C. Defensive guard: skip if oraPrevista cannot be
+        // computed (no profilo attivo, computeOraPrevista threw, etc.) —
+        // toast is UX nicety, not contract; failing silently is preferable
+        // to showing a broken "Prima dose: " line.
+        // Seed flow (runSeedIfNeeded) bypasses this thunk via direct
+        // db.farmaci.bulkPut, so no spurious toast on demo seed (§6.177).
+        if (mode === 'create') {
+          const oraPrevista = orariPreview[0];
+          if (oraPrevista) {
+            const today = todayIso();
+            actions.showToast(
+              `✅ ${farmacoData.nome} aggiunto. Prima dose: ${
+                formatPrimaDose(farmacoData.data_inizio, oraPrevista, today)
+              }.`
+            );
+          }
+        }
         onClose();
       }
       // On failure the thunk already dispatched SET_ERROR; the drawer
@@ -554,12 +611,21 @@ function FarmacoDrawer({
     form.tipo_frequenza !== 'intervallo' ||
     (form.intervallo_ore !== '' && Number(form.intervallo_ore) > 0);
 
+  // CP5 v3.0.0 Step 1 (§6.178): validation `data_inizio >= today` is
+  // **mode-gated**. In edit mode we accept any (legitimate) past date
+  // — the user might be editing a farmaco started months ago, and a
+  // blanket >=today rule would disable Salva for routine edits. In
+  // create mode the rule enforces Q-S6=a (default tomorrow, no
+  // backdating allowed at insertion).
+  const dataInizioValid = mode === 'edit' || form.data_inizio >= todayIso();
+
   const allRequiredFilled =
     form.nome.trim().length > 0 &&
     form.tipo_frequenza !== '' &&
     form.dosi_giornaliere !== '' && Number(form.dosi_giornaliere) > 0 &&
     form.relazione_pasto !== '' &&
     form.data_inizio !== '' &&
+    dataInizioValid &&
     hasIntervalloOreRequired;
 
   const duplicateMatch = useMemo(() => {
@@ -893,6 +959,11 @@ function FarmacoDrawer({
           onChange={(v) => updateField('data_inizio', v)}
           type="date"
           theme={t}
+          warning={
+            !dataInizioValid && form.data_inizio !== ''
+              ? 'La data inizio non può essere nel passato'
+              : null
+          }
         />
         <FormField
           id="farmaco-data-fine"

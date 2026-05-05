@@ -11,6 +11,12 @@
 //   - INIT_SUCCESS no longer carries a dedicated `nomeUtente`; the value
 //     lives under `state.impostazioni.nome_utente` and is read via
 //     `selectImpostazione(state, 'nome_utente')`.
+// CP5 v3.0.0 Step 1 (§6.176) adds:
+//   - state.toast: {key, message} | null (global UI ephemeral slice)
+//   - SHOW_TOAST / DISMISS_TOAST actions used by showToast/dismissToast
+//     thunks. `key` is a monotonic timestamp set by the thunk so the
+//     <Toast /> component can `useEffect([key])` to re-arm the
+//     auto-dismiss timer when the same message is fired twice in a row.
 // ============================================================
 
 /**
@@ -18,6 +24,12 @@
  * @property {'domain'|'repo'|'init'|'unknown'} kind
  * @property {string} message
  * @property {string} [code]    Optional SCREAMING_SNAKE from DomainError.
+ */
+
+/**
+ * @typedef {object} ToastState
+ * @property {number} key       Monotonic id (Date.now() at dispatch). Re-arm trigger.
+ * @property {string} message   Plain text body shown in the Toast.
  */
 
 /**
@@ -34,6 +46,7 @@
  * @property {AppError|null} error
  * @property {string|null} simulatedNow       'HH:MM' in DEV, null in prod.
  * @property {string|null} lastBuiltForDay    'YYYY-MM-DD' — latest day the plan was built for.
+ * @property {ToastState|null} toast          CP5 §6.176 — ephemeral global toast.
  */
 
 /** @type {AppState} */
@@ -50,6 +63,7 @@ export const initialState = {
   error: null,
   simulatedNow: null,
   lastBuiltForDay: null,
+  toast: null,
 };
 
 /**
@@ -191,6 +205,19 @@ export function reducer(state, action) {
         impostazioni: { ...state.impostazioni, [chiave]: valore },
       };
     }
+
+    // --- Toast (CP5 v3.0.0 Step 1, §6.176) ------------------
+    // Ephemeral global UI slice. SHOW_TOAST replaces the previous toast
+    // outright (no queueing): rapid successive triggers collapse to the
+    // most recent. The {key, message} shape lets the consumer re-arm
+    // the auto-dismiss useEffect when the same message is fired twice
+    // (key changes even when message is identical, since the thunk uses
+    // Date.now() at dispatch).
+    case 'SHOW_TOAST':
+      return { ...state, toast: action.payload };
+
+    case 'DISMISS_TOAST':
+      return { ...state, toast: null };
 
     // --- Error channel --------------------------------------
     case 'SET_ERROR':

@@ -1,11 +1,13 @@
 // ============================================================
-// FarmaciTab — CP2 + CP3 + CP4 + CP5 tests (Sessione 8c + 8c-2).
+// FarmaciTab — CP2 + CP3 + CP4 + CP5 tests (Sessione 8c + 8c-2 + v3.0.0 Step 1).
 // ============================================================
 //
 // CP2: 3 tests (render + sort + "+ Nuovo" presence).
 // CP3: 3 tests (drawer open/close + Salva gate + tipo_frequenza toggle).
 // CP4: 3 tests (dosi→orari sync: add / trim+undo / wrap-mezzanotte soft warning).
-// CP5: 2 tests (delete flow §6.67 + data_fine-past flow §6.68).
+// CP5 (8c-2): 2 tests (delete flow §6.67 + data_fine-past flow §6.68)
+//             + UnsavedChanges guard tests on close path (§6.98 / §6.103 / §6.105).
+// CP5 (v3.0.0 Step 1): 1 test (§6.177 — Mit-C toast trigger post-aggiunta).
 // ============================================================
 
 import { describe, it, expect, vi } from 'vitest';
@@ -442,4 +444,62 @@ describe('FarmaciTab — 8d-A-continue §6.98 UnsavedChanges guard su close', ()
     expect(screen.getByTestId('farmaco-drawer')).toBeInTheDocument();
   });
 
+});
+
+// ============================================================
+// CP5 v3.0.0 Step 1 — Mit-C toast trigger post-aggiunta (§6.177, Q-UX.5).
+// ============================================================
+
+describe('FarmaciTab — CP5 v3.0.0 Step 1 Mit-C toast trigger (§6.177)', () => {
+  it('commitSave su create-mode dispatcha actions.showToast con copy "✅ ... aggiunto. Prima dose: ..."', async () => {
+    const user = userEvent.setup();
+    const addFarmaco = vi.fn().mockResolvedValue({ ok: true, id: 99 });
+    const showToast = vi.fn();
+
+    renderWithProvider(<FarmaciTab />, {
+      stateOverrides: {
+        farmaci: buildFarmaci(),
+        // Profilo richiesto perché orariPreview consuma profiloAttivo
+        // (defensive derive: profili[0].attivo===1 → buildProfiloAttivo).
+        profili: [buildProfiloAttivo()],
+      },
+      actions: { addFarmaco, showToast },
+    });
+
+    // Apri drawer "+ Nuovo".
+    await user.click(screen.getByRole('button', { name: /nuovo farmaco/i }));
+    const drawer = screen.getByTestId('farmaco-drawer');
+    expect(drawer).toBeInTheDocument();
+
+    // Compila i campi minimi richiesti per allRequiredFilled:
+    //   nome (typed), tipo_frequenza (radio), relazione_pasto (select).
+    //   data_inizio: già default tomorrowIso() (§6.178), valid (>= today).
+    //   dosi_giornaliere: già default '1', orari[0] = makeDefaultOrario(1).
+    await user.type(within(drawer).getByLabelText('Nome'), 'TestFarmaco');
+    await user.click(within(drawer).getByLabelText('Fisso'));
+    fireEvent.change(within(drawer).getByLabelText('Relazione con il pasto'), {
+      target: { value: 'indifferente' },
+    });
+
+    // Tap Salva (mode=create, isDirty=true, allRequiredFilled=true).
+    await user.click(within(drawer).getByRole('button', { name: /^salva$/i }));
+
+    // addFarmaco invocato con il nome digitato + orari[1].
+    await waitFor(() => expect(addFarmaco).toHaveBeenCalledTimes(1));
+    const [farmacoDataArg, orariArg] = addFarmaco.mock.calls[0];
+    expect(farmacoDataArg).toMatchObject({ nome: 'TestFarmaco', tipo_frequenza: 'fisso' });
+    expect(Array.isArray(orariArg)).toBe(true);
+    expect(orariArg).toHaveLength(1);
+
+    // Mit-C trigger: showToast invocato 1 volta con messaggio formato
+    // "✅ TestFarmaco aggiunto. Prima dose: <ramo today/tomorrow/future>."
+    // Default data_inizio è tomorrow → matcha "domani, ..." nel body.
+    expect(showToast).toHaveBeenCalledTimes(1);
+    expect(showToast).toHaveBeenCalledWith(
+      expect.stringMatching(/^✅ TestFarmaco aggiunto\. Prima dose: domani, .* alle \d{2}:\d{2}\.$/)
+    );
+
+    // Drawer chiuso post-success.
+    expect(screen.queryByTestId('farmaco-drawer')).not.toBeInTheDocument();
+  });
 });

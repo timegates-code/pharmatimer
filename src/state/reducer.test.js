@@ -57,6 +57,8 @@ describe('reducer — stato iniziale', () => {
       error: null,
       simulatedNow: null,
       lastBuiltForDay: null,
+      // CP5 v3.0.0 Step 1 (§6.176): toast slice for global UI ephemeral feedback.
+      toast: null,
     });
   });
 });
@@ -393,3 +395,11 @@ describe('reducer — SET_PROFILI / SET_PROFILO_ATTIVO', () => {
     expect(after2.profiloAttivo).toBeNull();
   });
 });
+
+// ============================================================
+// SHOW_TOAST / DISMISS_TOAST (CP5 v3.0.0 Step 1, §6.176)
+// ============================================================
+// Reducer semantica banale (set / replace via spread / set null);
+// validazione del campo `toast: null` nel baseline `toEqual` qui sopra
+// è sufficiente. Coverage end-to-end del flow Mit-C in FarmaciTab.test.jsx
+// (CP5 — trigger commitSave → showToast → state.toast.message).

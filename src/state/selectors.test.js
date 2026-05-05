@@ -250,3 +250,52 @@ describe('selectFarmacoById', () => {
     expect(selectFarmacoById({}, 1)).toBeNull();
   });
 });
+
+// ============================================================
+// CP5 v3.0.0 Step 1 — selectDataInizioTerapia (§6.179, Q-S5=2).
+// ============================================================
+
+import { selectDataInizioTerapia } from './selectors.js';
+
+describe('selectDataInizioTerapia (CP5 §6.179)', () => {
+  it('ritorna null per lista vuota / state.farmaci assente, picks min su attivi, skip inactive + null data_inizio', () => {
+    // Empty list + missing field — both → null.
+    expect(selectDataInizioTerapia({ farmaci: [] })).toBeNull();
+    expect(selectDataInizioTerapia({})).toBeNull();
+
+    // Single active.
+    expect(selectDataInizioTerapia({
+      farmaci: [{ id: 1, attivo: 1, data_inizio: '2026-05-05' }],
+    })).toBe('2026-05-05');
+
+    // Multiple active → picks lexicographic min (valid for ISO 'YYYY-MM-DD').
+    expect(selectDataInizioTerapia({
+      farmaci: [
+        { id: 1, attivo: 1, data_inizio: '2026-05-10' },
+        { id: 2, attivo: 1, data_inizio: '2026-05-05' },
+        { id: 3, attivo: 1, data_inizio: '2026-05-15' },
+      ],
+    })).toBe('2026-05-05');
+
+    // Skip inactive farmaci even if their data_inizio is earlier.
+    expect(selectDataInizioTerapia({
+      farmaci: [
+        { id: 1, attivo: 0, data_inizio: '2025-01-01' },
+        { id: 2, attivo: 1, data_inizio: '2026-05-05' },
+      ],
+    })).toBe('2026-05-05');
+
+    // Skip null data_inizio (migration users defensive guard).
+    expect(selectDataInizioTerapia({
+      farmaci: [
+        { id: 1, attivo: 1, data_inizio: null },
+        { id: 2, attivo: 1, data_inizio: '2026-05-05' },
+      ],
+    })).toBe('2026-05-05');
+
+    // All active but all data_inizio null → null.
+    expect(selectDataInizioTerapia({
+      farmaci: [{ id: 1, attivo: 1, data_inizio: null }],
+    })).toBeNull();
+  });
+});

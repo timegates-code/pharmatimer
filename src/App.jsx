@@ -5,6 +5,7 @@ import NavBar from "./components/shared/NavBar.jsx";
 import UpdatePrompt from "./components/shared/UpdatePrompt.jsx";
 import ErrorSurface from "./components/shared/ErrorSurface.jsx";
 import ErrorAnnouncer from "./components/shared/ErrorAnnouncer.jsx";
+import Toast from "./components/shared/Toast.jsx";
 import OnboardingModal from "./components/onboarding/OnboardingModal.jsx";
 import { useTheme } from "./hooks/useTheme.js";
 import { useApp } from "./state/AppContext.jsx";
@@ -17,6 +18,12 @@ import { selectImpostazione, selectFarmaciAttivi } from "./state/selectors.js";
 // pageBg + textPrimary on the root. Without it, the Log/Export placeholders
 // (below) and ConfigView (pre-port) would show the browser default white
 // background under dark mode, breaking the UX continuity.
+//
+// CP5 v3.0.0 Step 1 (§6.176): `<Toast />` mounted at App level (inside
+// ThemedShell, sopra Routes) so the global ephemeral message survives
+// route changes Oggi ↔ Config without re-mount cycles. The Toast is
+// position:fixed and reads `state.toast` via selectToast — it renders
+// nothing when no toast is set, so the mount is essentially free.
 
 function ThemedShell({ children }) {
   const { tokens: t } = useTheme();
@@ -38,6 +45,7 @@ export default function App() {
     <ThemedShell>
       <ErrorAnnouncer />
       <ErrorSurface />
+      <Toast />
       <OnboardingGate />
       <Routes>
         <Route path="/" element={<Navigate to="/oggi" replace />} />

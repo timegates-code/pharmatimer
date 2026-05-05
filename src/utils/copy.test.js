@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatRelazionePastoCopy } from './copy';
+import { formatRelazionePastoCopy, formatPrimaDose } from './copy';
 
 // 13 test = 6 enum × {detail, null} + 1 defensive enum sconosciuto.
 // Drift §6.124: body stripped del prefisso "Assumere " vs DoseCard.getPastoText.
@@ -76,5 +76,36 @@ describe('formatRelazionePastoCopy', () => {
       const f = { relazione_pasto: 'sconosciuto', dettaglio_pasto: null };
       expect(formatRelazionePastoCopy(f)).toBeNull();
     });
+  });
+});
+
+// =============================================================
+// CP5 v3.0.0 Step 1 — formatPrimaDose (§22.41 Q-UX.5 override punto 8).
+// =============================================================
+//
+// 4 test = today / tomorrow / future-same-year / future-cross-year.
+
+describe('formatPrimaDose (CP5 v3.0.0 Step 1, Q-UX.5)', () => {
+  it('today: "oggi, [giorno] [num] [mese], alle [HH:MM]"', () => {
+    // Riferimento: lunedì 4 maggio 2026.
+    const out = formatPrimaDose('2026-05-04', '13:00', '2026-05-04');
+    expect(out).toBe('oggi, lunedì 4 maggio, alle 13:00');
+  });
+
+  it('tomorrow: "domani, [giorno] [num] [mese], alle [HH:MM]"', () => {
+    const out = formatPrimaDose('2026-05-05', '07:30', '2026-05-04');
+    expect(out).toBe('domani, martedì 5 maggio, alle 07:30');
+  });
+
+  it('future same year: "[giorno] [num] [mese] alle [HH:MM]" (no "alle," — override punto 8)', () => {
+    // 2026-05-12 = martedì 12 maggio.
+    const out = formatPrimaDose('2026-05-12', '07:30', '2026-05-04');
+    expect(out).toBe('martedì 12 maggio alle 07:30');
+  });
+
+  it('future cross year: include anno suffix', () => {
+    // today 2026-12-30, prima dose 2027-01-05 (martedì).
+    const out = formatPrimaDose('2027-01-05', '07:30', '2026-12-30');
+    expect(out).toBe('martedì 5 gennaio 2027 alle 07:30');
   });
 });

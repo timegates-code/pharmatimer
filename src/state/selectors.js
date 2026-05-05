@@ -17,6 +17,12 @@
 // pointed to by `state.prompt.entryKey`, composing `selectEntryByKey`.
 // Consumed by OggiView's auto-prompt useEffect to open RecuperoModal
 // with source='auto' when the domain raises a 'gap_recovery' prompt.
+// CP5 v3.0.0 Step 1 (§6.176/§6.179):
+//   - `selectToast` exposes `state.toast` (CP5 §6.176 — Toast Mit-C).
+//   - `selectDataInizioTerapia` derives min(farmaci_attivi.data_inizio)
+//     for UI/debug (Q-S5=2). The actual plan-window filter lives in
+//     planBuilder.isFarmacoActiveOn (already active since Step 4a),
+//     so this selector is purely additive — see §6.179 rationale.
 // ============================================================
 //
 // Purity: selectors never call `new Date()` internally for clock
@@ -378,4 +384,55 @@ export function selectProssimoGiornoConDosi(state, today) {
     dateLabel: formatDateLabel(firstDay.dateStr, today),
     groups: firstDay.groups,
   };
+}
+
+// ============================================================
+// CP5 v3.0.0 Step 1 (§6.176 + §6.179) — Toast + data_inizio_terapia.
+// ============================================================
+
+/**
+ * §6.176 — Read the current ephemeral toast, or null if none is shown.
+ *
+ * Consumed by `<Toast />` in App.jsx to gate render + auto-dismiss
+ * useEffect. Re-renders triggered by `state.toast.key` changing
+ * (Date.now() at SHOW_TOAST dispatch) re-arm the 4-second timer
+ * even when the message text is identical — see reducer §6.176.
+ *
+ * @param {import('./reducer.js').AppState} state
+ * @returns {{key: number, message: string} | null}
+ */
+export function selectToast(state) {
+  return state.toast ?? null;
+}
+
+/**
+ * §6.179 — Earliest `data_inizio` among active farmaci, or null.
+ *
+ * Q-S5=2 ratification: `data_inizio_terapia` is computed dynamically
+ * from `min(farmaci_attivi.data_inizio)` rather than being persisted
+ * as a profilo field. The actual plan-window filter lives in
+ * `planBuilder.isFarmacoActiveOn` (already active since Step 4a),
+ * which guards each (farmaco × day) cell with
+ * `farmaco.data_inizio > dateStr → skip`. This selector is purely
+ * additive: UI/debug consumers can read the global "therapy start"
+ * label, while the plan computation does not need it.
+ *
+ * Returns null when no active farmaci have a `data_inizio` (defensive
+ * guard for migration users with NULL pre-CP2 records). Strings are
+ * compared lexicographically — safe for ISO 'YYYY-MM-DD' format.
+ *
+ * @param {import('./reducer.js').AppState} state
+ * @returns {string | null} 'YYYY-MM-DD' or null.
+ */
+export function selectDataInizioTerapia(state) {
+  const dates = (state.farmaci ?? [])
+    .filter((f) => f.attivo && typeof f.data_inizio === 'string' && f.data_inizio)
+    .map((f) => f.data_inizio);
+  if (dates.length === 0) return null;
+  // Lexicographic min — valid for ISO 'YYYY-MM-DD'.
+  let minDate = dates[0];
+  for (let i = 1; i < dates.length; i++) {
+    if (dates[i] < minDate) minDate = dates[i];
+  }
+  return minDate;
 }
