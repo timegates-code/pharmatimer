@@ -349,6 +349,51 @@ function SezioneDati() {
 }
 
 // ============================================================
+// SezioneAiuto — link a guida HTML utente (CP12 v3.0.0 Step 2).
+// ============================================================
+//
+// Scope CP12 (§22.43 Q-UX.12, §6.192):
+//   - Bottone full-width che apre `public/guide.html` in nuova tab.
+//   - Path-aware via `import.meta.env.BASE_URL` per allineamento con
+//     §6.191 (PWA basename `/pharmatimer/` in build prod GitHub Pages).
+//   - PROD-visible (NON gated DEV): la guida è destinata all'utente
+//     finale. Posizionata tra SezioneNotifiche e SezioneDati per
+//     separazione semantica (aiuto ≠ azione distruttiva).
+//
+// Deviation §22.43 wording: il prompt originale citava "Avanzate →
+// Guida utente"; SezioneAvanzate è gated DEV, quindi inutilizzabile
+// come consumer PROD. Risolto con SezioneAiuto dedicata. Vedi §6.192.
+//
+// Stile: button-like <a> con `target="_blank"` + `rel="noopener
+// noreferrer"` (security best practice per link esterni che aprono
+// nuova tab — anche se la guida è first-party, il pattern resta
+// coerente con il treatment di tab esterne).
+
+function SezioneAiuto() {
+  const { tokens: t } = useTheme();
+  const guideUrl = `${import.meta.env.BASE_URL}guide.html`;
+
+  return (
+    <section className="py-4 mt-4 border-t pt-4" style={{ borderTopColor: t.headerBorder }}>
+      <h3 className="text-sm font-medium mb-2">Aiuto</h3>
+      <a
+        href={guideUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-block px-4 py-2 rounded border w-full max-w-sm text-sm text-center no-underline"
+        style={{
+          background: t.modalBg,
+          color: t.textPrimary,
+          borderColor: t.tapBd,
+        }}
+      >
+        Guida utente
+      </a>
+    </section>
+  );
+}
+
+// ============================================================
 // SezioneAvanzate — DEV-only read-only diagnostic panel.
 // ============================================================
 //
@@ -429,6 +474,7 @@ function SezioneAvanzate() {
 
 function SezioneInfo() {
   const { tokens: t } = useTheme();
+  const guideUrl = `${import.meta.env.BASE_URL}guide.html`;
   return (
     <section
       data-testid="sezione-info"
@@ -436,7 +482,15 @@ function SezioneInfo() {
       style={{ borderTopColor: t.headerBorder }}
     >
       <p className="text-xs" style={{ color: t.textPrimary, opacity: 0.6 }}>
-        PharmaTimer 2.8.0 · <em className="italic">by timegates</em>
+        PharmaTimer 2.8.0 · <em className="italic">by timegates</em> ·{' '}
+        <a
+          href={guideUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: t.textPrimary, textDecoration: 'underline' }}
+        >
+          Guida
+        </a>
       </p>
     </section>
   );
@@ -458,6 +512,7 @@ export default function ImpostazioniTab(props) {
       <SezioneNome dirty={dirty} setDirty={setDirty} />
       <SezioneTema />
       <SezioneNotifiche />
+      <SezioneAiuto />
       <SezioneDati />
       {import.meta.env.DEV && <SezioneAvanzate />}
       <SezioneInfo />

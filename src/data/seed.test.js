@@ -6,6 +6,13 @@
 // (3 farmaci, naming convention "Esempio ...", flags coherent).
 // runSeedIfNeeded itself is not unit-tested here (Dexie roundtrip
 // validated at CP browser); we only check the data builder.
+//
+// par.6.195 (CP12 v3.0.0 Step 2, sub-AMB 11.b): added per-record
+// invariant test — guarantees naming + flag conventions hold for
+// every record in the dataset, including any future addition (the
+// existing tests assert against a hardcoded 3-element array, which
+// would fail for a different reason if a 4th farmaco were added
+// without respecting the convention).
 // =============================================================
 
 import { describe, it, expect } from "vitest";
@@ -45,5 +52,30 @@ describe("seed buildFarmaciDemo (par.6.172-175)", () => {
     expect(farmaci[0].dosi_giornaliere).toBe(1);
     expect(farmaci[1].tipo_frequenza).toBe("fisso");
     expect(farmaci[1].dosi_giornaliere).toBe(1);
+  });
+
+  it("ogni farmaco demo rispetta convenzione naming + flag (invariante v3.0.0 sub-AMB 11.b)", () => {
+    const farmaci = buildFarmaciDemo("2026-05-05");
+
+    expect(farmaci.length).toBeGreaterThanOrEqual(1);
+
+    for (const f of farmaci) {
+      // par.22.43 / Q-UX.6: every demo record uses the "Esempio ..."
+      // naming prefix to make the user-facing distinction obvious in
+      // FarmaciTab. Trailing space prevents bare "Esempio" from passing.
+      expect(f.nome.startsWith("Esempio ")).toBe(true);
+      // par.6.172: demo flag enables clearDemoData wipe without
+      // touching user-created records.
+      expect(f.demo).toBe(1);
+      // Demo records start active so they appear in OggiView
+      // immediately after onboarding mode='demo'.
+      expect(f.attivo).toBe(1);
+      // par.6.174: demo records are chronic-like (no end date).
+      expect(f.data_fine).toBe(null);
+      // principio_attivo placeholder convention (Q-UX.6: not real
+      // molecules). Single source distinguishing demo data from
+      // user-created records that carry real principio_attivo.
+      expect(f.principio_attivo).toBe("esempio");
+    }
   });
 });
