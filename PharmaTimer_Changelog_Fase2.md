@@ -10848,3 +10848,193 @@ Atteso baseline:
 
 **Pattern operativi.** Identici a §11.F (bash zsh-safe, pre-letture, CP0 baseline, riepilogo strutturato regola 4, approvazione closing).
 
+### 22.45 Stato post-Sessione 2 v3.0.0 Step 2 esecutiva *parziale* (CP7-CP10 chiusi, CP11-CP12 deferiti a Sessione 3)
+
+#### Lifecycle branch + commit hashes
+
+Sessione 2 Step 2 esecutiva chiusa volontariamente a metà su raccomandazione Claude post-compaction (regola 5: "se uno step richiede troppe riflessioni per mantenere alta qualità, suggerisci di chiuderla e riprendere in nuova sessione con contesto fresco"). CP11 (bug fix Q-UX.8 sticky calibration + Q-UX.9 manifest 404) richiede ricostruzione semantica del rationale §6.107 rolled back, e farla con context window saturo è esattamente il pattern che ha causato §6.118 e §6.189 (vedi sotto).
+
+Branch `step-9-v3-step-2` derivato da `main` top `84de7c0` (post-Step 1 v3.0.0-alpha.1). NON merged in main. 7 commit progressivi:
+
+```
+025d19f  CP10 v3.0.0 Step 2: selectProssimaDoseFuoriPlan + Q-UX.13 empty state OggiView (§6.188, +2 tests)
+f95a665  CP9 chirurgico v3.0.0 Step 2: gate EXT.4 gap recovery (retry post-revert 03a12ae) (§6.187, +1 test)
+03a12ae  Revert "CP9 v3.0.0 Step 2: gate EXT.4 gap recovery..."
+2a2f508  CP9 v3.0.0 Step 2: gate EXT.4 gap recovery disabilitato extended (broken — vedi §6.189)
+83fac76  CP8 v3.0.0 Step 2: FarmaciTab UI giorni+ore + cascade ConfirmModal + auto-lock dosi extended + fixup test label (§6.183-186, +3 tests)
+0d4b1e6  CP7 v3.0.0 Step 2: extendedFrequency helper isolato + branch planBuilder (§6.182, +6 tests)
+cd100c6  CP0 v3.0.0 Step 2 baseline + carry-forward §22.44
+```
+
+Stato post-CP10: working tree clean, 464/464 test verdi, `package.json` 3.0.0-alpha.1 (bump a 3.0.0-rc.2 deferito a closing Step 2 finale in Sessione 3 CP12 closing). Tag latest `v3.0.0-alpha.1` invariato. Branch `step-9-v3-step-2` resta locale — push remoto deferito a merge `main` post-CP12 closing.
+
+#### 8 deviazioni §6.182-189 allocate per CP
+
+| CP | Deviazione | Sintesi |
+|---|---|---|
+| CP7 | §6.182 | `extendedFrequency.js` helper isolato (`isExtendedInterval` + `computeExtendedOccurrencesInWindow` con stride aritmetico ms-based, kStart `Math.ceil((windowStart − anchorMs) / intervalMs)` O(1), DST limitation accepted by-design v3.0.0). PlanBuilder branch isolato post-loop dedicato per extended (skip nel day-loop, zero rischio regressione path standard 452 test). |
+| CP8 | §6.183 | Form-state `FarmaciTab.jsx` split intervallo in `intervallo_giorni` (0..365 step 1) + `intervallo_ore_residue` (0..23.5 step 0.5). DB column `intervallo_ore` rebuilt at normalize-time come `giorni*24 + ore_residue`. Single source of truth on disk preservata (§22.42 EXT.3' Q1=b). |
+| CP8 | §6.184 | `dosi_giornaliere` auto-locked a `'1'` (readonly) quando form è extended (`giorni*24 + ore_residue > 24` strict). Re-editabile quando user reverte sotto soglia (§22.42 EXT.2). |
+| CP8 | §6.185 | Cascade ConfirmModal §6.67 esteso a 4° consumer (post-§6.180 ImpostazioniTab promosso 3°; nominazione "3°" del prompt §11.G superata da timeline §22.44). Triggered in `handleSalva` quando form è extended AND `form.orari.length > 1`: warn su N-1 orari rows trimmed. Sequencing `proceedSaveOrIntercept` (cascade → data_fine-past → commitSave). |
+| CP8 | §6.186 | Fixup test label `byLabelText('Intervallo (ore)')` → `byLabelText('Giorni')` in `FarmaciTab.test.jsx` CP3 toggle test. Regressione attesa post-§6.183, fix in stessa CP. |
+| CP9 | §6.187 | Gate EXT.4 gap recovery disabilitato per farmaci extended (`intervallo_ore > 24h`). 3 layer coordinati: (a) `recalc.js applyAssunzione` gate `target.farmaco.intervallo_ore <= 24` su prompt emit `gap_recovery`; (b) `DoseCard.jsx` derivation `isExtendedFarmaco` + gate `&& !isExtendedFarmaco` su mount gap badge (TapBadge + static Badge); (c) `FarmaciTab.jsx` gate `!isExtendedForm` su checkbox `custom_minimo` + field `intervallo_minimo_ore` + cleanup form-state quando entra extended. Razionale §22.42 EXT.4: recuperare N min su intervallo > 24h è clinicamente irrilevante (~0.18% per 168h) e UX-confusing. `applyRecupero` stesso non riceve gate (matematicamente valido qualsiasi intervallo, AUDIT.5 §22.42); il gate UI impedisce trigger user-side. |
+| CP10 | §6.188 | `selectProssimaDoseFuoriPlan(state, today)` generalizzato (sub-AMB 13.d §22.43, generalizzato dalla §22.42 EXT.3'.a `selectProssimaDoseExtendedFuoriPlan`). Coverage standard `<= 24h` con `data_inizio > today` (terapia rinviata) + extended `> 24h` qualsiasi data_inizio (off-day oggi). Output `{dateStr, oraPrevista, farmaco, orario}`. Helpers privati `nextStandardOccurrence` (sort orari per HH:MM) + `nextExtendedOccurrence` (riusa `computeExtendedOccurrencesInWindow` window 365gg, filtra `> today`). Sort cronologico `(dateStr, oraPrevista, farmaco.id)` deterministic. OggiView branch matrix esteso da 3-livelli (CP3 §6.169-171) a 4-livelli post-CP10 via `<NoDosesEmptyState>` wrapper inline (no nuovo file, coerente con pattern interno). Copy ratificato §22.42 ("📅 Oggi nessuna assunzione programmata. / Prossima dose: / [formatDateLabel] alle [HH:MM] / [Nome Farmaco]"). |
+| CP9-retro | §6.189 | **Lesson learned: file rewrite vs surgical edit per file >300 LOC.** CP9 prima iterazione (commit `2a2f508`, ora reverted) ha sostituito interi file `recalc.js` (-277 LOC) + `DoseCard.jsx` (-64 LOC) tramite full rewrite invece che patch chirurgica → perdita inadvertita di JSDoc estesi + commenti documentali (no codice esecutivo perso, 8/8 export functions invariate, 462/462 test verdi). Pattern di copertura: i 462 test coprono comportamento osservabile, NON completezza dei commenti. Recovery in 3 commit: revert (`03a12ae`, +396/-117 inverso) → script Python chirurgico (`f95a665`, 9 replace + 1 append, +109/-7 effettivi). **Rule for future:** file >300 LOC → default `str_replace` mirato; full-file rewrite SOLO quando delta supera ~30% del file. Pattern simile a §6.118 (validazione semantica obbligatoria) ma applicato al file editing layer invece che al logic editing. Storia git preservata (no force-push, revert visibile) coerente con principio §6.71/§6.85 esteso a branch locale. |
+
+#### Sub-AMB §22.43 consumate Step 2 (parziale)
+
+- **Sub-AMB 11.f** (cascade ConfirmModal post-§6.180 promotion) → **CP8 §6.185** (4° consumer)
+- **Sub-AMB 13.d** (selector generalizzato standard data_inizio futura + extended off-day) → **CP10 §6.188**
+
+Sub-AMB ancora aperte deferite a Sessione 3 CP11-CP12:
+- **Sub-AMB 11.e** (CP browser checklist 8-10 punti completa) → CP12 closing
+- **Audit grep test seed** rifinitura → CP12
+
+#### Test growth per CP
+
+| CP | Δ | Cumulativo | File principali |
+|---|---|---|---|
+| CP0 | 0 | 452 | branch creation `step-9-v3-step-2` + carry-forward §22.44 (mirror commit 116 LOC insertion) |
+| CP7 | +6 | 458 | `extendedFrequency.{js,test.js}` (NEW) + `planBuilder.js` (REPLACE branch isolato) |
+| CP8 | +3 | 461 | `FarmaciTab.{jsx,test.jsx}` (REPLACE +478/-137 + 3 row fixup) + `FarmaciTab.extended.test.jsx` (NEW) |
+| CP9 | +1 | 462 | `recalc.js` (gate +13 LOC) + `DoseCard.jsx` (gate +18 LOC) + `FarmaciTab.jsx` (gate +27 LOC) + `extendedFrequency.test.js` (append +50 LOC) |
+| CP10 | +2 | 464 | `selectors.js` (append +113 LOC) + `selectors.prossimaDoseFuoriPlan.test.js` (NEW +124 LOC) + `OggiView.jsx` (+55/-4 LOC) |
+
+Target §11.G originale: 452 → **467** (+15). Stato parziale: **464/467** raggiunto (CP7-CP10 = +12 di +15). Restanti +3 in Sessione 3: CP11 (+2 sticky + manifest) + CP12 (+1 spec validation).
+
+#### Scoperte chiave durante esecuzione
+
+1. **`PharmaTimer_Changelog_Fase2.md` git-tracked nella repo** (override rispetto a memoria Claude iniziale "solo KB"). Scoperto in CP0 a verifica baseline. Implicazione: il Changelog deve essere allineato sia Mac-side (git commit cumulativo Step 2 closing) sia KB-side (sync manuale).
+2. **Pattern Surgical Python script** validato robusto su 3 retry consecutivi (CP9 chirurgico 9-replace+1-append, CP10 fase A 2-replace+1-create, CP10 fase B 2-replace+1-append). Idiom: `expected_count=1` per ogni replace, fail-fast prima di scrivere su mismatch, idempotency guard via sentinel string per append. Costo deliverable: 1 file `.py` standalone, no dependency esterne (Python 3.13 già installato Mac-side via Homebrew).
+3. **`defaultNoopActions()` test helper** ancora missing `showToast/dismissToast/resetAllData` (carry-forward §22.44 follow-up). Nessun test CP7-CP10 lo richiedeva quindi non bloccante; persistente per Step 2 finale.
+4. **Compaction context window post-CP10**: avvenuta a fine Sessione 2 Step 2. Transcript file (`/mnt/transcripts/2026-05-06-00-06-42-pharmatimer-cp7-cp10-step2.txt`) preservato con full source dump e sanity-test outputs. Pattern recovery validato post-§22.44 esperienza analoga.
+
+#### Patch follow-up flagged (non bloccante per Step 2 chiusura parziale)
+
+- **`defaultNoopActions()` missing thunks** (carry-forward §22.44, persistente Step 2). Aggiungere quando un test CP11-CP12 lo richiede.
+- **§6.119 cross-midnight recalculated cards stay in today's visual section** (Sessione 9-A deferito). Indipendente da Step 2, da affrontare post-v3.0.0.
+- **§6.120 `actions.presa()` uses real system time instead of `simulated_now` in DEV mode** (Sessione 9-A deferito). Stesso scope post-v3.0.0.
+
+#### CP browser smoke deferito
+
+§11.G prevedeva CP browser checklist 8-10 punti completa al closing Step 2 (sub-AMB 11.e). Non eseguito in questa sessione (CP closing stessa deferita). Da fare in Sessione 3 CP12 closing prima di tag `v3.0.0-rc.2`. Punti previsti includono:
+
+1. Onboarding nuovo utente DB vuoto + creazione farmaco extended 168h
+2. Creazione farmaco standard data_inizio futura → empty state Q-UX.13 visibile
+3. Misto standard + extended off-day → Q-UX.13 mostra il minimo cronologico
+4. Gap recovery prompt NON appare per dose 168h presa con ritardo > 30 min
+5. UI custom_minimo nascosta in form farmaco extended; visibile in form standard
+6. ConfirmModal cascade trim orari quando form extended con N orari
+7. Sticky calibration `top-[149px]` (Q-UX.8 pre-fix) verificata; post-CP11 calibration dinamica
+8. Manifest icons 404 fix verificato (Q-UX.9)
+9. Guida HTML accessibile da Config → Avanzate → "Guida utente" (Q-UX.12)
+10. Reset "Ricomincia da capo" da ImpostazioniTab → onboarding riapre
+
+#### Riferimenti incrociati
+
+- **§22.44**: stato pre-Step 2 (esiti Step 1, baseline 452/452, tag v3.0.0-alpha.1)
+- **§22.43**: ratifiche Q-UX.8-13 + lista impl 18 punti + sub-AMB 11.f/13.d
+- **§22.42**: opt B' modulare + AMB EXT.1-5 + UI giorni+ore (riferimento per CP7-CP10 impl)
+- **§11.G**: prompt Sessione 2 Step 2 (consumato a metà — CP7-CP10 di CP7-CP12 + closing)
+- **§11.H**: prompt Sessione 3 Step 2 resume CP11 (sotto)
+- **§6.71/§6.85**: deviazioni storiche immutabili — rispettato per CP9 broken (revert preserva storia, no force-push, lesson §6.189 documentata progressivamente)
+- **§6.107/§6.110**: 8d-B sticky rolled back rationale (CP11 dovrà ricostruire e correggere) + 149px hardcoded current state
+
+#### Sessione successiva
+
+```
+Esegui il prompt al §11.H del Changelog (Sessione 3 v3.0.0 Step 2 resume CP11).
+```
+
+Stato baseline atteso: branch **`step-9-v3-step-2`** (non-merged), top **`025d19f`**, tag latest `v3.0.0-alpha.1`, working tree clean, **464/464** verdi, `package.json` 3.0.0-alpha.1. Sessione separata su stesso branch (resume, no nuova branch creation). Stima ~1.5-2h, +3 test, target 467.
+
+**Branch step-9-v3-step-2 resta locale** — push remoto deferito a merge `main` post-CP12 closing in Sessione 3 (insieme al tag annotato `v3.0.0-rc.2` + redeploy gh-pages).
+
+---
+
+### 11.H Prompt Sessione 3 v3.0.0 Step 2 esecutiva (resume CP11) — bug fix Q-UX.8/9 + finalizzazione + closing
+
+**Modalità:** Sessione 3 esecutiva resume Step 2/2 v3.0.0 — riprende da CP11 dopo chiusura volontaria parziale Sessione 2 Step 2 al CP10 (vedi §22.45). Pattern §11 v2.5.37 mantenuto. CP11 + CP12 + CP closing pre-frozen come da §11.G.
+
+**Stato baseline atteso:** post-§22.45. Branch `step-9-v3-step-2` non-merged, top `025d19f`. **464/464** test verdi. Tag `v3.0.0-alpha.1` preservato. `package.json` 3.0.0-alpha.1 invariato.
+
+**Apertura sessione one-liner:**
+
+```
+Esegui il prompt al §11.H del Changelog (Sessione 3 v3.0.0 Step 2 resume CP11).
+```
+
+**Pre-letture obbligatorie (Claude in apertura):**
+
+1. **§22.45** integrale (esiti CP7-CP10 chiusura parziale Sessione 2, deviazioni §6.182-189 allocate, scoperte chiave, follow-up flagged)
+2. **§22.43** integrale (Q-UX.8-13 ratifiche dettaglio — propedeutico CP11 Q-UX.8/9 + CP12 Q-UX.12)
+3. **§6.107** (8d-B sticky rolled back rationale: scroll lock regression + CSS var never set due to early-return idle→ready) + **§6.110** (149px hardcoded current calibration §6.96 closing) — **CRITICAL pre-CP11**: CP11 dovrà ricostruire perché 8d-B fallì e proporre soluzione corretta, NON ripetere il pattern broken
+4. **§6.163** (BrowserRouter basename `/pharmatimer/`) — propedeutico CP11 Q-UX.9 manifest fix
+5. Code Mac-side post-CP10: `src/components/oggi/OggiView.jsx` (sticky pill consumer §6.110), `vite.config.js` (PWA plugin config), `index.html` (apple-touch-icon), `public/icons/` (asset disponibili)
+
+**CP0 baseline obbligatorio Mac-side (zsh-safe):**
+
+```bash
+echo '=== CP0 baseline v3.0.0 Step 2 resume Sessione 3 ==='
+cd ~/Sviluppo/pharmatimer
+echo 'Branch:' && git branch --show-current
+echo 'Top:' && git log -1 --oneline
+echo 'Tag latest:' && git describe --tags --abbrev=0
+echo 'Working tree:' && git status --short
+echo 'Test count:' && npm test -- --run 2>&1 | grep -E 'Tests.*passed' | tail -1
+echo 'package.json version:' && grep '"version"' package.json
+echo 'Storia Step 2 Sessione 2 chiusura parziale:' && git log --oneline 84de7c0..HEAD
+echo 'Vite config PWA plugin:' && grep -A 30 'VitePWA\|vite-plugin-pwa' vite.config.js | head -40
+echo 'Index.html apple-touch-icon:' && grep 'apple-touch-icon' index.html
+echo 'Icone disponibili:' && ls -la public/icons/
+echo 'Hooks esistenti:' && ls src/hooks/
+echo 'Manifest post-build (se dist/ presente):' && ls dist/manifest* 2>&1 | head -3
+echo '=== CP0 completato ==='
+```
+
+Atteso baseline:
+
+- branch `step-9-v3-step-2` (NON `main`), top `025d19f`, tag latest `v3.0.0-alpha.1`, working tree clean
+- **464/464** test verdi
+- `package.json` 3.0.0-alpha.1
+- Storia post-CP0 Sessione 2 = 7 commit (cd100c6, 0d4b1e6, 83fac76, 2a2f508, 03a12ae, f95a665, 025d19f)
+- `vite.config.js` blocco `VitePWA` con `manifest.icons` paths (root-relative o pharmatimer-prefixed da audit)
+- `index.html` linea con `apple-touch-icon` (path da audit)
+- `public/icons/` con icon-192/512, icon-maskable-512, apple-touch-icon-180
+
+**Branch strategy:** **NO branch creation.** Sessione 3 lavora sullo stesso `step-9-v3-step-2`. CP commit progressivi a partire da CP11 (no CP0 commit — solo audit). Merge `main` fast-forward solo a CP closing Step 2 (post-tag `v3.0.0-rc.2`).
+
+**Scope CP esplicitato:**
+
+| CP | Output atteso | LOC | Test | Commit |
+|---|---|---|---|---|
+| CP0 (audit only) | Verifica baseline + audit `vite.config.js` PWA + `index.html` + icone. **No commit** (no modifiche). Mini-analisi pre-code §6.107/§6.110 ricostruzione: capire perché 8d-B rolled back, proporre fix concreto pre-impl. | 0 | 0 | no |
+| CP11 | Q-UX.8 `useStickyOffset` hook (`useLayoutEffect` + `ResizeObserver` + CSS var `--sticky-offset` su container, NON document) + sostituzione `top-[149px]` con `top-[var(--sticky-offset,149px)]` Tailwind arbitrary value + fallback statico se ResizeObserver undefined o ref null. Q-UX.9 audit manifest + fix vite.config.js (`base: '/pharmatimer/'` o adeguamento `manifest.icons` paths) + `<link rel="apple-touch-icon">` index.html basename-aware. 2 test (1 hook unit + 1 manifest validation o snapshot) | ~25 | +2 | sì |
+| CP12 | `public/guide.html` 6 sezioni testuali italiano (Q-UX.12: cos'è PharmaTimer / come aggiungere farmaci / interpretare colori card / gap recovery / extended frequency / privacy/dati locali) + link Config → Avanzate "Guida utente" (apre in nuova tab) + SezioneInfo link compatto. Spec §3.1 update (3 deviazioni doc pre-allocate §22.43): convenzione data_inizio anchor extended, supporto giorni+ore UI, gap recovery disabilitato extended. Audit grep test seed rifinitura 1 validation test. | ~40 | +1 | sì |
+| CP closing Step 2 | Bump `package.json` 3.0.0-alpha.1 → 3.0.0-rc.2 + changelog **§22.46** esiti Step 2 finale (deviazioni §6.190-194 cumulate, sub-AMB 11.e CP browser smoke 10 punti consumata, test growth completo 452→467) + commit + tag annotato `v3.0.0-rc.2` "v3.0.0 Step 2 — extended branch + bug fix + finalizzazione" + CP browser checklist 8-10 punti (vedi §22.45 "CP browser smoke deferito") + merge `step-9-v3-step-2` → `main` fast-forward + push origin (`main` + tag `v3.0.0-rc.2`) + redeploy gh-pages + decision point post-smoke-24-48h tag `v3.0.0` final | doc + commit | 0 | sì |
+
+**Target test:** 464 → **467** (+3). Range conservativo 466, atteso 467, espansivo 469. Trigger split adaptive: improbabile (scope ridotto rispetto a Step 2 originale +15).
+
+**AMB pre-frozen Sessione 3:** **0 nuove**. Tutte le AMB UX-1÷13 + EXT.1-5 + sub-AMB 11.e/13.d risolte in §22.41/§22.42/§22.43. CP0 audit empirico verifica solo (no resolution mode).
+
+**Allocazione §6.NN attesa Sessione 3:**
+
+- **§6.190** — CP11 useStickyOffset hook + sostituzione hardcoded
+- **§6.191** — CP11 manifest fix vite.config.js + index.html
+- **§6.192** — CP12 guide.html + link consumers
+- **§6.193** — CP12 spec §3.1 update convention data_inizio anchor extended
+- **§6.194** — CP12 spec §3.1 update giorni+ore UI + gap recovery extended exception
+
+(Numerazione progressiva da §6.190 in avanti, §6.71/§6.85 immutabili rispettato.)
+
+**Stima sessione esecutiva Sessione 3:**
+
+- Token: 25-40K (impl + test + iter + guida HTML draft + closing changelog §22.46)
+- Tempo wall-clock: 1.5-2h
+- Output: ~65 LOC nuovi (CP11+CP12) + 3 test + `public/guide.html` ~10-15KB + spec §3.1 update + changelog +~3-4K caratteri (§22.46)
+
+**Milestone closing post-Sessione 3:** decisione tag `v3.0.0` final immediato vs post-24-48h smoke test (raccomandazione invariata da §11.G: smoke 24-48h con test installazione PWA + onboarding flow + branch extended con farmaco metotrexato reale). Push gh-pages.
+
+**Pattern operativi.** Identici a §11.F/§11.G (bash zsh-safe, pre-letture, CP0 baseline, riepilogo strutturato regola 4, approvazione closing CP). **Special pre-CP11:** mini-analisi semantica obbligatoria §6.107 rolled back rationale prima di scrivere `useStickyOffset` (lesson §6.118 + §6.189 applicata: validazione semantica pre-code mandatoria su feature con storia).
+
+---
