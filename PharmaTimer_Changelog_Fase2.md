@@ -1,8 +1,8 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 3.0.0-rc.1
+**Versione:** 3.0.0-rc.1.1
 **Data inizio fase:** 16 aprile 2026
-**Ultima modifica:** 4 maggio 2026 sera tardi (Sessione cumulativa ~7-8 ore: closure scenario Z v2.8.0 → P2-P5 deploy GitHub Pages → hotfix v2.8.1 routing → smoke test live → riapertura UX-extended ratificata v2.8.2-rc.1). Round 2 pivot strategico post-evidence: smoke test su PWA live ha rilevato 2 bug residui (sticky calibration top-[149px] regressione, icone manifest 404) + 1 problema strutturale (UX non-ready per utenti novizi: farmaci di Roberto preconfigurati confondono, dosi giorno-precedente apparenti come "in ritardo" senza contesto, niente onboarding). Disambiguazione 4 round Q&A: Bug 2 dosi-ieri = feature pianificazione rolling window per Roberto vs bug semantico per nuovi utenti; data_inizio_terapia da sola NON risolve UX problem; onboarding modale e' la soluzione corretta. Closure Z riconosciuta prematura rispetto intent UX originale ("fin dall'inizio progetto privilegiare UX"). Strada B ratificata: riapertura formale UX-extended target v3.0.0 milestone "PharmaTimer UX-ready for novices". Scope frozen lista chiusa 14 punti par.22.40 decisione 3 (OnboardingModal 2-step, gating logic, empty state guidante OggiView, empty state Mit-A "prossima dose [DATA]", toast Mit-C post-aggiunta, seed neutro depersonalizzato 3 farmaci esempio, seed opt-in, data_inizio campo form FarmaciTab default domani Q-S6=a, data_inizio_terapia auto-calc planBuilder Q-S5=2, reset bottone Avanzate, sticky calibration useLayoutEffect+ResizeObserver, icone manifest 404 fix, test +15-20, guida HTML esterna). Sub-AMB Q-S1÷Q-S7 ratificate: Q-S1=a un dispositivo per persona, Q-S2=c seed neutro depersonalizzato opt-in, Q-S3=guida HTML invece di tutorial in-app, Q-S4=DB pulito da capo (Roberto compreso), Q-S5=2 auto-calc, Q-S6=a domani default, Q-S7=OK perdita DB attuale (test only). Bumping 2.8.1 → v2.8.2-rc.1 (analisi-first ratificata, no impl ancora). Sessione successiva: prompt par.11.E "Sessione 1 analisi-first v3.0.0 UX onboarding multi-utente" eseguibile in nuova sessione fresca (one-liner: Esegui il prompt al par.11.E del Changelog). Atteso 90-150 min wall-clock + 8-15K token, output AMB UX-1÷N + scope CP Sessione 2 + prompt par.11.F. Stima totale v3.0.0 cumulativa 8-15 ore lavoro distribuibili 1-3 sessioni dedicate. Backward-history demote v2.8.1 description sotto. Sessione 1 partial v3.0.0 (4 maggio 2026 sera tardi, prosieguo cumulativo): Q-UX.1-7 ratificate (onboarding modale layout+copy 2-step, empty states OggiView 0-farmaci + Mit-A preview, toast Mit-C post-aggiunta, seed neutro 3 farmaci esempio, reset bottone Avanzate Ricomincia-da-capo). AMB-UX-frequencyModel emersa (intervallo > 24h non garantito by design, audit Mac-side demandato sub-sessione, vedi par.11.E-bis). Q-UX.8-12 deferite a Sessione 1 chiusura, vedi par.11.E-ter. v2.8.2-rc.1 invariato. Stato post-sessione par.22.41. Sub-sessione audit frequencyModel (5 maggio 2026 mattina, dedicata): AUDIT.1-5 chiuse su file source Mac-side, opt B' modulare branch isolato ratificata (rivista da schema A/B/C originale §22.41), AMB EXT.1-5 chiuse blanket decidi tu, modello UI giorni+ore proposto da Roberto turno 5 (sostituisce EXT.3 originale, persistenza intervallo_ore singola, range illimitato), Q-UX.13 nuovo empty state off-day extended in scope v3.0.0 (scope frozen 14->16 punti). Stima Sessione 2 esecutiva +120 LOC +13 test wall-clock 2-3h. v2.8.2-rc.1 -> v2.8.2-rc.2. Stato post-sessione par.22.42. Sessione 1 chiusura analisi-first par.11.E-ter (5 maggio 2026): Q-UX.8/9/13 ratificati turno 1 (sticky calibration useStickyOffset hook + ResizeObserver + CSS var, manifest icone audit empirico CP0 Step 2, off-day extended copy con singola occorrenza imminente), Q-UX.10/11 turno 2 (migration no-wipe Dexie schema upgrade + onboarding gating onboarding_completed, target test 459-466 atteso 462), Q-UX.12 turno 3 (guida HTML public/guide.html 6 sezioni italiano + screenshot deferred v3.0.1) + closing finale. Sub-AMB nuove ratificate: 10.b card seed disabled su DB popolato, 11.b audit CP0 grep test esistenti, 11.e CP browser checklist 8-10 punti pre-defined, 13.d generalizzazione selector selectProssimaDoseFuoriPlan caso misto. Lista impl v3.0.0 congelata 18 punti. Scope CP Sessione 2 split v3.0.0 Step 1 + Step 2 pre-frozen nominativa esplicita. Bump v2.8.2-rc.2 -> v3.0.0-rc.1 (rc del nuovo major, pattern semver standard). Sessione successiva: prompt par.11.F per Sessione 2 Step 1 esecutiva. package.json invariato 2.8.1 (AMB-11.B.7). Stato post-sessione par.22.43.)
+**Ultima modifica:** 4 maggio 2026 sera tardi (Sessione cumulativa ~7-8 ore: closure scenario Z v2.8.0 → P2-P5 deploy GitHub Pages → hotfix v2.8.1 routing → smoke test live → riapertura UX-extended ratificata v2.8.2-rc.1). Round 2 pivot strategico post-evidence: smoke test su PWA live ha rilevato 2 bug residui (sticky calibration top-[149px] regressione, icone manifest 404) + 1 problema strutturale (UX non-ready per utenti novizi: farmaci di Roberto preconfigurati confondono, dosi giorno-precedente apparenti come "in ritardo" senza contesto, niente onboarding). Disambiguazione 4 round Q&A: Bug 2 dosi-ieri = feature pianificazione rolling window per Roberto vs bug semantico per nuovi utenti; data_inizio_terapia da sola NON risolve UX problem; onboarding modale e' la soluzione corretta. Closure Z riconosciuta prematura rispetto intent UX originale ("fin dall'inizio progetto privilegiare UX"). Strada B ratificata: riapertura formale UX-extended target v3.0.0 milestone "PharmaTimer UX-ready for novices". Scope frozen lista chiusa 14 punti par.22.40 decisione 3 (OnboardingModal 2-step, gating logic, empty state guidante OggiView, empty state Mit-A "prossima dose [DATA]", toast Mit-C post-aggiunta, seed neutro depersonalizzato 3 farmaci esempio, seed opt-in, data_inizio campo form FarmaciTab default domani Q-S6=a, data_inizio_terapia auto-calc planBuilder Q-S5=2, reset bottone Avanzate, sticky calibration useLayoutEffect+ResizeObserver, icone manifest 404 fix, test +15-20, guida HTML esterna). Sub-AMB Q-S1÷Q-S7 ratificate: Q-S1=a un dispositivo per persona, Q-S2=c seed neutro depersonalizzato opt-in, Q-S3=guida HTML invece di tutorial in-app, Q-S4=DB pulito da capo (Roberto compreso), Q-S5=2 auto-calc, Q-S6=a domani default, Q-S7=OK perdita DB attuale (test only). Bumping 2.8.1 → v2.8.2-rc.1 (analisi-first ratificata, no impl ancora). Sessione successiva: prompt par.11.E "Sessione 1 analisi-first v3.0.0 UX onboarding multi-utente" eseguibile in nuova sessione fresca (one-liner: Esegui il prompt al par.11.E del Changelog). Atteso 90-150 min wall-clock + 8-15K token, output AMB UX-1÷N + scope CP Sessione 2 + prompt par.11.F. Stima totale v3.0.0 cumulativa 8-15 ore lavoro distribuibili 1-3 sessioni dedicate. Backward-history demote v2.8.1 description sotto. Sessione 1 partial v3.0.0 (4 maggio 2026 sera tardi, prosieguo cumulativo): Q-UX.1-7 ratificate (onboarding modale layout+copy 2-step, empty states OggiView 0-farmaci + Mit-A preview, toast Mit-C post-aggiunta, seed neutro 3 farmaci esempio, reset bottone Avanzate Ricomincia-da-capo). AMB-UX-frequencyModel emersa (intervallo > 24h non garantito by design, audit Mac-side demandato sub-sessione, vedi par.11.E-bis). Q-UX.8-12 deferite a Sessione 1 chiusura, vedi par.11.E-ter. v2.8.2-rc.1 invariato. Stato post-sessione par.22.41. Sub-sessione audit frequencyModel (5 maggio 2026 mattina, dedicata): AUDIT.1-5 chiuse su file source Mac-side, opt B' modulare branch isolato ratificata (rivista da schema A/B/C originale §22.41), AMB EXT.1-5 chiuse blanket decidi tu, modello UI giorni+ore proposto da Roberto turno 5 (sostituisce EXT.3 originale, persistenza intervallo_ore singola, range illimitato), Q-UX.13 nuovo empty state off-day extended in scope v3.0.0 (scope frozen 14->16 punti). Stima Sessione 2 esecutiva +120 LOC +13 test wall-clock 2-3h. v2.8.2-rc.1 -> v2.8.2-rc.2. Stato post-sessione par.22.42. Sessione 1 chiusura analisi-first par.11.E-ter (5 maggio 2026): Q-UX.8/9/13 ratificati turno 1 (sticky calibration useStickyOffset hook + ResizeObserver + CSS var, manifest icone audit empirico CP0 Step 2, off-day extended copy con singola occorrenza imminente), Q-UX.10/11 turno 2 (migration no-wipe Dexie schema upgrade + onboarding gating onboarding_completed, target test 459-466 atteso 462), Q-UX.12 turno 3 (guida HTML public/guide.html 6 sezioni italiano + screenshot deferred v3.0.1) + closing finale. Sub-AMB nuove ratificate: 10.b card seed disabled su DB popolato, 11.b audit CP0 grep test esistenti, 11.e CP browser checklist 8-10 punti pre-defined, 13.d generalizzazione selector selectProssimaDoseFuoriPlan caso misto. Lista impl v3.0.0 congelata 18 punti. Scope CP Sessione 2 split v3.0.0 Step 1 + Step 2 pre-frozen nominativa esplicita. Bump v2.8.2-rc.2 -> v3.0.0-rc.1 (rc del nuovo major, pattern semver standard). Sessione successiva: prompt par.11.F per Sessione 2 Step 1 esecutiva. package.json invariato 2.8.1 (AMB-11.B.7). Stato post-sessione par.22.43. Sessione 2 v3.0.0 Step 1 esecutiva (5 maggio 2026 sera): CP1-CP6 chiusi, branch step-9-v3-step-1 → main fast-forward, tag annotato v3.0.0-alpha.1, 430 → 452 test (+22, target +20 par.11.F centrato), 18 deviazioni par.6.164-181. Stato post par.22.44. Sessione 2 v3.0.0 Step 2 esecutiva parziale (5 maggio 2026 sera tardi): CP7-CP10 chiusi, CP11-CP12 deferiti a Sessione 3, branch step-9-v3-step-2 (NON merged main), 452 → 464 test (+12, target +15 par.11.G), 8 deviazioni par.6.182-189 (incl. par.6.189 lesson learned file rewrite vs surgical edit). Stato post par.22.45. Sessione 3 v3.0.0 Step 2 esecutiva resume CP11 (6 maggio 2026 pomeriggio): CP11 chiuso (Q-UX.8 useStickyOffset callback ref pattern + Q-UX.9 buildPwaManifest single source of truth /pharmatimer/ prefix), 464 → 466 test (+2 esatto, target par.11.H centrato), 2 deviazioni par.6.190-191. CP12+closing Step 2 deferiti a Sessione 4 per applicazione regola 5 (qualità sessione + scope diverso CP12 = guida HTML + spec update + browser checklist 8-10 punti). Bump v3.0.0-rc.1 → v3.0.0-rc.1.1 (analisi-first finalizzata + 2 CP esecutivi su 4, no bump major perché Step 2 non chiuso). Stato post par.22.46.)
 
 **Changelog versione 2.8.1 (rispetto alla 2.8.0):** Hotfix v2.8.1 BrowserRouter basename per GitHub Pages subpath. Bug emerso in P5 smoke test: hard refresh (Cmd+Shift+R) o accesso diretto a URL `https://timegates-code.github.io/pharmatimer/oggi` produceva 404 GitHub Pages. Diagnosi: Vite buildava asset con base /pharmatimer/ correttamente ma React Router usava BrowserRouter standard senza basename, navigando client-side a /oggi (path assoluto root-relative) invece di /pharmatimer/oggi. Discrepanza dev/prod: in dev (base default /) BrowserRouter senza basename funzionava, bug si manifestava solo dopo deploy a subpath. Fix: vite.config.js base /pharmatimer/ permanente (eviti rischio future build senza flag CLI), src/main.jsx aggiunto basename={import.meta.env.BASE_URL} a BrowserRouter. Test impact 430/430 invariato. Bug deploy-only, scoperto post-deploy quindi hotfix branch-less su main legittimo (scope minimal 2 file 2 righe). Bump package.json 2.8.0 → 2.8.1 + tag annotato v2.8.1 + push origin main + redeploy gh-pages forzato. Cache SW v2.8.0 stale ha richiesto Clear site data DevTools per propagazione fix. par.6.163 deviation + par.22.39 closure hotfix.
 
@@ -11036,5 +11036,183 @@ Atteso baseline:
 **Milestone closing post-Sessione 3:** decisione tag `v3.0.0` final immediato vs post-24-48h smoke test (raccomandazione invariata da §11.G: smoke 24-48h con test installazione PWA + onboarding flow + branch extended con farmaco metotrexato reale). Push gh-pages.
 
 **Pattern operativi.** Identici a §11.F/§11.G (bash zsh-safe, pre-letture, CP0 baseline, riepilogo strutturato regola 4, approvazione closing CP). **Special pre-CP11:** mini-analisi semantica obbligatoria §6.107 rolled back rationale prima di scrivere `useStickyOffset` (lesson §6.118 + §6.189 applicata: validazione semantica pre-code mandatoria su feature con storia).
+
+---
+
+### 22.46 Stato post-Sessione 3 v3.0.0 Step 2 esecutiva *resume CP11* (CP11 chiuso, CP12 + closing deferiti a Sessione 4)
+
+#### Lifecycle branch + commit hashes
+
+Sessione 3 esecutiva resume Step 2/2 ratificata in §11.H ha eseguito CP11 + chiuso volontariamente al CP11 su raccomandazione regola 5 (sessione dimensionata: CP12 introduce task qualitativamente diverso — guida HTML utente + spec §3.1 update + CP browser checklist 8-10 punti — che beneficia di context fresco). Pattern §22.45 replicato consapevolmente.
+
+Branch `step-9-v3-step-2` invariato in continuità da §22.45 (NON merged in main, top pre-Sessione 3 = `9a888ad` Changelog §22.45+§11.H). 1 commit progressivo Sessione 3:
+
+```
+14968f7  CP11 v3.0.0 Step 2: useStickyOffset hook (Q-UX.8) + PWA manifest /pharmatimer/ prefix (Q-UX.9) (par.6.190-191, +2 tests)
+```
+
+Stato post-CP11: working tree clean, **466/466** test verdi su 53 test files, `package.json` 3.0.0-alpha.1 invariato, tag latest `v3.0.0-alpha.1` invariato. Branch `step-9-v3-step-2` resta locale. Push remoto + merge `main` deferiti a CP closing Step 2 in Sessione 4.
+
+#### 2 deviazioni §6.190-191 allocate per CP
+
+| CP | Deviazione | Sintesi |
+|---|---|---|
+| CP11 | §6.190 | `useStickyOffset(containerRef) → callbackRef` hook in `src/hooks/useStickyOffset.js` con pattern `useState + useLayoutEffect dep=[headerEl]`. **Signature rectification rispetto al letterale sub-AMB 8.a §22.43** (`useStickyOffset(headerRef)` mantenuto avrebbe forzato il pattern fallito di §6.107 = `useRef + useEffect dep=[]` su componente con early-return `status='idle'`). Callback ref garantisce attach/detach corretto al transition idle→ready (React invoca direttamente `setHeaderEl(node)` quando il DOM element viene mounted, indipendente da `useEffect` deps). CSS var `--sticky-offset` scritta su containerRef.current.style (sub-AMB 8.b: container, NOT document — scope subtree OggiView via inheritance). Cleanup `observer.disconnect()` (sub-AMB 8.c). Fallback statico 149px (sub-AMB 8.e) implementato in **2 layer**: (1) hook esce silenzioso se `containerRef.current` o `headerEl` null; (2) consumer legge con fallback inline `top-[var(--sticky-offset,149px)]`. Defence in depth. Consumer in `OggiView.jsx`: `containerRef` su root wrapper `<div maxWidth: 430>`, `setHeaderEl` callback ref su sticky header `<div className="sticky top-0 z-30 ...">`, DATE SEPARATOR `top-[149px]` → `top-[var(--sticky-offset,149px)]` (Tailwind 3.4.7 supporta `var()` dentro arbitrary value). **Chiude:** §6.96 originale (riapertura archiviata 11-B), §6.107 (8d-B rolled back), parzialmente §6.110 (calibrazione statica resta come fallback `var(...,149px)`, non rimossa per retrocompat ResizeObserver assente). +1 test unit (`useStickyOffset.test.jsx`: render TestComp con header height mock 156px, assert containerRef CSS var = '156px'). |
+| CP11 | §6.191 | Refactor `manifest` object da inline `vite.config.js` a modulo `src/config/pwaManifest.js` (single source of truth) con `buildPwaManifest(base)` builder che prefissa `scope`, `start_url`, e ogni `icons[i].src` con il deploy base. **Bug originario v2.8.1**: VitePWA riceve `manifest` come static config object — Vite NON riscrive automaticamente i path root-relative dentro il manifest (a differenza di `index.html`, riscritto da Vite via `base`). `dist/manifest.webmanifest` post-build pre-CP11 aveva `scope:"/"`, `start_url:"/"`, `icons[].src:"/icons/..."` → 404 su GH Pages subpath `/pharmatimer/`. Verificato empiricamente Mac-side in CP0 Sessione 3. **Decisione D2 ratificata**: modulo separato `src/config/pwaManifest.js` (NON inline in `vite.config.js` con costante locale) per permettere test unit `<50ms` senza boot Vite. Location `src/config/` invece di project root per allineamento al pattern progetto (tutto sotto `src/`, copertura naturale glob vitest senza configurazioni speciali). +1 test validation (`src/config/pwaManifest.test.js`: import + property assertions, asserisce scope/start_url/3× icons.src tutti `startsWith('/pharmatimer/')`). Verifica empirica post-build: `dist/manifest.webmanifest` post-CP11 ha `scope:"/pharmatimer/"`, `start_url:"/pharmatimer/"`, 3× `icons[].src:"/pharmatimer/icons/..."`. **Chiude** Q-UX.9 fix manifest. |
+
+#### Sub-AMB §22.43 consumate Step 2 (cumulativo Sessione 2+3)
+
+- **Sub-AMB 8.a** (useStickyOffset hook in `src/hooks/`) → CP11 §6.190 (signature rectified)
+- **Sub-AMB 8.b** (CSS var su contenitore non document) → CP11 §6.190
+- **Sub-AMB 8.c** (cleanup `observer.disconnect()`) → CP11 §6.190
+- **Sub-AMB 8.d** (1 unit test ResizeObserver+getBoundingClientRect mockati) → CP11 §6.190
+- **Sub-AMB 8.e** (fallback statico 149px) → CP11 §6.190 (2 layer)
+- **Sub-AMB 11.f** (cascade ConfirmModal post-§6.180) → CP8 §6.185 (Sessione 2)
+- **Sub-AMB 13.d** (selector generalizzato) → CP10 §6.188 (Sessione 2)
+
+Sub-AMB ancora aperte deferite a Sessione 4 CP12+closing:
+- **Sub-AMB 11.b** (audit grep test seed rifinitura) → CP12
+- **Sub-AMB 11.e** (CP browser checklist 8-10 punti completa) → CP closing Step 2
+
+#### Test growth per CP
+
+| CP | Δ | Cumulativo | File principali |
+|---|---|---|---|
+| CP0 (Sessione 3 audit only) | 0 | 464 | no commit, audit only (vite.config.js + index.html + public/icons/ + hooks/) |
+| CP11 | +2 | 466 | `src/hooks/useStickyOffset.{js,test.jsx}` (NEW) + `src/config/pwaManifest.{js,test.js}` (NEW) + `vite.config.js` (REFACTOR import+chiamata) + `src/components/oggi/OggiView.jsx` (5 surgical edits: useRef import + useStickyOffset import + hook usage + containerRef root + setHeaderEl header + dynamic top DATE SEPARATOR) |
+
+Target §11.H Sessione 3: 464 → 467 (+3). Stato parziale Sessione 3 closing: **466/467** raggiunto (CP11 = +2 di +3). Restanti +1 in Sessione 4: CP12 (+1 spec validation post-audit grep test seed Sub-AMB 11.b).
+
+Target §11.G originale (cumulativo Step 2 intero Sessione 2+3+4): 452 → 467 (+15). Stato cumulativo post-Sessione 3: **466/467** = +14 di +15.
+
+#### Scoperte chiave durante esecuzione
+
+1. **Vite `base` config NON propaga al manifest object passato a VitePWA**, mentre propaga ai path root-relative in `index.html`. Asimmetria documentata in §6.191. `apple-touch-icon` href in `index.html` post-build pre-CP11 era già correttamente prefisso `/pharmatimer/` (Vite auto-rewrite verificato `grep apple-touch dist/index.html`), confermando che il bug v2.8.1 era localizzato al solo manifest object, non al markup HTML. Implicazione: tutti i path-bearing fields del manifest devono essere costruiti consapevolmente del deploy base.
+
+2. **Tailwind 3.4.7 supporta `var()` dentro arbitrary value**: `top-[var(--sticky-offset,149px)]` è sintassi valida senza configurazioni aggiuntive. Verificato Mac-side da `package.json` `"tailwindcss": "^3.4.7"` in CP0 Sessione 3. Decisione D3 ratificata.
+
+3. **Pattern callback ref + useState** è il pattern corretto per hook che osservano elementi in componenti con render condizionale early-return. La signature ratificata sub-AMB 8.a §22.43 (`useStickyOffset(headerRef)`) avrebbe forzato il pattern fallito di §6.107. Decisione D1 (rectification) documentata in §6.190 come scope-creep necessario, analoga al pattern §6.160 (CP3-fix Step 11-B propagation `getCardState` come scope-creep). La lesson §6.118 (validazione semantica pre-code) ha protetto efficacemente: la mini-analisi pre-CP11 ha identificato il rischio prima della scrittura del codice, evitando una potenziale §6.107-bis.
+
+4. **Pattern surgical Python script** (lesson §6.189) validato robusto su CP11: 2 replace su `vite.config.js` + 5 replace su `OggiView.jsx`, tutti con `expected_count=1` fail-fast. Dry-run + apply convergenti. Idiom consolidato post-§6.189: file >300 LOC default a str_replace mirato, full rewrite SOLO quando delta supera ~30%.
+
+5. **Drift commit Changelog post-CP10 atteso**: §22.45/§11.H scritti in commit `9a888ad` (post-`025d19f` CP10). CP0 Sessione 3 ha rilevato `9a888ad` invece di `025d19f` come top atteso letterale del prompt §11.H, ma è meta-procedurale (Changelog git-tracked, scoperta §22.45 nota 1 confermata). Non allocato §6.NN.
+
+#### Patch follow-up flagged (non bloccante per Sessione 3 chiusura parziale)
+
+- **`defaultNoopActions()` missing thunks** (carry-forward §22.44 + §22.45, persistente Step 2). CP11 non lo ha richiesto, persistente per CP12+closing.
+- **§6.119** cross-midnight recalculated cards stay in today's visual section (Sessione 9-A deferito). Indipendente da Step 2, post-v3.0.0.
+- **§6.120** `actions.presa()` uses real system time instead of `simulated_now` in DEV mode (Sessione 9-A deferito). Stesso scope post-v3.0.0.
+
+#### CP browser smoke deferito
+
+§11.G prevedeva CP browser checklist 8-10 punti completa al closing Step 2 (sub-AMB 11.e). Non eseguito in Sessione 2 (CP closing deferita) né in Sessione 3 (chiusa post-CP11 prima del closing). Da fare in Sessione 4 CP closing Step 2 prima di tag `v3.0.0-rc.2`. Punti 7+8 (sticky calibration dinamica post-CP11 + manifest icons fix verificato) ora sono **specificamente verificabili** post-CP11 commit `14968f7`:
+
+- **P7 sticky calibration**: aprire `/pharmatimer/oggi` in Safari/Chrome con DEV slider visibile, scroll giù, verificare DATE SEPARATOR pinned alla base reale dell'header senza gap residuo (post-Q-UX.8). Toggle dark/light per verificare invariance. Verifica anche per browsers con ResizeObserver assente (verificare fallback statico 149px non rotto).
+- **P8 manifest icons fix**: `npm run build` + ispezione `dist/manifest.webmanifest` (già verificato Mac-side in Sessione 3 step D, ma da ri-verificare post-deploy gh-pages live).
+
+#### Riferimenti incrociati
+
+- **§22.45**: stato pre-Sessione 3 (esiti CP7-CP10 Sessione 2 Step 2 parziale, baseline 464/464)
+- **§22.43**: ratifiche Q-UX.8-13 + sub-AMB 8.a-e (prompt sub-AMB rectified D1 in §6.190)
+- **§6.107**: rolled back 8d-B (root cause `useEffect dep=[]` su early-return) — chiuso parzialmente in §6.190 (anti-pattern documentato)
+- **§6.110**: calibrazione statica `top-[149px]` 8d-C — preservata come fallback in `var(...,149px)` post-§6.190
+- **§6.163**: BrowserRouter basename per GitHub Pages subpath — propedeutico §6.191 (stessa root cause: subpath deploy)
+- **§6.118 / §6.189**: lesson learned validazione semantica pre-code + file rewrite vs surgical edit — applicate proattivamente in CP11
+- **§11.H**: prompt Sessione 3 (consumato — Sessione 3 chiusa parziale CP11)
+- **§11.I**: prompt Sessione 4 Step 2 resume CP12 (sotto)
+
+#### Sessione successiva
+
+```
+Esegui il prompt al §11.I del Changelog (Sessione 4 v3.0.0 Step 2 resume CP12).
+```
+
+Stato baseline atteso Sessione 4: branch **`step-9-v3-step-2`** (non-merged), top **`14968f7`**, tag latest `v3.0.0-alpha.1`, working tree clean, **466/466** verdi, `package.json` 3.0.0-alpha.1. Sessione separata su stesso branch (resume, no nuova branch creation). Stima ~1.5-2h, +1 test, target 467 cumulativo Step 2.
+
+**Branch step-9-v3-step-2 resta locale** — push remoto deferito a merge `main` post-CP closing Step 2 in Sessione 4 (insieme al tag annotato `v3.0.0-rc.2` + redeploy gh-pages).
+
+---
+
+### 11.I Prompt Sessione 4 v3.0.0 Step 2 esecutiva (resume CP12) — guida HTML + spec §3.1 update + closing
+
+**Modalità:** Sessione 4 esecutiva resume Step 2/2 v3.0.0 — riprende da CP12 dopo chiusura volontaria parziale Sessione 3 al CP11 (vedi §22.46). Pattern §11 v2.5.37 + §11.H mantenuto. CP12 + CP closing pre-frozen come da §11.G + §11.H.
+
+**Stato baseline atteso:** post-§22.46. Branch `step-9-v3-step-2` non-merged, top `14968f7`. **466/466** test verdi su 53 test files. Tag `v3.0.0-alpha.1` preservato. `package.json` 3.0.0-alpha.1 invariato.
+
+**Apertura sessione one-liner:**
+
+```
+Esegui il prompt al §11.I del Changelog (Sessione 4 v3.0.0 Step 2 resume CP12).
+```
+
+**Pre-letture obbligatorie (Claude in apertura):**
+
+1. **§22.46** integrale (esiti CP11 chiusura parziale Sessione 3, deviazioni §6.190-191 allocate, scoperte chiave, follow-up flagged)
+2. **§22.43** integrale (Q-UX.8-13 ratifiche dettaglio — propedeutico CP12 Q-UX.12 guida HTML 6 sezioni + spec §3.1 update 3 deviazioni doc)
+3. **§22.42** opt B' modulare + AMB EXT.1-5 (riferimento per spec §3.1 update CP12: convenzione `data_inizio` anchor extended + supporto giorni+ore UI + gap recovery disabilitato extended)
+4. **§22.45** "CP browser smoke deferito" 10 punti (propedeutico CP closing Step 2 sub-AMB 11.e)
+5. Code Mac-side post-CP11: `src/components/config/ImpostazioniTab.jsx` (consumer guida link), `src/components/shared/SezioneInfo.jsx` se presente (link compatto), `public/` (target `guide.html`), `PharmaTimer_Project_Spec.md` (sezione §3.1 da editare in KB post-CP12)
+
+**CP0 baseline obbligatorio Mac-side (zsh-safe):**
+
+```bash
+echo '=== CP0 baseline v3.0.0 Step 2 resume Sessione 4 ==='
+cd ~/Sviluppo/pharmatimer
+echo 'Branch:' && git branch --show-current
+echo 'Top:' && git log -1 --oneline
+echo 'Tag latest:' && git describe --tags --abbrev=0
+echo 'Working tree:' && git status --short
+echo 'Test count:' && npm test -- --run 2>&1 | grep -E 'Tests.*passed' | tail -1
+echo 'package.json version:' && grep '"version"' package.json
+echo 'Storia Step 2 cumulativa:' && git log --oneline 84de7c0..HEAD
+echo 'public/ assets attuali:' && ls public/
+echo 'ImpostazioniTab path:' && ls src/components/config/ImpostazioniTab.* 2>&1 | head -3
+echo 'SezioneInfo path (se presente):' && find src/components -name 'SezioneInfo*' 2>&1 | head -3
+echo 'Audit grep test seed (sub-AMB 11.b):' && grep -rn 'demo\|seed\|runSeedIfNeeded\|preFilledFarmaci' src/ --include='*.test.*' | wc -l
+echo '=== CP0 completato ==='
+```
+
+Atteso baseline:
+
+- branch `step-9-v3-step-2` (NON `main`), top `14968f7`, tag latest `v3.0.0-alpha.1`, working tree clean
+- **466/466** test verdi su 53 test files
+- `package.json` 3.0.0-alpha.1
+- Storia post-`84de7c0` = 9 commit cumulativi (cd100c6, 0d4b1e6, 83fac76, 2a2f508, 03a12ae, f95a665, 025d19f, 9a888ad, 14968f7)
+- `public/` dir contiene `icons/` + assets minimi (no `guide.html` ancora)
+- `ImpostazioniTab.jsx` esistente, `SezioneInfo` esistente (verificare path esatto)
+- Audit grep test seed: numero matches da identificare 2-4 test da rifinire (sub-AMB 11.b)
+
+**Branch strategy:** **NO branch creation.** Sessione 4 lavora sullo stesso `step-9-v3-step-2`. CP commit progressivi a partire da CP12 (no CP0 commit — solo audit). Merge `main` fast-forward solo a CP closing Step 2 (post-tag `v3.0.0-rc.2`).
+
+**Scope CP esplicitato:**
+
+| CP | Output atteso | LOC | Test | Commit |
+|---|---|---|---|---|
+| CP0 (audit only) | Verifica baseline + audit `public/` + `ImpostazioniTab.jsx` consumer + `SezioneInfo` consumer + grep test seed (sub-AMB 11.b: identificare 2-4 test da rifinire). **No commit** (no modifiche). | 0 | 0 | no |
+| CP12 | `public/guide.html` 6 sezioni testuali italiano (Q-UX.12: cos'è PharmaTimer / come aggiungere farmaci / interpretare colori card / gap recovery / extended frequency / privacy/dati locali) — HTML5 + inline CSS minimal, no dipendenze esterne. Cache PWA service worker include automatico via vite-plugin-pwa `globPatterns: ["**/*.{js,css,html,...}"]` (verificare). Link Config → Avanzate "Guida utente" (apre in nuova tab) + link compatto in SezioneInfo (se presente). Spec §3.1 update (3 deviazioni doc pre-allocate §22.43): (a) convenzione `data_inizio` anchor extended, (b) supporto giorni+ore UI, (c) gap recovery disabilitato extended. Audit grep test seed sub-AMB 11.b: rifinitura 1 validation test (target +1 test). | ~40 | +1 | sì |
+| CP closing Step 2 | Bump `package.json` 3.0.0-alpha.1 → 3.0.0-rc.2 + changelog **§22.47** esiti Step 2 finale (cumulativo deviazioni §6.182-194, sub-AMB 11.e CP browser smoke 10 punti consumata, test growth completo 452→467) + commit + tag annotato `v3.0.0-rc.2` "v3.0.0 Step 2 — extended branch + bug fix + finalizzazione" + CP browser checklist 8-10 punti (vedi §22.45 + §22.46 punti 7+8 specifici post-CP11) + merge `step-9-v3-step-2` → `main` fast-forward + push origin (`main` + tag `v3.0.0-rc.2`) + redeploy gh-pages + decision point post-smoke-24-48h tag `v3.0.0` final | doc + commit | 0 | sì |
+
+**Target test:** 466 → **467** (+1). Range conservativo 466, atteso 467, espansivo 468. Trigger split adaptive: improbabile (scope ridotto rispetto a Sessione 3).
+
+**AMB pre-frozen Sessione 4:** **0 nuove**. Tutte le AMB UX-1÷13 + EXT.1-5 + sub-AMB risolte in §22.41/§22.42/§22.43. CP0 audit empirico verifica solo (no resolution mode).
+
+**Allocazione §6.NN attesa Sessione 4:**
+
+- **§6.192** — CP12 guide.html + link consumers (ImpostazioniTab + SezioneInfo)
+- **§6.193** — CP12 spec §3.1 update convention `data_inizio` anchor extended
+- **§6.194** — CP12 spec §3.1 update giorni+ore UI + gap recovery extended exception
+- **(eventuale §6.195)** — sub-AMB 11.b audit grep test seed rifinitura, se richiede deviazione
+
+(Numerazione progressiva da §6.192 in avanti, §6.71/§6.85 immutabili rispettato.)
+
+**Stima sessione esecutiva Sessione 4:**
+
+- Token: 25-40K (impl + test + iter + guida HTML draft + closing changelog §22.47 + browser checklist)
+- Tempo wall-clock: 1.5-2h
+- Output: ~40 LOC nuovi (CP12) + 1 test + `public/guide.html` ~10-15KB + spec §3.1 update + changelog +~3-4K caratteri (§22.47)
+
+**Milestone closing post-Sessione 4:** decisione tag `v3.0.0` final immediato vs post-24-48h smoke test (raccomandazione invariata da §11.G/§11.H: smoke 24-48h con test installazione PWA + onboarding flow + branch extended con farmaco metotrexato reale + verifica fix sticky calibration + verifica fix manifest 404 post-deploy live). Push gh-pages.
+
+**Pattern operativi.** Identici a §11.F/§11.G/§11.H (bash zsh-safe, pre-letture, CP0 baseline, riepilogo strutturato regola 4, approvazione closing CP). **Special pre-CP12:** scrittura HTML utente in italiano (UX/copy task qualitativamente diverso da porting/semantica codice) — beneficiare di rilettura attenta delle copy ratificate §22.42 + §22.43 prima della scrittura. Lesson §6.118 + §6.189 ancora applicabili: validazione semantica pre-code (specie su spec §3.1 update — verificare allineamento con file source attuali) + str_replace mirato vs full rewrite.
 
 ---
