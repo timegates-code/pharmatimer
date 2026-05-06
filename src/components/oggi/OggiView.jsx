@@ -72,11 +72,12 @@
 //     badge is the UI mitigation; full fix scheduled post-9-A or 9-B.
 // ============================================================
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppContext } from '../../state/AppContext.jsx';
 import { useTheme } from '../../hooks/useTheme.js';
 import { useNow } from '../../hooks/useNow.js';
 import { useAutoBeep } from '../../hooks/useAutoBeep.js';
+import { useStickyOffset } from '../../hooks/useStickyOffset.js';
 import {
   selectCountersForDay,
   selectUltimaPresa,
@@ -198,6 +199,19 @@ export default function OggiView() {
   //     source='auto' (from state.prompt, no triggerEl).
   //     Null means closed; a single instance serves both triggers.
   const [recuperoModal, setRecuperoModal] = useState(null);
+
+  // --- CP11 §6.190 (Q-UX.8): dynamic sticky offset for the DATE
+  //     SEPARATOR pill. containerRef is attached to the OggiView
+  //     root wrapper; setHeaderEl is the callback ref attached to
+  //     the sticky header. useStickyOffset writes `--sticky-offset`
+  //     on the container; the DATE SEPARATOR reads it via
+  //     `top-[var(--sticky-offset,149px)]`. The 149px fallback
+  //     preserves §6.110 calibration if ResizeObserver is
+  //     unavailable or the header has not yet measured.
+  //     See useStickyOffset.js for the §6.107 anti-pattern
+  //     rationale (callback ref vs useRef + useEffect dep=[]).
+  const containerRef = useRef(null);
+  const setHeaderEl = useStickyOffset(containerRef);
 
   // --- memoised derivations (hooks-before-returns rule) ---
 
@@ -362,9 +376,10 @@ export default function OggiView() {
   return (
     <>
       <style>{cssString}</style>
-      <div className="min-h-screen pb-24" style={{ maxWidth: 430, margin: '0 auto' }}>
+      <div ref={containerRef} className="min-h-screen pb-24" style={{ maxWidth: 430, margin: '0 auto' }}>
         {/* HEADER */}
         <div
+          ref={setHeaderEl}
           className="sticky top-0 z-30 px-4 pt-4 pb-3 transition-colors duration-200"
           style={{ background: t.headerBg, borderBottom: `1px solid ${t.headerBorder}` }}
         >
@@ -493,7 +508,7 @@ export default function OggiView() {
                     accepts residual gap if header layout reflows. Closes
                     §6.96. */}
                 <div
-                  className="sticky top-[149px] z-20 my-4 py-1.5 px-3 rounded-md flex items-center justify-center gap-2"
+                  className="sticky top-[var(--sticky-offset,149px)] z-20 my-4 py-1.5 px-3 rounded-md flex items-center justify-center gap-2"
                   style={{
                     background: t.dateSepBgStrong,
                     boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
