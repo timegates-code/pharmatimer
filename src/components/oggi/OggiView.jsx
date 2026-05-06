@@ -101,7 +101,7 @@ import { SospesaModal } from './modals/SospesaModal.jsx';
 import { RecuperoModal } from './modals/RecuperoModal.jsx';
 import { UndoModal } from './modals/UndoModal.jsx';
 // CP3 v3.0.0 Step 1 (par.6.169-171): empty states + preview giorno successivo.
-import { selectFarmaciAttivi, selectProssimoGiornoConDosi } from '../../state/selectors.js';
+import { selectFarmaciAttivi, selectProssimoGiornoConDosi, selectProssimaDoseFuoriPlan } from '../../state/selectors.js';
 import EmptyStateZeroFarmaci from './EmptyStateZeroFarmaci.jsx';
 import PreviewBlock from './PreviewBlock.jsx';
 
@@ -476,9 +476,7 @@ export default function OggiView() {
             ) : proxData ? (
               <PreviewBlock proxData={proxData} />
             ) : (
-              <p className="text-center text-sm mt-8" style={{ color: t.textSecondary }}>
-                Nessuna dose programmata.
-              </p>
+              <NoDosesEmptyState state={state} today={today} theme={t} />
             )
           ) : (
             groupedDays.map((day) => (
@@ -624,5 +622,54 @@ export default function OggiView() {
         />
       )}
     </>
+  );
+}
+
+
+// ============================================================
+// CP10 v3.0.0 Step 2 (§6.188 + sub-AMB 13.d §22.43):
+// NoDosesEmptyState — wrapper per il leaf finale del ternario empty
+// state in OggiView. Quando il branch raggiunge questa foglia (no
+// farmaci preview Q-UX.4 plan-based), interroga
+// selectProssimaDoseFuoriPlan: se trova una prossima dose fuori plan
+// (caso Q-UX.13 — extended off-day o standard data_inizio futura
+// oltre il plan window) renderizza il copy ratificato §22.42; altrimenti
+// fallback al generico "Nessuna dose programmata."
+//
+// Componente inline (non file separato) per evitare nuovo test surface
+// e per coerenza col pattern PreviewBlock che, pur essendo file
+// separato, e' consumato unicamente qui.
+// ============================================================
+function NoDosesEmptyState({ state, today, theme: t }) {
+  const prossima = selectProssimaDoseFuoriPlan(state, today);
+  if (prossima) {
+    const { dateStr, oraPrevista, farmaco } = prossima;
+    return (
+      <div className="text-center mt-8 px-4">
+        <p className="text-base mb-3" style={{ color: t.textSecondary }}>
+          📅 Oggi nessuna assunzione programmata.
+        </p>
+        <p className="text-sm mb-1" style={{ color: t.textSecondary }}>
+          Prossima dose:
+        </p>
+        <p
+          className="text-base font-semibold"
+          style={{ color: t.textPrimary }}
+        >
+          {formatDateLabel(dateStr, today)} alle {oraPrevista}
+        </p>
+        <p
+          className="text-base font-medium"
+          style={{ color: t.textPrimary }}
+        >
+          {farmaco.nome}
+        </p>
+      </div>
+    );
+  }
+  return (
+    <p className="text-center text-sm mt-8" style={{ color: t.textSecondary }}>
+      Nessuna dose programmata.
+    </p>
   );
 }

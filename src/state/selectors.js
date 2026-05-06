@@ -34,6 +34,12 @@
 import { resolveNow } from '../utils/now.js';
 import { TOLLERANZA_MIN } from '../domain/constants.js';
 import { groupEntriesByDayAndMomento, formatDateLabel } from '../utils/uiState.js';
+// CP10 v3.0.0 Step 2 (§6.188): selectProssimaDoseFuoriPlan dependencies.
+import { computeOraPrevista } from '../domain/orarioResolver.js';
+import {
+  isExtendedInterval,
+  computeExtendedOccurrencesInWindow,
+} from '../domain/extendedFrequency.js';
 
 /** Convert 'HH:MM' to minutes-from-midnight. */
 function hhmmToMinutes(hhmm) {
@@ -435,4 +441,111 @@ export function selectDataInizioTerapia(state) {
     if (dates[i] < minDate) minDate = dates[i];
   }
   return minDate;
+}
+
+// ============================================================
+// CP10 v3.0.0 Step 2 (§6.188 + sub-AMB 13.d §22.43)
+// — selectProssimaDoseFuoriPlan.
+// ============================================================
+
+/**
+ * §6.188 — Q-UX.13 generalized selector. Returns the next future
+ * occurrence "out of plan window" for any active farmaco, covering:
+ *   - Standard `intervallo_ore <= 24h` with `data_inizio > today`
+ *     (terapia rinviata)
+ *   - Extended `intervallo_ore > 24h` with any data_inizio
+ *     (off-day oggi: stride aritmetico cade fuori plan window)
+ *
+ * Generalizes the original §22.42 EXT.3'.a `selectProssimaDoseExtendedFuoriPlan`
+ * to cover the misto case (sub-AMB 13.d §22.43): >=1 standard
+ * `<=24h` con data_inizio > today + >=1 extended off-day oggi.
+ *
+ * Algorithm: per ogni farmaco attivo, compute next occurrence via
+ * appropriate branch; sort cronologico (dateStr, oraPrevista,
+ * farmaco.id); return primo. Edge cases:
+ *   - 0 farmaci attivi -> null
+ *   - state.profiloAttivo === null -> null (no oraPrevista computabile)
+ *   - data_fine < today -> escluso
+ *   - data_inizio === today -> escluso (already covered by plan if active today)
+ *
+ * Output shape:
+ *   { dateStr: 'YYYY-MM-DD', oraPrevista: 'HH:MM', farmaco, orario }
+ *
+ * Consumer: OggiView Q-UX.13 empty state branch when
+ * `groupedDays.length === 0 && selectProssimoGiornoConDosi() === null`.
+ *
+ * @param {object} state AppState root.
+ * @param {string} today 'YYYY-MM-DD'.
+ * @returns {{dateStr: string, oraPrevista: string, farmaco: object, orario: object} | null}
+ */
+export function selectProssimaDoseFuoriPlan(state, today) {
+  const farmaciAttivi = (state.farmaci ?? []).filter((f) => f.attivo);
+  if (farmaciAttivi.length === 0) return null;
+
+  const profilo = state.profiloAttivo;
+  if (!profilo) return null;
+
+  const orariAll = state.orari ?? [];
+  const candidates = [];
+
+  for (const farmaco of farmaciAttivi) {
+    if (farmaco.data_fine && farmaco.data_fine < today) continue;
+    const orariFarmaco = orariAll.filter((o) => o.farmaco_id === farmaco.id);
+    if (orariFarmaco.length === 0) continue;
+
+    const occ = isExtendedInterval(farmaco)
+      ? nextExtendedOccurrence(farmaco, orariFarmaco, profilo, today)
+      : nextStandardOccurrence(farmaco, orariFarmaco, profilo, today);
+    if (occ) {
+      candidates.push({ ...occ, farmaco });
+    }
+  }
+
+  if (candidates.length === 0) return null;
+
+  candidates.sort((a, b) => {
+    if (a.dateStr !== b.dateStr) return a.dateStr.localeCompare(b.dateStr);
+    if (a.oraPrevista !== b.oraPrevista) return a.oraPrevista.localeCompare(b.oraPrevista);
+    return a.farmaco.id - b.farmaco.id;
+  });
+
+  return candidates[0];
+}
+
+/**
+ * Standard branch (intervallo_ore <= 24 OR fisso): occurrence solo se
+ * data_inizio strettamente futura. Primo orario cronologicamente.
+ */
+function nextStandardOccurrence(farmaco, orariFarmaco, profilo, today) {
+  if (!farmaco.data_inizio) return null;
+  if (farmaco.data_inizio <= today) return null; // === today: già nel plan
+  const orariConOra = orariFarmaco.map((o) => ({
+    orario: o,
+    oraPrevista: computeOraPrevista(o, profilo),
+  }));
+  orariConOra.sort((a, b) => a.oraPrevista.localeCompare(b.oraPrevista));
+  return {
+    dateStr: farmaco.data_inizio,
+    oraPrevista: orariConOra[0].oraPrevista,
+    orario: orariConOra[0].orario,
+  };
+}
+
+/**
+ * Extended branch (intervallo_ore > 24): riusa
+ * computeExtendedOccurrencesInWindow su window grande (365 giorni)
+ * partendo da today, ritorna il primo strettamente > today.
+ * Filtra eventuale occorrenza == today (gia' coperta dal plan se attiva).
+ */
+function nextExtendedOccurrence(farmaco, orariFarmaco, profilo, today) {
+  const occ = computeExtendedOccurrencesInWindow(
+    farmaco,
+    orariFarmaco,
+    profilo,
+    today,
+    365,
+  );
+  const future = occ.filter((o) => o.dateStr > today);
+  if (future.length === 0) return null;
+  return future[0];
 }
