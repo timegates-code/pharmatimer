@@ -22,9 +22,34 @@ import Dexie from "dexie";
 //   does not index booleans directly).
 
 export const DB_NAME = "pharmatimer";
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
 export const db = new Dexie(DB_NAME);
+
+// ============================================================
+// §6.196 — Default "Standard" profilo (Sessione 5 v3.0.0 fix cold-boot)
+// ------------------------------------------------------------
+// Single source of truth for the baseline profilo_utente record
+// inserted on fresh install (Dexie populate hook) and as defensive
+// upgrade target (v2→v3). Shape mirrors actions.js resetAllData
+// (§6.180 CP6 v3.0.0 Step 1, line ~1018) — not seed.js, because
+// seed.js uses demo:1 (a demo-data marker), while this Standard
+// profilo is the user-baseline at cold-boot (demo:0).
+//
+// Subsequent runSeedIfNeeded({force:true}) in mode='demo' uses
+// bulkPut on profilo_utente, overwriting Standard idempotently
+// without error if the user later opts into the demo flow.
+// ============================================================
+const DEFAULT_PROFILO_STANDARD = {
+  nome_profilo: "Standard",
+  ora_sveglia: "07:00",
+  ora_colazione: "07:30",
+  ora_pranzo: "13:00",
+  ora_cena: "20:30",
+  ora_sonno: "23:30",
+  attivo: 1,
+  demo: 0,
+};
 
 db.version(1).stores({
   // PK id, indexes: attivo (for "active meds" queries)
@@ -72,6 +97,66 @@ db.version(2).stores({
       log.ora_ricalcolata = log.data + "T" + log.ora_ricalcolata;
     }
   });
+});
+
+// ============================================================
+// Schema v3 — Sessione 5 v3.0.0 (§6.196, fix cold-boot)
+// ------------------------------------------------------------
+// Stores byte-identical to v2; the version bump exists solely to
+// trigger the defensive upgrade hook below, which guarantees that
+// any browser that opened the DB at v1/v2 without a Standard profilo
+// (theoretical edge case — never observed in practice but logically
+// possible) gets one inserted before init() runs.
+//
+// Production fix is the on('populate') hook below (covers fresh
+// installs, the actual reproducible bug case). The v2→v3 upgrade
+// is defensive — it only inserts Standard if profilo_utente is
+// still empty when this hook runs, so it cannot create duplicates
+// for users whose DB already has profili (Roberto's existing data
+// stays intact).
+//
+// Closes the cold-boot DB-vuoto bug discovered in §22.47 P1 of the
+// Sessione 4 browser checklist:
+//   - root cause: actions.js init() throws NO_ACTIVE_PROFILE on
+//     `profili.find(p => p.attivo) === undefined`, blocking the
+//     OnboardingGate (which requires status === 'ready').
+//   - prior consciousness: actions.js:1013 comment in resetAllData
+//     (§6.180) shows the problem was known but mitigated only in
+//     that one path — never generalised for fresh installs.
+// ============================================================
+db.version(3).stores({
+  // Identical to v2 — schema bump exists for upgrade hook only
+  farmaci: "++id, attivo",
+  orari_base: "++id, farmaco_id, [farmaco_id+dose_numero]",
+  log_assunzioni: "++id, data, farmaco_id, [farmaco_id+data]",
+  profilo_utente: "++id, attivo",
+  impostazioni_app: "chiave"
+}).upgrade(async (tx) => {
+  // §6.196 — Defensive: insert Standard only if profilo_utente is
+  // empty. Real-world users coming from v2 already have profili
+  // (either from old seed auto-bootstrap or from Roberto's existing
+  // data); this branch handles the theoretical corrupted-state case.
+  const existing = await tx.table("profilo_utente").count();
+  if (existing === 0) {
+    await tx.table("profilo_utente").add({ ...DEFAULT_PROFILO_STANDARD });
+  }
+});
+
+// ============================================================
+// §6.196 — Populate hook for fresh installs.
+// ------------------------------------------------------------
+// Fires exactly once when the DB is first created (no version exists
+// yet in the browser). Inserts the default Standard profilo so init()
+// always finds an active profilo on cold-boot.
+//
+// This is the production fix path: every new install lands here and
+// gets a profilo by-design, eliminating the NO_ACTIVE_PROFILE throw
+// permanently. The init() invariant
+// (`profili.find(p => p.attivo) !== undefined`) becomes a true
+// system invariant, not a mere assumption.
+// ============================================================
+db.on("populate", async (tx) => {
+  await tx.table("profilo_utente").add({ ...DEFAULT_PROFILO_STANDARD });
 });
 
 // ============================================================
