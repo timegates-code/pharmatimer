@@ -1,8 +1,8 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 3.0.0-rc.1.1
+**Versione:** 3.0.0-rc.3
 **Data inizio fase:** 16 aprile 2026
-**Ultima modifica:** 4 maggio 2026 sera tardi (Sessione cumulativa ~7-8 ore: closure scenario Z v2.8.0 → P2-P5 deploy GitHub Pages → hotfix v2.8.1 routing → smoke test live → riapertura UX-extended ratificata v2.8.2-rc.1). Round 2 pivot strategico post-evidence: smoke test su PWA live ha rilevato 2 bug residui (sticky calibration top-[149px] regressione, icone manifest 404) + 1 problema strutturale (UX non-ready per utenti novizi: farmaci di Roberto preconfigurati confondono, dosi giorno-precedente apparenti come "in ritardo" senza contesto, niente onboarding). Disambiguazione 4 round Q&A: Bug 2 dosi-ieri = feature pianificazione rolling window per Roberto vs bug semantico per nuovi utenti; data_inizio_terapia da sola NON risolve UX problem; onboarding modale e' la soluzione corretta. Closure Z riconosciuta prematura rispetto intent UX originale ("fin dall'inizio progetto privilegiare UX"). Strada B ratificata: riapertura formale UX-extended target v3.0.0 milestone "PharmaTimer UX-ready for novices". Scope frozen lista chiusa 14 punti par.22.40 decisione 3 (OnboardingModal 2-step, gating logic, empty state guidante OggiView, empty state Mit-A "prossima dose [DATA]", toast Mit-C post-aggiunta, seed neutro depersonalizzato 3 farmaci esempio, seed opt-in, data_inizio campo form FarmaciTab default domani Q-S6=a, data_inizio_terapia auto-calc planBuilder Q-S5=2, reset bottone Avanzate, sticky calibration useLayoutEffect+ResizeObserver, icone manifest 404 fix, test +15-20, guida HTML esterna). Sub-AMB Q-S1÷Q-S7 ratificate: Q-S1=a un dispositivo per persona, Q-S2=c seed neutro depersonalizzato opt-in, Q-S3=guida HTML invece di tutorial in-app, Q-S4=DB pulito da capo (Roberto compreso), Q-S5=2 auto-calc, Q-S6=a domani default, Q-S7=OK perdita DB attuale (test only). Bumping 2.8.1 → v2.8.2-rc.1 (analisi-first ratificata, no impl ancora). Sessione successiva: prompt par.11.E "Sessione 1 analisi-first v3.0.0 UX onboarding multi-utente" eseguibile in nuova sessione fresca (one-liner: Esegui il prompt al par.11.E del Changelog). Atteso 90-150 min wall-clock + 8-15K token, output AMB UX-1÷N + scope CP Sessione 2 + prompt par.11.F. Stima totale v3.0.0 cumulativa 8-15 ore lavoro distribuibili 1-3 sessioni dedicate. Backward-history demote v2.8.1 description sotto. Sessione 1 partial v3.0.0 (4 maggio 2026 sera tardi, prosieguo cumulativo): Q-UX.1-7 ratificate (onboarding modale layout+copy 2-step, empty states OggiView 0-farmaci + Mit-A preview, toast Mit-C post-aggiunta, seed neutro 3 farmaci esempio, reset bottone Avanzate Ricomincia-da-capo). AMB-UX-frequencyModel emersa (intervallo > 24h non garantito by design, audit Mac-side demandato sub-sessione, vedi par.11.E-bis). Q-UX.8-12 deferite a Sessione 1 chiusura, vedi par.11.E-ter. v2.8.2-rc.1 invariato. Stato post-sessione par.22.41. Sub-sessione audit frequencyModel (5 maggio 2026 mattina, dedicata): AUDIT.1-5 chiuse su file source Mac-side, opt B' modulare branch isolato ratificata (rivista da schema A/B/C originale §22.41), AMB EXT.1-5 chiuse blanket decidi tu, modello UI giorni+ore proposto da Roberto turno 5 (sostituisce EXT.3 originale, persistenza intervallo_ore singola, range illimitato), Q-UX.13 nuovo empty state off-day extended in scope v3.0.0 (scope frozen 14->16 punti). Stima Sessione 2 esecutiva +120 LOC +13 test wall-clock 2-3h. v2.8.2-rc.1 -> v2.8.2-rc.2. Stato post-sessione par.22.42. Sessione 1 chiusura analisi-first par.11.E-ter (5 maggio 2026): Q-UX.8/9/13 ratificati turno 1 (sticky calibration useStickyOffset hook + ResizeObserver + CSS var, manifest icone audit empirico CP0 Step 2, off-day extended copy con singola occorrenza imminente), Q-UX.10/11 turno 2 (migration no-wipe Dexie schema upgrade + onboarding gating onboarding_completed, target test 459-466 atteso 462), Q-UX.12 turno 3 (guida HTML public/guide.html 6 sezioni italiano + screenshot deferred v3.0.1) + closing finale. Sub-AMB nuove ratificate: 10.b card seed disabled su DB popolato, 11.b audit CP0 grep test esistenti, 11.e CP browser checklist 8-10 punti pre-defined, 13.d generalizzazione selector selectProssimaDoseFuoriPlan caso misto. Lista impl v3.0.0 congelata 18 punti. Scope CP Sessione 2 split v3.0.0 Step 1 + Step 2 pre-frozen nominativa esplicita. Bump v2.8.2-rc.2 -> v3.0.0-rc.1 (rc del nuovo major, pattern semver standard). Sessione successiva: prompt par.11.F per Sessione 2 Step 1 esecutiva. package.json invariato 2.8.1 (AMB-11.B.7). Stato post-sessione par.22.43. Sessione 2 v3.0.0 Step 1 esecutiva (5 maggio 2026 sera): CP1-CP6 chiusi, branch step-9-v3-step-1 → main fast-forward, tag annotato v3.0.0-alpha.1, 430 → 452 test (+22, target +20 par.11.F centrato), 18 deviazioni par.6.164-181. Stato post par.22.44. Sessione 2 v3.0.0 Step 2 esecutiva parziale (5 maggio 2026 sera tardi): CP7-CP10 chiusi, CP11-CP12 deferiti a Sessione 3, branch step-9-v3-step-2 (NON merged main), 452 → 464 test (+12, target +15 par.11.G), 8 deviazioni par.6.182-189 (incl. par.6.189 lesson learned file rewrite vs surgical edit). Stato post par.22.45. Sessione 3 v3.0.0 Step 2 esecutiva resume CP11 (6 maggio 2026 pomeriggio): CP11 chiuso (Q-UX.8 useStickyOffset callback ref pattern + Q-UX.9 buildPwaManifest single source of truth /pharmatimer/ prefix), 464 → 466 test (+2 esatto, target par.11.H centrato), 2 deviazioni par.6.190-191. CP12+closing Step 2 deferiti a Sessione 4 per applicazione regola 5 (qualità sessione + scope diverso CP12 = guida HTML + spec update + browser checklist 8-10 punti). Bump v3.0.0-rc.1 → v3.0.0-rc.1.1 (analisi-first finalizzata + 2 CP esecutivi su 4, no bump major perché Step 2 non chiuso). Stato post par.22.46.)
+**Ultima modifica:** 4 maggio 2026 sera tardi (Sessione cumulativa ~7-8 ore: closure scenario Z v2.8.0 → P2-P5 deploy GitHub Pages → hotfix v2.8.1 routing → smoke test live → riapertura UX-extended ratificata v2.8.2-rc.1). Round 2 pivot strategico post-evidence: smoke test su PWA live ha rilevato 2 bug residui (sticky calibration top-[149px] regressione, icone manifest 404) + 1 problema strutturale (UX non-ready per utenti novizi: farmaci di Roberto preconfigurati confondono, dosi giorno-precedente apparenti come "in ritardo" senza contesto, niente onboarding). Disambiguazione 4 round Q&A: Bug 2 dosi-ieri = feature pianificazione rolling window per Roberto vs bug semantico per nuovi utenti; data_inizio_terapia da sola NON risolve UX problem; onboarding modale e' la soluzione corretta. Closure Z riconosciuta prematura rispetto intent UX originale ("fin dall'inizio progetto privilegiare UX"). Strada B ratificata: riapertura formale UX-extended target v3.0.0 milestone "PharmaTimer UX-ready for novices". Scope frozen lista chiusa 14 punti par.22.40 decisione 3 (OnboardingModal 2-step, gating logic, empty state guidante OggiView, empty state Mit-A "prossima dose [DATA]", toast Mit-C post-aggiunta, seed neutro depersonalizzato 3 farmaci esempio, seed opt-in, data_inizio campo form FarmaciTab default domani Q-S6=a, data_inizio_terapia auto-calc planBuilder Q-S5=2, reset bottone Avanzate, sticky calibration useLayoutEffect+ResizeObserver, icone manifest 404 fix, test +15-20, guida HTML esterna). Sub-AMB Q-S1÷Q-S7 ratificate: Q-S1=a un dispositivo per persona, Q-S2=c seed neutro depersonalizzato opt-in, Q-S3=guida HTML invece di tutorial in-app, Q-S4=DB pulito da capo (Roberto compreso), Q-S5=2 auto-calc, Q-S6=a domani default, Q-S7=OK perdita DB attuale (test only). Bumping 2.8.1 → v2.8.2-rc.1 (analisi-first ratificata, no impl ancora). Sessione successiva: prompt par.11.E "Sessione 1 analisi-first v3.0.0 UX onboarding multi-utente" eseguibile in nuova sessione fresca (one-liner: Esegui il prompt al par.11.E del Changelog). Atteso 90-150 min wall-clock + 8-15K token, output AMB UX-1÷N + scope CP Sessione 2 + prompt par.11.F. Stima totale v3.0.0 cumulativa 8-15 ore lavoro distribuibili 1-3 sessioni dedicate. Backward-history demote v2.8.1 description sotto. Sessione 1 partial v3.0.0 (4 maggio 2026 sera tardi, prosieguo cumulativo): Q-UX.1-7 ratificate (onboarding modale layout+copy 2-step, empty states OggiView 0-farmaci + Mit-A preview, toast Mit-C post-aggiunta, seed neutro 3 farmaci esempio, reset bottone Avanzate Ricomincia-da-capo). AMB-UX-frequencyModel emersa (intervallo > 24h non garantito by design, audit Mac-side demandato sub-sessione, vedi par.11.E-bis). Q-UX.8-12 deferite a Sessione 1 chiusura, vedi par.11.E-ter. v2.8.2-rc.1 invariato. Stato post-sessione par.22.41. Sub-sessione audit frequencyModel (5 maggio 2026 mattina, dedicata): AUDIT.1-5 chiuse su file source Mac-side, opt B' modulare branch isolato ratificata (rivista da schema A/B/C originale §22.41), AMB EXT.1-5 chiuse blanket decidi tu, modello UI giorni+ore proposto da Roberto turno 5 (sostituisce EXT.3 originale, persistenza intervallo_ore singola, range illimitato), Q-UX.13 nuovo empty state off-day extended in scope v3.0.0 (scope frozen 14->16 punti). Stima Sessione 2 esecutiva +120 LOC +13 test wall-clock 2-3h. v2.8.2-rc.1 -> v2.8.2-rc.2. Stato post-sessione par.22.42. Sessione 1 chiusura analisi-first par.11.E-ter (5 maggio 2026): Q-UX.8/9/13 ratificati turno 1 (sticky calibration useStickyOffset hook + ResizeObserver + CSS var, manifest icone audit empirico CP0 Step 2, off-day extended copy con singola occorrenza imminente), Q-UX.10/11 turno 2 (migration no-wipe Dexie schema upgrade + onboarding gating onboarding_completed, target test 459-466 atteso 462), Q-UX.12 turno 3 (guida HTML public/guide.html 6 sezioni italiano + screenshot deferred v3.0.1) + closing finale. Sub-AMB nuove ratificate: 10.b card seed disabled su DB popolato, 11.b audit CP0 grep test esistenti, 11.e CP browser checklist 8-10 punti pre-defined, 13.d generalizzazione selector selectProssimaDoseFuoriPlan caso misto. Lista impl v3.0.0 congelata 18 punti. Scope CP Sessione 2 split v3.0.0 Step 1 + Step 2 pre-frozen nominativa esplicita. Bump v2.8.2-rc.2 -> v3.0.0-rc.1 (rc del nuovo major, pattern semver standard). Sessione successiva: prompt par.11.F per Sessione 2 Step 1 esecutiva. package.json invariato 2.8.1 (AMB-11.B.7). Stato post-sessione par.22.43. Sessione 2 v3.0.0 Step 1 esecutiva (5 maggio 2026 sera): CP1-CP6 chiusi, branch step-9-v3-step-1 → main fast-forward, tag annotato v3.0.0-alpha.1, 430 → 452 test (+22, target +20 par.11.F centrato), 18 deviazioni par.6.164-181. Stato post par.22.44. Sessione 2 v3.0.0 Step 2 esecutiva parziale (5 maggio 2026 sera tardi): CP7-CP10 chiusi, CP11-CP12 deferiti a Sessione 3, branch step-9-v3-step-2 (NON merged main), 452 → 464 test (+12, target +15 par.11.G), 8 deviazioni par.6.182-189 (incl. par.6.189 lesson learned file rewrite vs surgical edit). Stato post par.22.45. Sessione 3 v3.0.0 Step 2 esecutiva resume CP11 (6 maggio 2026 pomeriggio): CP11 chiuso (Q-UX.8 useStickyOffset callback ref pattern + Q-UX.9 buildPwaManifest single source of truth /pharmatimer/ prefix), 464 → 466 test (+2 esatto, target par.11.H centrato), 2 deviazioni par.6.190-191. CP12+closing Step 2 deferiti a Sessione 4 per applicazione regola 5 (qualità sessione + scope diverso CP12 = guida HTML + spec update + browser checklist 8-10 punti). Bump v3.0.0-rc.1 → v3.0.0-rc.1.1 (analisi-first finalizzata + 2 CP esecutivi su 4, no bump major perché Step 2 non chiuso). Stato post par.22.46.) Sessione 4 v3.0.0 Step 2 esecutiva resume CP12 + closing abortito (6 maggio 2026 pomeriggio): CP12 chiuso (guide.html + SezioneAiuto + spec par.3.1 + seed invariant test, par.6.192-195, +1 test 466 -> 467), CP closing abortito post-CP12 in fase browser checklist P1 onboarding nuovo utente DB vuoto -> bug critico cold-boot NO_ACTIVE_PROFILE bloccante (actions.js init lancia su DB-vuoto, OnboardingGate non apre per status='error'). Bump 3.0.0-rc.2 + sync SezioneInfo rollbackati. Top 49aee64 preservato. Stato post par.22.47. Sessione 5 v3.0.0 Step 2 fix cold-boot DB-vuoto + closing rc.2 (7 maggio 2026 sera): analisi-first Q1-Q5 ratificate (Q1=b Dexie populate + v3 defensive upgrade, Q2 N/A, Q3 blast radius zero, Q4 +3 test, Q5 target 470). CP_fix par.6.196 (db.js +85 LOC commenti+code, on populate hook + version 3 upgrade defensive + DEFAULT_PROFILO_STANDARD const). CP_test par.6.197 (db.populate.test.js NEW 186 LOC, 3 test hermetic fake-indexeddb). CP_browser parziale (P1+P2+P3 verdi Safari + Chrome incognito, P4-P10 deferred smoke 24-48h, P8 manifest live deferred Fase 2 deploy). CP_closing par.6.200 (bump rc.2 + sync 3 occorrenze 2.8.0 ImpostazioniTab.jsx). Commit cumulativo 80e1b62. Tag annotato v3.0.0-rc.2. 467 -> 470 test (+3, target rivisto Q4 da +2 a +3 per coverage upgrade non-empty no-duplication critico). 5 deviazioni par.6.196-200 (par.6.198/199 placeholder non utilizzati, gap progressivo accettato). 2 finding minori non bloccanti (profilo_utente.demo:0 post-flow demo bug pre-esistente par.6.173/175, race UI-first-mount post-onboarding-demo). Step 2 v3.0.0 chiuso completo. Stato post par.22.48. Operazioni residue (merge main ff + push origin + redeploy gh-pages + KB upload Spec+Changelog) deferite a discrezione utente. Sessione 6 v3.0.0 smoke check post-rc.2 (8 maggio 2026 sera): smoke parziale 5/10 punti completati (P9 guida + P7 sticky + P6 custom_minimo + P4 gap-recovery-extended + branch extended reale tutti verdi), F1 reproducibility check ha rivelato bug critico double-profile-attivo (2 record profilo_utente attivo=1 simultaneamente: id=1 demo:0 da populate par.6.196 + id=2 demo:1 da bulkPut seed.js auto-increment), violazione invariante spec par.3.4 implicita 1-attivo, root cause bulkPut con id-implicit non-overwrite, finding 1 par.22.48 originariamente classificato trascurabile PROMOSSO bug bloccante tag v3.0.0 final. F2/P10/P5/PWA install deferred a ri-smoke post-fix. Path Q1=A ratificato (chiusura sessione 6 + apertura sessione 7 analisi-first dedicata fix). Deviazione singola par.6.201 alloca scoperta empirica + 9 findings UX/doc non-bloccanti accumulati (UX-N1 ingranaggio piccolo, drift-doc-N2/N4/N5, UX-N3 doppia affordance guida, discovery-N6 dosi-1-forced extended, discovery-N7 data_inizio default domani, UX-N8 Salva disabled senza hint, UX-N9 dose-settimanale override label pasto). package.json invariato 3.0.0-rc.2 (no bump in sessione 6). Stato post par.22.49. Sessione successiva: par.11.M Sessione 7 analisi-first fix double-profile, one-liner Esegui il prompt al par.11.M del Changelog. Sessione 7 v3.0.0 analisi-first fix double-profile (9 maggio 2026): modalità A pure (analisi-first only, no CP esecutivi inline). CP0 audit empirico via cat output 5 file source Mac-side (seed.js + db.js + actions.js completeOnboarding + selectors.js selectProfiloAttivo + db.populate.test.js). Root cause par.6.201 confermata empiricamente: seed.js riga 35 PROFILI id-implicit + db.js DEFAULT_PROFILO_STANDARD id-implicit → cold-boot populate inserisce id=1 demo:0 + flow demo bulkPut crea id=2 demo:1 (no PK match → INSERT non UPDATE). Finding 1 par.22.48 spiegato come stessa entità del bug double-profile (manifestazione visibile demo:0 invariato = primo record id=1 osservato). Q1-Q5 ratificate blanket "decidi tu" (Q1=a id:1 esplicito, Q2=a v4 detect-and-merge tie-break demo:1 > id ASC, Q3=+5 test target 475, Q4=Q4.1+Q4.2+Q4.3 obbligatori smoke ri-eseguito, Q5=rc.3 → smoke verde → v3.0.0 final). AMB-7.A÷D ratificate (nuovo branch step-9-v3-fix-double-profile, split 5 CP, revert+re-analisi se regression, solo invariante DB no defensive selector). Mini-analisi semantica pre-scope su S1 (utente nuovo cold-boot+demo) + S2 (utente esistente DB-doppio post-deploy) confermata: fix idempotente + sana retroattivamente. Scope CP Sessione 8 pre-frozen (CP1_fix par.6.202 +1 LOC seed.js + CP2_migration par.6.203 +30 LOC db.js v4 + CP3_test par.6.204 +180 LOC +5 test + CP4_browser verifica empirica + CP5_closing par.6.205 bump+tag). Allocazione par.6.202-205 nominativa esplicita, par.6.198/199 placeholder gap preservati. Sessione 8 esecutiva stima 90-150 min ~25-40K token, output 475/475 test + tag annotato v3.0.0-rc.3 + eventualmente v3.0.0 final inline. Zero righe codice scritte Sessione 7 (regola critica #1 rispettata). package.json invariato 3.0.0-rc.2 (no bump in sessione analisi-first). Stato post par.22.50. Sessione successiva: par.11.N Sessione 8 esecutiva fix double-profile, one-liner Esegui il prompt al par.11.N del Changelog. Sessione 8 v3.0.0 esecutiva fix double-profile (10 maggio 2026 sera): CP0 verde 5/5 + branch step-9-v3-fix-double-profile + CP1_fix par.6.202 (seed.js +1 LOC id:1 esplicito) + CP2_migration par.6.203 (db.js DB_VERSION 3->4 + block detect-and-merge tie-break demo:1 > id ASC) + CP3_test par.6.204 (db.populate.test.js +2 con rename openDbV3->openDbV4 + db.migration.v4.test.js NEW 248 LOC +3 test, 470 -> 475 target par.22.50 centrato) + CP4_browser ri-verifica empirica DB Roberto sanato (Q4.1 rendering deterministico 3 reload identici verde, Q4.2 P10 reset+ri-onboarding-demo verde DOPO scoperta empirica anomalia residua par.6.205, Q4.3 ri-smoke empty state Q-UX.13 path 'Aggiungo i miei farmaci' verde). Hot-fix par.6.205 NUOVO non pre-allocato par.22.50 (scoperta empirica CP4 Q4.2 rosso pre-fix): resetAllData (par.6.180) inseriva Standard id-implicit dopo db.profilo_utente.clear(), ma Dexie clear() NON resetta auto-increment counter IDB -> post-cycle reset id puo essere >1 -> bulkPut id:1 esplicito (par.6.202) faceva INSERT invece REPLACE -> double-profile bug par.6.201 ricreato via path 'reset+ri-onboarding-demo'. Fix CP1bis_fix actions.js riga 1019 con id:1 esplicito + commento inline par.6.205 (allinea convention par.6.196 'Standard e id=1 by-design' anche post-reset). Difetto analisi Sessione 7: focus su path 'cold-boot+demo' senza considerare 'reset+demo'. Re-build + ri-verifica empirica Q4.2 verde definitivo (1 record id=1 demo=1 attivo=1). 4 findings deferred Fase 2 polish: par.6.205 risolto in atto, UX-N10 scroll-on-mount top-of-list invece now-anchor (rendering Oggi multi-day Sabato 9 maggio in cima invece domenica 10 imminente), UX-N11 empty state oggi visualizzato anche con piano demo per domani par.6.174 popolato (UX confondente, suggerimento risoluzione: nascondere empty state se farmaci attivi data_inizio futura o mostrare hint 'Vedi piano per domani'), drift-doc-N12 prompt par.11.N copy 'Configura tu i tuoi farmaci' divergente da UI reale 'Aggiungo i miei farmaci' (markup-only). 5 deviazioni par.6.202-205 emesse (par.6.205 NUOVA non pre-allocata par.22.50). Test 470 -> 475 (+5 esatti, target Q3 centrato). Bump 3.0.0-rc.2 -> 3.0.0-rc.3 + sync ImpostazioniTab.jsx 3 occorrenze (par.6.200 pattern). Cleanup 10 file lavoro (4 patcher CP + 4 backup .bak.pre-cpN + 2 backup Changelog .bak-pre-sessN). Commit cumulativo + tag annotato v3.0.0-rc.3. Q4.4 PWA install on-device deferred Sessione 9 deploy (richiede dispositivi reali). Tag v3.0.0 final NON inline (Q4.4 manca + freschezza sessione bassa post-CP4 multi-step), deferred Sessione 9 par.11.O. Branch step-9-v3-fix-double-profile resta locale, NO push, NO merge main. Stato post par.22.51. Sessione successiva: par.11.O Sessione 9 deploy follow-up + Q4.4 PWA install + eventuale tag v3.0.0 final, one-liner Esegui il prompt al par.11.O del Changelog.
 
 **Changelog versione 2.8.1 (rispetto alla 2.8.0):** Hotfix v2.8.1 BrowserRouter basename per GitHub Pages subpath. Bug emerso in P5 smoke test: hard refresh (Cmd+Shift+R) o accesso diretto a URL `https://timegates-code.github.io/pharmatimer/oggi` produceva 404 GitHub Pages. Diagnosi: Vite buildava asset con base /pharmatimer/ correttamente ma React Router usava BrowserRouter standard senza basename, navigando client-side a /oggi (path assoluto root-relative) invece di /pharmatimer/oggi. Discrepanza dev/prod: in dev (base default /) BrowserRouter senza basename funzionava, bug si manifestava solo dopo deploy a subpath. Fix: vite.config.js base /pharmatimer/ permanente (eviti rischio future build senza flag CLI), src/main.jsx aggiunto basename={import.meta.env.BASE_URL} a BrowserRouter. Test impact 430/430 invariato. Bug deploy-only, scoperto post-deploy quindi hotfix branch-less su main legittimo (scope minimal 2 file 2 righe). Bump package.json 2.8.0 → 2.8.1 + tag annotato v2.8.1 + push origin main + redeploy gh-pages forzato. Cache SW v2.8.0 stale ha richiesto Clear site data DevTools per propagazione fix. par.6.163 deviation + par.22.39 closure hotfix.
 
@@ -11214,5 +11214,852 @@ Atteso baseline:
 **Milestone closing post-Sessione 4:** decisione tag `v3.0.0` final immediato vs post-24-48h smoke test (raccomandazione invariata da §11.G/§11.H: smoke 24-48h con test installazione PWA + onboarding flow + branch extended con farmaco metotrexato reale + verifica fix sticky calibration + verifica fix manifest 404 post-deploy live). Push gh-pages.
 
 **Pattern operativi.** Identici a §11.F/§11.G/§11.H (bash zsh-safe, pre-letture, CP0 baseline, riepilogo strutturato regola 4, approvazione closing CP). **Special pre-CP12:** scrittura HTML utente in italiano (UX/copy task qualitativamente diverso da porting/semantica codice) — beneficiare di rilettura attenta delle copy ratificate §22.42 + §22.43 prima della scrittura. Lesson §6.118 + §6.189 ancora applicabili: validazione semantica pre-code (specie su spec §3.1 update — verificare allineamento con file source attuali) + str_replace mirato vs full rewrite.
+
+---
+
+### 22.47 Stato post-Sessione 4 v3.0.0 Step 2 esecutiva *parziale* (CP12 chiuso, CP closing ABORTITO per bug critico cold-boot scoperto in P1)
+
+#### Lifecycle branch + commit hashes
+
+Sessione 4 esecutiva resume Step 2/2 ratificata in §11.I ha eseguito CP12 (guide.html + SezioneAiuto + SezioneInfo compact link + spec §3.1 update + seed invariant test) ma il **CP closing è stato abortito** in fase di esecuzione browser checklist 9 punti P1-P7+P9+P10 (sub-AMB 11.e). Il punto P1 (onboarding nuovo utente DB vuoto) ha rilevato bug runtime critico bloccante: `actions.js:153` lancia `Error('NO_ACTIVE_PROFILE')` su DB cold-boot vuoto → reducer dispatcha `INIT_ERROR` → `state.status = 'error'` → `App.jsx OnboardingGate` resta chiuso (gate condizionato su `state.status === "ready"`) → `ErrorSurface` mostra "Nessun profilo attivo. Attivane uno per continuare." in UI bloccando il flow nuovo utente.
+
+Branch `step-9-v3-step-2` invariato in continuità da §22.46 (NON merged in main, top pre-Sessione 4 = `3196854` Changelog §22.46+§11.I). 1 commit progressivo Sessione 4:
+
+```
+49aee64  CP12 v3.0.0 Step 2: guide.html 6 sezioni + SezioneAiuto + spec par.3.1 frequenza estesa + seed invariant test (par.6.192-195, +1 test)
+```
+
+Bump `3.0.0-rc.2` + sync SezioneInfo "2.8.0" → "3.0.0-rc.2" eseguiti Mac-side e successivamente **rollbackati** (file `package.json` e `ImpostazioniTab.jsx` ripristinati pre-bump, backup `.bak.pre-rc2` rimossi). Stato post-rollback: working tree clean, **467/467** test verdi su 53 test files, `package.json` 3.0.0-alpha.1 invariato, tag latest `v3.0.0-alpha.1` invariato. Branch `step-9-v3-step-2` resta locale.
+
+#### 4 deviazioni §6.192-195 allocate (CP12 only — closing deferito)
+
+| CP | Deviazione | Sintesi |
+|---|---|---|
+| CP12 | §6.192 | `public/guide.html` 6 sezioni testuali italiano (Cos'è / Aggiungere farmaci / Stati e colori card / Recupero gap / Frequenze estese / Privacy) + nav indice + dark/light auto via `prefers-color-scheme`, 353 LOC / 14.2KB. Placeholder screenshot inline `[Screenshot: ... — disponibile in v3.0.1]`. Nuovo componente `SezioneAiuto` PROD-visible in `ImpostazioniTab.jsx` (~45 LOC) posizionato tra `SezioneNotifiche` e `SezioneDati`, bottone link a guide.html con URL path-aware via `${import.meta.env.BASE_URL}guide.html` (allineato §6.191 PWA basename `/pharmatimer/`). Link compatto " · Guida" inline in `SezioneInfo` come secondo consumer. **Deviation vs §22.46 wording letterale "Avanzate → Guida utente"**: `SezioneAvanzate` è gated `import.meta.env.DEV`, inutilizzabile come consumer PROD per utente finale; risolto con sezione dedicata. Motivazione documentata inline nel commento header `SezioneAiuto`. |
+| CP12 | §6.193 | Spec `PharmaTimer_Project_Spec.md` §3.1 cella `data_inizio` annotata: "Per frequenza estesa (intervallo_ore > 24) funge anche da àncora del calcolo delle occorrenze: la prima dose cade in `data_inizio` e le successive a multipli di intervallo_ore." Esplicita la convention EXT.1 §22.42 ratificata. Aggiornamento file consegnato Mac-side, **upload KB deferito** a CP closing Sessione 5 (coerenza taglio finale rc.2). |
+| CP12 | §6.194 | Spec §3.1 cella `intervallo_ore` annotata "Valori >24 attivano il branch frequenza estesa" + esempio 168.0; cella `intervallo_minimo_ore` annotata "Non applicabile per frequenza estesa: il recupero gap è disabilitato per intervalli pluri-giornalieri" (EXT.4 §22.42). Aggiunta sub-sezione paragrafo "Frequenza estesa" tra tabella §3.1 e §3.2 (4 bullet: UI giorni+ore EXT.3', àncora occorrenze EXT.1, dosi_giornaliere=1 readonly, gap recovery disabilitato EXT.4). Numerazione §3.2-§3.8 invariata (paragrafo non numerato, no `### 3.1.1`). Upload KB deferito come §6.193. |
+| CP12 | §6.195 | `src/data/seed.test.js` +1 test invariante future-proof `it("ogni farmaco demo rispetta convenzione naming + flag (invariante v3.0.0 sub-AMB 11.b)", ...)`: itera su `buildFarmaciDemo("2026-05-05")` e verifica per ogni record `nome.startsWith("Esempio ")` + `demo === 1` + `attivo === 1` + `data_fine === null` + `principio_attivo === "esempio"`. Sub-AMB 11.b §22.43 risolta con +1 test nuovo invece di rifinitura test esistenti (i 5 file con match 1-2 erano core test legittimi del seed/onboarding, non target di rifinitura). 466 → 467 verdi. |
+
+#### Sub-AMB §22.43 consumate Step 2 (cumulativo Sessione 2+3+4)
+
+- ✅ **Sub-AMB 8.a-e** (sticky calibration useStickyOffset) → CP11 §6.190 (Sessione 3)
+- ✅ **Sub-AMB 11.b** (audit grep test seed) → CP12 §6.195 (Sessione 4, +1 test invariante future-proof su `seed.test.js`)
+- ⚠️ **Sub-AMB 11.e** (CP browser checklist 8-10 punti completa) → **DEFERITO Sessione 5 CP closing**: P1 ha bloccato l'esecuzione di P2-P10 (cascata: tutti dipendono da onboarding funzionante). P8 manifest icons già verificato Mac-side post-`npm run build` (verifica empirica `dist/manifest.webmanifest` con `scope`/`start_url`/3× `icons[].src` tutti `/pharmatimer/`-prefixed); resta verifica live post-deploy gh-pages (Fase 2 deploy follow-up).
+
+#### Scoperta autonoma critica — bug cold-boot DB-vuoto NO_ACTIVE_PROFILE
+
+**Sintomo:** Safari su `http://localhost:4173/pharmatimer/` con IndexedDB pulito mostra UI bloccata "Errore: Nessun profilo attivo. Attivane uno per continuare." Onboarding modale non appare.
+
+**Catena causale ricostruita da `actions.js`:**
+
+1. `init()` riga 139: dispatch `INIT_START` + `Promise.all([getProfili, getFarmaci, getAllOrari, getAllSettings])`
+2. Riga 148-153: `profiloAttivo = profili.find((p) => p.attivo)` → `undefined` su DB vuoto → `throw new Error('NO_ACTIVE_PROFILE')`
+3. Riga 222-230: catch → dispatch `INIT_ERROR` con `code='NO_ACTIVE_PROFILE'` + `message='Nessun profilo attivo. Attivane uno per continuare.'`
+4. Reducer setta `state.status = 'error'` (carry-forward path generico INIT_ERROR)
+5. `App.jsx OnboardingGate` riga `const open = state.status === "ready" && onboardingCompleted !== 1` → `open = false` (status non è 'ready') → `<OnboardingModal />` non viene renderizzata
+6. `<ErrorSurface />` (montato sopra OnboardingGate in `ThemedShell`) intercetta error state e mostra il messaggio in UI
+
+**Bug pre-esistente confermato in v3.0.0-alpha.1** (commit `84de7c0`, tag `v3.0.0-alpha.1`). Mai rilevato dai 467 test perché `makeFakeRepo` (helper test integration) pre-popola sempre profilo demo + farmaci, mai cold-boot DB-vuoto puro. Probabilmente presente da quando `OnboardingGate` è stato introdotto (§6.167 CP4 Sessione 8a o §6.180-181 CP6 v3.0.0 Step 1).
+
+**Prova lampante consapevolezza pre-esistente:** commento riga 1013 in `resetAllData` (§6.180 CP6 v3.0.0 Step 1):
+
+> *"Re-add default 'Standard' profilo so init() finds an attivo profile (else throws NO_ACTIVE_PROFILE → INIT_ERROR → OnboardingGate cannot open since gate requires status === 'ready'). Defaults match the seed.js neutral profile (§6.173 CP4 v3.0.0)."*
+
+Chi ha scritto `resetAllData` aveva visto e isolato il problema; ha mitigato solo nel suo perimetro (ricreazione profilo Standard pre-`init()` re-call) senza generalizzare per cold-boot post-install. Decisione di design o svista non è chiaro; merita analisi semantica dedicata in Sessione 5 prima del fix (lesson §6.118 + §6.189 applicate).
+
+#### CP closing abortito — operazioni rollbackate
+
+In sequenza durante Sessione 4 post-CP12 commit:
+
+1. ✅ Bump `package.json` 3.0.0-alpha.1 → 3.0.0-rc.2 (file consegnato + Mac-side cp da `~/Downloads/`)
+2. ✅ Sync `SezioneInfo` 2 occorrenze "2.8.0" → "3.0.0-rc.2" (file consegnato + Mac-side cp)
+3. ✅ Test 467/467 verdi post-bump (nessun test asserisce versione hardcoded)
+4. ✅ Build prod `npm run build` 1.21s + verifica empirica `dist/manifest.webmanifest` (3× icons prefixed `/pharmatimer/`)
+5. ✅ `npm run preview` su porta 4173, banner `pharmatimer@3.0.0-rc.2 preview` confermato
+6. 🚫 **P1 onboarding DB-vuoto: KO** — bug NO_ACTIVE_PROFILE bloccante
+7. ⏸ P2-P10 NON eseguiti (cascata da P1)
+8. 🔄 **Rollback bump:** `cp package.json.bak.pre-rc2 package.json` + `cp ImpostazioniTab.jsx.bak.pre-rc2 src/components/config/ImpostazioniTab.jsx` + rimozione 2 backup
+9. ✅ Verifica post-rollback: `package.json` 3.0.0-alpha.1, SezioneInfo "PharmaTimer 2.8.0", 467/467, working tree clean
+
+Nessun commit di bump effettuato; CP12 commit `49aee64` resta intatto e produttivo (guide.html + SezioneAiuto + seed invariant test). Il rollback ha invertito solo le modifiche locali file di Sessione 4 closing, non ha toccato cronologia git.
+
+#### Riferimenti incrociati
+
+- **§22.46**: stato pre-Sessione 4 (esiti CP11 Sessione 3, baseline 466/466, top `14968f7`)
+- **§22.45**: "CP browser smoke deferito 10 punti" — propedeutico, P1-P10 enumerati (P1 è quello bloccante)
+- **§6.180-181**: CP6 v3.0.0 Step 1 `resetAllData` — chi ha scritto sapeva del bug, mitigazione non generalizzata (vedi commento `actions.js:1013`)
+- **§6.167**: introduzione OnboardingGate originale (CP4 Sessione 8a)
+- **§6.118 / §6.189**: lesson learned validazione semantica pre-code + file rewrite vs surgical edit — applicate proattivamente in CP12, da applicare in Sessione 5 fix con maggior rigore (init thunk = feature con storia)
+- **§11.J**: prompt Sessione 5 fix cold-boot + closing ricomposto (sotto)
+
+#### Follow-up flagged
+
+- **`defaultNoopActions()` missing thunks** (carry-forward §22.44 + §22.45 + §22.46, persistente Step 2). Non richiesto in CP12 né in CP closing; resta persistente per Sessione 5.
+- **Versione hardcoded "PharmaTimer 2.8.0" in SezioneInfo**: rollbackata a 2.8.0, sync a 3.0.0-rc.2 deferito a CP closing Sessione 5 (parte del bump cumulativo).
+- **KB upload `PharmaTimer_Project_Spec.md` con §3.1 update CP12**: deferito a CP closing Sessione 5 (coerenza spec+changelog al taglio finale rc.2).
+- **Push remoto**: branch `step-9-v3-step-2` resta locale; merge `main` ff + push origin + redeploy gh-pages tutti deferiti a CP closing Sessione 5 / Fase 2 deploy.
+
+#### Sessione successiva
+
+```
+Esegui il prompt al §11.J del Changelog (Sessione 5 fix cold-boot + closing).
+```
+
+Stato baseline atteso: branch **`step-9-v3-step-2`** (non-merged), top **`49aee64`**, tag latest `v3.0.0-alpha.1`, working tree clean, **467/467** verdi, `package.json` 3.0.0-alpha.1. Modalità analisi-first (Q1-Q5 ratifica scope/design fix prima del code). Stima 2-3h, +2-4 test, target 469-471, tag `v3.0.0-rc.2` al closing post-fix.
+
+---
+
+### 11.J Prompt Sessione 5 v3.0.0 Step 2 fix cold-boot DB-vuoto + closing ricomposto
+
+**Modalità:** Sessione 5 **analisi-first** dedicata al fix del bug cold-boot scoperto in P1 della browser checklist Sessione 4 (vedi §22.47 "Scoperta autonoma critica"). NO code prima della ratifica delle Q1-Q5 sotto. Pattern §11.E-bis / §11.E-ter (analisi-first con audit-only CP0) replicato consapevolmente. Closing v3.0.0-rc.2 ricomposto cumulativamente post-fix nello stesso branch.
+
+**Stato baseline atteso:** branch `step-9-v3-step-2` non-merged, top `49aee64` (CP12), tag latest `v3.0.0-alpha.1` preservato, working tree clean, **467/467** test verdi, `package.json` 3.0.0-alpha.1 invariato.
+
+**Apertura sessione one-liner:**
+
+```
+Esegui il prompt al §11.J del Changelog (Sessione 5 fix cold-boot + closing).
+```
+
+**Pre-letture obbligatorie (Claude in apertura):**
+
+1. **§22.47** integrale (esiti CP12 chiusura parziale + scoperta autonoma cold-boot bug + catena causale + rollback bump)
+2. **§22.46** (esiti CP11 Sessione 3, deviazioni §6.190-191 — context PWA basename + sticky calibration)
+3. **§6.180-181** (`resetAllData` CP6 v3.0.0 Step 1: chi ha scritto il commento `actions.js:1013` aveva visto il bug; mitigazione non generalizzata — capire perché non è stato esteso)
+4. **§6.167** (introduzione OnboardingGate originale — eventuale invariante implicita "profilo sempre presente")
+5. **§6.118 + §6.189** (lesson learned validazione semantica pre-code mandatoria su feature con storia: `init` thunk ha §6.118 stesso, §6.126 reschedule trigger, §6.167 onboarding gate, §6.180-181 reset thunk — alta densità di logica accumulata)
+6. **§22.45 "CP browser smoke deferito"** punti 1-10 (sub-AMB 11.e completa post-fix)
+
+**Sintesi del bug (carry-forward §22.47):**
+
+`actions.js:153` lancia `Error('NO_ACTIVE_PROFILE')` se `profili.find(p => p.attivo)` è `undefined` → reducer dispatcha `INIT_ERROR` → `state.status = 'error'` → `App.jsx OnboardingGate` resta chiuso (gate richiede `state.status === 'ready'`) → `ErrorSurface` mostra "Nessun profilo attivo. Attivane uno per continuare." in UI bloccando il flow nuovo utente. Mitigato in `resetAllData` (§6.180) re-aggiungendo profilo "Standard" pre-`init()`. Mai generalizzato per cold-boot post-install.
+
+**Q1-Q5 da ratificare turno 1 (NO code finché tutte ratificate):**
+
+- **Q1 — superficie del fix.** Tre opzioni:
+  - (a) **Modifica `init()` thunk**: distinguere "DB vuoto" (`profili.length === 0 && farmaci.length === 0 && Object.keys(impostazioni).length === 0`) da "stato corrotto" (profilo mancante ma altri dati presenti). Cold-boot → dispatch nuovo path `INIT_SUCCESS_EMPTY` (o equivalente) con `profiloAttivo=null`+plan vuoto, status='ready', gate apre via condizione `onboarding_completed !== 1`.
+  - (b) **Dexie schema migration**: aggiungere profilo "Standard" come migration step v1→v2 al primo boot del browser (similmente a §6.180 `resetAllData`). Init invariante invariato — il profilo è sempre presente by-design.
+  - (c) **Entrambi a+b** (defence in depth — schema garantisce profilo + init resiliente a deriva).
+- **Q2 — state shape cold-boot (se Q1=a o c).** Due varianti:
+  - (a-1) `state.status='ready'` + `profiloAttivo=null` + flag implicito (gate apre perché `onboarding_completed !== 1`)
+  - (a-2) Nuovo status `'first_boot'` esplicito + reducer case + gate testa anche questo
+- **Q3 — blast radius downstream.** `init()` chiamata da: mount `AppContext` (cold-boot), `resetAllData` (§6.180 — già mitiga internamente), `completeOnboarding` (§6.176). Verificare per ogni path che `profiloAttivo=null` non rompa logica:
+  - `maybeReschedule` early-return su `status !== 'ready'`: invariato OK
+  - `rebuildPlan` early-return su `!state.profiloAttivo` (riga 248 già presente): invariato OK
+  - Selectors: `selectFarmaciAttivi`, `selectImpostazione` invariati
+  - Componenti che leggono `state.profiloAttivo`: audit grep
+- **Q4 — test coverage.** Quanti test nuovi e a quale livello:
+  - `actions.init.test.js`: cold-boot scenario completo (no profilo → status='ready' o 'first_boot' a seconda di Q2)
+  - eventuale `App.test.jsx` o nuovo `OnboardingGate.test.jsx` integration: gate apre in cold-boot
+  - eventuale fixup test esistenti se assertions su `state.status` o `profiloAttivo` vanno aggiornate
+- **Q5 — target test.** 467 → ? Stima 469-471 (+2/+4).
+
+**Pre-frozen scope ratificato Q1-Q5 (5 CP):**
+
+| CP | Output |
+|---|---|
+| CP0 audit-only | Baseline + ispezione completa `actions.js` init() (140-260) + reducer cases INIT_* (`grep -n 'INIT_' src/state/reducer.js`) + grep test che mockano init + audit consumer di `state.profiloAttivo` per blast radius Q3 |
+| CP_fix | Implementazione fix Q1-Q5 ratificati (~10-30 LOC su `actions.js` ± `reducer.js` ± `db.js` schema) |
+| CP_test | Test cold-boot Q4 (+2/+4 nuovi) + fixup test esistenti se necessario |
+| CP_browser | Browser checklist P1 ri-eseguita pulita, P2-P10 a cascata (sub-AMB 11.e completa, 9 punti più P8 deferito Fase 2 deploy) |
+| CP_closing | Bump `3.0.0-rc.2` + sync SezioneInfo "2.8.0" → "3.0.0-rc.2" + §22.48 closing finale + commit cumulativo CP_fix+CP_test+CP_closing OR commit separati a discrezione + tag annotato `v3.0.0-rc.2` "v3.0.0 Step 2 — extended branch + bug fix + cold-boot fix + finalizzazione" + KB upload `Project_Spec.md` (§3.1 update CP12) + KB upload Changelog aggiornato |
+
+**AMB nuove pre-frozen Sessione 5:** 0 (Q1-Q5 sono ratifiche di scope/design fix, non AMB sostantive secondo il senso del progetto).
+
+**Allocazione §6.NN attesa Sessione 5:**
+
+- **§6.196** — fix init() cold-boot DB-vuoto (Q1+Q2 ratificati)
+- **§6.197** — test cold-boot (Q4 ratificato)
+- eventuale **§6.198** — fixup downstream se Q3 rivela impact (`completeOnboarding` o altri path)
+- eventuale **§6.199** — Dexie schema migration profilo Standard (se Q1=b o c)
+- **§6.200** — chiusura CP closing originariamente Sessione 4 cumulativa (bump rc.2, sync SezioneInfo, browser checklist completa, tag, KB uploads)
+
+(Numerazione progressiva da §6.196 in avanti, §6.71/§6.85 immutabili rispettato.)
+
+**Stima Sessione 5:**
+
+- Token: 35-50K (analisi semantica Q1-Q5 + impl + test + nuova checklist completa + §22.48)
+- Tempo wall-clock: 2-3h
+- Output: ~30-50 LOC nuovi + 2-4 test nuovi + §22.48 closing + commit CP_fix + commit CP_closing + tag `v3.0.0-rc.2` + KB upload Spec+Changelog finali
+
+**Pattern operativi.** Identici a §11.H/§11.I (bash zsh-safe, pre-letture, CP0 baseline audit, riepilogo strutturato regola 4, approvazione closing CP). **Special pre-CP_fix:** mini-analisi semantica obbligatoria delle Q1-Q5 ratificate prima di scrivere il refactor. Lesson §6.118/§6.189 applicata: una svista semantica su `init()` produrrebbe regressione su 3 path downstream simultanei (mount, reset, onboarding-complete). Lesson §22.47 carry-forward: NO code finché Q1-Q5 ratificate dall'utente.
+
+**Modalità delivery file (regola memoria #9):** tutti i file modificati consegnati via `present_files` o script bash pronti — NO edit manuali richiesti a Roberto, neanche su markdown KB. Anche §22.48 + Changelog finale generati come file completo aggiornato pronto al re-upload KB.
+
+**Branch resta `step-9-v3-step-2`.** No nuova branch creation (resume cumulativo Step 2). Push remoto + merge main + redeploy gh-pages tutti in CP closing post-fix oppure differiti a Fase 2 deploy follow-up a discrezione utente.
+
+---
+
+### 22.48 Stato post-Sessione 5 v3.0.0 Step 2 fix cold-boot DB-vuoto + closing rc.2 (CP_fix + CP_test + CP_browser + CP_closing chiusi atomici, par.6.196-200, +3 tests, tag v3.0.0-rc.2)
+
+#### Lifecycle branch + commit hashes
+
+Sessione 5 analisi-first dedicata al fix bug cold-boot DB-vuoto scoperto in §22.47 P1 della browser checklist Sessione 4 abortita. Pattern §11.E-bis / §11.E-ter (analisi-first con audit-only CP0) replicato consapevolmente. Modalità ibrida: analisi semantica Q1-Q5 → ratifica decisionale → impl atomica CP_fix+CP_test+CP_browser+CP_closing senza split adaptive (scope ridotto rispetto stima §11.J originale, sessione lineare).
+
+Branch `step-9-v3-step-2` invariato in continuità da §22.47 (NON merged in main, top pre-Sessione 5 = `49aee64` CP12 §22.47). 1 commit progressivo Sessione 5:
+
+```
+80e1b62  Sessione 5 v3.0.0 Step 2 fix cold-boot + closing rc.2 (par.6.196-200, +3 tests)
+```
+
+Commit cumulativo CP_fix + CP_test + CP_closing in singolo atto (non separable semanticamente: fix è il deliverable atomico). 4 file modificati, +276 ins / -5 del:
+
+- `src/data/db.js` (+87 ins / -2 del): `db.on("populate")` hook + `db.version(3).upgrade()` defensive + `DEFAULT_PROFILO_STANDARD` const single source of truth
+- `src/data/db.populate.test.js` (+186 ins NEW): 3 test hermetic via `fake-indexeddb` (fresh install + upgrade empty + upgrade non-empty no-duplication)
+- `package.json` (+1 / -1): `3.0.0-alpha.1` → `3.0.0-rc.2`
+- `src/components/config/ImpostazioniTab.jsx` (+3 / -3): SezioneInfo display version sync 3 occorrenze "2.8.0" → "3.0.0-rc.2" (drift §6.69 carryforward §22.47 risolto)
+
+Tag annotato `v3.0.0-rc.2` su `80e1b62` con messaggio cumulativo Step 2 (extended branch + bug fix + cold-boot fix + finalizzazione, riferimenti §6.182-200). Stato post-commit: working tree clean, **470/470** test verdi su 54 test files, `package.json` 3.0.0-rc.2, tag latest `v3.0.0-rc.2`. Branch `step-9-v3-step-2` resta locale: merge `main` ff + push origin + redeploy gh-pages tutti deferiti a Fase 2 deploy follow-up a discrezione utente.
+
+#### Q1-Q5 ratificate turno 1 (analisi-first §11.J)
+
+| Q | Ratifica | Razionale |
+|---|---|---|
+| Q1 | **(b)** Dexie-only data-layer fix | (a) cambia contratto `init()` → blast radius alto + scope creep; (c) defence-in-depth → over-engineering per puntuale rc.2; (b) recupera l'invariante "profilo sempre presente" al data-layer dove è semanticamente più pulito |
+| Q2 | N/A | (Q1=b non modifica state shape) |
+| Q3 | Blast radius zero | `init()` contract invariato, 15 consumer di `state.profiloAttivo` (info-only) non modificati |
+| Q4 | +3 test (rivisto da +2 originale §11.J) | Aggiunto caso (c) "upgrade non-empty no-duplication" — critico per provare `count > 0 → no-op` su utenti esistenti, scope-conferma idempotenza |
+| Q5 | 467 → **470** (target rivisto da 469) | +1 test rispetto a §11.J atteso (3 invece di 2), motivato da Q4 espansa |
+
+#### 5 deviazioni §6.196-200 allocate
+
+| CP | Deviazione | Sintesi |
+|---|---|---|
+| CP_fix | §6.196 | Dexie `on('populate')` hook + `version(3).upgrade()` defensive: fresh install garantisce profilo Standard via populate (firing exactly once on first DB creation), browser stuck a v1/v2 con `profilo_utente` vuoto recuperato via upgrade hook (count check pre-add). Const `DEFAULT_PROFILO_STANDARD` single source of truth allineata a `resetAllData` §6.180 (`demo:0`, NOT seed.js `demo:1` perché Standard è user-baseline non demo-data). v1/v2 schema invariati (no force-push storia, principio §6.71). Closes §22.47 NO_ACTIVE_PROFILE bug definitivamente. |
+| CP_test | §6.197 | `src/data/db.populate.test.js` (NEW, 186 LOC, 3 test): (a) fresh install via `openDbV3()` su `TEST_DB_NAME` inesistente → 1 record Standard canonico full-shape match; (b) upgrade v1 vuoto → v3 → 1 record Standard inserito da hook; (c) upgrade v1 con profilo Roberto custom → v3 → no-op preservato. Pattern hermetic identico a `db.migration.test.js` §6.117 (TEST_DB_NAME distinto, schema replica inline, `wipeDb` beforeEach/afterEach). 467 → 470. |
+| CP_closing | §6.198 | (placeholder non utilizzato — Q3 blast radius zero, no fixup downstream) |
+| CP_closing | §6.199 | (placeholder non utilizzato — Q1=b assorbe Dexie schema migration in §6.196 stesso) |
+| CP_closing | §6.200 | Bump `package.json` 3.0.0-alpha.1 → 3.0.0-rc.2 + sync `ImpostazioniTab.jsx` SezioneInfo 3 occorrenze "2.8.0" → "3.0.0-rc.2" (2 in JSDoc commenti + 1 in JSX render, tutte synced per coerenza tracciabilità: i commenti dichiaravano explicit "synced con package.json post-bump"). Drift §6.69 carryforward §22.47 risolto in atto cumulativo. |
+
+Numerazione progressiva da §6.196 in avanti. §6.198 e §6.199 lasciano gap (placeholder pre-frozen non consumati post-Q1=b ratifica), coerente con principio §6.71/§6.85 immutabile (no retrocorrezione, niente shift di numerazione).
+
+#### CP_browser checklist parziale (sub-AMB 11.e parziale, P5/P7/P9/P10 deferred)
+
+| P | Scope | Esito |
+|---|---|---|
+| P1 | Onboarding cold-boot DB-vuoto | ✅ Safari + Chrome incognito doppia conferma. OnboardingModal step 1/2 visibile post-clear+reload. Bug §22.47 risolto |
+| P2 | Onboarding flow "Configura" → empty state Q-UX.3 | ✅ Safari + Chrome incognito. "Nessun farmaco configurato" + CTA "+ Aggiungi il tuo primo farmaco" |
+| P3 | Onboarding flow "Mostrami un esempio" → 3 farmaci demo + Q-UX.4 PreviewBlock | ✅ Chrome incognito (post-Clear site data + reload). PreviewBlock "PROSSIMA TERAPIA · DOMANI · VENERDÌ 8 MAGGIO" + 4 cards readonly visibili. `farmaci` count = 3 (Esempio Gastro/Cardio/Antibiotico). `impostazioni_app` complete (`nome_utente`, `onboarding_completed=1`, `seed_loaded=1`) |
+| P4 | Gap recovery extended disabilitato | ⏸ Deferred smoke 24-48h |
+| P5 | Creazione farmaco standard data_inizio futura → empty state Q-UX.13 | ⏸ Deferred smoke 24-48h |
+| P6 | UI custom_minimo nascosta extended | ⏸ Deferred smoke 24-48h |
+| P7 | Sticky calibration `top-[var(--sticky-offset,149px)]` post-§6.190 | ⏸ Deferred smoke 24-48h |
+| P8 | Manifest icons fix verificato live post-deploy | ⏸ Deferred Fase 2 deploy (P8 §22.45 already verified Mac-side, deferred resta `gh-pages` live verification) |
+| P9 | Guida HTML accessibile da Config → Avanzate → "Guida utente" | ⏸ Deferred smoke 24-48h |
+| P10 | Reset "Ricomincia da capo" da ImpostazioniTab → onboarding riapre | ⏸ Deferred smoke 24-48h |
+
+**Rationale scope ridotto:** sub-AMB 11.e §22.43 prevedeva 8-10 punti completi al CP closing Step 2. Sessione 5 ha ricomposto il closing focalizzando su validazione fix §6.196 (P1+P2+P3 sono i path che esercitano il `populate` + `bulkPut` su `profilo_utente`). P5/P7/P9/P10 testano feature già consolidate da Step 2 CP precedenti (CP10 selector, CP11 sticky, CP12 guide+reset) il cui codice è invariato in Sessione 5. Il rischio regressione su quei punti dopo Sessione 5 è zero (nessun touch). Recuperabili in smoke 24-48h naturale uso post-rc.2.
+
+#### Validazione browser empirica fix §6.196
+
+**Chrome incognito (DB cold-boot vergine):**
+- DB version: 30 (= Dexie v3, moltiplicato ×10 internamente da Dexie convention)
+- `profilo_utente` Total entries: **1**, key id=1
+- Record shape: `{nome_profilo: "Standard", ora_sveglia: "07:00", ora_colazione: "07:30", ora_pranzo: "13:00", ora_cena: "20:30", ora_sonno: "23:30", attivo: 1, demo: 0, id: 1}` — full shape match con `DEFAULT_PROFILO_STANDARD` ✅
+- Stato `init()`: `state.status === 'ready'`, `profiloAttivo` defined, NO `error`
+- UI: OnboardingModal step 1/2 "Ciao 👋" visibile come atteso
+
+**Idempotenza populate vs seed bulkPut (post-flow demo):**
+- `farmaci` count = 3 (Esempio Gastro/Cardio/Antibiotico, tutti `demo:1`)
+- `profilo_utente` count = **1** (NO duplicati). ⚠️ `demo:0` invariato post-seed (atteso `demo:1`) — vedi finding 1 sotto
+- `impostazioni_app`: `seed_loaded:1` confermato (seed effettivamente eseguito), nessun errore in console
+
+#### Findings minori non bloccanti (deferred follow-up)
+
+1. **`profilo_utente.demo:0` invariato post-flow demo "Mostrami un esempio"**. Atteso: `bulkPut(PROFILI)` di `runSeedIfNeeded({force:true})` dovrebbe sovrascrivere il record da populate impostando `demo:1` (seed.js riga 36-45 ha `demo:1`). Osservato: 1 record con `demo:0` post-onboarding-demo. Possibile bug pre-esistente §6.173/§6.175 nel comportamento di `bulkPut` con record senza `id` esplicito. **NON è regressione del fix §6.196** (l'idempotenza populate-vs-seed è preservata: count resta 1). Impatto utente: trascurabile (campo `demo` su profilo non gates su nulla nel codice, è etichetta). Deferred follow-up flagged.
+
+2. **Prima esecuzione P3 in Chrome incognito ha mostrato empty state invece di PreviewBlock**. Seconda esecuzione (post-Clear site data + hard reload) ha funzionato correttamente. Possibile race condition o glitch UI-first-mount tra `completeOnboarding('demo')` dispatch e il successivo `rebuildPlan` async. Console pulita (no error logged), `runSeedIfNeeded` sembra essere stato eseguito (`seed_loaded` settato). **NON è regressione del fix §6.196** (data-layer è coerente, problema solo UI rendering pre-seed-completion). Deferred follow-up flagged.
+
+3. **`__pt` API undefined in preview build** (atteso: `devCheck.js` gated `import.meta.env.DEV` skip in prod). Diagnostica state runtime via Console non disponibile in `npm run preview`; ispezione DevTools UI sostitutiva. Non è bug, è limite del setup `preview` vs `dev`. Documentato per riferimento future browser checklists.
+
+#### Pattern operativi confermati
+
+- **Bash zsh-safe** rispettato in tutti i blocchi consegnati (echo single-quoted, no `#` literali, no apostrofi italiani).
+- **Patcher Python idempotente** per CP_closing bump (lesson §6.189: file >300 LOC default a str_replace mirato): 2 anchor replace su `package.json` (1) + `ImpostazioniTab.jsx` (3 occorrenze "2.8.0"), uniqueness check, ALREADY-PATCHED detection, backup `.bak.pre-cp_closing`.
+- **CP browser interleaved** confermato come gate critico: ha rivelato il bug §22.47 originale in Sessione 4, ora rivalida la fix in Sessione 5. Pattern §6.107/§6.114 carry-forward.
+- **Lesson §6.118 (validazione semantica pre-code)** applicata in 3 punti: (1) verifica struttura schema Dexie esistente pre-fix (v2 + upgrade hook §6.117), (2) shape canonico Standard ratificato single source of truth (resetAllData § 6.180 invece di seed.js per `demo:0`), (3) blast radius `init()` confermato zero per Q1=b prima del code.
+- **Lesson §6.189 (file rewrite vs surgical edit)** applicata in CP_closing: 4 file touched, tutti con `str_replace` mirato + Python patcher idempotente per i bumps (2 anchor totali). Zero file rewrite.
+
+#### Riferimenti incrociati
+
+- **§22.47**: stato pre-Sessione 5 (CP12 chiuso, CP closing abortito per bug §22.47 P1 cold-boot)
+- **§22.46**: stato pre-Sessione 4 (CP11 useStickyOffset + manifest fix)
+- **§6.180-181**: `resetAllData` CP6 v3.0.0 Step 1 — la mitigazione localizzata che ha ispirato §6.196 generalizzato
+- **§6.167**: introduzione OnboardingGate originale — invariante implicita "profilo sempre presente" ora esplicita via populate
+- **§6.118 / §6.189**: lesson learned validazione semantica pre-code + surgical edit — applicate in CP_fix + CP_closing
+- **§11.J**: prompt Sessione 5 (consumato — fix cold-boot ratificato Q1=b, scope CP eseguito atomico)
+
+#### Follow-up flagged (non bloccante per rc.2 → final)
+
+- **`profilo_utente.demo:0` post-flow demo** (finding 1 sopra): bug pre-esistente §6.173/§6.175 nel `bulkPut` su record con id implicito. Trascurabile (no consumer logico). Recuperabile in patch v3.0.x post-smoke.
+- **Race condition UI-first-mount post-onboarding-demo** (finding 2 sopra): glitch rendering pre-seed-completion. Deferred sessione dedicata se riproducibile in smoke 24-48h.
+- **`defaultNoopActions()` missing thunks** (carry-forward §22.44 + §22.45 + §22.46 + §22.47): persistente Step 2, non richiesto in nessun CP, persistente per pulizia post-rc.2.
+- **§6.119** cross-midnight recalculated cards stay in today's visual section (Sessione 9-A deferred). Indipendente da Step 2, post-v3.0.0.
+- **§6.120** `actions.presa()` uses real system time instead of `simulated_now` in DEV mode (Sessione 9-A deferred). Stesso scope post-v3.0.0.
+- **CP_browser P5/P7/P9/P10**: smoke 24-48h naturale uso post-rc.2 (test installazione PWA dispositivi reali + onboarding flow completo + branch extended con farmaco metotrexato + sticky calibration dinamica + manifest icons live + guida HTML + reset cycle).
+- **Push remoto**: branch `step-9-v3-step-2` resta locale; merge `main` ff + push origin + redeploy gh-pages tutti deferiti a Fase 2 deploy follow-up a discrezione utente. KB upload `Project_Spec.md` (§3.1 update CP12 da §22.47) + Changelog finale (questo §22.48) deferiti contestualmente.
+
+#### Decision point post-smoke 24-48h
+
+Decisione tag `v3.0.0` final immediato vs post-smoke deferred. Raccomandazione invariata da §11.G/§11.H/§11.I/§11.J: smoke 24-48h obbligatorio prima del tag final, copertura P5/P7/P9/P10 + `profilo_utente.demo:0` reproducibility + race UI-first-mount reproducibility. Se smoke verde: tag annotato `v3.0.0` + push. Se smoke rivela findings nuovi: patch v3.0.0-rc.3 dedicata.
+
+---
+
+
+### 22.49 Stato post-Sessione 6 v3.0.0 smoke check parziale (P9/P7/P6/P4/branch extended verdi, F1 bug critico double-profile-attivo confermato e aggravato, path Q1=A, Sessione 7 §11.M analisi-first dedicata)
+
+**Modalità:** Sessione 6 branching-decisione corta esecuta su PWA local `npm run preview` (porta 4173, /pharmatimer/), DB pre-popolato con 3 farmaci esempio Gastro/Cardio/Antibiotico + flow demo storico.
+
+**Stato baseline atteso vs effettivo.** Branch `main`, top `80e1b62`, tag `v3.0.0-rc.2`, package.json `3.0.0-rc.2`, 470/470 test verdi pre-sessione (verificato `git status -sb` + `git log --oneline -3` + `node -p require('./package.json').version`). Footer iniziale Impostazioni mostrava ancora `2.8.0` per SW cache stale → toast "Nuova versione disponibile · Ricarica" → click Ricarica → footer sincronizzato a `3.0.0-rc.2`. Drift-doc-N4: §22.48 dichiarava sync 3 occorrenze "2.8.0" su ImpostazioniTab.jsx, grep effettivo trova solo 2 (riga 466 commento + riga 485 JSX), no impatto runtime, terza occorrenza era pattern diverso (probabilmente già in altro file o dichiarazione errata in §22.48 nell'estesa registrazione).
+
+**Eseguito (5 punti smoke verdi):**
+
+1. **P9 Guida HTML accessibile** ✅ — Bottone "Guida utente" in ImpostazioniTab → SezioneAiuto apre `http://localhost:4173/pharmatimer/guide.html` in nuova tab, 6 sezioni italiane render senza errori console. Drift-doc-N2: prompt §11.L cita copy "Apri la guida utente", UI mostra solo "Guida utente". UX-N1: icona ingranaggio NavBar troppo piccola, quasi indistinguibile da cerchio (a11y discoverability). UX-N3: doppia affordance Guida (bottone SezioneAiuto + link footer SezioneInfo) potenzialmente confusa, intenzionalità da chiarire.
+2. **P7 Sticky calibration dinamica** ✅ — DATE SEPARATOR pinned alla base header reale senza gap. DevTools Inspect Element conferma class Tailwind `top-[var(--sticky-offset,149px)]` (CP11 §6.190 useStickyOffset callback ref pattern + CSS var fallback statico 149px). Toggle dark/light invariance confermata. 5 dosi oggi + 5 domani ha esercitato scenario multi-separator stack-replacement. Zero console error.
+3. **P6 UI custom_minimo nascosta extended** ✅ — Soglia strettamente `> 24h`. Stato A (`Giorni=4, Ore=0` = 96h extended): checkbox `Personalizza limite minimo` **NASCOSTA**. Stato B (`Giorni=1, Ore=0` = 24h esatte standard): checkbox **VISIBILE**. Field interno `Limite minimo (ore)` appare on-toggle con valore custom (testato 20h). Drift-doc-N5: prompt §11.L cita naming `intervallo_ore` + `custom_minimo` + `intervallo_minimo_ore` pre-§22.42 turno 5; UI reale post-§22.42 = `Giorni`+`Ore` separati con `intervallo_ore = giorni*24 + ore` derivato + checkbox copy "Personalizza limite minimo" + field "Limite minimo (ore)". Discovery-N6: campo `Dosi giornaliere` automaticamente `disabled + value=1 + hint italiano "Fissata a 1 per intervalli oltre le 24 ore."` quando `intervallo_ore > 24` (positivo non documentato §11.L, semantica corretta: con ciclo > 24h una sola dose per ciclo non `dosi/giorno`). UnsavedChangesModal copy: title `Modifiche non salvate`, body `Ci sono modifiche non salvate. Vuoi scartarle e continuare?`, bottoni `Annulla`/`Scarta e continua`.
+4. **P4 Gap recovery extended disabilitato** ✅ — Farmaco `Metotrexato` creato con `Tipo frequenza=A intervallo, Giorni=7, Ore=0` (= 168h), `Data inizio=08/05/2026`, dose 07:30 ancora Colazione offset 0min. Tap PRESA su card in ritardo > 8h ha applicato presa diretta senza prompt RecuperoModal. Stato finale card: "presa", "Ritardo 8h 17min", colore badge verde. Confermata empiricamente AMB §22.42 extended frequency = 1 dose/ciclo, gap recovery non applicabile.
+5. **Branch extended reale (parziale)** ✅ — Metotrexato 168h presente in OggiView con 1 sola card (no multi-dose-per-day per intervallo > 24h, conferma Q-S-frequencyModel §22.42). Card mostra label `DOSE SETTIMANALE` come override del label pasto-relativo standard `PRIMA/DOPO COLAZIONE` (UX-N9 finding: trade-off spazio vs informazione doppia). Verifica "ogni 7 giorni" via planBuilder DB-direct skipped (tabella `piano_giornaliero` inesistente: piano è state in-memory computato, non persistito, errore di nomenclatura nel piano test del prompt §11.L); coverage delegato ai 470/470 unit test esistenti su planBuilder + spec §3.1 (§6.193).
+
+**Bug critico scoperto in F1 (reproducibility check finding 1 §22.48):**
+
+Apertura DevTools → Application → IndexedDB → `pharmatimer` → tabella `profilo_utente` ha rivelato **2 record con `attivo=1` simultaneamente**:
+
+```
+id=1 → attivo=1, demo=0, nome_profilo="Standard", ora_*={07:00, 07:30, 13:00, 20:30, 23:30}
+id=2 → attivo=1, demo=1, nome_profilo="Standard", ora_*=identici a id=1
+```
+
+**Violazione invariante:** spec §3.4 implicita "1 record attivo" violata. Selectors `selectProfiloAttivo(state)` definito come `find(p => p.attivo===1)` → restituisce **il primo trovato** (DB-order-dependent, comportamento non-deterministico tra browser/run). Race UI-first-mount finding 2 §22.48 plausibilmente collegato strutturalmente: se Dexie underlying query restituisce ora id=1 ora id=2 a seconda del cache state, primo render post-onboarding-demo può vedere profilo "vuoto" (id=1 da populate, no farmaci collegati timeline-wise), secondo render vede id=2 popolato → empty state vs PreviewBlock alternati.
+
+**Root cause probabile (da confermare in CP0 audit Sessione 7):** `seed.js` esporta `PROFILI = [{ nome_profilo:'Standard', ora_*..., attivo:1, demo:1 }]` **senza `id` esplicito**. Flow `Mostrami un esempio` → `actions.completeOnboarding('demo')` → `runSeedIfNeeded()` → `db.profilo_utente.bulkPut(PROFILI)`. Dexie con auto-increment + record-without-key inserts new record (NON updates esistente per `nome_profilo` o altro lookup) → id=2 creato accanto a id=1 da populate §6.196. Se ipotesi confermata, fix candidate: (a) `seed.js` PROFILI con `id:1` esplicito → bulkPut overwrites populate; (b) `runSeedIfNeeded` lookup `where('nome_profilo').equals('Standard').first()` + update vs add; (c) populate-skip se onboarding-demo path.
+
+**Severità.**
+
+- **Funzionale:** non bloccante uso quotidiano (entrambi i profili sono `Standard` identici nei dati, Roberto-utente non percepisce difference)
+- **Architetturale:** invariante DB violata, comportamento DB-order-dependent introdotto, race condition UI confermata empiricamente
+- **Pre-Fase 3 critico:** Fase 3 swap LocalRepository → ApiRepository richiede schema solido. Bug latente qui propagherebbe a MariaDB con potenziale duplicazione record server-side.
+
+**§22.48 finding 1 originalmente classificato "trascurabile (campo `demo` non gates su nulla)" PROMOSSO a bug bloccante tag `v3.0.0` final.**
+
+**Path Q1=A ratificato.** Sessione 6 chiusa in branching-decisione, fix delegato a Sessione 7 analisi-first dedicata §11.M. Razionale: F2 strutturalmente spiegato dal bug double-profile (race UI-first-mount = `selectProfiloAttivo` non-deterministico tra 2 record `attivo=1`), testarlo non aggiunge informazione; P10 reset cycle e P5 empty state Q-UX.13 inquinati dal DB attuale doppio-profilo, ri-smoke post-fix necessario; PWA install on-device indipendente, può essere fatto opportunisticamente in Sessione 7 ri-smoke. Pattern §11.J replicato (analisi-first dedicata per bug non-banale multi-file: seed.js + actions.completeOnboarding + populate hook + possibile Dexie migration + test +N).
+
+**Deviazione §6.201 (singola, scoperta empirica):** violazione invariante `profilo_utente` post-flow demo. Pattern `bulkPut(PROFILI)` con record id-implicit crea record id=2 invece di overwrite id=1 → 2 profili `attivo=1` simultaneamente. §22.48 finding 1 promosso da "trascurabile" a "bloccante tag v3.0.0 final". Fix delegato Sessione 7 §11.M. Numerazione progressiva da §6.201 (§6.198/§6.199 placeholder gap §22.48 lasciate disponibili per consumo ex-post Sessione 7 se design-touching).
+
+**Findings UX/doc non-bloccanti accumulati (9, scope candidate Sessione 7 opportunistic o Fase 2 polish post-v3.0.0):**
+
+- **UX-N1** Icona ingranaggio NavBar (Config) troppo piccola, quasi indistinguibile da cerchio. A11y discoverability sub-ottimale.
+- **drift-doc-N2** Prompt §11.L cita copy "Apri la guida utente"; UI reale mostra solo "Guida utente". Drift documentazione vs impl.
+- **UX-N3** Doppia affordance per la Guida: bottone `Guida utente` in SezioneAiuto + link `Guida` in footer SezioneInfo. Intenzionalità da chiarire (ridondanza UX vs scelta di design).
+- **drift-doc-N4** §22.48 dichiarava 3 occorrenze "2.8.0" sync su ImpostazioniTab.jsx, grep effettivo trova solo 2 (riga 466 + 485). Nessun impatto runtime; documentazione §22.48 inesatta.
+- **drift-doc-N5** Prompt §11.L cita naming `intervallo_ore` + `custom_minimo` + `intervallo_minimo_ore` (pre-§22.42); UI reale post-§22.42 = `Giorni`+`Ore` separati + checkbox "Personalizza limite minimo" + field "Limite minimo (ore)".
+- **discovery-N6** `Dosi giornaliere` automaticamente disabled+value=1+hint "Fissata a 1 per intervalli oltre le 24 ore." quando `intervallo_ore > 24`. Comportamento corretto non documentato §11.L.
+- **discovery-N7** `Data inizio` form farmaco default = domani (`09/05/2026` con today=`08/05/2026`). Coerente Q-S6=a §22.40 ma sub-ottimale per UX prima-volta utente novizio (devono cambiare manualmente per testare oggi).
+- **UX-N8** Bottone Salva form farmaco è `disabled` se campo `Nome` vuoto, ma senza hint visivo (nessun asterisco `*` su label required, nessun messaggio sotto Salva tipo "Compila i campi obbligatori"). Se è feature decisa va bene, ma per onboarding novizi (target v3.0.0) sub-ottimale.
+- **UX-N9** Card OggiView per farmaco extended mostra label `DOSE SETTIMANALE` come **override** del label pasto-relativo standard `PRIMA/DOPO COLAZIONE`. Trade-off spazio vs informazione doppia: utente extended può comunque voler sapere "prima/dopo pasto" oltre alla cadenza settimanale.
+
+**Action items Roberto post-Sessione 6:**
+
+1. Cleanup test data UI opzionale: eliminare `Metotrexato` da Config → Farmaci (sarà comunque pulito da Sessione 7 ri-smoke post-fix). Lasciare il bug double-profile **intatto** in IndexedDB per Sessione 7 CP0 audit (state evidence-bearing).
+2. Upload Changelog aggiornato in KB Claude.ai (sostituisce versione precedente).
+3. Apertura Sessione 7 con one-liner `Esegui il prompt al §11.M del Changelog (Sessione 7 analisi-first fix double-profile)`.
+
+**Stato post-Sessione 6.** package.json invariato `3.0.0-rc.2` (AMB-11.B.7: no bump in sessione branching-decisione senza CP esecutivo). Top commit `80e1b62` invariato. Tag `v3.0.0-rc.2` invariato. Test 470/470 invariati. Branch `main` working tree clean (nessuna modifica codice in sessione 6). Modificato solo Changelog (par.22.49 + par.11.M nuove + header front-matter cumulativo).
+
+Versione changelog: v3.0.0-rc.2 → **v3.0.0-rc.2** (invariato, sessione 6 branching-decisione senza CP). Riga "Ultima modifica" estesa cumulativamente con sessione 6 (pattern §22.41/§22.42). Nuova **§22.49** (questa sezione) + nuova **§11.M** (prompt Sessione 7 analisi-first).
+
+---
+
+### 22.50 Stato post-Sessione 7 v3.0.0 analisi-first fix double-profile (Q1-Q5 ratificate blanket "decidi tu", scope CP Sessione 8 esecutiva pre-frozen, modalità A pure analisi-first)
+
+**Modalità:** Sessione 7 **analisi-first only** (modalità A §11.M ratificata blanket). Pattern §11.J replicato per scope di pre-sessione fix architetturale. Output = Q1-Q5 ratificate + AMB-7.A÷D ratificate + scope CP Sessione 8 pre-frozen + prompt §11.N esecutivo. Token spesi ~10-12K (sotto stima §11.M 15-25K), wall-clock ~30 min. Zero righe di codice scritte (regola critica #1 rispettata).
+
+#### CP0 audit empirico (5 file source ispezionati Mac-side)
+
+Roberto ha consegnato output cat completo dei 5 file richiesti dal prompt §11.M (`seed.js`, `db.js`, `actions.js completeOnboarding+runSeedIfNeeded`, `selectors.js selectProfiloAttivo`, `db.populate.test.js`) + baseline `git status -sb` + `npm test` 470/470 verdi.
+
+**Root cause §6.201 confermata empiricamente.** Catena causale verificata su file source:
+
+1. `seed.js` riga 35: `PROFILI = [{ nome_profilo:'Standard', ora_*..., attivo:1, demo:1 }]` **senza `id` esplicito**.
+2. `db.js` riga 35-44: `DEFAULT_PROFILO_STANDARD` anch'esso id-implicit, `demo:0`.
+3. Cold-boot path: `db.on("populate")` riga 130-132 → `tx.table("profilo_utente").add({...DEFAULT_PROFILO_STANDARD})` → record auto-id=1, attivo=1, demo=0.
+4. Flow demo path: `actions.js:954-961` `completeOnboarding('demo')` → `runSeedIfNeeded({force:true})` → `seed.js:175` `db.profilo_utente.bulkPut(PROFILI)` con record id-implicit → Dexie tratta come INSERT (no PK to match) → record auto-id=2, attivo=1, demo=1.
+5. **Risultato:** `profilo_utente` count=2, entrambi `attivo:1`. Spec §3.4 "Un solo profilo attivo alla volta" violata.
+
+**Notazione collaterale:** finding 1 §22.48 (`profilo_utente.demo:0` invariato post-flow demo) era manifestazione **dello stesso bug** osservato da prospettiva diversa. La verifica §22.48 aveva inspezionato il primo record trovato (id=1, demo:0 da populate, mai sovrascritto), senza notare che esistesse un secondo record (id=2, demo:1 dal bulkPut). Promozione §22.49 a "bug bloccante" coerente: il sintomo `demo:0` era la manifestazione visibile dello stesso meccanismo bulkPut id-implicit che produce double-profile.
+
+**Selector behaviour:** `selectors.js:340-342` `selectProfiloAttivo(state) = state.profiloAttivo` — campo già pre-computato da `init()` upstream. Il non-determinismo race UI-first-mount (finding 2 §22.48) nasce dalla scelta `profili.find(p => p.attivo)` in `init()`: con 2 record `attivo:1`, l'ordine restituito da Dexie è cache-state-dependent, generando rendering alternati. Coerente con AMB-7.D ratificata (fix invariante DB, no defensive in selector).
+
+#### Q1-Q5 ratificate turno 1 (blanket "decidi tu" su default §11.M)
+
+| Q | Ratifica | Razionale |
+|---|---|---|
+| **Q1** | **(a)** `seed.js` PROFILI riga 35 con `id:1` esplicito | Fix 1-line, coerente con convention §6.196 "Standard è id=1 by-design". Side-effect positivo: anche finding 1 §22.48 (`demo:0` invariato) si auto-risolve perché bulkPut con PK match sovrascrive. (b) lookup-and-update over-engineering inutile dato §6.196 stabilisce convention id=1. (c) populate-skip sconsigliato §11.M (accoppiamento populate↔action). |
+| **Q2** | **(a)** `db.version(4).upgrade()` detect-and-merge | Idempotente, sana DB Roberto + qualsiasi installer esistente, coerente pattern §6.117 (v2) + §6.196 (v3). Tie-break: preserva record `demo:1` (intenzionalità utente più recente), fallback id ASC se ambiguo, deterministic. (b) detect-and-warn shift effort to user. (c) no-migration rischio regression silenziosa. |
+| **Q3** | **+5 test** (target 470 → **475**) | Distribuzione: +2 in `db.populate.test.js` (flow demo bulkPut idempotente + ri-bulkPut idempotente) + +3 in nuovo `db.migration.v4.test.js` (2 attivi → preserva demo:1; 2 attivi entrambi demo:0 → preserva id ASC; 1 attivo → no-op). Scenario 6 race deferred Fase 2 polish. |
+| **Q4** | **Q4.1+Q4.2+Q4.3 obbligatori** | Ri-smoke F2 race (atteso scomparsa post-fix), P10 reset cycle, P5 empty state Q-UX.13 su DB sanato. Q4.4 PWA install on-device deferred Sessione 9 deploy (richiede dispositivi reali). Q4.5 9 findings UX/doc deferred Fase 2 polish (scope-creep risk; opportunistic drift-doc-N2/N4/N5 markup-only se time permits in Sessione 8). |
+| **Q5** | **rc.3 → smoke verde → v3.0.0 final** | Bump rc.2 → rc.3 post-fix Q1+Q2+Q3 (rc.3 perché fix architetturale invasivo + migration schema v4). Tag annotato rc.3. Smoke verde Q4.1-Q4.3 → bump → tag annotato `v3.0.0` final + push origin (deferred Sessione 9 deploy a discrezione). Inline Sessione 8 se time permits, oppure §11.O esecutivo dedicato per finalizzazione tag. |
+
+#### AMB-7.A÷D ratificate turno 2 (blanket default §11.M)
+
+| AMB | Ratifica | Razionale |
+|---|---|---|
+| **AMB-7.A** | Nuovo branch `step-9-v3-fix-double-profile` da `main@80e1b62` | Pattern §6.196 etc. NON da `step-9-v3-step-2` (già allineato a main, conflict-free). |
+| **AMB-7.B** | Split 5 CP atomici | CP1_fix (Q1) + CP2_migration (Q2) + CP3_test (Q3) + CP4_browser (Q4 verifica empirica, no commit) + CP5_closing (Q5 bump+tag). Pattern §11.J replicato. CP0 audit già consumato in Sessione 7. |
+| **AMB-7.C** | Revert + re-analisi se ri-smoke regression | Pattern §22.47 abort. Forward-fix sconsigliato per fix architetturale (rischio cascading). |
+| **AMB-7.D** | Solo invariante DB, no defensive in selector | `selectProfiloAttivo` invariato. Single source of truth = DB. Doppia difesa = code smell + nasconde regression future. |
+
+#### Mini-analisi semantica pre-scope (lesson §6.118 applicata)
+
+Validazione fix Q1+Q2 su 2 scenari concreti **prima di freezare scope CP**:
+
+**Scenario S1 — utente nuovo, flow "Mostrami un esempio":**
+
+1. `db.open()` → fresh install → `on('populate')` → `add({...DEFAULT_PROFILO_STANDARD})` → record auto-id=1, attivo=1, demo=0. ✅
+2. `init()` → `profili.find(p => p.attivo)` → defined, status='ready'. ✅
+3. OnboardingModal "Mostrami un esempio" → `completeOnboarding(nome, 'demo')` → `runSeedIfNeeded({force:true})` → `bulkPut([{id:1, ...PROFILI[0]}])` → **UPDATE** in-place del record id=1 (Dexie bulkPut con PK match → put semantica REPLACE) → record id=1 ora ha `demo:1`. ✅
+4. **Stato finale:** `profilo_utente` count=1, id=1, attivo=1, demo=1. **Invariante §3.4 preservata.** Finding 1 §22.48 risolto come side-effect.
+
+**Scenario S2 — utente Roberto esistente con DB-doppio (post-fix in deploy):**
+
+1. `db.open()` su DB v3 con 2 record (id=1 demo=0, id=2 demo=1) → upgrade v3→v4 fires.
+2. Hook v4 detect-and-merge:
+   - Recupera tutti record con `attivo:1`.
+   - Se ≥1 ha `demo:1` → preserva quello (decisione utente esplicita più recente), cancella gli altri.
+   - Edge case: tutti `demo:0` → preserva id ASC (deterministic), cancella gli altri.
+   - Edge case: tutti `demo:1` → preserva id ASC (deterministic), cancella gli altri.
+3. **Stato finale:** count=1, invariante ripristinata. Idempotente al successivo open (count≤1 → no-op).
+
+**Validazione:** entrambi scenari coerenti, fix idempotente, sana retroattivamente. Sotto-decisione semantica risolta in pre-scope (non altera Q1-Q5 ratificate): tie-break `demo:1` > id ASC.
+
+#### Scope CP Sessione 8 esecutiva pre-frozen
+
+| CP | Output | LOC stima | Test stima | File touched |
+|---|---|---|---|---|
+| **CP1_fix** | `seed.js` riga 35 PROFILI con `id:1` esplicito + commento §6.202 inline | +1/-0 | 0 (coperto da CP3) | `src/data/seed.js` |
+| **CP2_migration** | `db.js` `db.version(4).upgrade()` detect-and-merge + bump `DB_VERSION = 4` + commenti §6.203 inline | +30/-1 | 0 (coperto da CP3) | `src/data/db.js` |
+| **CP3_test** | (i) Estensione `db.populate.test.js` +2 test (flow demo bulkPut idempotente + ri-bulkPut idempotente), aggiornamento `openDbV3()` → `openDbV4()` con replica hook v4. (ii) NEW `db.migration.v4.test.js` +3 test. Totale +5 test, target 470 → **475** | +180 | +5 | `src/data/db.populate.test.js` (estensione) + `src/data/db.migration.v4.test.js` (NEW) |
+| **CP4_browser** | Browser checklist post-fix: F1 reproducibility (DB count=1 post-flow demo); F2 race UI-first-mount; P10 reset cycle; P5 empty state Q-UX.13. Su DB pre-esistente Roberto (con bug attivo) → migration hook fires al primo open → DB sanato → smoke continua. Verifica empirica, no commit | 0 | 0 | n/a |
+| **CP5_closing** | Bump `package.json` rc.2 → rc.3 + sync `ImpostazioniTab.jsx` SezioneInfo. Tag annotato `v3.0.0-rc.3`. Commit cumulativo CP1+CP2+CP3+CP5 (CP4 = verifica empirica). Smoke verde Q4.1-Q4.3 → ulteriore bump `v3.0.0` final + tag annotato (inline se time permits, oppure §11.O esecutivo dedicato per finalizzazione tag) | +5/-5 | 0 | `package.json`, `src/components/config/ImpostazioniTab.jsx` |
+
+**Totale stimato:** ~+216 LOC / -7 LOC, +5 test (470 → 475).
+
+#### Allocazione §6.NN attesa Sessione 8
+
+- **§6.202** — Q1 fix `seed.js` PROFILI id=1 esplicito (CP1_fix)
+- **§6.203** — Q2 migration v3→v4 detect-and-merge (CP2_migration)
+- **§6.204** — Q3 test coverage +5 (CP3_test)
+- **§6.205** — Q5 closing rc.3 (bump + sync + tag) (CP5_closing)
+
+§6.198/§6.199 placeholder gap §22.48 lasciate disponibili (non consumate, principio §6.71/§6.85 immutabile rispettato).
+
+#### Riferimenti incrociati §22.50
+
+- **§22.49**: stato pre-Sessione 7 (bug double-profile scoperto, path Q1=A ratificato, prompt §11.M)
+- **§22.48**: finding 1 originalmente trascurabile (`demo:0` invariato), spiegato in Sessione 7 come stessa entità del bug double-profile
+- **§22.47**: bug cold-boot NO_ACTIVE_PROFILE (lesson learned: chi mitiga in un path deve generalizzare). §11.J pattern replicato in §11.M.
+- **§6.196**: populate hook + DEFAULT_PROFILO_STANDARD (Sessione 5 fix cold-boot) — fix Sessione 8 estende convention "Standard è id=1 by-design"
+- **§6.117**: schema v2 upgrade pattern (precedente a §6.196 v3 e Sessione 8 v4)
+- **§6.180-181**: `resetAllData` reset thunk (mitigazione localizzata che ha ispirato §6.196 generalizzato)
+- **§3.4 spec**: invariante "1 attivo" implicita formalizzata empiricamente da fix Sessione 8
+- **§6.71/§6.85**: principio numerazione progressiva, gap §6.198/§6.199 preservato
+- **§11.M**: prompt Sessione 7 (consumato — Q1-Q5 ratificate blanket "decidi tu")
+- **§11.N**: prompt Sessione 8 esecutiva (sotto)
+
+#### Pattern operativi confermati Sessione 7
+
+- **Analisi-first dedicata > sessione mista**: pattern §11.J replicato. Modalità A pure (no CP esecutivi inline) preserva qualità di ratifica architetturale + disaccoppia fix da impl.
+- **CP0 audit empirico via cat output**: i 5 file source consegnati da Roberto hanno permesso verifica della root cause con zero ambiguità residue. Pattern §22.42 sub-sessione audit replicato in scala minore.
+- **"Decidi tu" blanket dopo Q&A solido**: ratifica 1-turn dei default §11.M, zero collasso in blanket-yes (default §11.M già evidence-based su §22.49 + §6.196 + spec §3.4).
+- **Mini-analisi semantica pre-scope**: validazione S1+S2 su scenari concreti **prima di freezare scope CP** (lesson §6.118). Ha confermato che fix Q1+Q2 è idempotente + sana retroattivamente, eliminando rischio sub-AMB emergenti in Sessione 8.
+- **Allocazione §6.NN pre-frozen**: §6.202-205 nominativa esplicita per CP1+CP2+CP3+CP5. CP4 browser è verifica empirica senza commit, no §6.NN allocata.
+
+#### Stato git post-Sessione 7
+
+Branch `main` HEAD invariato `80e1b62`. Tag `v3.0.0-rc.2` invariato. Test 470/470 invariati. Working tree pre-sessione: `M PharmaTimer_Changelog_Fase2.md` + `?? PharmaTimer_Changelog_Fase2.md.bak-pre-sess6` (atteso da §22.49 closing). Branch `step-9-v3-step-2` invariato locale (allineato `main`). Nessuna modifica file source in Sessione 7 (analisi-first only).
+
+#### Stato changelog post-Sessione 7
+
+Versione changelog: v3.0.0-rc.2 → **v3.0.0-rc.2** (invariato, sessione analisi-first senza CP esecutivo, AMB-11.B.7). Riga "Ultima modifica" estesa cumulativamente con sessione 7 (pattern §22.41/§22.42/§22.49). Nuova **§22.50** (questa sezione) + nuova **§11.N** (prompt Sessione 8 esecutiva).
+
+#### Action items Roberto post-Sessione 7
+
+1. Re-upload Changelog aggiornato in KB Claude.ai (sostituisce versione precedente).
+2. Apertura Sessione 8 con one-liner `Esegui il prompt al §11.N del Changelog (Sessione 8 esecutiva fix double-profile)`.
+3. Stima Sessione 8: 90-150 min wall-clock, ~25-40K token, 5 CP atomici (CP1_fix + CP2_migration + CP3_test + CP4_browser + CP5_closing), output = +5 test (475/475 atteso) + tag rc.3 + ri-smoke Q4.1-Q4.3. Tag `v3.0.0` final inline se freschezza alta, oppure §11.O esecutivo dedicato.
+
+---
+
+### 11.K Step 2 v3.0.0 chiuso ✅ — smoke 24-48h pending, no nuova sessione codice required
+
+**Stato:** Step 2 v3.0.0 **completo** con tag `v3.0.0-rc.2` su branch `step-9-v3-step-2` (locale). Implementazione 18 punti scope frozen §22.43 tutti consumati. Test 452 → 470 (+18, target §11.G centrato in modo cumulativo Sessione 2-5).
+
+**Operazioni residue Mac-side a discrezione utente:**
+
+1. **Merge `step-9-v3-step-2` → `main` fast-forward**:
+   ```
+   git checkout main
+   git merge --ff-only step-9-v3-step-2
+   ```
+
+2. **Push origin (main + tag)**:
+   ```
+   git push origin main
+   git push origin v3.0.0-rc.2
+   ```
+
+3. **Redeploy gh-pages**:
+   ```
+   npm run build
+   git -C dist init -b gh-pages
+   git -C dist add -A
+   git -C dist commit -m "Deploy v3.0.0-rc.2"
+   git -C dist push -f https://github.com/timegates-code/pharmatimer.git gh-pages
+   ```
+   (Adattare al workflow gh-pages corrente.)
+
+4. **KB upload**: `PharmaTimer_Project_Spec.md` (con §3.1 update §6.193-194 da §22.47) + `PharmaTimer_Changelog_Fase2.md` (questo file aggiornato a §22.48).
+
+5. **Smoke 24-48h** uso naturale post-deploy:
+   - PWA install dispositivi reali (iOS Safari + Android Chrome)
+   - Onboarding cold-boot novizio (riproduce P1 in ambiente live)
+   - Branch extended: aggiungere metotrexato 168h reale, verificare planBuilder + Q-UX.13 empty state off-day
+   - Sticky calibration dinamica live (P7)
+   - Manifest icons live (P8)
+   - Guida HTML accessibile (P9)
+   - Reset cycle (P10)
+   - Reproducibility check finding 1 (`profilo_utente.demo:0`) e finding 2 (race UI-first-mount)
+
+6. **Decision point post-smoke** (24-48h):
+   - **Smoke verde** → tag annotato `v3.0.0` final + push + redeploy. Step 2 chiuso definitivamente. Procedere a Fase 3 (FastAPI + MariaDB backend) o smoke step Phase 2 polish.
+   - **Smoke trova findings minori** → patch `v3.0.0-rc.3` dedicata in nuova sessione (`§11.L` da definire al momento) con scope micro-fix.
+
+**Apertura sessione successiva:**
+
+Nessun prompt §11.L pre-frozen. Sessione successiva verrà pianificata in funzione dell'esito smoke 24-48h:
+- Se smoke verde + Fase 2 polish desiderato: prompt §11.L "Sessione finalizzazione Fase 2 + tag v3.0.0 final" (analisi-light, ~10K token)
+- Se smoke rivela bug: prompt §11.L "Sessione patch v3.0.0-rc.3 [scope da definire]" (analisi-first se design-touching, esecutiva snella altrimenti)
+
+**Convention:** la sessione successiva apre con one-liner standard `Esegui il prompt al §11.L del Changelog` solo dopo che §11.L sarà stato scritto in apertura della sessione stessa.
+
+---
+
+### 11.L Prompt Sessione 6 apertura — smoke check + branching decisione
+
+**Modalità:** Sessione 6 **branching-decisione** corta (5-10 min wall-clock, ~5-8K token). Pattern §11.E-bis / §11.E-ter (analisi → ratifica → prompt next) replicato per scope di pre-sessione.
+
+**Stato baseline atteso:** post-§22.48. Branch `main`, top `80e1b62`, tag latest `v3.0.0-rc.2`, working tree clean, **470/470** test verdi, `package.json` 3.0.0-rc.2. PWA live `https://timegates-code.github.io/pharmatimer/` su rev `9ea59c6` gh-pages. Smoke 24-48h post-deploy effettuato (parzialmente o completamente) prima dell'apertura.
+
+**Apertura sessione one-liner:**
+
+```
+Esegui il prompt al §11.L del Changelog (Sessione 6 smoke check + branching).
+```
+
+**Pre-letture obbligatorie (Claude in apertura):**
+
+1. **§22.48** integrale (esiti Sessione 5 fix cold-boot + closing rc.2, findings minori 2+1, follow-up flagged)
+2. **§11.K** (operazioni residue + decision point post-smoke 24-48h già delineato)
+3. **§22.47** (P1-P10 originali sub-AMB 11.e — checklist smoke completa di riferimento per Roberto in autonomia)
+4. **§22.45 "CP browser smoke deferito"** punti 1-10 (sub-AMB 11.e completa, riferimento per coverage)
+
+**Apertura sessione — Roberto riporta esito smoke (struttura libera):**
+
+Roberto fornisce a Claude in apertura un riassunto dello smoke effettuato. Non serve formato strutturato; basta che includa per ciascuno dei seguenti punti uno status (✅ verde / ⚠️ finding minore / 🚫 bug bloccante / ⏸ non testato):
+
+| Punto smoke | Cosa testare |
+|---|---|
+| P4 | Gap recovery extended disabilitato (creare farmaco metotrexato 168h, "presa" con ritardo > 30 min, verificare prompt gap NON appare) |
+| P5 | Empty state Q-UX.13 visibile (creare farmaco standard data_inizio futura, verificare empty state OggiView "Prossima dose: ...") |
+| P6 | UI custom_minimo nascosta extended (form farmaco extended `intervallo_ore > 24` → checkbox custom_minimo + field intervallo_minimo_ore non visibili; form standard ≤24h → visibili) |
+| P7 | Sticky calibration dinamica (DATE SEPARATOR pinned alla base header reale senza gap residuo; toggle dark/light invariance) |
+| P9 | Guida HTML accessibile (ImpostazioniTab → SezioneAiuto → bottone "Apri la guida utente" → guide.html in nuova tab) |
+| P10 | Reset cycle (ImpostazioniTab → "Ricomincia da capo" → conferma modale → onboarding riapre → DB pulito + populate riscatta) |
+| Finding 1 §22.48 | Reproducibility: `profilo_utente.demo:0` invariato post-flow demo "Mostrami un esempio" (atteso `demo:1` da seed bulkPut). Riproducibile o glitch one-off? |
+| Finding 2 §22.48 | Reproducibility: race UI-first-mount post-onboarding-demo (prima esecuzione empty state invece di PreviewBlock, seconda corretta). Riproducibile? |
+| PWA install live | Installazione PWA su iOS Safari + Android Chrome + macOS Chrome (icon presente, scope `/pharmatimer/`, offline funzionante) |
+| Branch extended reale | Aggiungi metotrexato 168h come farmaco reale, verifica planBuilder produce occorrenze ogni 7 giorni a partire da data_inizio anchor |
+
+**Q1 da ratificare turno 1 (NO code finché ratificato):**
+
+In funzione dell'esito smoke, Roberto sceglie 1 path:
+
+- **(A) Smoke verde su tutti i punti** → **Sessione 6-A "tag v3.0.0 final + finalizzazione Step 2"**: bump `package.json` 3.0.0-rc.2 → 3.0.0 + sync SezioneInfo 3× "3.0.0-rc.2" → "3.0.0" + commit + tag annotato `v3.0.0` "PharmaTimer v3.0.0 — UX-ready for novices, extended frequency support, cold-boot fix" + push origin (main + tag) + redeploy gh-pages. Esecutiva snella ~15 min, ~10K token. Output: tag final + PWA live a v3.0.0 stable. Deviazione §6.NN: §6.201 bump finale.
+
+- **(B) Smoke trova findings minori isolati** (es. solo finding 1 reproducibile, o solo P5 con copy refinement) → **Sessione 6-B "patch v3.0.0-rc.3 [scope finding]"**: analisi-first se finding design-touching, esecutiva snella se isolato. Scope da definire post-Q1=B (lista finding + ratifica fix-strategy per ognuno). Output: rc.3 + tag + redeploy + smoke ulteriore o tag final immediato.
+
+- **(C) Smoke trova bug bloccante** (es. P4 gap recovery extended fallisce, o reset cycle rompe DB) → **Sessione 6-C "fix bug [nome] + recovery"**: analisi-first dedicata Q1-QN per scope fix + impl + test + browser revalidation + rc.3 closing. Pattern §11.J replicato. Stima 2-3h, ~30-50K token.
+
+- **(D) Smoke parziale (alcuni punti non testati per mancanza opportunità)** → **prosecuzione smoke** + apertura ritardata: Roberto continua smoke offline, riporta esito completo in nuova apertura §11.L (questo prompt resta valido per riapertura ripetuta).
+
+**Pattern operativi.** Bash zsh-safe, pre-letture, riepilogo strutturato regola 4, approvazione closing CP. Nessun CP esecutivo in Sessione 6 fino a ratifica Q1.
+
+**Allocazione §6.NN attesa Sessione 6:**
+
+- Path A: §6.201 bump v3.0.0 final + sync SezioneInfo
+- Path B: §6.201-NN in funzione findings (ad-hoc per ogni fix)
+- Path C: §6.201-NN ad-hoc + eventuali §6.198/§6.199 placeholder consumati ex-post se design-touching downstream
+
+(Numerazione progressiva da §6.201 in avanti, §6.71/§6.85 immutabili rispettato. §6.198/§6.199 lasciate placeholder gap §22.48 restano disponibili per consumo ex-post se path B/C richiede deviazioni "spalmate" su fix multipli.)
+
+**Output sessione 6 a Q1 ratificato:**
+
+In tutti i path A/B/C, output sessione 6 = **prompt §11.M dedicato** per la sessione esecutiva successiva (se path A direttamente esecutivo, §11.M assente — la sessione 6 stessa è l'esecutiva). Pattern self-contained: la sessione 6 può essere un'analisi-first dedicata per impl successive in §11.M, oppure essa stessa l'impl finale.
+
+**Stima Sessione 6 (per path):**
+
+- Path A: 15-20 min wall-clock, ~10K token. Singolo CP esecutivo (bump + tag + push + redeploy). Sessione corta ma sostantiva.
+- Path B: 30-90 min wall-clock, ~15-30K token. CP esecutivo per ogni finding minore. Sessione media.
+- Path C: 2-3h wall-clock, ~30-50K token (analisi + impl + test + closing). Sessione full-length.
+- Path D: 5 min wall-clock, ~3K token. Conferma riapertura ritardata, no scope reale.
+
+**Pre-existing follow-up ancora flagged (non scope diretto Sessione 6 a meno path C li tocchi):**
+
+- `defaultNoopActions()` missing thunks (carry-forward §22.44 + §22.45 + §22.46 + §22.47 + §22.48): persistente Step 2.
+- §6.119 cross-midnight recalculated cards stay in today's visual section (Sessione 9-A deferred).
+- §6.120 `actions.presa()` uses real system time instead of `simulated_now` in DEV mode (Sessione 9-A deferred).
+
+**Special pre-Sessione 6:** Claude in apertura riassume in 3-5 righe l'esito riportato da Roberto allineandolo al frame Q1=A/B/C/D, poi propone il path con default raccomandato (probabilmente A se smoke verde, altrimenti il più conservativo). Roberto ratifica con `decidi tu` o esplicita preferenza.
+
+---
+
+### 11.M Prompt Sessione 7 apertura — analisi-first fix double-profile-attivo (par.6.201 → fix architetturale + ri-smoke completo + tag v3.0.0 final)
+
+**Modalità:** Sessione 7 **analisi-first dedicata** (pattern §11.J replicato). Bug critico §6.201 multi-file (seed.js + actions.completeOnboarding + populate hook + possibile Dexie migration), richiede ratifica fix-strategy + corner case analysis prima di qualsiasi riga di codice. Stima 2-3h wall-clock, ~30-50K token. Output atteso: 5-7 Q ratificate + scope CP esecutivi pre-frozen + prompt §11.N esecutivo per sessione successiva (oppure CP esecutivi inline se sessione lunga e Roberto preferisce session-singola estesa).
+
+**Stato baseline atteso:** post-§22.49. Branch `main`, top `80e1b62`, tag `v3.0.0-rc.2`, package.json `3.0.0-rc.2`, 470/470 test verdi. DB locale Roberto: stato evidence-bearing del bug intatto (2 record `profilo_utente` attivo=1: id=1 demo:0 + id=2 demo:1) + 4 farmaci (3 esempio + Metotrexato testato in §22.49).
+
+**Apertura sessione one-liner:**
+
+```
+Esegui il prompt al §11.M del Changelog (Sessione 7 analisi-first fix double-profile).
+```
+
+**Pre-letture obbligatorie (Claude in apertura, ordine raccomandato):**
+
+1. **§22.49** integrale (esiti Sessione 6 + bug double-profile + 9 findings UX accumulati + path Q1=A ratificato)
+2. **§22.48** integrale (origine finding 1 §22.48 originalmente "trascurabile" + Sessione 5 fix cold-boot par.6.196-200 contesto populate hook)
+3. **§22.47** integrale (P1 onboarding nuovo utente DB-vuoto bug critico cold-boot NO_ACTIVE_PROFILE → fix Sessione 5 par.6.196 → comprende ragionamento populate hook + DEFAULT_PROFILO_STANDARD const)
+4. **§6.196** integrale (db.js +85 LOC, on-populate hook code, version 3 upgrade defensive logic) — necessario per CP0 audit
+5. **§22.42** integrale (Q-S-frequencyModel + AMB EXT.1-5 + decisione opt B' modulare branch isolato + modello UI giorni+ore) — contesto seed.js attuale shape
+6. **`spec §3.4 profilo_utente`** integrale per invariante "1 attivo" formalizzazione
+
+**File source Mac-side da audit (Claude richiede a Roberto in CP0):**
+
+- `src/data/seed.js` (PROFILI shape + FARMACI/ORARI shape per coerenza fix)
+- `src/data/db.js` (populate hook + version 2/3 upgrade + DEFAULT_PROFILO_STANDARD const)
+- `src/state/actions.js` sezione `completeOnboarding` + `runSeedIfNeeded` (flow demo path)
+- `src/state/selectors.js` selettore `selectProfiloAttivo` (DB-order-dependence behavior)
+- `src/data/db.populate.test.js` (coverage gap: test esistenti non triggerano flow demo bulkPut)
+
+**Q da ratificare turno 1 (NO code finché ratificate):**
+
+**Q1 — fix strategy primaria (PRE-FROZEN 3 OPZIONI):**
+
+- **(a) `seed.js` PROFILI con `id:1` esplicito** → `bulkPut` con record che ha `id` esplicito **overwrites** record id=1 da populate. Fix minimal 1-line in seed.js. Tradeoff: accoppia seed.js a id=1 da populate (se populate cambia id futuro, seed rompe silenziosamente). Pro: fix immediato, zero migration. Contro: fragile a evoluzioni populate.
+- **(b) `runSeedIfNeeded` lookup `where('nome_profilo').equals('Standard').first()` + branch update-vs-add** → pre-check prima di bulkPut, se record esiste fa update inline, altrimenti add. Più robusto a evoluzioni schema. Tradeoff: +10 LOC, accoppia logic a `nome_profilo='Standard'` come natural key (vs id surrogato).
+- **(c) populate-skip se onboarding-demo path** → `actions.completeOnboarding('demo')` setta flag + db.js populate hook controlla flag + skip insert se flag set. Tradeoff: cambia separation of concerns (populate ora dipende da action state). Pro: nessun bulkPut overwrite paradigm shift.
+
+Default raccomandato Claude: **(a) o (b)**. (c) sconsigliato per accoppiamento populate↔action.
+
+**Q2 — migration safety per utenti esistenti con doppio record:**
+
+Problema: utenti che hanno già il bug nel loro IndexedDB (Roberto stesso, ipoteticamente Claudine/Lorenzo se hanno installato la PWA). Fix Q1 risolve forward-going ma non sana il DB esistente. Opzioni:
+
+- **(a) `db.version(4).upgrade()`** detect-and-merge: se trova >1 record `attivo=1`, mantiene quello con `demo=1` (più recente, da flow utente esplicito) e cancella altri, oppure il primo per id (deterministic). Atomico, idempotente, no-op su DB già pulito.
+- **(b) Detect-and-warn at init()**: log warning console + UI banner "Stato DB inconsistente, rigenera" → utente avvia "Ricomincia da capo". Trade-off: shift effort to user, ma risolve ALSO altri eventuali stati anomali futuri.
+- **(c) No migration**: solo fix Q1, accettare che utenti esistenti debbano rigenerare via "Ricomincia da capo". Rischio: regression silenziosa per utenti che non rigenerano.
+
+Default raccomandato: **(a) version(4) upgrade**. Pattern db.js già usa version pattern (v2 par.6.117, v3 par.6.196). Coerente.
+
+**Q3 — coverage test +N:**
+
+Scenari minimi obbligatori da coprire (lista pre-frozen, sub-AMB Q3.x da ratificare se sub-set o estesa):
+
+1. Cold-boot DB-vuoto + populate → 1 record profilo_utente id=1 attivo=1 demo=0 (regression guard §6.196).
+2. Cold-boot DB-vuoto + populate + `completeOnboarding('demo')` → 1 record profilo_utente id=1 attivo=1 demo=1 (NO id=2 creato).
+3. Idempotenza ri-`completeOnboarding('demo')` su DB già demo-popolato → ancora 1 record (no triplicato).
+4. Migration v3→v4 su DB con 2 record attivo=1 → DB risolto a 1 record attivo (preserva `demo:1` se presente).
+5. Migration v3→v4 su DB con 1 record attivo=1 (caso normale post-fix) → no-op idempotente.
+6. (opzionale) Race regression guard: 2 dispatch `completeOnboarding` in rapida successione → comportamento atomico (no double-bulkPut).
+
+Default raccomandato: **+5 test** (scenari 1-5). Scenario 6 deferred Fase 2 polish (concurrency edge, scope esteso).
+
+**Q4 — ri-smoke completo post-fix:**
+
+Smoke residuo §11.L deferred (F2, P10, P5, PWA install on-device) + nuovi check post-fix (DB profilo_utente conta=1 post-flow demo + post-reset) + 9 findings UX/doc accumulati (decisione opportunistic vs defer Fase 2 polish). Sub-AMB Q4.x:
+
+- **Q4.1** F2 race UI-first-mount: ri-test post-fix attesa scomparsa (root cause = double-profile risolto)? Sì/no/partial?
+- **Q4.2** P10 reset cycle: ri-test su DB pulito post-fix.
+- **Q4.3** P5 empty state Q-UX.13: ri-test su farmaco data_inizio futura post-reset.
+- **Q4.4** PWA install on-device (iOS/Android/macOS): opportunistic Sessione 7 ri-smoke o defer Sessione 8 deploy?
+- **Q4.5** 9 findings UX: opportunistic patch in Sessione 7 (alcuni sono one-liner: drift-doc-N2/N4/N5 markup-only) o defer integrali Fase 2 polish post-v3.0.0?
+
+Default raccomandato: **Q4.1-Q4.3 obbligatori** (smoke completion + regression guard); **Q4.4 deferred Sessione 8 deploy** (richiede dispositivi reali + scope deploy autonomo); **Q4.5 deferred Fase 2 polish** (scope-creep risk, sessione 7 deve restare focalizzata fix architetturale).
+
+**Q5 — versioning + closing:**
+
+- Bump `v3.0.0-rc.2` → `v3.0.0-rc.3` post-fix Q1+Q2+Q3 (rc.3 perché fix architetturale invasivo).
+- Tag annotato `v3.0.0-rc.3` con messaggio descrittivo (fix double-profile + migration v4).
+- Push origin main + tag (deferred Roberto se preferisce, AMB-11.B.7 pattern).
+- Smoke verde Q4.1-Q4.3 → bump `v3.0.0-rc.3` → `v3.0.0` final + tag annotato `v3.0.0` "PharmaTimer v3.0.0 — UX-ready for novices, extended frequency support, profilo_utente invariant guaranteed". Inline Sessione 7 se time permits, oppure §11.N esecutivo dedicato.
+- Redeploy gh-pages opzionale (deferred Sessione 8 deploy combinata).
+
+**Sub-AMB attese (emergent durante audit, da ratificare turno 2):**
+
+- **AMB-7.A** branch strategy: nuovo branch `step-9-v3-fix-double-profile` o lavoro diretto su `main`? Default: nuovo branch (pattern §6.196 etc).
+- **AMB-7.B** scope CP esecutivi: 1 CP atomico (fix+migration+test) o split CP1 fix Q1, CP2 migration Q2, CP3 test Q3, CP4 ri-smoke Q4? Default: split 4 CP per atomicità.
+- **AMB-7.C** rollback strategy se ri-smoke Q4 rivela regression nuova: revert + re-analisi vs forward-fix. Default: revert + re-analisi (pattern §22.47 abort).
+- **AMB-7.D** se Q1=(b), naming convenzione `selectProfiloAttivo` modifica: aggiunge `.find(p => p.attivo===1) ?? selectFirstProfilo(state)` fallback per protezione runtime, oppure solo invariante DB? Default: solo invariante (single source of truth).
+
+**Pattern operativi.** Bash zsh-safe (single-quoted echo, no `#` comments). Pre-letture in apertura. Riepilogo strutturato regola 4 a fine analisi turno 1 + a fine ogni CP esecutivo. Approvazione Roberto pre-codice obbligatoria post-Q ratificate. Regola critica #5 dimensionamento: se sessione 7 supera ~3h o ~50K token, splittare in §11.N esecutivo dedicato.
+
+**Allocazione §6.NN attesa Sessione 7:**
+
+- §6.198 / §6.199 placeholder gap §22.48 disponibili per consumo retroattivo se design-touching downstream (es. §6.198 = AMB-7.B split CP).
+- §6.202+ progressivo da §6.201 esistente (no retrocorrezione, principio §6.71/§6.85).
+- Stima 4-8 nuove deviazioni in funzione split CP.
+
+**Output sessione 7 a Q1-Q5 ratificate:**
+
+- Se sessione 7 = analisi-first only: prompt **§11.N** esecutivo dedicato per Sessione 8.
+- Se sessione 7 = analisi-first + esecutiva inline (pattern §22.45 cumulativo): scope CP esecutivi inline + closing rc.3 + ratifica Q4 ri-smoke + eventualmente tag v3.0.0 final.
+- Pattern self-contained: Roberto sceglie sessione-singola-estesa vs split sessione 7 + 8 in funzione disponibilità wall-clock.
+
+**Stima Sessione 7 (per modalità):**
+
+- Modalità A (analisi-first only): 90-150 min wall-clock, ~15-25K token. Output = 5-7 Q ratificate + scope CP + §11.N.
+- Modalità B (analisi-first + 1-2 CP esecutivi inline): 2-3h wall-clock, ~30-50K token. Output = Q ratificate + 1-2 CP eseguiti + §11.N residuo CP + ri-smoke Q4.
+- Modalità C (sessione singola estesa fino tag v3.0.0 final): 3-4.5h wall-clock, ~50-80K token. Output = analisi + 4 CP + ri-smoke verde + bump v3.0.0 + tag final + chiusura formale Step 2 v3.0.0. Raccomandato solo se Roberto wall-clock disponibile + freschezza alta.
+
+**Pre-existing follow-up ancora flagged (carry-forward §22.44÷49):**
+
+- `defaultNoopActions()` missing thunks (carry-forward §22.44 + §22.45 + §22.46 + §22.47 + §22.48 + §22.49): persistente Step 2.
+- §6.119 cross-midnight recalculated cards stay in today's visual section (Sessione 9-A deferred).
+- §6.120 `actions.presa()` uses real system time instead of `simulated_now` in DEV mode (Sessione 9-A deferred).
+- 9 findings UX/doc §22.49: scope candidate ad-hoc Sessione 7 Q4.5 oppure Fase 2 polish post-v3.0.0.
+
+**Special pre-Sessione 7:** Claude in apertura legge §22.49 + §22.48 + §22.47 + §6.196 + §22.42 + spec §3.4, riassume in 5-8 righe lo stato + bug + ipotesi root cause, propone CP0 audit con bash-block per Roberto su 5 file source Mac-side. Ratifica Roberto via output cat → Claude apre Q1 turno 1 con default raccomandato esplicito. Roberto ratifica con `decidi tu` o esplicita preferenze.
+
+---
+
+### 22.51 Stato post-Sessione 8 v3.0.0 esecutiva fix double-profile (5 deviazioni §6.202-205, +5 test 470→475, bump rc.2→rc.3, tag v3.0.0-rc.3, 4 findings deferred)
+
+**Modalità:** Sessione 8 **esecutiva** secondo scope CP pre-frozen §22.50 (Q1-Q5 + AMB-7.A÷D Sessione 7) + 1 hot-fix scoperto empiricamente in CP4 (§6.205, non pre-allocato §22.50). Pattern §11.J/§11.M replicato (analisi-first dedicata Sessione 7 → esecuzione Sessione 8 a scope fissato + scoperta empirica gestita inline). Token spesi cumulativi ~80-100K (analisi + 4 patcher idempotenti + verifica empirica multi-step Q4.1+Q4.2+Q4.3 + bug discovery + hot-fix). 5 deviazioni emesse (§6.202-205, §6.205 nuova), 4 test files toccati, 5 test aggiunti (470→475). Wall-clock cumulativo ~3 ore distribuiti su 2 giornate (9-10 maggio 2026).
+
+#### CP eseguiti (sequenza atomica)
+
+| CP | Tema | Esito | File toccati | Δ test | Δ LOC |
+|---|---|---|---|---|---|
+| **CP0** | Baseline + branch creation `step-9-v3-fix-double-profile` da `main@80e1b62` | verde 5/5 gate | — | 0 | 0 |
+| **CP1_fix §6.202** | `seed.js` PROFILI[0] id=1 esplicito + commento inline | verde 4/4 gate | `src/data/seed.js` | 0 | +1 / +174 chars |
+| **CP2_migration §6.203** | `db.js` DB_VERSION 3→4 + block `db.version(4).stores().upgrade()` detect-and-merge | verde 5/5 gate | `src/data/db.js` | 0 | +49 / +2264 chars |
+| **CP3_test §6.204** | `db.populate.test.js` rename openDbV3→openDbV4 + v4 hook replica + 2 test idempotenza | verde 6/6 gate | `src/data/db.populate.test.js` + `src/data/db.migration.v4.test.js` NEW 248 LOC | +5 (470→475) | +90+248 LOC |
+| **CP4_browser** | Verifica empirica DB Roberto sanato + Q4.1 rendering deterministico + Q4.2 P10 reset cycle + Q4.3 ri-smoke empty state | Q4.1 verde, Q4.2 ROSSO 1ª iter, Q4.3 verde (post-CP1bis) | — | 0 | 0 |
+| **CP1bis_fix §6.205** (HOT-FIX) | `actions.js` resetAllData id=1 esplicito + commento §6.205 (allinea convention §6.196 anche post-reset) | verde 4/4 gate | `src/state/actions.js` | 0 | +1 / +412 chars |
+| **CP4bis_browser** | Re-build + ri-verifica empirica Q4.2 post-§6.205 | Q4.2 verde definitivo (1 record id=1 demo=1) | — | 0 | 0 |
+| **CP5_closing** | Cleanup 10 file lavoro + bump rc.2→rc.3 + sync ImpostazioniTab.jsx 3 occorrenze + Changelog §22.51 + commit + tag | verde | `package.json`, `ImpostazioniTab.jsx`, Changelog | 0 | +Δ Changelog |
+
+#### Q1-Q5 §22.50 esiti
+
+| Q | Ratifica §22.50 | Esito Sessione 8 |
+|---|---|---|
+| **Q1** | (a) `seed.js` id:1 esplicito | ✅ §6.202 applicato. **Insufficiente da solo** (vedi anomalia residua sotto) → richiesto hot-fix §6.205. |
+| **Q2** | (a) `db.version(4).upgrade()` detect-and-merge | ✅ §6.203 applicato. Verifica empirica CP4 Step 2E: DB Roberto da 2 record (id=1 demo:0 + id=2 demo:1) ridotto a 1 record id=2 demo:1 (tie-break demo:1 > id ASC). |
+| **Q3** | +5 test target 475 | ✅ §6.204 esatto (470 → 475, +2 db.populate.test.js + 3 db.migration.v4.test.js NEW). |
+| **Q4** | Q4.1+Q4.2+Q4.3 obbligatori | ✅ tutti verdi (Q4.2 dopo hot-fix §6.205). Q4.4 PWA install on-device deferred Sessione 9 (dispositivi reali). |
+| **Q5** | rc.3 → smoke verde → v3.0.0 final | ✅ rc.3 bumped + tag annotato. Tag final v3.0.0 NON inline (Q4.4 manca + freschezza sessione bassa post-multi-step) → deferred §11.O. |
+
+#### 5 deviazioni §6.202-205
+
+| § | Sintesi | File |
+|---|---|---|
+| **§6.202** | `seed.js` PROFILI[0] `id:1` esplicito (Q1 ratifica). Side-effect positivo atteso: bulkPut con PK match REPLACE in-place record id=1 da populate (§6.196). Insufficiente per path "reset+demo" (§6.205 lo completa). | `src/data/seed.js` |
+| **§6.203** | `db.js` schema v3→v4: stores byte-identical, upgrade hook detect-and-merge (count attivi <=1 → no-op idempotente, altrimenti tie-break `demo:1 > demo:0` → id ASC, `bulkDelete` losers). Sana DB Roberto + qualsiasi installer esistente con bug §6.201. Verifica empirica CP4 Step 2E confermata: id=2 demo:1 vince. Pattern §6.117 (v2) + §6.196 (v3) replicato. | `src/data/db.js` |
+| **§6.204** | Test coverage +5: extension `db.populate.test.js` (rename openDbV3→openDbV4, replica v4 hook in factory, +2 test "flow demo bulkPut idempotente" + "ri-bulkPut idempotente") + nuovo `db.migration.v4.test.js` 248 LOC 3 test (preserva demo:1 nel merge, tie-break id ASC entrambi demo:0, no-op count<=1). Pattern hermetic identico §6.117/§6.196 (TEST_DB_NAME distinto, schema replica inline). 470→475. | `src/data/db.populate.test.js` + `src/data/db.migration.v4.test.js` NEW |
+| **§6.205** | **HOT-FIX scoperto empiricamente CP4 Q4.2 rosso 1ª iter.** `actions.js` resetAllData (riga 1019) `db.profilo_utente.add({...})` id-implicit. **Causa profonda:** Dexie `clear()` NON resetta auto-increment counter IDB. Post-cycle reset l'add() puo restituire id=3 (o piu) → successivo bulkPut id:1 esplicito (§6.202) fa INSERT non REPLACE → double-profile bug §6.201 ricreato via path 'reset+ri-onboarding-demo'. Fix: aggiunta `id: 1` esplicita + commento inline §6.205 documenta meccanismo. **Difetto analisi Sessione 7:** Q1 rationale focalizzato path 'cold-boot+demo' (populate inserisce id=1 → bulkPut id:1 REPLACE), non 'reset+demo' (post-clear add() id-implicit puo derivare id>1 → bulkPut id:1 INSERT). Convention §6.196 "Standard e id=1 by-design" estesa anche post-reset. | `src/state/actions.js` |
+
+§6.198/§6.199 placeholder gap §22.48 lasciate disponibili (principio §6.71/§6.85). §6.205 originalmente pre-allocata §22.50 a "Q5 closing rc.3 bump+tag" ridestinata silenziosamente (decisione operativa: closing CP non e deviazione vera, e procedural). Nessuna deviazione cumulativa rimossa retroattivamente.
+
+#### 4 findings deferred Fase 2 polish (post-Sessione 8)
+
+| Finding | Severità | Scope | Risoluzione candidata |
+|---|---|---|---|
+| **§6.205 ratificata** (era anomalia residua) | architettura | path reset+ri-onboarding | risolto inline CP1bis |
+| **UX-N10 NEW** | medio | rendering Oggi multi-day | scroll-to-now-anchor invece di scroll-to-top: ricerca primo entry con `data >= today` o `stato='attesa'` + scrollIntoView |
+| **UX-N11 NEW** | medio | rendering Oggi flow demo | nascondere empty state Q-UX.3 se ci sono farmaci con `data_inizio > today`, oppure mostrare hint "📅 Piano disponibile da domani →" |
+| **drift-doc-N12 NEW** | basso | doc/spec | aggiornare prompt §11.N (storico) o spec a copy reale UI: "Aggiungo i miei farmaci" / "Mostrami un esempio" (era "Configura tu i tuoi farmaci" / "Mostrami un esempio") |
+
+Findings UX-N1÷N9 + drift-doc-N2/N4/N5 §22.49 NON toccati (out-of-scope §22.50 Q4.5). Cumulativo registry findings deferred Fase 2 polish: 12 (N1-N12).
+
+#### Stato post-Sessione 8
+
+- **Branch:** `step-9-v3-fix-double-profile` (NON merged main, NO push remote — pattern AMB-11.B.7).
+- **Top commit:** `<TBD-cp5-commit>` (commit cumulativo CP1+CP2+CP3+CP1bis+CP5).
+- **Tag annotato:** `v3.0.0-rc.3` con messaggio "v3.0.0 fix double-profile bug + migration v4 detect-and-merge + actions.js resetAllData id=1 (closes par.6.201/par.22.49)".
+- **Working tree:** clean.
+- **Test:** 475/475 passed su 55 test files.
+- **`package.json`:** `3.0.0-rc.3`.
+- **`ImpostazioniTab.jsx` SezioneInfo:** synced 3.0.0-rc.3 (3 occorrenze righe 465/466/485).
+- **DB Roberto locale:** sanato (1 record `profilo_utente` post-§6.203 v4 hook + post-§6.205 path reset+demo). IDB version `40` (Dexie v4 = 4×10).
+
+Versione changelog: v3.0.0-rc.2 → **v3.0.0-rc.3**. Riga "Ultima modifica" estesa cumulativamente con sessione 8 (pattern §22.41/§22.42/§22.50). Nuova **§22.51** (questa sezione) + nuova **§11.O** (prompt Sessione 9 deploy follow-up + ri-smoke + tag final).
+
+---
+
+### 11.O Prompt Sessione 9 deploy follow-up + Q4.4 PWA install on-device + eventuale tag v3.0.0 final
+
+**One-liner apertura:** "Esegui il prompt al §11.O del Changelog."
+
+**Scope Sessione 9 (modalità mista esecutiva-light + ri-smoke):**
+
+1. **Push origin** branch `step-9-v3-fix-double-profile` + tag `v3.0.0-rc.3` (decisione utente — default raccomandato push si).
+2. **Merge main** ff `step-9-v3-fix-double-profile` → `main` (allineamento history main alla closure §6.201).
+3. **Ri-smoke Q4.4 PWA install on-device** (richiede dispositivi reali iOS + Android se disponibili, almeno 1):
+   - Apri PWA installata da Home screen.
+   - Verifica: cold-boot DB inesistente → populate inserisce Standard id=1 demo:0 → onboarding step 1/2 appare → Roberto-utente puo completare flow (Aggiungo i miei farmaci OR Mostrami un esempio).
+   - Verifica: profilo_utente count=1 post-onboarding (no double-profile).
+   - Verifica: notifiche push settings disabled (`notifiche_attive=0`) per default — opt-in da ImpostazioniTab.
+4. **Tag `v3.0.0` final** (decisione condizionale):
+   - Se Q4.4 verde + freschezza Sessione 9 alta → bump `package.json` rc.3→3.0.0 + sync ImpostazioniTab (3 occorrenze) + commit "v3.0.0 final — UX-ready for novices, extended frequency, profilo_utente invariant guaranteed" + tag annotato `v3.0.0`.
+   - Se Q4.4 rosso o anomalie → fix prima, eventualmente bump rc.4 + nuovo round.
+5. **Redeploy gh-pages** (con bundle v3.0.0 final se tag emesso, altrimenti rc.3).
+6. **KB upload Spec + Changelog finali** (decisione utente).
+
+**Pre-letture in apertura Sessione 9:**
+
+1. §22.51 integrale (esiti Sessione 8 cumulativa + 5 deviazioni §6.202-205 + 4 findings deferred).
+2. §22.50 (Q1-Q5 ratificate per riferimento + AMB-7.A÷D).
+3. §22.49 (root cause §6.201 + 9 findings UX/doc).
+4. Spec §3.4 (invariante "1 profilo attivo" — verificare allineamento spec).
+
+**CP0 baseline obbligatorio (zsh-safe):**
+
+```bash
+echo 'CP0 baseline Sessione 9 deploy follow-up'
+cd ~/Sviluppo/pharmatimer
+echo 'Branch:' && git branch --show-current
+echo 'Top:' && git log -1 --oneline
+echo 'Tag:' && git describe --tags --abbrev=0
+echo 'Status:' && git status -sb
+echo 'Test:' && npx vitest run --reporter=basic 2>&1 | tail -3
+echo 'package.json:' && node -p "require('./package.json').version"
+```
+
+**Atteso:** branch `step-9-v3-fix-double-profile`, top `<TBD-cp5-commit>`, tag `v3.0.0-rc.3`, working tree clean, 475/475 verdi, package 3.0.0-rc.3.
+
+**Allocazione §6.NN attesa Sessione 9:** zero attesa (deploy + smoke verification, no nuovo codice). Eventuali fix emergenti da Q4.4 allocati progressivamente da §6.206. Tag v3.0.0 final conta come decisione operativa, non deviazione (no §6.NN).
+
+**Stima Sessione 9:** 5-15K token, 30-90 min wall-clock, output v3.0.0 final tag (se Q4.4 verde) + Changelog §22.52 closing + KB upload definitivo.
+
+**Modalità delivery file (regola memoria #9):** patcher Python idempotente per Changelog §22.52 + bump 3.0.0-rc.3→3.0.0 + sync ImpostazioniTab. Comandi git separati zsh-safe.
+
+**Branch resta `step-9-v3-fix-double-profile` o merge main?** Decisione apertura Sessione 9: default merge main ff prima del tag final (history pulita).
+
+**Pre-existing follow-up ancora flagged (carry-forward §22.44÷51):**
+
+- `defaultNoopActions()` missing thunks: persistente Step 2.
+- §6.119 cross-midnight recalculated cards stay in today's visual section: deferred Sessione 9-A originalmente, mai ripreso.
+- §6.120 `actions.presa()` uses real system time instead of `simulated_now` in DEV mode: deferred Sessione 9-A originalmente, mai ripreso.
+- 9 findings UX/doc §22.49 + 3 nuovi findings §22.51 (UX-N10/N11 + drift-doc-N12): cumulativo 12 findings, scope Fase 2 polish post-v3.0.0 final.
 
 ---

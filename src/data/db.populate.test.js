@@ -51,9 +51,10 @@ function openDbV1() {
   return db;
 }
 
-// v3 schema replica with both upgrade hooks AND populate hook —
-// mirrors src/data/db.js exactly.
-function openDbV3() {
+// v4 schema replica with all upgrade hooks (v1->v2 §6.117 ora_ricalcolata,
+// v2->v3 §6.196 defensive Standard insert, v3->v4 §6.203 detect-and-merge)
+// AND populate hook — mirrors src/data/db.js exactly.
+function openDbV4() {
   const db = new Dexie(TEST_DB_NAME);
   db.version(1).stores({
     farmaci: "++id, attivo",
@@ -89,6 +90,26 @@ function openDbV3() {
       await tx.table("profilo_utente").add({ ...EXPECTED_STANDARD });
     }
   });
+  db.version(4).stores({
+    farmaci: "++id, attivo",
+    orari_base: "++id, farmaco_id, [farmaco_id+dose_numero]",
+    log_assunzioni: "++id, data, farmaco_id, [farmaco_id+data]",
+    profilo_utente: "++id, attivo",
+    impostazioni_app: "chiave",
+  }).upgrade(async (tx) => {
+    // §6.203 — detect double-active profili and merge to single survivor.
+    const attivi = await tx.table("profilo_utente")
+      .where("attivo").equals(1).toArray();
+    if (attivi.length <= 1) return;
+    const sorted = [...attivi].sort((a, b) => {
+      if ((a.demo ?? 0) !== (b.demo ?? 0)) return (b.demo ?? 0) - (a.demo ?? 0);
+      return a.id - b.id;
+    });
+    const losers = sorted.slice(1).map((p) => p.id);
+    if (losers.length > 0) {
+      await tx.table("profilo_utente").bulkDelete(losers);
+    }
+  });
   db.on("populate", async (tx) => {
     // §6.196 — fresh install always gets a Standard profilo.
     await tx.table("profilo_utente").add({ ...EXPECTED_STANDARD });
@@ -112,7 +133,7 @@ describe("db populate + defensive upgrade — §6.196 fix cold-boot DB-vuoto", (
   });
 
   it("dovrebbe inserire un profilo Standard al primo open di un DB inesistente (fresh install)", async () => {
-    const db = openDbV3();
+    const db = openDbV4();
     await db.open();
     const profili = await db.table("profilo_utente").toArray();
     db.close();
@@ -143,7 +164,7 @@ describe("db populate + defensive upgrade — §6.196 fix cold-boot DB-vuoto", (
     // Bump to v3 — populate hook does NOT fire (DB already exists),
     // but the v3 upgrade hook detects empty profilo_utente and inserts
     // Standard.
-    const dbV3 = openDbV3();
+    const dbV3 = openDbV4();
     await dbV3.open();
     const v3Profili = await dbV3.table("profilo_utente").toArray();
     dbV3.close();
@@ -173,7 +194,7 @@ describe("db populate + defensive upgrade — §6.196 fix cold-boot DB-vuoto", (
     // Bump to v3 — the v3 upgrade hook MUST be a no-op because
     // profilo_utente.count() === 1, otherwise we would inject a
     // duplicate Standard and break the "one active profile" invariant.
-    const dbV3 = openDbV3();
+    const dbV3 = openDbV4();
     await dbV3.open();
     const profili = await dbV3.table("profilo_utente").toArray();
     dbV3.close();
@@ -182,5 +203,51 @@ describe("db populate + defensive upgrade — §6.196 fix cold-boot DB-vuoto", (
     expect(profili[0].nome_profilo).toBe("Roberto"); // user data intact
     expect(profili[0].ora_sveglia).toBe("06:30");
     expect(profili[0].attivo).toBe(1);
+  });
+
+  // §6.204 (CP3 test +2) — flow demo bulkPut idempotenza post-§6.202 fix
+  it("dovrebbe mantenere count=1 dopo flow demo (populate + bulkPut con id:1 esplicito, §6.202 fix)", async () => {
+    const db = openDbV4();
+    await db.open();
+    // Populate inserts id=1 demo:0 (cold-boot Standard)
+    let profili = await db.table("profilo_utente").toArray();
+    expect(profili).toHaveLength(1);
+    expect(profili[0].demo).toBe(0);
+
+    // Simulate runSeedIfNeeded({force:true}) — bulkPut con id:1 esplicito
+    // (§6.202 fix in seed.js). Dexie REPLACE in-place atteso, no duplicazione.
+    await db.table("profilo_utente").bulkPut([{
+      ...EXPECTED_STANDARD,
+      id: 1,
+      demo: 1,
+    }]);
+
+    profili = await db.table("profilo_utente").toArray();
+    db.close();
+
+    expect(profili).toHaveLength(1); // REPLACE, no INSERT
+    expect(profili[0].id).toBe(1);
+    expect(profili[0].demo).toBe(1); // overwritten 0 -> 1
+    expect(profili[0].attivo).toBe(1);
+  });
+
+  it("dovrebbe restare a count=1 dopo bulkPut multipli con id:1 (idempotenza ri-seed)", async () => {
+    const db = openDbV4();
+    await db.open();
+
+    const seedProfilo = { ...EXPECTED_STANDARD, id: 1, demo: 1 };
+
+    // 3 bulkPut consecutive simulano ri-seed multiplo (es. user reset
+    // + onboarding-demo eseguito piu volte). Atteso: count=1 stabile.
+    await db.table("profilo_utente").bulkPut([seedProfilo]);
+    await db.table("profilo_utente").bulkPut([seedProfilo]);
+    await db.table("profilo_utente").bulkPut([seedProfilo]);
+
+    const profili = await db.table("profilo_utente").toArray();
+    db.close();
+
+    expect(profili).toHaveLength(1);
+    expect(profili[0].id).toBe(1);
+    expect(profili[0].demo).toBe(1);
   });
 });

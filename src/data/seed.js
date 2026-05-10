@@ -34,6 +34,7 @@ import { db, SETTINGS_KEYS } from "./db.js";
 // --- Daily-rhythm profile (single neutral demo, par.6.173) ---
 const PROFILI = [
   {
+    id: 1, // par.6.202: explicit id ensures bulkPut overwrites populate-inserted id=1 (Sessione 5 par.6.196) idempotently — closes double-profile bug par.6.201 / par.22.49.
     nome_profilo: "Standard",
     ora_sveglia: "07:00",
     ora_colazione: "07:30",

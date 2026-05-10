@@ -1016,6 +1016,7 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
           // (§6.173 CP4 v3.0.0): same canonical Mediterranean rhythm
           // a generic user might recognise.
           await db.profilo_utente.add({
+            id: 1, // §6.205: explicit id=1 mirrors §6.196 "Standard is id=1 by-design" convention also post-reset. Dexie clear() does NOT reset the IDB auto-increment counter, so without this id-explicit, post-reset add() could yield id>1 and a subsequent runSeedIfNeeded bulkPut (§6.202 fix) would INSERT instead of REPLACE — re-introducing the double-profile bug §6.201 via the reset+ri-onboarding-demo path.
             nome_profilo: 'Standard',
             ora_sveglia: '07:00',
             ora_colazione: '07:30',

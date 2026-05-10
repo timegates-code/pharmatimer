@@ -22,7 +22,7 @@ import Dexie from "dexie";
 //   does not index booleans directly).
 
 export const DB_NAME = "pharmatimer";
-export const DB_VERSION = 3;
+export const DB_VERSION = 4;
 
 export const db = new Dexie(DB_NAME);
 
@@ -139,6 +139,55 @@ db.version(3).stores({
   const existing = await tx.table("profilo_utente").count();
   if (existing === 0) {
     await tx.table("profilo_utente").add({ ...DEFAULT_PROFILO_STANDARD });
+  }
+});
+
+// ============================================================
+// §6.203 — Schema v4 (Sessione 8 v3.0.0 fix double-profile)
+// ------------------------------------------------------------
+// Stores byte-identical to v3; the version bump exists solely to
+// trigger the detect-and-merge upgrade hook below, which restores
+// the spec §3.4 invariant "one active profilo at a time" for any
+// installed DB carrying the §6.201 double-profile bug (2 records
+// with attivo:1 produced by the bulkPut id-implicit pattern in
+// runSeedIfNeeded — closed at source by §6.202 in seed.js).
+//
+// Tie-break order (deterministic):
+//   1. Records with demo:1 win over demo:0 — the demo flow is the
+//      most recent explicit user choice (completeOnboarding('demo'))
+//      and represents intentional state.
+//   2. Within the same demo tier, lowest id wins — stable and
+//      matches the populate hook convention "Standard is id=1
+//      by-design" (§6.196).
+//   3. Losers are bulkDelete'd in a single transactional sweep.
+//
+// Idempotent: profilo_utente with <=1 active record → no-op. Safe
+// to re-apply (e.g. after manual DB inspection by the user).
+// Closes §6.201 / §22.49 retroactively for any DB at v3.
+// ============================================================
+db.version(4).stores({
+  // Identical to v3 — schema bump exists for upgrade hook only
+  farmaci: "++id, attivo",
+  orari_base: "++id, farmaco_id, [farmaco_id+dose_numero]",
+  log_assunzioni: "++id, data, farmaco_id, [farmaco_id+data]",
+  profilo_utente: "++id, attivo",
+  impostazioni_app: "chiave"
+}).upgrade(async (tx) => {
+  // §6.203 — Detect double-active profili and merge to single survivor.
+  const attivi = await tx.table("profilo_utente")
+    .where("attivo").equals(1).toArray();
+  if (attivi.length <= 1) return; // no-op idempotente
+
+  // Tie-break: demo:1 first (most recent intent), then id ASC (stable).
+  // Defensive (a.demo ?? 0) for legacy records lacking the demo field.
+  const sorted = [...attivi].sort((a, b) => {
+    if ((a.demo ?? 0) !== (b.demo ?? 0)) return (b.demo ?? 0) - (a.demo ?? 0);
+    return a.id - b.id;
+  });
+
+  const losers = sorted.slice(1).map((p) => p.id);
+  if (losers.length > 0) {
+    await tx.table("profilo_utente").bulkDelete(losers);
   }
 });
 
