@@ -33,12 +33,13 @@ import { TOLLERANZA_MIN } from '../domain/constants.js';
 /**
  * Return the entry's effective time as 'HH:MM'. Reads ora_ricalcolata when
  * set (ISO 'YYYY-MM-DDTHH:MM' post-9-A) and falls back to ora_prevista
- * (always 'HH:MM'). Internal helper — not exported. (§6.116b)
+ * (always 'HH:MM'). Exported for Sessione 11 §6.206 selectAnchorEntry
+ * (formerly internal helper §6.116b).
  *
  * @param {import('../domain/types.js').PlanEntry} entry
  * @returns {string}  'HH:MM'
  */
-function effHHMM(entry) {
+export function effHHMM(entry) {
   if (entry.ora_ricalcolata) {
     return parseIsoDateTime(entry.ora_ricalcolata).hhmm;
   }
@@ -57,7 +58,7 @@ function effHHMM(entry) {
  * @param {import('../domain/types.js').PlanEntry} entry
  * @returns {string} 'YYYY-MM-DD'
  */
-function effectiveDateStr(entry) {
+export function effectiveDateStr(entry) {
   if (entry.ora_ricalcolata) {
     return parseIsoDateTime(entry.ora_ricalcolata).dateStr;
   }

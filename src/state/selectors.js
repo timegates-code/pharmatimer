@@ -33,7 +33,13 @@
 
 import { resolveNow } from '../utils/now.js';
 import { TOLLERANZA_MIN } from '../domain/constants.js';
-import { groupEntriesByDayAndMomento, formatDateLabel } from '../utils/uiState.js';
+import {
+  groupEntriesByDayAndMomento,
+  formatDateLabel,
+  getCardState,
+  effHHMM,
+  effectiveDateStr,
+} from '../utils/uiState.js';
 // CP10 v3.0.0 Step 2 (§6.188): selectProssimaDoseFuoriPlan dependencies.
 import { computeOraPrevista } from '../domain/orarioResolver.js';
 import {
@@ -548,4 +554,125 @@ function nextExtendedOccurrence(farmaco, orariFarmaco, profilo, today) {
   const future = occ.filter((o) => o.dateStr > today);
   if (future.length === 0) return null;
   return future[0];
+}
+
+
+// ============================================================
+// Sessione 11 CP1 v3.0.1-rc.1 (§6.206 + §6.207)
+// - selectAnchorEntry: priority-based scroll anchor for vista Oggi
+//   (AMB-10.A÷E + 10.L: classification via getCardState runtime).
+// - selectFarmaciConDataInizioFutura: grouped list of inactive-today
+//   farmaci with future data_inizio for empty-state hint (AMB-10.F÷I).
+// ============================================================
+
+/**
+ * §6.206 — Scroll-to-now anchor selector for vista Oggi.
+ *
+ * Returns the plan entry that should serve as the scroll anchor when
+ * OggiView mounts / transitions to 'ready' / rolls over midnight
+ * (AMB-10.B). Priority composite (AMB-10.A + 10.L: classification via
+ * getCardState runtime, NOT entry.stato raw):
+ *
+ *   P1 — getCardState === 'in_ritardo' → max effHHMM (latest late)
+ *   P2 — getCardState ∈ {'prossima', 'in_attesa'} → min effHHMM (soonest)
+ *   P3 — none of the above → null (consumer scrolls to top, AMB-10.C)
+ *
+ * Pre-filter: entries are restricted to the current-day bucket via
+ * effectiveDateStr(entry) === resolvedNow.dateStr. This honours the
+ * visual bucketing of groupEntriesByDayAndMomento (11-B AMB-11.B.1):
+ * cross-midnight recalc cards live in tomorrow's bucket and must NOT
+ * anchor today's scroll.
+ *
+ * getCardState's own early returns for 'presa' / 'saltata' / 'sospesa'
+ * naturally exclude closed entries from both P1 and P2.
+ *
+ * @param {import('./reducer.js').AppState} state
+ * @param {Date} [now]
+ * @returns {import('../domain/types.js').PlanEntry | null}
+ */
+export function selectAnchorEntry(state, now = new Date()) {
+  const resolvedNow = resolveNow(state, now);
+  const candidates = (state.plan ?? []).filter(
+    (e) => effectiveDateStr(e) === resolvedNow.dateStr,
+  );
+  if (candidates.length === 0) return null;
+
+  const annotated = candidates.map((entry) => ({
+    entry,
+    cardState: getCardState(entry, resolvedNow),
+    effMinutes: hhmmToMinutes(effHHMM(entry)),
+  }));
+
+  // P1: in_ritardo → max effMinutes (most recent late, AMB-10.A)
+  const inRitardo = annotated.filter((x) => x.cardState === 'in_ritardo');
+  if (inRitardo.length > 0) {
+    inRitardo.sort((a, b) => b.effMinutes - a.effMinutes);
+    return inRitardo[0].entry;
+  }
+
+  // P2: prossima or in_attesa (pending future) → min effMinutes (soonest)
+  const pendingFuture = annotated.filter(
+    (x) => x.cardState === 'prossima' || x.cardState === 'in_attesa',
+  );
+  if (pendingFuture.length > 0) {
+    pendingFuture.sort((a, b) => a.effMinutes - b.effMinutes);
+    return pendingFuture[0].entry;
+  }
+
+  // P3: all closed (presa/saltata/sospesa) → null (AMB-10.C scroll-to-top)
+  return null;
+}
+
+/**
+ * §6.207 — Future therapy hint for empty-state Oggi.
+ *
+ * Returns active farmaci whose data_inizio is strictly in the future,
+ * grouped by data_inizio (ASC), with each group's farmaci sorted by
+ * nome (it-IT locale). Output shape:
+ *
+ *   [{ data_inizio: 'YYYY-MM-DD', farmaci: Farmaco[] }]
+ *
+ * Filter rules (parity with §6.188 selectProssimaDoseFuoriPlan):
+ *   - f.attivo === true
+ *   - typeof f.data_inizio === 'string' && f.data_inizio > today
+ *     (strict greater: data_inizio === today is already covered by plan)
+ *   - !f.data_fine || f.data_fine >= today
+ *
+ * Empty input or no matching farmaci → returns [] (consumer falls
+ * back to the generic empty state, AMB-10.G).
+ *
+ * Distinct from selectProssimaDoseFuoriPlan (§6.188): that one is a
+ * single-occurrence selector (any branch incl. extended); this one is
+ * a grouped list (standard branch only) for visual cumulative hint.
+ *
+ * Consumer: OggiView NoDosesEmptyState sub-branch (CP3 §6.207).
+ *
+ * @param {import('./reducer.js').AppState} state
+ * @param {string} today 'YYYY-MM-DD'
+ * @returns {Array<{ data_inizio: string, farmaci: object[] }>}
+ */
+export function selectFarmaciConDataInizioFutura(state, today) {
+  const farmaciFuturi = (state.farmaci ?? []).filter(
+    (f) =>
+      f.attivo &&
+      typeof f.data_inizio === 'string' &&
+      f.data_inizio > today &&
+      (!f.data_fine || f.data_fine >= today),
+  );
+  if (farmaciFuturi.length === 0) return [];
+
+  const byDate = new Map();
+  for (const f of farmaciFuturi) {
+    if (!byDate.has(f.data_inizio)) byDate.set(f.data_inizio, []);
+    byDate.get(f.data_inizio).push(f);
+  }
+
+  const sortedKeys = [...byDate.keys()].sort();
+  return sortedKeys.map((data_inizio) => ({
+    data_inizio,
+    farmaci: byDate
+      .get(data_inizio)
+      .slice()
+      .sort((a, b) => a.nome.localeCompare(b.nome, 'it')),
+  }));
 }
