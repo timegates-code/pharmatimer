@@ -21,3 +21,24 @@ import '@testing-library/jest-dom/vitest';
 import { afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
 afterEach(cleanup);
+
+// CP2 Sessione 11-bis (par.6.206) -- jsdom platform polyfill.
+//
+// jsdom does not implement Element.prototype.scrollIntoView. The OggiView
+// scroll-to-anchor useEffect calls `el.scrollIntoView(...)` on the ready
+// transition. Without this polyfill, any test file that renders OggiView
+// without its own scroll mock crashes via the rAF callback before cleanup.
+//
+// Tests that want to OBSERVE scrollIntoView calls (OggiView.scroll.test.jsx)
+// override Element.prototype.scrollIntoView with vi.fn() in their own
+// beforeEach -- this assignment is safe because vi.fn() is also a function
+// and replaces the no-op cleanly.
+//
+// Distinct from AMB-7a.J ("no globals beyond jest-dom matchers"): this is
+// a jsdom platform polyfill (env-fill bridging missing browser API), NOT a
+// test-runner global utility. Same category as a polyfill for ResizeObserver
+// or IntersectionObserver would be -- it makes jsdom behave like a browser
+// for an API that any production browser implements natively.
+if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = function () {};
+}

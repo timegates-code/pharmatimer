@@ -83,6 +83,7 @@ import {
   selectUltimaPresa,
   selectPromptEntry,
   selectImpostazione,
+  selectAnchorEntry,
 } from '../../state/selectors.js';
 import {
   groupEntriesByDayAndMomento,
@@ -292,6 +293,49 @@ export default function OggiView() {
     undoModal.open,
     recuperoModal,
   ]);
+
+  // CP2 Sessione 11-bis (par.6.206) -- scroll-to-anchor on ready + rollover.
+  //
+  // AMB-10.A: anchor priority composita via selectAnchorEntry (getCardState
+  //   runtime, par.6.118 empirically validated par.22.54).
+  // AMB-10.B: trigger discreti su [state.status, today] -- mount + ready
+  //   transition + rollover mezzanotte. NO re-fire su useNow tick (render
+  //   frequenti via tick non triggerano l'effect grazie a deps discrete).
+  // AMB-10.C: fallback scroll-to-top quando anchor null.
+  // AMB-10.D: behavior 'auto' instant (mobile-first, no jank cross-day).
+  // AMB-10.E: compose scrollIntoView + scrollBy --sticky-offset compensation.
+  //
+  // requestAnimationFrame defers 1 frame post-render to ensure DoseCard
+  // mounted before querySelector (CP2-SUB-2 ratified). Sticky offset read
+  // from containerRef CSS var (CP2-SUB-1 ratified, matching useStickyOffset
+  // par.6.190 setter target), fallback '149' matching the Tailwind arbitrary
+  // value top-[var(--sticky-offset,149px)] on DATE SEPARATOR pill.
+  //
+  // NOTE: rollover mezzanotte (today change) interrupts a manual scroll the
+  // user might be doing at 23:59. Caso raro accettato (AMB-10.B trigger
+  // discreti, par.22.53 risk-note 4).
+  useEffect(() => {
+    if (state.status !== 'ready') return;
+    const anchor = selectAnchorEntry(state, now.date);
+    if (!anchor) {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+      return;
+    }
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-entry-key="${anchor.key}"]`);
+      if (!el) return;
+      el.scrollIntoView({ block: 'start', behavior: 'auto' });
+      const stickyOffsetPx = parseInt(
+        getComputedStyle(containerRef.current ?? document.body)
+          .getPropertyValue('--sticky-offset') || '149',
+        10,
+      );
+      window.scrollBy(0, -(stickyOffsetPx + 8));
+    });
+    // CP2-SUB-3 ratified: deps intentionally discrete per AMB-10.B; reading
+    // state/now inside is correct (closure captures latest values at trigger).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.status, today]);
 
   // --- loading / error branches ---
 
