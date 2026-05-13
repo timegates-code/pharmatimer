@@ -1,8 +1,8 @@
 # PharmaTimer — Changelog Fase 2 (PWA frontend)
 
-**Versione:** 3.0.0
+**Versione:** 3.0.1-rc.1
 **Data inizio fase:** 16 aprile 2026
-**Ultima modifica:** 4 maggio 2026 sera tardi (Sessione cumulativa ~7-8 ore: closure scenario Z v2.8.0 → P2-P5 deploy GitHub Pages → hotfix v2.8.1 routing → smoke test live → riapertura UX-extended ratificata v2.8.2-rc.1). Round 2 pivot strategico post-evidence: smoke test su PWA live ha rilevato 2 bug residui (sticky calibration top-[149px] regressione, icone manifest 404) + 1 problema strutturale (UX non-ready per utenti novizi: farmaci di Roberto preconfigurati confondono, dosi giorno-precedente apparenti come "in ritardo" senza contesto, niente onboarding). Disambiguazione 4 round Q&A: Bug 2 dosi-ieri = feature pianificazione rolling window per Roberto vs bug semantico per nuovi utenti; data_inizio_terapia da sola NON risolve UX problem; onboarding modale e' la soluzione corretta. Closure Z riconosciuta prematura rispetto intent UX originale ("fin dall'inizio progetto privilegiare UX"). Strada B ratificata: riapertura formale UX-extended target v3.0.0 milestone "PharmaTimer UX-ready for novices". Scope frozen lista chiusa 14 punti par.22.40 decisione 3 (OnboardingModal 2-step, gating logic, empty state guidante OggiView, empty state Mit-A "prossima dose [DATA]", toast Mit-C post-aggiunta, seed neutro depersonalizzato 3 farmaci esempio, seed opt-in, data_inizio campo form FarmaciTab default domani Q-S6=a, data_inizio_terapia auto-calc planBuilder Q-S5=2, reset bottone Avanzate, sticky calibration useLayoutEffect+ResizeObserver, icone manifest 404 fix, test +15-20, guida HTML esterna). Sub-AMB Q-S1÷Q-S7 ratificate: Q-S1=a un dispositivo per persona, Q-S2=c seed neutro depersonalizzato opt-in, Q-S3=guida HTML invece di tutorial in-app, Q-S4=DB pulito da capo (Roberto compreso), Q-S5=2 auto-calc, Q-S6=a domani default, Q-S7=OK perdita DB attuale (test only). Bumping 2.8.1 → v2.8.2-rc.1 (analisi-first ratificata, no impl ancora). Sessione successiva: prompt par.11.E "Sessione 1 analisi-first v3.0.0 UX onboarding multi-utente" eseguibile in nuova sessione fresca (one-liner: Esegui il prompt al par.11.E del Changelog). Atteso 90-150 min wall-clock + 8-15K token, output AMB UX-1÷N + scope CP Sessione 2 + prompt par.11.F. Stima totale v3.0.0 cumulativa 8-15 ore lavoro distribuibili 1-3 sessioni dedicate. Backward-history demote v2.8.1 description sotto. Sessione 1 partial v3.0.0 (4 maggio 2026 sera tardi, prosieguo cumulativo): Q-UX.1-7 ratificate (onboarding modale layout+copy 2-step, empty states OggiView 0-farmaci + Mit-A preview, toast Mit-C post-aggiunta, seed neutro 3 farmaci esempio, reset bottone Avanzate Ricomincia-da-capo). AMB-UX-frequencyModel emersa (intervallo > 24h non garantito by design, audit Mac-side demandato sub-sessione, vedi par.11.E-bis). Q-UX.8-12 deferite a Sessione 1 chiusura, vedi par.11.E-ter. v2.8.2-rc.1 invariato. Stato post-sessione par.22.41. Sub-sessione audit frequencyModel (5 maggio 2026 mattina, dedicata): AUDIT.1-5 chiuse su file source Mac-side, opt B' modulare branch isolato ratificata (rivista da schema A/B/C originale §22.41), AMB EXT.1-5 chiuse blanket decidi tu, modello UI giorni+ore proposto da Roberto turno 5 (sostituisce EXT.3 originale, persistenza intervallo_ore singola, range illimitato), Q-UX.13 nuovo empty state off-day extended in scope v3.0.0 (scope frozen 14->16 punti). Stima Sessione 2 esecutiva +120 LOC +13 test wall-clock 2-3h. v2.8.2-rc.1 -> v2.8.2-rc.2. Stato post-sessione par.22.42. Sessione 1 chiusura analisi-first par.11.E-ter (5 maggio 2026): Q-UX.8/9/13 ratificati turno 1 (sticky calibration useStickyOffset hook + ResizeObserver + CSS var, manifest icone audit empirico CP0 Step 2, off-day extended copy con singola occorrenza imminente), Q-UX.10/11 turno 2 (migration no-wipe Dexie schema upgrade + onboarding gating onboarding_completed, target test 459-466 atteso 462), Q-UX.12 turno 3 (guida HTML public/guide.html 6 sezioni italiano + screenshot deferred v3.0.1) + closing finale. Sub-AMB nuove ratificate: 10.b card seed disabled su DB popolato, 11.b audit CP0 grep test esistenti, 11.e CP browser checklist 8-10 punti pre-defined, 13.d generalizzazione selector selectProssimaDoseFuoriPlan caso misto. Lista impl v3.0.0 congelata 18 punti. Scope CP Sessione 2 split v3.0.0 Step 1 + Step 2 pre-frozen nominativa esplicita. Bump v2.8.2-rc.2 -> v3.0.0-rc.1 (rc del nuovo major, pattern semver standard). Sessione successiva: prompt par.11.F per Sessione 2 Step 1 esecutiva. package.json invariato 2.8.1 (AMB-11.B.7). Stato post-sessione par.22.43. Sessione 2 v3.0.0 Step 1 esecutiva (5 maggio 2026 sera): CP1-CP6 chiusi, branch step-9-v3-step-1 → main fast-forward, tag annotato v3.0.0-alpha.1, 430 → 452 test (+22, target +20 par.11.F centrato), 18 deviazioni par.6.164-181. Stato post par.22.44. Sessione 2 v3.0.0 Step 2 esecutiva parziale (5 maggio 2026 sera tardi): CP7-CP10 chiusi, CP11-CP12 deferiti a Sessione 3, branch step-9-v3-step-2 (NON merged main), 452 → 464 test (+12, target +15 par.11.G), 8 deviazioni par.6.182-189 (incl. par.6.189 lesson learned file rewrite vs surgical edit). Stato post par.22.45. Sessione 3 v3.0.0 Step 2 esecutiva resume CP11 (6 maggio 2026 pomeriggio): CP11 chiuso (Q-UX.8 useStickyOffset callback ref pattern + Q-UX.9 buildPwaManifest single source of truth /pharmatimer/ prefix), 464 → 466 test (+2 esatto, target par.11.H centrato), 2 deviazioni par.6.190-191. CP12+closing Step 2 deferiti a Sessione 4 per applicazione regola 5 (qualità sessione + scope diverso CP12 = guida HTML + spec update + browser checklist 8-10 punti). Bump v3.0.0-rc.1 → v3.0.0-rc.1.1 (analisi-first finalizzata + 2 CP esecutivi su 4, no bump major perché Step 2 non chiuso). Stato post par.22.46.) Sessione 4 v3.0.0 Step 2 esecutiva resume CP12 + closing abortito (6 maggio 2026 pomeriggio): CP12 chiuso (guide.html + SezioneAiuto + spec par.3.1 + seed invariant test, par.6.192-195, +1 test 466 -> 467), CP closing abortito post-CP12 in fase browser checklist P1 onboarding nuovo utente DB vuoto -> bug critico cold-boot NO_ACTIVE_PROFILE bloccante (actions.js init lancia su DB-vuoto, OnboardingGate non apre per status='error'). Bump 3.0.0-rc.2 + sync SezioneInfo rollbackati. Top 49aee64 preservato. Stato post par.22.47. Sessione 5 v3.0.0 Step 2 fix cold-boot DB-vuoto + closing rc.2 (7 maggio 2026 sera): analisi-first Q1-Q5 ratificate (Q1=b Dexie populate + v3 defensive upgrade, Q2 N/A, Q3 blast radius zero, Q4 +3 test, Q5 target 470). CP_fix par.6.196 (db.js +85 LOC commenti+code, on populate hook + version 3 upgrade defensive + DEFAULT_PROFILO_STANDARD const). CP_test par.6.197 (db.populate.test.js NEW 186 LOC, 3 test hermetic fake-indexeddb). CP_browser parziale (P1+P2+P3 verdi Safari + Chrome incognito, P4-P10 deferred smoke 24-48h, P8 manifest live deferred Fase 2 deploy). CP_closing par.6.200 (bump rc.2 + sync 3 occorrenze 2.8.0 ImpostazioniTab.jsx). Commit cumulativo 80e1b62. Tag annotato v3.0.0-rc.2. 467 -> 470 test (+3, target rivisto Q4 da +2 a +3 per coverage upgrade non-empty no-duplication critico). 5 deviazioni par.6.196-200 (par.6.198/199 placeholder non utilizzati, gap progressivo accettato). 2 finding minori non bloccanti (profilo_utente.demo:0 post-flow demo bug pre-esistente par.6.173/175, race UI-first-mount post-onboarding-demo). Step 2 v3.0.0 chiuso completo. Stato post par.22.48. Operazioni residue (merge main ff + push origin + redeploy gh-pages + KB upload Spec+Changelog) deferite a discrezione utente. Sessione 6 v3.0.0 smoke check post-rc.2 (8 maggio 2026 sera): smoke parziale 5/10 punti completati (P9 guida + P7 sticky + P6 custom_minimo + P4 gap-recovery-extended + branch extended reale tutti verdi), F1 reproducibility check ha rivelato bug critico double-profile-attivo (2 record profilo_utente attivo=1 simultaneamente: id=1 demo:0 da populate par.6.196 + id=2 demo:1 da bulkPut seed.js auto-increment), violazione invariante spec par.3.4 implicita 1-attivo, root cause bulkPut con id-implicit non-overwrite, finding 1 par.22.48 originariamente classificato trascurabile PROMOSSO bug bloccante tag v3.0.0 final. F2/P10/P5/PWA install deferred a ri-smoke post-fix. Path Q1=A ratificato (chiusura sessione 6 + apertura sessione 7 analisi-first dedicata fix). Deviazione singola par.6.201 alloca scoperta empirica + 9 findings UX/doc non-bloccanti accumulati (UX-N1 ingranaggio piccolo, drift-doc-N2/N4/N5, UX-N3 doppia affordance guida, discovery-N6 dosi-1-forced extended, discovery-N7 data_inizio default domani, UX-N8 Salva disabled senza hint, UX-N9 dose-settimanale override label pasto). package.json invariato 3.0.0-rc.2 (no bump in sessione 6). Stato post par.22.49. Sessione successiva: par.11.M Sessione 7 analisi-first fix double-profile, one-liner Esegui il prompt al par.11.M del Changelog. Sessione 7 v3.0.0 analisi-first fix double-profile (9 maggio 2026): modalità A pure (analisi-first only, no CP esecutivi inline). CP0 audit empirico via cat output 5 file source Mac-side (seed.js + db.js + actions.js completeOnboarding + selectors.js selectProfiloAttivo + db.populate.test.js). Root cause par.6.201 confermata empiricamente: seed.js riga 35 PROFILI id-implicit + db.js DEFAULT_PROFILO_STANDARD id-implicit → cold-boot populate inserisce id=1 demo:0 + flow demo bulkPut crea id=2 demo:1 (no PK match → INSERT non UPDATE). Finding 1 par.22.48 spiegato come stessa entità del bug double-profile (manifestazione visibile demo:0 invariato = primo record id=1 osservato). Q1-Q5 ratificate blanket "decidi tu" (Q1=a id:1 esplicito, Q2=a v4 detect-and-merge tie-break demo:1 > id ASC, Q3=+5 test target 475, Q4=Q4.1+Q4.2+Q4.3 obbligatori smoke ri-eseguito, Q5=rc.3 → smoke verde → v3.0.0 final). AMB-7.A÷D ratificate (nuovo branch step-9-v3-fix-double-profile, split 5 CP, revert+re-analisi se regression, solo invariante DB no defensive selector). Mini-analisi semantica pre-scope su S1 (utente nuovo cold-boot+demo) + S2 (utente esistente DB-doppio post-deploy) confermata: fix idempotente + sana retroattivamente. Scope CP Sessione 8 pre-frozen (CP1_fix par.6.202 +1 LOC seed.js + CP2_migration par.6.203 +30 LOC db.js v4 + CP3_test par.6.204 +180 LOC +5 test + CP4_browser verifica empirica + CP5_closing par.6.205 bump+tag). Allocazione par.6.202-205 nominativa esplicita, par.6.198/199 placeholder gap preservati. Sessione 8 esecutiva stima 90-150 min ~25-40K token, output 475/475 test + tag annotato v3.0.0-rc.3 + eventualmente v3.0.0 final inline. Zero righe codice scritte Sessione 7 (regola critica #1 rispettata). package.json invariato 3.0.0-rc.2 (no bump in sessione analisi-first). Stato post par.22.50. Sessione successiva: par.11.N Sessione 8 esecutiva fix double-profile, one-liner Esegui il prompt al par.11.N del Changelog. Sessione 8 v3.0.0 esecutiva fix double-profile (10 maggio 2026 sera): CP0 verde 5/5 + branch step-9-v3-fix-double-profile + CP1_fix par.6.202 (seed.js +1 LOC id:1 esplicito) + CP2_migration par.6.203 (db.js DB_VERSION 3->4 + block detect-and-merge tie-break demo:1 > id ASC) + CP3_test par.6.204 (db.populate.test.js +2 con rename openDbV3->openDbV4 + db.migration.v4.test.js NEW 248 LOC +3 test, 470 -> 475 target par.22.50 centrato) + CP4_browser ri-verifica empirica DB Roberto sanato (Q4.1 rendering deterministico 3 reload identici verde, Q4.2 P10 reset+ri-onboarding-demo verde DOPO scoperta empirica anomalia residua par.6.205, Q4.3 ri-smoke empty state Q-UX.13 path 'Aggiungo i miei farmaci' verde). Hot-fix par.6.205 NUOVO non pre-allocato par.22.50 (scoperta empirica CP4 Q4.2 rosso pre-fix): resetAllData (par.6.180) inseriva Standard id-implicit dopo db.profilo_utente.clear(), ma Dexie clear() NON resetta auto-increment counter IDB -> post-cycle reset id puo essere >1 -> bulkPut id:1 esplicito (par.6.202) faceva INSERT invece REPLACE -> double-profile bug par.6.201 ricreato via path 'reset+ri-onboarding-demo'. Fix CP1bis_fix actions.js riga 1019 con id:1 esplicito + commento inline par.6.205 (allinea convention par.6.196 'Standard e id=1 by-design' anche post-reset). Difetto analisi Sessione 7: focus su path 'cold-boot+demo' senza considerare 'reset+demo'. Re-build + ri-verifica empirica Q4.2 verde definitivo (1 record id=1 demo=1 attivo=1). 4 findings deferred Fase 2 polish: par.6.205 risolto in atto, UX-N10 scroll-on-mount top-of-list invece now-anchor (rendering Oggi multi-day Sabato 9 maggio in cima invece domenica 10 imminente), UX-N11 empty state oggi visualizzato anche con piano demo per domani par.6.174 popolato (UX confondente, suggerimento risoluzione: nascondere empty state se farmaci attivi data_inizio futura o mostrare hint 'Vedi piano per domani'), drift-doc-N12 prompt par.11.N copy 'Configura tu i tuoi farmaci' divergente da UI reale 'Aggiungo i miei farmaci' (markup-only). 5 deviazioni par.6.202-205 emesse (par.6.205 NUOVA non pre-allocata par.22.50). Test 470 -> 475 (+5 esatti, target Q3 centrato). Bump 3.0.0-rc.2 -> 3.0.0-rc.3 + sync ImpostazioniTab.jsx 3 occorrenze (par.6.200 pattern). Cleanup 10 file lavoro (4 patcher CP + 4 backup .bak.pre-cpN + 2 backup Changelog .bak-pre-sessN). Commit cumulativo + tag annotato v3.0.0-rc.3. Q4.4 PWA install on-device deferred Sessione 9 deploy (richiede dispositivi reali). Tag v3.0.0 final NON inline (Q4.4 manca + freschezza sessione bassa post-CP4 multi-step), deferred Sessione 9 par.11.O. Branch step-9-v3-fix-double-profile resta locale, NO push, NO merge main. Stato post par.22.51. Sessione successiva: par.11.O Sessione 9 deploy follow-up + Q4.4 PWA install + eventuale tag v3.0.0 final, one-liner Esegui il prompt al par.11.O del Changelog. Sessione 9 v3.0.0 deploy follow-up + Q4.4 PWA install on-device + tag v3.0.0 final (13 maggio 2026): CP0 baseline verde 7/7 (branch step-9-v3-fix-double-profile, top ffbe408 tag v3.0.0-rc.3, 475/475 test, package 3.0.0-rc.3, remote pulito), CP1+CP2 push origin branch+tag rc.3 + merge ff main + push main (main 80e1b62 -> ffbe408, history lineare), CP3 build+deploy gh-pages rc.3 (orphan init + force push, gh-pages 9ea59c66 -> b25790c, propagazione 200 + versione embedded confermati), Q4.4 verde 2/3 device cross-engine (Chromium Chrome Mac normale update path rc.2->rc.3 verde DB 1 record id=2 da migration v3->v4 tie-break demo:1; Chromium Chrome Mac incognito cold-boot puro verde DB 1 record id=1 esplicito par.6.202 conferma empirica; WebKit Safari iOS verde DB 1 record id=1 via Web Inspector remoto Mac<->iPhone USB), Android skippato per correlazione alta Chromium-Chromium + bandwidth allocata closing pulito. Finding 2 par.22.48 race UI-first-mount post-onboarding-demo riprodotto cross-engine (3 volte documentato: Sessione 5 + Sessione 9 Chromium + Sessione 9 WebKit), confermato preesistente non-regressione, workaround banale (reload). 3 findings nuovi non bloccanti iOS-specifici: iOS-N1 Safari iOS isola storage IndexedDB tra browser tab e PWA standalone Aggiungi a Home (comportamento Apple WebKit atteso documentato), iOS-N2 Service Worker /pharmatimer persiste in Safari iOS anche dopo rimozione PWA standalone da Home (no cleanup automatico), UX-N14 sticky-header sezioni form Farmaci non sticky in PWA standalone iOS (cross-browser-engine). Pattern operativo lesson learned trasversale: zsh variabile speciale 'path' tied to $PATH, mai usarla come var loop nei blocchi bash (corrompe PATH per la sessione, recovery export PATH manuale). CP5 bump rc.3 -> 3.0.0 final + sync ImpostazioniTab.jsx 3 occorrenze (pattern par.6.200/205, 475/475 test verdi post-bump, no test asserisce versione hardcoded) + commit cumulativo 6b10169 'v3.0.0 final - UX-ready for novices, extended frequency, profilo_utente invariant guaranteed' + tag annotato v3.0.0 (sha 4e957e9 -> commit 6b10169) + push origin main+tag. CP6 re-build + redeploy gh-pages bundle v3.0.0 final (bundle re-hashed index-HjYCAz99.js a causa di ImpostazioniTab.jsx modificato, gh-pages b25790c -> f638c8f, propagazione verde HTTP 200 + versione 3.0.0 puro live). iPhone soak naturale (Safari iOS rimane su bundle rc.3 cached, UpdatePrompt par.6.157/158 scatterà spontaneamente nei prossimi 24-48h, no verifica live SezioneInfo richiesta dato curl gh-pages conferma 3.0.0 puro). CP7 closing par.22.52 + KB upload Spec + Changelog finali. Zero deviazioni par.6.NN emesse in Sessione 9 (deploy + smoke, no nuovo codice). Findings cumulativi Fase 2 polish: 15 (N1-N12 carry-forward par.22.51 + iOS-N1/iOS-N2/UX-N14 nuovi). Tag v3.0.0 final emesso, fase v3.0.0 chiusa completa, gh-pages live. Stato post par.22.52. v3.0.0 milestone raggiunta: "PharmaTimer UX-ready for novices, extended frequency, profilo_utente invariant guaranteed". Sessione successiva: aperture opportunistiche su Fase 2 polish (15 findings registry) oppure Step 9-B Wave B notifiche foreground setTimeout (scope frozen 5-CP AMB-9.E'-I'), tipicamente con one-liner dedicato al delivery target.
+**Ultima modifica:** 4 maggio 2026 sera tardi (Sessione cumulativa ~7-8 ore: closure scenario Z v2.8.0 → P2-P5 deploy GitHub Pages → hotfix v2.8.1 routing → smoke test live → riapertura UX-extended ratificata v2.8.2-rc.1). Round 2 pivot strategico post-evidence: smoke test su PWA live ha rilevato 2 bug residui (sticky calibration top-[149px] regressione, icone manifest 404) + 1 problema strutturale (UX non-ready per utenti novizi: farmaci di Roberto preconfigurati confondono, dosi giorno-precedente apparenti come "in ritardo" senza contesto, niente onboarding). Disambiguazione 4 round Q&A: Bug 2 dosi-ieri = feature pianificazione rolling window per Roberto vs bug semantico per nuovi utenti; data_inizio_terapia da sola NON risolve UX problem; onboarding modale e' la soluzione corretta. Closure Z riconosciuta prematura rispetto intent UX originale ("fin dall'inizio progetto privilegiare UX"). Strada B ratificata: riapertura formale UX-extended target v3.0.0 milestone "PharmaTimer UX-ready for novices". Scope frozen lista chiusa 14 punti par.22.40 decisione 3 (OnboardingModal 2-step, gating logic, empty state guidante OggiView, empty state Mit-A "prossima dose [DATA]", toast Mit-C post-aggiunta, seed neutro depersonalizzato 3 farmaci esempio, seed opt-in, data_inizio campo form FarmaciTab default domani Q-S6=a, data_inizio_terapia auto-calc planBuilder Q-S5=2, reset bottone Avanzate, sticky calibration useLayoutEffect+ResizeObserver, icone manifest 404 fix, test +15-20, guida HTML esterna). Sub-AMB Q-S1÷Q-S7 ratificate: Q-S1=a un dispositivo per persona, Q-S2=c seed neutro depersonalizzato opt-in, Q-S3=guida HTML invece di tutorial in-app, Q-S4=DB pulito da capo (Roberto compreso), Q-S5=2 auto-calc, Q-S6=a domani default, Q-S7=OK perdita DB attuale (test only). Bumping 2.8.1 → v2.8.2-rc.1 (analisi-first ratificata, no impl ancora). Sessione successiva: prompt par.11.E "Sessione 1 analisi-first v3.0.0 UX onboarding multi-utente" eseguibile in nuova sessione fresca (one-liner: Esegui il prompt al par.11.E del Changelog). Atteso 90-150 min wall-clock + 8-15K token, output AMB UX-1÷N + scope CP Sessione 2 + prompt par.11.F. Stima totale v3.0.0 cumulativa 8-15 ore lavoro distribuibili 1-3 sessioni dedicate. Backward-history demote v2.8.1 description sotto. Sessione 1 partial v3.0.0 (4 maggio 2026 sera tardi, prosieguo cumulativo): Q-UX.1-7 ratificate (onboarding modale layout+copy 2-step, empty states OggiView 0-farmaci + Mit-A preview, toast Mit-C post-aggiunta, seed neutro 3 farmaci esempio, reset bottone Avanzate Ricomincia-da-capo). AMB-UX-frequencyModel emersa (intervallo > 24h non garantito by design, audit Mac-side demandato sub-sessione, vedi par.11.E-bis). Q-UX.8-12 deferite a Sessione 1 chiusura, vedi par.11.E-ter. v2.8.2-rc.1 invariato. Stato post-sessione par.22.41. Sub-sessione audit frequencyModel (5 maggio 2026 mattina, dedicata): AUDIT.1-5 chiuse su file source Mac-side, opt B' modulare branch isolato ratificata (rivista da schema A/B/C originale §22.41), AMB EXT.1-5 chiuse blanket decidi tu, modello UI giorni+ore proposto da Roberto turno 5 (sostituisce EXT.3 originale, persistenza intervallo_ore singola, range illimitato), Q-UX.13 nuovo empty state off-day extended in scope v3.0.0 (scope frozen 14->16 punti). Stima Sessione 2 esecutiva +120 LOC +13 test wall-clock 2-3h. v2.8.2-rc.1 -> v2.8.2-rc.2. Stato post-sessione par.22.42. Sessione 1 chiusura analisi-first par.11.E-ter (5 maggio 2026): Q-UX.8/9/13 ratificati turno 1 (sticky calibration useStickyOffset hook + ResizeObserver + CSS var, manifest icone audit empirico CP0 Step 2, off-day extended copy con singola occorrenza imminente), Q-UX.10/11 turno 2 (migration no-wipe Dexie schema upgrade + onboarding gating onboarding_completed, target test 459-466 atteso 462), Q-UX.12 turno 3 (guida HTML public/guide.html 6 sezioni italiano + screenshot deferred v3.0.1) + closing finale. Sub-AMB nuove ratificate: 10.b card seed disabled su DB popolato, 11.b audit CP0 grep test esistenti, 11.e CP browser checklist 8-10 punti pre-defined, 13.d generalizzazione selector selectProssimaDoseFuoriPlan caso misto. Lista impl v3.0.0 congelata 18 punti. Scope CP Sessione 2 split v3.0.0 Step 1 + Step 2 pre-frozen nominativa esplicita. Bump v2.8.2-rc.2 -> v3.0.0-rc.1 (rc del nuovo major, pattern semver standard). Sessione successiva: prompt par.11.F per Sessione 2 Step 1 esecutiva. package.json invariato 2.8.1 (AMB-11.B.7). Stato post-sessione par.22.43. Sessione 2 v3.0.0 Step 1 esecutiva (5 maggio 2026 sera): CP1-CP6 chiusi, branch step-9-v3-step-1 → main fast-forward, tag annotato v3.0.0-alpha.1, 430 → 452 test (+22, target +20 par.11.F centrato), 18 deviazioni par.6.164-181. Stato post par.22.44. Sessione 2 v3.0.0 Step 2 esecutiva parziale (5 maggio 2026 sera tardi): CP7-CP10 chiusi, CP11-CP12 deferiti a Sessione 3, branch step-9-v3-step-2 (NON merged main), 452 → 464 test (+12, target +15 par.11.G), 8 deviazioni par.6.182-189 (incl. par.6.189 lesson learned file rewrite vs surgical edit). Stato post par.22.45. Sessione 3 v3.0.0 Step 2 esecutiva resume CP11 (6 maggio 2026 pomeriggio): CP11 chiuso (Q-UX.8 useStickyOffset callback ref pattern + Q-UX.9 buildPwaManifest single source of truth /pharmatimer/ prefix), 464 → 466 test (+2 esatto, target par.11.H centrato), 2 deviazioni par.6.190-191. CP12+closing Step 2 deferiti a Sessione 4 per applicazione regola 5 (qualità sessione + scope diverso CP12 = guida HTML + spec update + browser checklist 8-10 punti). Bump v3.0.0-rc.1 → v3.0.0-rc.1.1 (analisi-first finalizzata + 2 CP esecutivi su 4, no bump major perché Step 2 non chiuso). Stato post par.22.46.) Sessione 4 v3.0.0 Step 2 esecutiva resume CP12 + closing abortito (6 maggio 2026 pomeriggio): CP12 chiuso (guide.html + SezioneAiuto + spec par.3.1 + seed invariant test, par.6.192-195, +1 test 466 -> 467), CP closing abortito post-CP12 in fase browser checklist P1 onboarding nuovo utente DB vuoto -> bug critico cold-boot NO_ACTIVE_PROFILE bloccante (actions.js init lancia su DB-vuoto, OnboardingGate non apre per status='error'). Bump 3.0.0-rc.2 + sync SezioneInfo rollbackati. Top 49aee64 preservato. Stato post par.22.47. Sessione 5 v3.0.0 Step 2 fix cold-boot DB-vuoto + closing rc.2 (7 maggio 2026 sera): analisi-first Q1-Q5 ratificate (Q1=b Dexie populate + v3 defensive upgrade, Q2 N/A, Q3 blast radius zero, Q4 +3 test, Q5 target 470). CP_fix par.6.196 (db.js +85 LOC commenti+code, on populate hook + version 3 upgrade defensive + DEFAULT_PROFILO_STANDARD const). CP_test par.6.197 (db.populate.test.js NEW 186 LOC, 3 test hermetic fake-indexeddb). CP_browser parziale (P1+P2+P3 verdi Safari + Chrome incognito, P4-P10 deferred smoke 24-48h, P8 manifest live deferred Fase 2 deploy). CP_closing par.6.200 (bump rc.2 + sync 3 occorrenze 2.8.0 ImpostazioniTab.jsx). Commit cumulativo 80e1b62. Tag annotato v3.0.0-rc.2. 467 -> 470 test (+3, target rivisto Q4 da +2 a +3 per coverage upgrade non-empty no-duplication critico). 5 deviazioni par.6.196-200 (par.6.198/199 placeholder non utilizzati, gap progressivo accettato). 2 finding minori non bloccanti (profilo_utente.demo:0 post-flow demo bug pre-esistente par.6.173/175, race UI-first-mount post-onboarding-demo). Step 2 v3.0.0 chiuso completo. Stato post par.22.48. Operazioni residue (merge main ff + push origin + redeploy gh-pages + KB upload Spec+Changelog) deferite a discrezione utente. Sessione 6 v3.0.0 smoke check post-rc.2 (8 maggio 2026 sera): smoke parziale 5/10 punti completati (P9 guida + P7 sticky + P6 custom_minimo + P4 gap-recovery-extended + branch extended reale tutti verdi), F1 reproducibility check ha rivelato bug critico double-profile-attivo (2 record profilo_utente attivo=1 simultaneamente: id=1 demo:0 da populate par.6.196 + id=2 demo:1 da bulkPut seed.js auto-increment), violazione invariante spec par.3.4 implicita 1-attivo, root cause bulkPut con id-implicit non-overwrite, finding 1 par.22.48 originariamente classificato trascurabile PROMOSSO bug bloccante tag v3.0.0 final. F2/P10/P5/PWA install deferred a ri-smoke post-fix. Path Q1=A ratificato (chiusura sessione 6 + apertura sessione 7 analisi-first dedicata fix). Deviazione singola par.6.201 alloca scoperta empirica + 9 findings UX/doc non-bloccanti accumulati (UX-N1 ingranaggio piccolo, drift-doc-N2/N4/N5, UX-N3 doppia affordance guida, discovery-N6 dosi-1-forced extended, discovery-N7 data_inizio default domani, UX-N8 Salva disabled senza hint, UX-N9 dose-settimanale override label pasto). package.json invariato 3.0.0-rc.2 (no bump in sessione 6). Stato post par.22.49. Sessione successiva: par.11.M Sessione 7 analisi-first fix double-profile, one-liner Esegui il prompt al par.11.M del Changelog. Sessione 7 v3.0.0 analisi-first fix double-profile (9 maggio 2026): modalità A pure (analisi-first only, no CP esecutivi inline). CP0 audit empirico via cat output 5 file source Mac-side (seed.js + db.js + actions.js completeOnboarding + selectors.js selectProfiloAttivo + db.populate.test.js). Root cause par.6.201 confermata empiricamente: seed.js riga 35 PROFILI id-implicit + db.js DEFAULT_PROFILO_STANDARD id-implicit → cold-boot populate inserisce id=1 demo:0 + flow demo bulkPut crea id=2 demo:1 (no PK match → INSERT non UPDATE). Finding 1 par.22.48 spiegato come stessa entità del bug double-profile (manifestazione visibile demo:0 invariato = primo record id=1 osservato). Q1-Q5 ratificate blanket "decidi tu" (Q1=a id:1 esplicito, Q2=a v4 detect-and-merge tie-break demo:1 > id ASC, Q3=+5 test target 475, Q4=Q4.1+Q4.2+Q4.3 obbligatori smoke ri-eseguito, Q5=rc.3 → smoke verde → v3.0.0 final). AMB-7.A÷D ratificate (nuovo branch step-9-v3-fix-double-profile, split 5 CP, revert+re-analisi se regression, solo invariante DB no defensive selector). Mini-analisi semantica pre-scope su S1 (utente nuovo cold-boot+demo) + S2 (utente esistente DB-doppio post-deploy) confermata: fix idempotente + sana retroattivamente. Scope CP Sessione 8 pre-frozen (CP1_fix par.6.202 +1 LOC seed.js + CP2_migration par.6.203 +30 LOC db.js v4 + CP3_test par.6.204 +180 LOC +5 test + CP4_browser verifica empirica + CP5_closing par.6.205 bump+tag). Allocazione par.6.202-205 nominativa esplicita, par.6.198/199 placeholder gap preservati. Sessione 8 esecutiva stima 90-150 min ~25-40K token, output 475/475 test + tag annotato v3.0.0-rc.3 + eventualmente v3.0.0 final inline. Zero righe codice scritte Sessione 7 (regola critica #1 rispettata). package.json invariato 3.0.0-rc.2 (no bump in sessione analisi-first). Stato post par.22.50. Sessione successiva: par.11.N Sessione 8 esecutiva fix double-profile, one-liner Esegui il prompt al par.11.N del Changelog. Sessione 8 v3.0.0 esecutiva fix double-profile (10 maggio 2026 sera): CP0 verde 5/5 + branch step-9-v3-fix-double-profile + CP1_fix par.6.202 (seed.js +1 LOC id:1 esplicito) + CP2_migration par.6.203 (db.js DB_VERSION 3->4 + block detect-and-merge tie-break demo:1 > id ASC) + CP3_test par.6.204 (db.populate.test.js +2 con rename openDbV3->openDbV4 + db.migration.v4.test.js NEW 248 LOC +3 test, 470 -> 475 target par.22.50 centrato) + CP4_browser ri-verifica empirica DB Roberto sanato (Q4.1 rendering deterministico 3 reload identici verde, Q4.2 P10 reset+ri-onboarding-demo verde DOPO scoperta empirica anomalia residua par.6.205, Q4.3 ri-smoke empty state Q-UX.13 path 'Aggiungo i miei farmaci' verde). Hot-fix par.6.205 NUOVO non pre-allocato par.22.50 (scoperta empirica CP4 Q4.2 rosso pre-fix): resetAllData (par.6.180) inseriva Standard id-implicit dopo db.profilo_utente.clear(), ma Dexie clear() NON resetta auto-increment counter IDB -> post-cycle reset id puo essere >1 -> bulkPut id:1 esplicito (par.6.202) faceva INSERT invece REPLACE -> double-profile bug par.6.201 ricreato via path 'reset+ri-onboarding-demo'. Fix CP1bis_fix actions.js riga 1019 con id:1 esplicito + commento inline par.6.205 (allinea convention par.6.196 'Standard e id=1 by-design' anche post-reset). Difetto analisi Sessione 7: focus su path 'cold-boot+demo' senza considerare 'reset+demo'. Re-build + ri-verifica empirica Q4.2 verde definitivo (1 record id=1 demo=1 attivo=1). 4 findings deferred Fase 2 polish: par.6.205 risolto in atto, UX-N10 scroll-on-mount top-of-list invece now-anchor (rendering Oggi multi-day Sabato 9 maggio in cima invece domenica 10 imminente), UX-N11 empty state oggi visualizzato anche con piano demo per domani par.6.174 popolato (UX confondente, suggerimento risoluzione: nascondere empty state se farmaci attivi data_inizio futura o mostrare hint 'Vedi piano per domani'), drift-doc-N12 prompt par.11.N copy 'Configura tu i tuoi farmaci' divergente da UI reale 'Aggiungo i miei farmaci' (markup-only). 5 deviazioni par.6.202-205 emesse (par.6.205 NUOVA non pre-allocata par.22.50). Test 470 -> 475 (+5 esatti, target Q3 centrato). Bump 3.0.0-rc.2 -> 3.0.0-rc.3 + sync ImpostazioniTab.jsx 3 occorrenze (par.6.200 pattern). Cleanup 10 file lavoro (4 patcher CP + 4 backup .bak.pre-cpN + 2 backup Changelog .bak-pre-sessN). Commit cumulativo + tag annotato v3.0.0-rc.3. Q4.4 PWA install on-device deferred Sessione 9 deploy (richiede dispositivi reali). Tag v3.0.0 final NON inline (Q4.4 manca + freschezza sessione bassa post-CP4 multi-step), deferred Sessione 9 par.11.O. Branch step-9-v3-fix-double-profile resta locale, NO push, NO merge main. Stato post par.22.51. Sessione successiva: par.11.O Sessione 9 deploy follow-up + Q4.4 PWA install + eventuale tag v3.0.0 final, one-liner Esegui il prompt al par.11.O del Changelog. Sessione 9 v3.0.0 deploy follow-up + Q4.4 PWA install on-device + tag v3.0.0 final (13 maggio 2026): CP0 baseline verde 7/7 (branch step-9-v3-fix-double-profile, top ffbe408 tag v3.0.0-rc.3, 475/475 test, package 3.0.0-rc.3, remote pulito), CP1+CP2 push origin branch+tag rc.3 + merge ff main + push main (main 80e1b62 -> ffbe408, history lineare), CP3 build+deploy gh-pages rc.3 (orphan init + force push, gh-pages 9ea59c66 -> b25790c, propagazione 200 + versione embedded confermati), Q4.4 verde 2/3 device cross-engine (Chromium Chrome Mac normale update path rc.2->rc.3 verde DB 1 record id=2 da migration v3->v4 tie-break demo:1; Chromium Chrome Mac incognito cold-boot puro verde DB 1 record id=1 esplicito par.6.202 conferma empirica; WebKit Safari iOS verde DB 1 record id=1 via Web Inspector remoto Mac<->iPhone USB), Android skippato per correlazione alta Chromium-Chromium + bandwidth allocata closing pulito. Finding 2 par.22.48 race UI-first-mount post-onboarding-demo riprodotto cross-engine (3 volte documentato: Sessione 5 + Sessione 9 Chromium + Sessione 9 WebKit), confermato preesistente non-regressione, workaround banale (reload). 3 findings nuovi non bloccanti iOS-specifici: iOS-N1 Safari iOS isola storage IndexedDB tra browser tab e PWA standalone Aggiungi a Home (comportamento Apple WebKit atteso documentato), iOS-N2 Service Worker /pharmatimer persiste in Safari iOS anche dopo rimozione PWA standalone da Home (no cleanup automatico), UX-N14 sticky-header sezioni form Farmaci non sticky in PWA standalone iOS (cross-browser-engine). Pattern operativo lesson learned trasversale: zsh variabile speciale 'path' tied to $PATH, mai usarla come var loop nei blocchi bash (corrompe PATH per la sessione, recovery export PATH manuale). CP5 bump rc.3 -> 3.0.0 final + sync ImpostazioniTab.jsx 3 occorrenze (pattern par.6.200/205, 475/475 test verdi post-bump, no test asserisce versione hardcoded) + commit cumulativo 6b10169 'v3.0.0 final - UX-ready for novices, extended frequency, profilo_utente invariant guaranteed' + tag annotato v3.0.0 (sha 4e957e9 -> commit 6b10169) + push origin main+tag. CP6 re-build + redeploy gh-pages bundle v3.0.0 final (bundle re-hashed index-HjYCAz99.js a causa di ImpostazioniTab.jsx modificato, gh-pages b25790c -> f638c8f, propagazione verde HTTP 200 + versione 3.0.0 puro live). iPhone soak naturale (Safari iOS rimane su bundle rc.3 cached, UpdatePrompt par.6.157/158 scatterà spontaneamente nei prossimi 24-48h, no verifica live SezioneInfo richiesta dato curl gh-pages conferma 3.0.0 puro). CP7 closing par.22.52 + KB upload Spec + Changelog finali. Zero deviazioni par.6.NN emesse in Sessione 9 (deploy + smoke, no nuovo codice). Findings cumulativi Fase 2 polish: 15 (N1-N12 carry-forward par.22.51 + iOS-N1/iOS-N2/UX-N14 nuovi). Tag v3.0.0 final emesso, fase v3.0.0 chiusa completa, gh-pages live. Stato post par.22.52. v3.0.0 milestone raggiunta: "PharmaTimer UX-ready for novices, extended frequency, profilo_utente invariant guaranteed". Sessione successiva: aperture opportunistiche su Fase 2 polish (15 findings registry) oppure Step 9-B Wave B notifiche foreground setTimeout (scope frozen 5-CP AMB-9.E'-I'), tipicamente con one-liner dedicato al delivery target. Sessione 10 v3.0.1-rc.1 analisi-first UX-N10+N11 cluster rendering Oggi (13 maggio 2026): modalita A pure (analisi-first only, no CP esecutivi inline). Branching-decisione su registry 15 findings deferred Fase 2 polish: scelto cluster UX medio UX-N10 (scroll-to-now-anchor) + UX-N11 (hint piano futuro empty state) come scope minimo benefit-utente immediato post-milestone v3.0.0. Q1-Q11 ratificate blanket 'decidi tu' su default raccomandati, 11 AMB-10.A-K consolidate. Sub-AMB-NEW 10.L emersa in chiusura ratifica (definizione anchor priority via getCardState runtime invece entry.stato raw, pattern par.6.118 pre-code scenario validation reminder + par.22.42 sub-AMB emergenti in cluster). CP scope Sessione 11 esecutiva pre-frozen 6 CP (CP0 baseline+dump getCardState semantica, CP1 par.6.206 selectAnchorEntry + selectFarmaciConDataInizioFutura selectors puri, CP2 OggiView scroll wiring useEffect mount/ready/rollover + scrollIntoView + scrollBy --sticky-offset compensazione, CP3 par.6.207 sub-branch hint piano futuro NoDosesEmptyState inline, CP4 CP browser empirico Roberto 4-6 scenari, CP5 closing bump 3.0.0 -> 3.0.1-rc.1 + sync ImpostazioniTab + tag annotato v3.0.1-rc.1 no push). 2 deviazioni par.6.NN pre-allocate (par.6.206 UX-N10, par.6.207 UX-N11), numerazione progressiva da par.6.205, gap par.6.198/199 placeholder preservati principio par.6.71/85. Delta test target +9-13 -> 484-488 dentro bound espansivo. Branch step-10-ux-n10-n11-rendering-oggi da main@4b21062 da creare CP0 S11. AMB-11.B.7 ratifica: package.json invariato 3.0.0 in v3.0.1-rc.1 changelog (analisi-first non bumpa package, bump effettivo in CP5 S11). Risk notes: dump empirico utils/uiState.js getCardState deferred CP0 S11 (lesson par.6.118 pre-code scenario validation obbligatoria, no trust letterale analisi Sessione 10), possibile sovrapposizione semantica selectProssimaDoseFuoriPlan par.6.188 vs nuovo selectFarmaciConDataInizioFutura da verificare CP1, par.6.119 cross-midnight visual non tocca scope ma interazione con todayEntries filter da nota, scroll trigger rollover mezzanotte interrompe scroll manuale accettabile caso raro. Zero deviazioni par.6.NN emesse Sessione 10 (analisi-first pura, regola critica #1 rispettata). 15 findings registry par.22.52 invariati carry-forward (N1-N12 + iOS-N1/iOS-N2/UX-N14), 2 sub-allocati a Sessione 11 esecutiva (N10/N11). Drift-doc-NEW segnalato ma NON corretto retroattivamente (principio par.6.71/85): par.22.52 cita 'AMB-9.E'-I' par.22.41 carry-forward' per Step 9-B Wave B notifiche ma riferimento corretto e par.22.20-par.22.30 cluster Step 9-B impl, inoltre Step 9-B Wave B gia completato in 9-B/9-C/9-D v2.5.40 quindi carry-forward obsoleto. package.json invariato 3.0.0 (no bump in sessione analisi-first). Top commit main 4b21062 invariato (closing doc-only commit post-par.22.53+par.11.P emesso da questa sessione aggiornera). Stato post par.22.53. Sessione successiva: par.11.P Sessione 11 esecutiva UX-N10+N11 cluster rendering Oggi, one-liner 'Esegui il prompt al par.11.P del Changelog'.
 
 **Changelog versione 2.8.1 (rispetto alla 2.8.0):** Hotfix v2.8.1 BrowserRouter basename per GitHub Pages subpath. Bug emerso in P5 smoke test: hard refresh (Cmd+Shift+R) o accesso diretto a URL `https://timegates-code.github.io/pharmatimer/oggi` produceva 404 GitHub Pages. Diagnosi: Vite buildava asset con base /pharmatimer/ correttamente ma React Router usava BrowserRouter standard senza basename, navigando client-side a /oggi (path assoluto root-relative) invece di /pharmatimer/oggi. Discrepanza dev/prod: in dev (base default /) BrowserRouter senza basename funzionava, bug si manifestava solo dopo deploy a subpath. Fix: vite.config.js base /pharmatimer/ permanente (eviti rischio future build senza flag CLI), src/main.jsx aggiunto basename={import.meta.env.BASE_URL} a BrowserRouter. Test impact 430/430 invariato. Bug deploy-only, scoperto post-deploy quindi hotfix branch-less su main legittimo (scope minimal 2 file 2 righe). Bump package.json 2.8.0 → 2.8.1 + tag annotato v2.8.1 + push origin main + redeploy gh-pages forzato. Cache SW v2.8.0 stale ha richiesto Clear site data DevTools per propagazione fix. par.6.163 deviation + par.22.39 closure hotfix.
 
@@ -12129,5 +12129,385 @@ Versione changelog: v3.0.0-rc.3 → **v3.0.0**. Riga "Ultima modifica" estesa cu
 **Milestone v3.0.0 raggiunta:** "PharmaTimer UX-ready for novices, extended frequency, profilo_utente invariant guaranteed".
 
 **Sessione successiva:** apertura opportunistica su Fase 2 polish (registry 15 findings N1-N12 + iOS-N1/iOS-N2/UX-N14) oppure Step 9-B Wave B notifiche foreground setTimeout (scope frozen 5-CP AMB-9.E'-I' §22.41 carry-forward). One-liner one-shot tipicamente dedicato al delivery target specifico (no §11.P prompt analisi-first generico).
+
+---
+
+### 11.P Prompt Sessione 11 esecutiva — UX-N10 + UX-N11 cluster rendering Oggi (CP0 audit empirico getCardState + CP1 selectors + CP2 OggiView scroll wiring + CP3 hint piano futuro + CP4 CP browser + CP5 closing)
+
+**One-liner apertura:** `Esegui il prompt al §11.P del Changelog.`
+
+**Modalità:** Sessione 11 **esecutiva** secondo scope CP pre-frozen §22.53 (AMB-10.A÷L Sessione 10). Pattern §11.J/§11.M/§11.N replicato (analisi-first dedicata Sessione 10 → esecuzione Sessione 11 a scope fissato + lesson §6.118 pre-code scenario validation obbligatoria su getCardState semantica runtime). Token spesi attesi 30-50K (CP0 dump + 3 patcher idempotenti + verifica empirica CP4 + closing). Wall-clock atteso 2-4 ore distribuiti su 1-2 giornate.
+
+#### Pre-letture obbligatorie (Claude in apertura Sessione 11)
+
+1. **§22.53** integrale (questa sezione + AMB-10.A÷L tabella ratifiche + CP scope frozen + §6.206/§6.207 pre-allocate + risk notes)
+2. **§22.52** integrale (stato post-Sessione 9 baseline, milestone v3.0.0 raggiunta, 15 findings registry deferred Fase 2 polish)
+3. **§22.51** integrale (pattern §6.205 hot-fix scoperta empirica, §6.118 pre-code scenario validation lesson, cleanup pattern post-CP)
+4. **§6.118** + **§22.42** + **§22.46** (lesson learned cumulative: pre-code scenario validation, sub-AMB emergenti in cluster, callback ref vs useRef+useEffect dep=[] pattern §6.107)
+5. **`pharmatimer_oggi_v5.jsx`** mockup di riferimento sezione rendering Oggi (verifica scope intent visivo)
+
+#### CP0 obbligatorio Mac-side + Claude-side prima di procedere
+
+**Mac-side (Roberto):**
+
+```bash
+cd ~/Sviluppo/pharmatimer
+echo '=== CP0 baseline Sessione 11 esecutiva UX-N10+N11 ==='
+git status -sb
+git --no-pager log -1 --oneline --decorate
+git --no-pager tag --sort=-creatordate | head -3
+node -p "require('./package.json').version"
+npx vitest run 2>&1 | tail -10
+echo '=== CP0 dump utils/uiState.js per ratifica empirica AMB-10.L ==='
+wc -l src/utils/uiState.js
+echo '----- BEGIN uiState.js -----'
+cat src/utils/uiState.js
+echo '----- END uiState.js -----'
+echo '=== CP0 dump selectors.js sezioni rilevanti ==='
+grep -n 'export function select' src/state/selectors.js
+echo '=== CP0 completato ==='
+```
+
+**Atteso baseline (precondizione lock):**
+
+- branch `main` allineato `origin/main`, top commit doc-only post-§22.53 closing
+- tag latest `v3.0.0` invariato
+- `package.json` `3.0.0`
+- 475/475 test verdi su 55 test files
+- working tree clean
+- dump `utils/uiState.js` ricevuto integralmente (LOC tipicamente ~200-400)
+- grep `selectors.js` mostra `selectProssimaDoseFuoriPlan` + `selectFarmaciAttivi` + `selectDataInizioTerapia` esistenti
+
+**Claude in apertura Sessione 11:**
+
+1. Legge `utils/uiState.js` `getCardState()` body integrale
+2. Valida AMB-10.L empiricamente: estrae mappatura stato persistito DB → stato UI runtime (`attesa`/`presa`/`saltata`/`sospesa`/`in_ritardo`?), conferma se `in_ritardo` è derivato runtime da `pending + effHHMM < now` oppure stato distinto
+3. Se AMB-10.L semantica corretta: procedi CP1
+4. Se AMB-10.L semantica errata o ambigua: **STOP**, riporta evidenza, ratifica refinement con Roberto via Q-NEW prima di CP1
+
+**Branch creation (post-CP0 verde):**
+
+```bash
+git checkout -b step-10-ux-n10-n11-rendering-oggi main
+echo 'Branch creato per scope §6.206+§6.207'
+```
+
+#### CP1 — Selettori nuovi `selectAnchorEntry` + `selectFarmaciConDataInizioFutura` (§6.206 + §6.207 parte)
+
+**File toccati:** `src/state/selectors.js` (+~80 LOC), `src/state/selectors.anchor.test.js` NEW (+~120 LOC ~5 test), `src/state/selectors.farmaciFuturi.test.js` NEW (+~80 LOC ~3 test).
+
+**Implementazione `selectAnchorEntry(state, now, today)` (AMB-10.A + 10.C + 10.L):**
+
+```js
+/**
+ * §6.206 — Anchor entry per scroll iniziale OggiView.
+ * Priority via getCardState runtime (AMB-10.L):
+ *   1. pending con effHHMM < now.hhmm → max (la più recente "in ritardo")
+ *   2. pending con effHHMM >= now.hhmm → min (prossima futura)
+ *   3. null → caller scroll-to-top fallback (AMB-10.C)
+ *
+ * "pending" = entry oggi con stato 'attesa' (definizione canonica getCardState).
+ * NOTA: usa effHHMM via entryHHMM helper inline (parseIsoDateTime se ora_ricalcolata
+ * ISO, altrimenti ora_prevista HH:MM) per coerenza §6.116b.
+ */
+export function selectAnchorEntry(state, now, today) {
+  // Implementation TBD CP1 esecutiva
+}
+```
+
+**Implementazione `selectFarmaciConDataInizioFutura(state, today)` (AMB-10.G + 10.I):**
+
+```js
+/**
+ * §6.207 — Farmaci attivi con data_inizio > today, ordinati per data crescente
+ * poi per nome. Consumer: NoDosesEmptyState hint piano futuro quando
+ * selectDataInizioTerapia(state) > today (caso edge piano interamente futuro).
+ *
+ * Returns: Array<{farmaco, data_inizio}> (raggruppato per data se 2+ farmaci stessa data).
+ * Empty array se nessun farmaco attivo con data_inizio futura.
+ */
+export function selectFarmaciConDataInizioFutura(state, today) {
+  // Implementation TBD CP1 esecutiva
+}
+```
+
+**Test coverage attesa:**
+
+- `selectAnchorEntry`:
+  - giornata fresca (mattina) → prima pending futura (priority 2)
+  - metà giornata con 1 dose "in ritardo" + 2 pending future → quella "in ritardo" (priority 1, max effHHMM < now)
+  - 2 dosi "in ritardo" + 1 futura → la più recente delle 2 (priority 1 max)
+  - tutte presi/saltati → null (priority 3)
+  - plan vuoto oggi → null (priority 3)
+
+- `selectFarmaciConDataInizioFutura`:
+  - nessun farmaco attivo → []
+  - 1 farmaco attivo data_inizio futura → [{farmaco, data_inizio}]
+  - 2 farmaci stessa data futura → 2 entries data uguale, ordinati nome
+  - 1 farmaco data_inizio passata → []
+
+**Δ test attesi:** +8 → 483/483.
+
+#### CP2 — OggiView scroll wiring (§6.206 parte UI)
+
+**File toccati:** `src/components/oggi/OggiView.jsx` (+~30 LOC commenti+code), `src/components/oggi/OggiView.test.jsx` (+~50 LOC +2÷3 test).
+
+**Implementazione:**
+
+```jsx
+// §6.206 — scroll-to-anchor su mount + ready transition + rollover today change.
+// AMB-10.B: trigger su [state.status, today]; AMB-10.D: behavior 'auto' instant
+// (mobile-first, no jank); AMB-10.E: compose scrollIntoView + scrollBy --sticky-offset.
+useEffect(() => {
+  if (state.status !== 'ready') return;
+  const anchor = selectAnchorEntry(state, now, today);
+  if (!anchor) {
+    // AMB-10.C fallback: scroll-to-top
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    return;
+  }
+  // Defer 1 frame post-render per garantire DoseCard mounted
+  requestAnimationFrame(() => {
+    const el = document.querySelector(`[data-entry-key="${anchor.key}"]`);
+    if (!el) return;
+    el.scrollIntoView({ block: 'start', behavior: 'auto' });
+    // Compensazione sticky offset (AMB-10.E)
+    const stickyOffset = parseInt(
+      getComputedStyle(containerRef.current ?? document.body)
+        .getPropertyValue('--sticky-offset') || '149',
+      10
+    );
+    window.scrollBy(0, -(stickyOffset + 8)); // 8px padding visivo
+  });
+}, [state.status, today]);
+```
+
+**Pattern test jsdom (AMB-10.J):**
+
+```jsx
+// Mock Element.prototype.scrollIntoView (jsdom no-op default)
+beforeEach(() => {
+  Element.prototype.scrollIntoView = vi.fn();
+  window.scrollTo = vi.fn();
+  window.scrollBy = vi.fn();
+});
+
+it('scroll to anchor entry on mount when ready', async () => {
+  // Setup: plan con 1 dose preset 08:00 + 1 pending 12:00 + now=10:00
+  // Atteso: scrollIntoView chiamato su [data-entry-key="...12:00..."]
+});
+```
+
+**Δ test attesi:** +2÷3 → 485÷486/485÷486.
+
+#### CP3 — Sub-branch hint piano futuro in `NoDosesEmptyState` (§6.207 parte UI)
+
+**File toccati:** `src/components/oggi/OggiView.jsx` (+~25 LOC, modifica `NoDosesEmptyState` inline), `src/components/oggi/OggiView.test.jsx` (+~40 LOC +2÷3 test).
+
+**Implementazione (modifica `NoDosesEmptyState`):**
+
+```jsx
+function NoDosesEmptyState({ state, today, theme: t }) {
+  const prossima = selectProssimaDoseFuoriPlan(state, today);
+  if (prossima) {
+    // branch esistente (CP10 §6.188) invariato
+    return (...);
+  }
+  // §6.207 NEW sub-branch: hint piano futuro se data_inizio_terapia > today
+  const dataInizioTerapia = selectDataInizioTerapia(state);
+  if (dataInizioTerapia && dataInizioTerapia > today) {
+    const farmaciFuturi = selectFarmaciConDataInizioFutura(state, today);
+    const earliestDate = farmaciFuturi[0]?.data_inizio;
+    if (earliestDate) {
+      return (
+        <div className="text-center mt-8 px-4" data-testid="empty-state-piano-futuro">
+          <p className="text-base mb-3" style={{ color: t.textSecondary }}>
+            📅 Piano disponibile dal {formatDateLabel(earliestDate, today)}
+          </p>
+          <ul className="text-sm" style={{ color: t.textPrimary }}>
+            {farmaciFuturi
+              .filter((f) => f.data_inizio === earliestDate)
+              .map((f) => (
+                <li key={f.farmaco.id}>{f.farmaco.nome}</li>
+              ))}
+          </ul>
+        </div>
+      );
+    }
+  }
+  // fallback generico esistente
+  return (
+    <p className="text-center text-sm mt-8" style={{ color: t.textSecondary }}>
+      Nessuna dose programmata.
+    </p>
+  );
+}
+```
+
+**Test coverage:**
+
+- empty state piano futuro render quando `selectDataInizioTerapia > today` + farmaco con data_inizio earliest matching
+- fallback generico quando no farmaci data_inizio futura
+- branch esistente `selectProssimaDoseFuoriPlan` preserved (regression test)
+
+**Δ test attesi:** +2÷3 → 487÷489/487÷489.
+
+#### CP4 — CP browser empirico Roberto
+
+**Pattern §22.51 CP4 / §22.52 Q4.x:** verifica visiva runtime Mac dev server `npm run dev` su 4-6 scenari concreti.
+
+**Scenari attesi:**
+
+| Q | Scenario | Atteso |
+|---|---|---|
+| **Q4.1** | Giornata fresca 08:00, prima dose 07:30 attesa (in ritardo) | Scroll a card 07:30 visibile sotto sticky header |
+| **Q4.2** | Metà giornata 14:00, 4 dosi: 07:30 presa, 12:00 in ritardo, 14:00 attesa, 20:00 attesa | Scroll a card 12:00 (priority 1 max, la più recente in ritardo) |
+| **Q4.3** | Fine giornata 23:00, tutte presi/saltati | Scroll-to-top (priority 3 null) |
+| **Q4.4** | Plan vuoto oggi, farmaco "Antibiotico" data_inizio = oggi+2gg | Empty state hint "📅 Piano disponibile dal mercoledì 15 maggio · Antibiotico" |
+| **Q4.5** | Rollover mezzanotte simulato via DEV slider 23:55 → 00:05 | Scroll riposizionato anchor del nuovo today |
+| **Q4.6 opt** | 2 farmaci stessa data_inizio futura | Empty state lista 2 nomi sotto data |
+
+**Caveats:**
+
+- Q4.5 richiede DEV slider o manipolazione `simulated_now` (riferimento §6.120 deferred)
+- Q4.4 richiede setup DB Roberto con farmaco custom data_inizio futura (Mac-side via `__pt.app.actions.addFarmaco({...})` console)
+
+#### CP5 — Closing
+
+**Operazioni atomiche:**
+
+1. **Bump `package.json`** 3.0.0 → 3.0.1-rc.1 (AMB-11.B.7: bump effettivo a closing esecutiva, NON in changelog analisi-first)
+2. **Sync `ImpostazioniTab.jsx`** SezioneInfo 3 occorrenze `3.0.0` → `3.0.1-rc.1` (pattern §6.200/§6.205, no test asserisce hardcoded)
+3. **Cleanup** file lavoro `*.bak.pre-cpN` + patcher transients
+4. **Changelog patcher Python**:
+   - Bump `**Versione:** 3.0.1-rc.1` → `**Versione:** 3.0.1-rc.1` (no-op se gia bumped da Sessione 10) o → `**Versione:** 3.0.1` (se Q4.1÷4.6 tutti verdi e Roberto sceglie tag final inline)
+   - Aggiunta §22.54 (stato post-Sessione 11 esecutiva) + §11.Q (prompt Sessione 12 se deploy follow-up necessario, oppure cleanup)
+   - Estensione "Ultima modifica" cumulativa pattern §22.51/§22.52/§22.53
+5. **Commit cumulativo** branch `step-10-ux-n10-n11-rendering-oggi`: messaggio `v3.0.1-rc.1 - UX-N10 scroll-to-now-anchor + UX-N11 hint piano futuro (closes §6.206/§6.207)`
+6. **Tag annotato** `v3.0.1-rc.1` (NO push origin fino smoke verde Q4.x; pattern AMB-11.B.7 §22.51)
+7. **Merge ff `main`** post-tag (history lineare); push origin main + tag deferred a successiva Sessione 12 deploy follow-up (pattern §22.52)
+8. **KB upload** Changelog aggiornato
+
+#### AMB-10.A÷L ratifiche carry-forward dalla Sessione 10 §22.53
+
+(Vedi §22.53 tabella consolidata per dettaglio decisione per AMB.)
+
+#### Numerazione deviazioni §6.NN attesa
+
+| ID | Wave | CP target | Scope |
+|---|---|---|---|
+| **§6.206** | UX-N10 | CP1+CP2 | `selectAnchorEntry` selector + OggiView scroll wiring init/ready/rollover + scrollBy compensazione `--sticky-offset` |
+| **§6.207** | UX-N11 | CP1+CP3 | `selectFarmaciConDataInizioFutura` selector + sub-branch hint piano futuro in `NoDosesEmptyState` inline |
+
+Numerazione progressiva da §6.205 (ultima Sessione 8). Gap §6.198/§6.199 placeholder preservati (principio §6.71/§6.85).
+
+**Allocazione §6.NN attesa Sessione 11:** 2 attese (§6.206 + §6.207). Eventuali fix emergenti CP4 browser allocati progressivamente da §6.208.
+
+#### Stato baseline atteso Sessione 11 esecutiva
+
+- branch `main`, top commit doc-only post-§22.53 closing
+- tag latest `v3.0.0` invariato
+- working tree clean
+- 475/475 test verdi
+- `package.json` `3.0.0`
+
+#### Modalità delivery file
+
+Patcher Python idempotente per Changelog §22.54 + bump `package.json` + sync `ImpostazioniTab.jsx` 3 occorrenze. Comandi git separati zsh-safe (single-quote, no `#` comments, no apostrofi italiani).
+
+#### Pre-existing follow-up ancora flagged (carry-forward §22.52)
+
+- §6.119 cross-midnight cards visual deferred (Sessione 9-A originalmente, mai ripreso)
+- §6.120 `actions.presa()` `simulated_now` DEV deferred (Sessione 9-A originalmente, mai ripreso)
+- 13 findings registry Fase 2 polish (UX-N1/N3/N7/N8/N9 + iOS-N1/iOS-N2/UX-N14 + drift-doc-N2/N4/N5/N12 + discovery-N6, scope futuro opportunistico)
+- Drift-doc segnalato §22.53 ma NON corretto retroattivamente: §22.52 cita "AMB-9.E'-I' §22.41 carry-forward" per Step 9-B Wave B notifiche, riferimento corretto è §22.20-§22.30, inoltre Step 9-B Wave B è già completato (v2.5.40)
+
+---
+
+
+### 22.53 Stato post-Sessione 10 v3.0.1-rc.1 analisi-first UX-N10+N11 cluster rendering Oggi (AMB-10.A÷L ratificate blanket "decidi tu", scope CP Sessione 11 esecutiva pre-frozen, modalita A pure analisi-first)
+
+**Modalità:** Sessione 10 **analisi-first pura** (modalità A, pattern §11.J/§11.M/§22.50). Q&A iterativa "decidi tu" su default raccomandati Q1÷Q11 → 11 AMB-10.A÷K consolidate + 1 sub-AMB-NEW 10.L emersa in chiusura ratifica (pattern §22.42 sub-AMB emergenti in cluster). Zero righe codice modificate. Token spesi ~25-30K (CP0 audit-light empirico OggiView.jsx + EmptyStateZeroFarmaci.jsx + selectors.js grep mirato → Q1÷Q11 default raccomandato esplicito → ratifica blanket + sub-AMB-NEW + CP scope table frozen + closing chiusura formale §22.53+§11.P+bump). Wall-clock ~1.5 ore wall-clock distribuiti pomeriggio 13 maggio 2026.
+
+#### Scope consegnato Sessione 10
+
+Sessione 10 aperta come prompt esplicito (post-§22.52, no §11.P pre-esistente: §22.52 dichiarava "no §11.P prompt analisi-first generico" ratificando aperture opportunistiche one-liner). Roberto ha richiesto: baseline `git log -1 + npx vitest run` + consolidamento registry 15 findings deferred via `project_knowledge_search §22.49+§22.51+§22.52` + proposta scope sessione. Claude ha consolidato registry tabella 15 findings (UX-N1÷N14 + drift-doc-N2/N4/N5/N12 + discovery-N6/N7 + iOS-N1/N2 + UX-N10/N11/N14) + drift-doc-NEW §22.52 segnalato + 4 opzioni scope (cluster doc-only XS, cluster UX medio M, target singolo M-L, decidi tu) con default raccomandato 🟢 UX-N10+N11 cluster rendering Oggi. Roberto ha ratificato default.
+
+CP0 audit-light empirico Mac-side: ls `src/components/oggi/`, dump integrale `OggiView.jsx` (690 LOC) + `EmptyStateZeroFarmaci.jsx` (44 LOC), grep mirato `selectors.js` (551 LOC) su `empty|future|prossimo|hasFarmaci|data_inizio`. Output ricevuto integralmente. Claude ha sintetizzato evidenza in 8 righe + costruito Q1÷Q11 raggruppati per cluster (A=UX-N10 scroll behavior 5Q, B=UX-N11 empty state visibility 4Q, C=cross-cutting test+versioning 2Q) con default raccomandato esplicito per ogni Q. Roberto ha ratificato blanket "decidi tu". Claude ha ratificato AMB-10.A÷K + segnalato sub-AMB-NEW 10.L emersa in chiusura (pattern §6.118 pre-code scenario validation + §22.42 sub-AMB cluster).
+
+#### AMB-10.A÷L ratificate (tabella consolidata)
+
+| AMB | Cluster | Q ref | Decisione |
+|---|---|---|---|
+| **10.A** | UX-N10 | Q1=d | `selectAnchorEntry` priority composita via `getCardState` runtime: 1° pending+effHHMM<now max, 2° pending+effHHMM>=now min, 3° null |
+| **10.B** | UX-N10 | Q2=c | Trigger scroll: mount + `status='ready'` transition + rollover mezzanotte (`today` change). NO route navigation (già coperto da mount). NO sticky tap (scope creep). |
+| **10.C** | UX-N10 | Q3=a | Fallback nessun anchor → scroll-to-top `window.scrollTo({top:0})` |
+| **10.D** | UX-N10 | Q4=a | Behavior `'auto'` instant (mobile-first, no jank cross-day) |
+| **10.E** | UX-N10 | Q5=b | Compose `scrollIntoView({block:'start'})` + `window.scrollBy(0, -stickyOffset-8)` via `getComputedStyle(--sticky-offset)` |
+| **10.F** | UX-N11 | Q6=b | Interpretazione finding §22.51: branch leaf `NoDosesEmptyState` fallback troppo generico → hint cumulativo data futura. Race UI-first-mount post-onboarding-demo = duplicate §22.48, fuori scope. |
+| **10.G** | UX-N11 | Q7=b | Trigger hint quando `selectDataInizioTerapia(state) > today` (riusa selector §6.179 esistente). Più semantico di `state.farmaci.some(...)`. |
+| **10.H** | UX-N11 | Q8=a | Sub-branch dentro `NoDosesEmptyState` inline (coerente pattern §6.188), no nuovo file |
+| **10.I** | UX-N11 | Q9=b | Copy "📅 Piano disponibile dal [data]" + lista nomi farmaci data earliest matching (no CTA, sobrio) |
+| **10.J** | Cross | Q10=b | Test strategy: unit selettori (4-5 + 2-3 test) + smoke component scroll jsdom mock `scrollIntoView` + render test hint. Stima +8÷12 test. |
+| **10.K** | Cross | Q11=a | §6.206 + §6.207, branch `step-10-ux-n10-n11-rendering-oggi` da `main@4b21062`, bump 3.0.0 → 3.0.1-rc.1 (Changelog Sessione 10 + `package.json` in CP5 Sessione 11 esecutiva), no push origin fino smoke verde |
+| **10.L** | NEW | — | Sub-AMB emersa chiusura ratifica: definizione anchor priority via `getCardState(entry, now)` runtime invece `entry.stato` raw. "in ritardo" = pending+effHHMM<now classificazione UI derivata, NON stato DB. CP0 Sessione 11 dump empirico `utils/uiState.js getCardState()` per ratifica empirica obbligatoria (lesson §6.118). |
+
+#### CP scope Sessione 11 esecutiva pre-frozen (6 CP)
+
+| CP | Tema | File toccati attesi | Δ test stima | Note |
+|---|---|---|---|---|
+| **CP0** | Baseline 5/5 gate + dump `utils/uiState.js getCardState` per ratifica empirica AMB-10.L | — | 0 | Pattern §22.51 CP0, +1 step nuovo (dump) |
+| **CP1 §6.206 parte selector + §6.207 parte selector** | `selectAnchorEntry` + `selectFarmaciConDataInizioFutura` in `selectors.js` + 2 test files NEW | `src/state/selectors.js` + 2 NEW | +5÷7 | Pure functions, no I/O, fake state object pattern |
+| **CP2 §6.206 parte UI** | OggiView scroll wiring `useEffect` mount/ready/rollover + `scrollIntoView` + `scrollBy` compensazione `--sticky-offset` | `src/components/oggi/OggiView.jsx` + `OggiView.test.jsx` | +2÷3 | jsdom mock `Element.prototype.scrollIntoView` + `window.scrollTo/scrollBy` |
+| **CP3 §6.207 parte UI** | Sub-branch hint piano futuro in `NoDosesEmptyState` inline | `src/components/oggi/OggiView.jsx` + `OggiView.test.jsx` | +2÷3 | Componente inline modifica, no nuovo file |
+| **CP4** | CP browser empirico Roberto: Q4.1÷Q4.6 (4-6 scenari concreti scroll + hint piano futuro) | — | 0 | Pattern §22.51 CP4 / §22.52 Q4.x |
+| **CP5** | Closing: bump 3.0.0 → 3.0.1-rc.1 (`package.json` + Changelog §22.54 + §11.Q + sync `ImpostazioniTab.jsx` 3 occ + cleanup + commit cumulativo + tag annotato `v3.0.1-rc.1` NO push) | `package.json`, `ImpostazioniTab.jsx`, Changelog | 0 | Pattern §22.51/§22.52 closing |
+
+**Δ test cumulativo target Sessione 11:** +9÷13 → **484÷488** (vs 475 baseline post-§22.52).
+
+#### Deviazioni §6.NN pre-allocate Sessione 11
+
+| ID | Wave | CP target | Scope |
+|---|---|---|---|
+| **§6.206** | UX-N10 | CP1+CP2 | `selectAnchorEntry` selector + OggiView scroll wiring init/ready/rollover + scrollBy compensazione `--sticky-offset` (AMB-10.A÷E + 10.L) |
+| **§6.207** | UX-N11 | CP1+CP3 | `selectFarmaciConDataInizioFutura` selector + sub-branch hint piano futuro in `NoDosesEmptyState` inline (AMB-10.F÷I) |
+
+Numerazione progressiva da §6.205 (ultima emessa Sessione 8). Gap §6.198/§6.199 placeholder preservati (principio §6.71/§6.85 immutabile).
+
+#### Deviazioni §6.NN emesse Sessione 10
+
+**Zero.** Sessione analisi-first pura, no codice modificato. §6.206/§6.207 sono pre-allocate ma scritte solo CP1+CP2+CP3 Sessione 11 esecutiva.
+
+#### Findings deferred Fase 2 polish
+
+15 findings registry §22.52 invariati carry-forward (UX-N1/N3/N7/N8/N9 + iOS-N1/iOS-N2/UX-N14 + drift-doc-N2/N4/N5/N12 + discovery-N6/N7 + UX-N10/N11). UX-N10 + UX-N11 sub-allocati a Sessione 11 esecutiva (§6.206 + §6.207). Rimanenti 13 findings residui scope futuro opportunistico.
+
+**Drift-doc-NEW segnalato §22.53 ma NON corretto retroattivamente** (principio §6.71/§6.85): §22.52 cita "AMB-9.E'-I' §22.41 carry-forward" per Step 9-B Wave B notifiche, ma:
+- riferimento corretto è §22.20-§22.30 (cluster Step 9-B impl AMB-9.E'÷I')
+- inoltre Step 9-B Wave B è **già completato** in 9-B/9-C/9-D v2.5.40
+
+Quindi quel carry-forward è obsoleto. Nessuna correzione retroattiva applicata (fatto storico immutabile).
+
+#### Risk notes / pre-code scenario validation reminder Sessione 11
+
+1. **Dump `utils/uiState.js` getCardState semantica obbligatorio CP0 Sessione 11.** Lesson §6.118 pre-code scenario validation: 2-3 scenari concreti del selector `selectAnchorEntry` validati contro implementazione reale `getCardState` PRIMA di scrivere CP1. No trust letterale di questa analisi Sessione 10 (Q1+Q5+Q6 hanno ipotizzato semantica counters indiretta, non verificata su file source).
+2. **Possibile sovrapposizione semantica** `selectProssimaDoseFuoriPlan` (§6.188) vs nuovo `selectFarmaciConDataInizioFutura`. CP1 deve verificare: il primo restituisce `{dateStr, oraPrevista, farmaco}` singolo (la prossima dose imminente fuori plan window), il secondo deve restituire lista farmaci con date raggruppate (piano futuro intero). Possibile composizione: `selectFarmaciConDataInizioFutura` può consumare `selectProssimaDoseFuoriPlan` per minDataInizio. Da decidere CP1 in base a evidenza empirica selectors.js.
+3. **§6.119 cross-midnight visual** non tocca questo scope ma il filtraggio `entry.dateStr === today` in `todayEntries` (OggiView riga ~285) interagisce: una entry ricalcolata cross-midnight resta `dateStr === today` quindi compare in `todayEntries`, e `selectAnchorEntry` la vedrà come dose oggi anche se logicamente è domani. Comportamento atteso per ora, da rivedere quando §6.119 sarà affrontata (sessione futura dedicata).
+4. **Scroll trigger su rollover mezzanotte (AMB-10.B)**: se utente sta scorrendo manualmente alle 23:59 e scatta rollover 00:00, scroll automatico interrompe l'azione. Accettabile (caso raro, beneficio next-day fresh view supera costo). Considerare dev nota in commento CP2.
+
+#### Stato post-Sessione 10
+
+- **Branch:** `main` (working tree clean, allineato `origin/main`).
+- **Top commit main:** `<TBD-commit-doc-only-closing>` (commit doc-only Changelog §22.53 + §11.P + bump v3.0.1-rc.1 emesso da chiusura formale Sessione 10).
+- **Branch operativo `step-10-ux-n10-n11-rendering-oggi`:** NON ancora creato. Allocato da `main@<TBD-commit>` in CP0 Sessione 11.
+- **Tag annotato:** `v3.0.0` invariato. NO nuovo tag in Sessione 10 (analisi-first non taggata, pattern §22.43/§22.49).
+- **Working tree:** clean.
+- **Test:** 475/475 invariati (no codice toccato).
+- **`package.json`:** `3.0.0` invariato (AMB-11.B.7: changelog-only bump in analisi-first).
+- **Changelog versione:** v3.0.0 → **v3.0.1-rc.1**.
+
+Versione changelog: v3.0.0 → **v3.0.1-rc.1**. Riga "Ultima modifica" estesa cumulativamente con sessione 10 (pattern §22.41/§22.42/§22.50/§22.51/§22.52). Nuova **§22.53** (questa sezione) + nuova **§11.P** (prompt Sessione 11 esecutiva).
+
+**Sessione successiva:** §11.P Sessione 11 esecutiva UX-N10+N11 cluster rendering Oggi, one-liner `Esegui il prompt al §11.P del Changelog`.
 
 ---
