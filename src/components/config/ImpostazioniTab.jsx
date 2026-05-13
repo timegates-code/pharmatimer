@@ -462,8 +462,8 @@ function SezioneAvanzate() {
 // SezioneInfo — branding e versione (visibile in PROD).
 // ============================================================
 //
-// Scope closure Z v3.0.0-rc.3 (§22.37 decision 8 + §6.162 deviation).
-//   - Versione PharmaTimer 3.0.0-rc.3 (synced con package.json post-bump P2.C)
+// Scope closure Z v3.0.0 (§22.37 decision 8 + §6.162 deviation).
+//   - Versione PharmaTimer 3.0.0 (synced con package.json post-bump P2.C)
 //     + credit "by timegates" in <em> (italic) con middle dot.
 //   - Posizionamento: ultimo, dopo SezioneAvanzate (DEV-only) e
 //     SezioneNotifiche (PROD).
@@ -482,7 +482,7 @@ function SezioneInfo() {
       style={{ borderTopColor: t.headerBorder }}
     >
       <p className="text-xs" style={{ color: t.textPrimary, opacity: 0.6 }}>
-        PharmaTimer 3.0.0-rc.3 · <em className="italic">by timegates</em> ·{' '}
+        PharmaTimer 3.0.0 · <em className="italic">by timegates</em> ·{' '}
         <a
           href={guideUrl}
           target="_blank"
