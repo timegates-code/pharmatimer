@@ -12933,6 +12933,215 @@ Output vitest emette `Error: Not implemented: window.scrollBy` quando `OggiView.
 ---
 
 
+### 22.57 Stato post-Sessione 11-ter v3.0.1-rc.1 esecutiva CP3 rollback (CP3+CP4+CP5 deferred Sessione 11-quater, sub-AMB CP4-CRITICA emersa branch §6.207 dead-code anche post-riordino interno NoDosesEmptyState, pattern par.22.55 esteso analisi-first deve coprire decision tree completo non solo helper)
+
+**Modalità:** Sessione 11-ter **esecutiva** abortita post-CP4 empirico. Pattern par.22.55 split simmetrico replicato: Sessione 11 parte 1 chiuse CP0+CP1, Sessione 11-bis chiuse CP2, Sessione 11-ter chiusa con rollback CP3 + analisi sub-AMB CP4-CRITICA, Sessione 11-quater dedicata CP3-bis re-design completo + CP4-bis + CP5. Token spesi ~55-65K (sopra budget par.11.P-ter 30-40K, sforo coerente con analisi-first locale pre-CP3 + esecutiva CP3 + CP4 empirico esteso onboarding nuovo + diagnosi sub-AMB CP4-CRITICA + rollback). Wall-clock ~2 ore sera 14 maggio 2026.
+
+#### Scope consegnato Sessione 11-ter
+
+CP0 sanity-light verde 6/6 (branch `step-10-ux-n10-n11-rendering-oggi`, top commit doc-only `8b684f0` sopra `074e1bf` CP2, tag `v3.0.0` invariato, `package.json` 3.0.0 invariato, 487/487 test, working tree clean, file `cp2_*.sh` non presenti — già rimossi nel meta-tempo) + dump `nextStandardOccurrence` integrale (lookahead infinito, ritorna sempre occorrenza al `data_inizio` se `> today`) + dump `nextExtendedOccurrence` (window 365gg) + grep `PLAN_HORIZON/MAX_LOOKAHEAD` (nessuna costante in `src/`) + grep `isExtendedInterval` definizione (`src/domain/extendedFrequency.js:63`).
+
+**Analisi-first locale pre-CP3 (regola critica #2)** eseguita su 3 opzioni re-design ratificate par.22.55 (A/B/C). Opzione A ratificata utente ("riordino check `NoDosesEmptyState` con NEW branch PRIMA di `selectProssimaDoseFuoriPlan`"). Sub-AMB CP3-EXTRA emersa nel pre-code: drift doc par.22.54 vs codice CP1 sul significato di "standard" in `selectFarmaciConDataInizioFutura` — letture L1 (pattern occorrenza flat per qualsiasi farmaco con data_inizio futura) vs L2 (filtro `!isExtendedInterval`). L1 ratificata utente come interpretazione corretta (selector inclusivo standard+extended con data_inizio futura, comportamento atteso UX-N11 hint cumulativo).
+
+**CP3 par.6.207 parte UI implementato pulito al primo run**: patcher Python idempotente con content-based anchor (no SHA-1 bridge necessario, anchor unici verificati) + 2 modifiche `OggiView.jsx` (import esteso a 5 selectors riga 106 + `NoDosesEmptyState` body riordino check anteposto `selectFarmaciConDataInizioFutura+selectDataInizioTerapia` PRIMA di `selectProssimaDoseFuoriPlan`) + sub-component inline `PianoFuturoEmptyState` appeso (38 LOC, copy "Piano disponibile dal [data]" + `<ul>` farmaci ordinata `it-IT` dal selector grouped) + file NEW `OggiView.empty.test.jsx` 3 test (T1 NEW branch reached single farmaco / T2 grouped multi-farmaco DOM order check / T3 NEW branch skipped fallback parity par.6.188 generico).
+
+**Δ test +3 → 490/490 su 59 test files**, zero sub-AMB intra-CP emergenti (par.6.118 esteso par.22.55 pre-grep test infrastructure preventivo funzionato).
+
+#### CP4 empirico (Mac-side Roberto, Chrome dev server `npm run dev`)
+
+CP4 eseguito in 5 step sequenziali (regola critica #4 step-by-step):
+
+| Step | Scenario | Esito |
+|---|---|---|
+| Reset IndexedDB | DevTools → Application → Delete database `pharmatimer-db` + hard refresh → ritorno onboarding 1/2 | ✅ |
+| Onboarding setup | Nome `Roberto` → opzione `Aggiungo i miei farmaci` → vista Oggi `EmptyStateZeroFarmaci` (clipboard + "Nessun farmaco configurato" + CTA "Aggiungi il tuo primo farmaco") | ✅ |
+| Creazione farmaco Q4.2 | Drawer `Nuovo farmaco`: Nome=`Antibiotico`, Fisso, 1 dose, ancora Colazione+0min, `data_inizio=15/05/2026` (domani). **Sub-AMB UX-NEW emersa**: `Salva` disabled fino a selezione `Relazione con il pasto` (campo non opzionale runtime nonostante spec lo dichiari opzionale, deviazione UI silente da spec, candidato finding deferred Fase 2 polish UX-N15). Workaround: selezionato `Indifferente` → `Salva` abilitato | ✅ (con workaround) |
+| Tab Oggi vista | **Risultato KO atteso CP3**: vista mostra `PROSSIMA TERAPIA · DOMANI · VENERDÌ 15 MAGGIO` + card ORE 07:30 (`PreviewBlock` Q-UX.4 par.6.169-171), NON `Piano disponibile dal / Antibiotico` come atteso CP3 NEW branch | ❌ Q4.2 KO |
+| Diagnosi root cause via DevTools console | Probe `window.__pt.app.getState()` ha rivelato: `farmaci[0].data_inizio=2026-05-15` + `plan.length=1` con entry `dateStr=2026-05-15 !== today=2026-05-14` → `selectProssimoGiornoConDosi` ritorna preview 15/05 → ramo OggiView `proxData ? PreviewBlock` cattura PRIMA di `NoDosesEmptyState` → **CP3 NEW branch §6.207 dead code anche post-riordino interno** | ❌ |
+
+#### Sub-AMB CP4-CRITICA — Decision tree analysis gap
+
+**Root cause analisi-first incompleta**: analisi pre-CP3 ha verificato solo `selectProssimaDoseFuoriPlan` (par.6.188) come competitor di `selectFarmaciConDataInizioFutura` (par.6.207 NEW). **Non ha verificato il decision tree completo di `OggiView.jsx` return JSX** (ternario 3 livelli: `EmptyStateZeroFarmaci` / `PreviewBlock` / `NoDosesEmptyState`). Innesto NEW branch dentro `NoDosesEmptyState` (ultima foglia del ternario) è inefficace perché `PreviewBlock` (livello 2) cattura PRIMA quando `selectProssimoGiornoConDosi(state, today) != null` — che è il caso normale quando `data_inizio` è futura e `planBuilder` produce entries per quel giorno.
+
+**Lesson learned esteso par.6.118 + par.22.55 + par.22.57**: il pre-grep test infrastructure (par.22.55) va esteso a **pre-grep decision tree completo del componente target**. Per componenti con ternario annidato, il pre-code scenario validation deve includere:
+1. Dump del **return JSX integrale** del componente target (non solo helper sub-component)
+2. Identificazione di **ogni branch** del ternario annidato + condizione di trigger
+3. Per ogni branch, **dump del selettore o helper** che lo attiva
+4. **Test mentale**: in quale branch atterra ciascuno dei 3 scenari pre-code?
+
+**Tre opzioni re-design CP3-bis Sessione 11-quater** (ratificate Q-CP4-CRITICA utente blanket Opzione A):
+
+- **Opzione A (raccomandata, ratificata)**: riordino esterno del ternario in `OggiView.jsx` — NEW branch (`selectFarmaciConDataInizioFutura.length > 0 && selectDataInizioTerapia > today`) PRIMA di `proxData ? PreviewBlock`. Quando piano non è ancora iniziato (TUTTI i farmaci attivi hanno `data_inizio > today`), mostra `PianoFuturoEmptyState` invece di `PreviewBlock`. Quando piano è iniziato (almeno 1 farmaco ha `data_inizio <= today`), `PreviewBlock` riprende per anticipare il next-day. Edge case extended farmaci off-day oggi ancora coperto da `NoDosesEmptyState + selectProssimaDoseFuoriPlan` fallback. Effort: ~10 LOC OggiView + revisione mount-time semantics dei 3 test CP3 (T1/T2 setup invariato MA assert path mountato a livello OggiView ternario non a livello NoDosesEmptyState; T3 riformulato per testare priorità PreviewBlock quando data_inizio === today o passata).
+- **Opzione B**: chiusura par.6.207 senza UI (downgrade da CP3 originale). Selector + sub-component restano asset orfani per uso futuro. Test T1/T2/T3 cancellati o riformulati. UX-N11 non risolto.
+- **Opzione C**: variante `PreviewBlock` polimorfica con copy "Piano disponibile dal [data]" quando `dataInizioMin > today`. Riusa componente esistente ma rompe single-purpose. Sub-AMB CP4-CRITICAL.C.1 trade-off UX.
+
+#### Rollback CP3 Mac-side
+
+Working tree post-rollback ripulito: restore `OggiView.jsx` da `OggiView.jsx.bak.cp3` (creato dal patcher CP3) + delete `OggiView.empty.test.jsx` + delete backup + delete `patcher_cp3.py`. Verifica `git status -sb` clean + `git diff --stat` zero output + `npx vitest run` → 487/487 su 58 test files (baseline pre-CP3 ripristinata). NO commit code (CP3 codice abortito), commit doc-only Changelog par.22.57 segue.
+
+#### Deviazioni par.6.NN emesse Sessione 11-ter
+
+**Zero deviazioni par.6.NN nuove**. par.6.206/par.6.207 codice implementativo (par.22.54 CP1 selectors + par.22.55 CP2 UI scroll + CP3 abortito Sessione 11-ter) chiusura formale demandata a CP5 cumulativo Sessione 11-quater (pattern par.22.54/par.22.55 codice = precursor, formal closure a closing finale).
+
+#### Sub-AMB intra-CP risolte autonomamente "decidi tu" (rilevanti per Sessione 11-quater)
+
+- **CP3-EXTRA L1** (drift doc par.22.54 vs codice CP1 sul significato "standard" in `selectFarmaciConDataInizioFutura`): L1 ratificata utente — selector inclusivo `attivo + data_inizio > today` senza discriminazione `isExtendedInterval`. Coerente con intent UX-N11 hint cumulativo. Da preservare Sessione 11-quater.
+- **CP3-T3-shape** (T3 riformulato sotto L1): test originale "fallback par.6.188 still wins post-riordino" sotto L1 non applicabile direttamente. Riformulato per testare "NEW branch correttamente skippato quando `data_inizio === today` (parity par.6.188)" + fallback generico. Da ri-pensare Sessione 11-quater sotto re-design Opzione A esterno: T3 dovrà testare "PreviewBlock prevale quando piano è iniziato".
+
+#### Findings cumulativi Fase 2 polish (registry par.22.52 esteso)
+
+- 15 findings carry-forward par.22.52 invariati (UX-N1/N3/N7/N8/N9 + iOS-N1/iOS-N2/UX-N14 + drift-doc-N2/N4/N5/N12 + discovery-N6/N7 + UX-N10/N11)
+- **UX-N15 NUOVO**: `Relazione con il pasto` runtime non opzionale (Salva disabled). Spec dichiara campo opzionale, codice `FarmaciTab` o sotto-componente impone gate Salva. Scope futuro opportunistico, da indagare in `src/components/config/FarmaciTab.jsx` (`isFormValid` o helper analogo).
+
+#### Stato post-Sessione 11-ter
+
+- **Branch operativo:** `step-10-ux-n10-n11-rendering-oggi` (locale, NO push).
+- **Top commit branch operativo:** `<TBD-doc-only-closing-22.57>` (commit doc-only Changelog par.22.57 + par.11.P-quater emesso da chiusura formale Sessione 11-ter, sopra `8b684f0`).
+- **5 commit cumulativi sopra `main@b318f08`:** `0a4bf9a` CP1 + `c8c7c89` doc-only par.22.54 + `074e1bf` CP2 codice + `8b684f0` doc-only par.22.55 + `<TBD>` doc-only par.22.57.
+- **Branch `main`:** invariato a `b318f08` (NO advance fino merge ff CP5 Sessione 11-quater).
+- **Tag annotato:** `v3.0.0` invariato. NO nuovo tag (Sessione 11-ter abortita non taggata, pattern par.22.54/par.22.55).
+- **Working tree:** clean post-rollback CP3 (no file `.bak.cp3` residui, no `patcher_cp3.py`, no `OggiView.empty.test.jsx`).
+- **Test:** **487/487** su 58 test files (rollback CP3 → baseline par.22.55 ripristinata).
+- **`package.json`:** `3.0.0` invariato (AMB-11.B.7: bump effettivo a CP5 Sessione 11-quater).
+- **Changelog versione:** v3.0.1-rc.1 invariato (rc.1 prosegue, no sub-rc; pattern par.22.54/par.22.55).
+
+#### Lessons learned Sessione 11-ter
+
+1. **Pre-code scenario validation par.6.118 va esteso al decision tree del componente target**. par.22.55 lesson 1 (test infrastructure) coperto bene Sessione 11-ter (zero sub-AMB intra-CP3 sul test setup), ma scenari pre-code S1/S2/S3 testavano la **logica interna** di `NoDosesEmptyState`, NON il **percorso di mount** dentro il ternario OggiView. Lesson esteso: ogni modifica a un componente che vive dentro un ternario annidato richiede dump del return JSX completo del parent + identificazione del branch atteso + scenario di mount mentale pre-code. Pattern aggiornato:
+   - Dump body funzione TARGET (par.6.118)
+   - Dump body funzioni HELPER chiamate (par.22.55 risk note)
+   - Grep test infrastructure (jsdom polyfill + router context, par.22.55 lesson 1)
+   - **Dump return JSX integrale del componente che monta il target** (par.22.57 NEW)
+   - Identificazione branch di mount + condizione trigger (par.22.57 NEW)
+   - Test mentale: 3 scenari pre-code, in quale branch atterrano? (par.22.57 NEW)
+
+2. **CP browser empirico Roberto a valore alto post-CP3 codice verde**. Senza CP4 empirico (Mac dev server reale + DevTools console probe), il test suite 490/490 verde avrebbe nascosto il dead code (test mockavano direttamente `NoDosesEmptyState` rendering, bypassando il ternario OggiView). Pattern par.22.42 sub-AMB emergenti esteso: i test verdi NON garantiscono che il branch sia raggiungibile in produzione se il decision tree del parent componente non è esplicitamente testato.
+
+3. **Decisione rollback CP3 + chiusura sessione safety-first applicata congiuntamente Claude+utente** (utente ha ratificato Opzione A + chiusura sessione). Triggers concorrenti: (a) sub-AMB CP4-CRITICA invalida porzione significativa CP3 (NEW branch dead code in pratica nonostante codice tecnicamente verde); (b) re-design Opzione A richiede modifica esterna al ternario OggiView (NON interna a NoDosesEmptyState come implementato CP3), riapertura analisi-first; (c) test T1/T2/T3 vanno re-pensati (mount-time semantics cambiate); (d) budget sessione vicino al limite; (e) pattern par.22.55 split simmetrico replicabile pulito. Lesson: rollback CP esecutivo non-merged senza commit è operazione legittima e a costo basso quando l'analisi-first si rivela incompleta post-empirico.
+
+#### Risk notes / pre-code scenario validation reminder Sessione 11-quater
+
+1. **Decision tree completo OggiView return JSX da dumpare integralmente in CP0 Sessione 11-quater** + identificazione branch order esistente (`EmptyStateZeroFarmaci` → `PreviewBlock` → `NoDosesEmptyState`) + condizione trigger di ciascun branch.
+
+2. **Re-design Opzione A**: riordino ternario `OggiView.jsx` (livello 2 del ternario). NEW branch (`selectFarmaciConDataInizioFutura.length > 0 && selectDataInizioTerapia > today`) PRIMA di `proxData ? PreviewBlock`. Sub-AMB CP4-CRITICA.A.1 da risolvere pre-code: la condizione di check va calibrata — non basta `farmaciFuturi.length > 0` (un farmaco extended in pausa con data_inizio passata + un farmaco standard con data_inizio futura attiverebbe NEW branch quando in realtà piano è in corso), serve anche `dataInizioMin > today` (cioè TUTTI i farmaci attivi hanno data_inizio futura, piano non ancora iniziato).
+
+3. **Test T1/T2/T3 vanno ri-pensati**: T1/T2 setup invariato (farmaci `data_inizio = FAR_FUTURE`, no entries today) MA mount path cambia (atterrano sul NEW branch livello 2, non foglia 3 NoDosesEmptyState). T3 originale ("`data_inizio === today` parity par.6.188") sotto re-design esterno diventa ridondante con test mount EmptyStateZeroFarmaci esistenti (nessuna entry today => livello 1 non scatta perché farmaco esiste; livello 2 nuovo NEW non scatta perché `data_inizio === today` NOT `> today`; livello 2 PreviewBlock scatta se planBuilder produce entries per oggi; altrimenti livello 3 NoDosesEmptyState scatta). T3 candidato riformulazione: "NEW branch skipped quando piano è iniziato (almeno 1 farmaco data_inizio <= today), PreviewBlock prevale".
+
+4. **CP browser empirico Sessione 11-quater obbligatorio**: stesso pattern Sessione 11-ter (Mac dev server + DevTools probe) per verificare che NEW branch sia ora effettivamente raggiunto post-re-design Opzione A. NON fidarsi del solo test suite verde (lesson par.22.57 #2).
+
+5. **Sub-AMB UX-N15** (Salva disabled `Relazione con il pasto`) NON è bloccante per Sessione 11-quater scope CP3-bis. Segnalato per scope futuro opportunistico. CP4 empirico Sessione 11-quater dovrà comunque selezionare un valore qualsiasi per `relazione_pasto` per sbloccare la creazione farmaco di setup (`Indifferente` workaround documentato).
+
+#### Riferimenti par.22.57
+
+- **par.22.55**: closing parziale Sessione 11-bis (CP2 done, baseline pre-Sessione 11-ter, risk notes per ratifica re-design par.6.207)
+- **par.22.54**: closing parziale Sessione 11 parte 1 (CP0+CP1 done)
+- **par.22.53**: AMB-10.A-L tabella consolidata + CP scope frozen + par.6.206/par.6.207 pre-allocate
+- **par.22.42**: sub-AMB emergenti in cluster (esteso a sub-AMB CP4-CRITICA decision tree gap)
+- **par.22.38**: pivot strategico in-session legittimo (esteso a rollback CP esecutivo legittimo + estensione decisione operativa)
+- **par.6.118**: pre-code scenario validation obbligatoria (esteso lesson a decision tree del componente target + return JSX integrale parent)
+- **AMB-11.B.7**: bump version solo a closing Step (rispettato: package.json 3.0.0 invariato)
+- **par.6.206**: codice implementativo CP2 completo Sessione 11-bis, chiusura formale CP5 Sessione 11-quater
+- **par.6.207**: codice CP1 (parte selector) Sessione 11 parte 1, CP3 abortito Sessione 11-ter, chiusura formale CP5 Sessione 11-quater post-CP3-bis Opzione A
+- **UX-N15 nuovo finding**: relazione_pasto runtime non opzionale (Salva disabled gate FarmaciTab)
+
+**Sessione successiva:** par.11.P-quater Sessione 11-quater dedicata CP3-bis re-design completo Opzione A + CP4-bis empirico + CP5 closing cumulativo, one-liner `Esegui il prompt al par.11.P-quater del Changelog`.
+
+---
+
+
+### 11.P-quater Prompt Sessione 11-quater dedicata — CP3-bis re-design completo Opzione A (riordino esterno ternario OggiView) + CP4-bis CP browser + CP5 closing cumulativo (continuazione Sessione 11-ter par.22.57)
+
+**One-liner apertura:** `Esegui il prompt al par.11.P-quater del Changelog.`
+
+**Modalità:** Sessione 11-quater **mista** (analisi-first locale pre-CP3-bis su decision tree completo OggiView + esecutiva CP3-bis+CP4-bis+CP5). Continuazione parte 4 di 4 trilogia UX-N10+N11 (Sessione 11 parte 1 CP0+CP1 + Sessione 11-bis CP2 + Sessione 11-ter CP3 abortito + Sessione 11-quater CP3-bis+CP4-bis+CP5). Scope CP3-bis+CP4-bis+CP5 frozen ereditato par.22.57 (Opzione A esterna ratificata) + lesson par.6.118 esteso a decision tree componente target par.22.57. Token spesi attesi 35-45K (CP0 dump return JSX integrale OggiView + ratifica re-design CP3-bis Opzione A + patcher CP3-bis + CP4-bis empirico + CP5 closing cumulativo). Wall-clock atteso 2-3 ore distribuibili su 1 giornata.
+
+#### Pre-letture obbligatorie (Claude in apertura Sessione 11-quater)
+
+1. **par.22.57** integrale (stato post-Sessione 11-ter abortita + sub-AMB CP4-CRITICA + analisi 3 opzioni re-design Opzione A ratificata + lessons learned decision tree analysis gap — questa è la pre-lettura principale)
+2. **par.22.55** integrale (stato post-Sessione 11-bis + lesson test infrastructure par.6.118 esteso)
+3. **par.22.54** integrale (stato post-Sessione 11 parte 1)
+4. **par.22.53** integrale (AMB-10.A-L tabella consolidata + CP scope frozen + par.6.206/par.6.207 pre-allocate)
+5. **par.6.118** + **par.22.42** + **par.22.57 lesson 1** (pre-code scenario validation esteso a decision tree componente target + sub-AMB emergenti cluster + return JSX integrale parent)
+6. **`pharmatimer_oggi_v5.jsx`** mockup di riferimento (intent visivo empty state hint piano futuro)
+
+#### CP0 obbligatorio Sessione 11-quater
+
+**Mac-side (Roberto):**
+
+```bash
+cd ~/Sviluppo/pharmatimer
+echo '=== CP0 baseline Sessione 11-quater ==='
+git status -sb
+git branch --show-current
+git --no-pager log -5 --oneline --decorate
+git --no-pager tag --sort=-creatordate | head -3
+node -p "require('./package.json').version"
+npx vitest run 2>&1 | tail -10
+echo '=== CP0 dump return JSX integrale OggiView (decision tree completo) ==='
+sed -n '/^export default function OggiView/,/^}$/p' src/components/oggi/OggiView.jsx | head -200
+echo '=== CP0 dump branch order ternario + condizione trigger ==='
+grep -n 'todayEntries\.length\|selectFarmaciAttivi\|proxData\|NoDosesEmptyState\|EmptyStateZeroFarmaci\|PreviewBlock' src/components/oggi/OggiView.jsx
+echo '=== CP0 completato ==='
+```
+
+**Atteso baseline:**
+
+- branch operativo `step-10-ux-n10-n11-rendering-oggi`
+- top commit doc-only post-par.22.57 closing, sopra `8b684f0` (5 commit cumulativi sopra `main@b318f08`)
+- tag `v3.0.0` invariato, `package.json` `3.0.0` invariato
+- **487/487** test verdi su 58 test files (baseline rollback Sessione 11-ter ripristinata)
+- working tree clean (no file `.bak.cp3` o `OggiView.empty.test.jsx` residui)
+- dump return JSX OggiView integrale ricevuto (probabile ~30-50 LOC del ternario annidato)
+- grep branch order conferma sequenza `selectFarmaciAttivi → proxData → NoDosesEmptyState`
+
+**Claude in apertura Sessione 11-quater (analisi-first locale pre-CP3-bis):**
+
+1. Legge return JSX OggiView integrale → identifica struttura ternario annidato + condizione di trigger di ciascun branch
+2. Mappa scenari pre-code (utente novizio con 1 farmaco data_inizio futura / utente con farmaci misti / utente con piano in corso) sul decision tree → identifica branch atteso per ciascuno
+3. **Pre-code semantic validation par.6.118 + par.22.57 lesson 1**: condizione di check NEW branch — `selectFarmaciConDataInizioFutura.length > 0 && selectDataInizioTerapia > today`. Validare contro 3 scenari:
+   - **EA1** 1 farmaco standard `data_inizio=domani`, no entries today → `farmaciFuturi=[{data_inizio:domani, [F1]}]`, `dataInizioMin=domani > today` ✅ → NEW branch atteso ✅
+   - **EA2** 1 farmaco standard `data_inizio=ieri` (piano in corso), 1 farmaco standard `data_inizio=domani`, entries today vuote → `farmaciFuturi=[{data_inizio:domani, [F2]}]`, `dataInizioMin=ieri NOT > today` ❌ → NEW branch NOT atteso, PreviewBlock prevale ✅
+   - **EA3** 1 farmaco extended `data_inizio=oggi`, off-day oggi → `farmaciFuturi=[]`, NEW branch NOT atteso → `proxData != null` (planBuilder produce entries per domani extended) → PreviewBlock prevale (NON `NoDosesEmptyState` extended fallback). Sub-AMB CP3-bis-EA3: questo path testato in CP1 par.22.54 F4+F5 con `selectProssimaDoseFuoriPlan` parity, ma `PreviewBlock` cattura comunque. NoDosesEmptyState fallback par.6.188 raggiunto solo se `selectProssimoGiornoConDosi` returns null (caso raro: extended `data_inizio` futuro lontano e plan window non lo cattura)
+4. Ratifica Opzione A con utente + ratifica condizione check (`farmaciFuturi.length > 0 && dataInizioMin > today`) + Q-CP3-bis-1 (semantica edge case farmaci misti per Opzione A: caso EA2 sopra documentato come comportamento atteso) + Q-CP3-bis-2 (test scope: T1/T2 mount-time semantics modificate, T3 da ri-formulare)
+
+#### Scope frozen CP Sessione 11-quater (5 CP)
+
+| CP | Scope | File toccati | Δ test atteso | Pattern |
+|---|---|---|---|---|
+| **CP0** | CP0 baseline + dump return JSX OggiView completo + analisi-first locale pre-CP3-bis ratifica Opzione A | nessuno | 0 | Sanity-light + dump |
+| **CP3-bis** | par.6.207 re-design Opzione A: riordino esterno ternario OggiView.jsx (NEW branch livello 2 PRIMA di PreviewBlock) + sub-component `PianoFuturoEmptyState` inline (riusato Sessione 11-ter, OK preservare design) + rollback `NoDosesEmptyState` body (ripristina selectProssimaDoseFuoriPlan come unica logica, par.6.188 fallback per extended off-day) | `OggiView.jsx` | +2-3 (T1+T2 modificati path mount + T3 nuovo: PreviewBlock prevale quando piano iniziato) | Patcher Python idempotente content-based anchor |
+| **CP4-bis** | CP browser empirico Roberto: 4 scenari (Q4.1 farmaco data_inizio futura → NEW branch / Q4.2 multi-farmaco stessa data → grouped / Q4.3 piano misto in corso → PreviewBlock prevale / Q4.4 piano in corso oggi nulla domani sì → PreviewBlock invariato comportamento par.6.169-171) | nessuno (CP empirico) | 0 | Mac dev server `npm run dev` + DevTools console probe `__pt.app.getState()` |
+| **CP5** | Closing cumulativo: bump `package.json` 3.0.0 → 3.0.1-rc.1 + sync `ImpostazioniTab.jsx` 3 occorrenze + cleanup eventuali file lavoro residui + commit cumulativo branch operativo + tag annotato `v3.0.1-rc.1` NO push + merge ff `main` NO push + closing par.22.58 Changelog + par.11.Q opzionale deploy follow-up | `package.json`, `ImpostazioniTab.jsx`, Changelog | 0 | Pattern par.22.51/par.22.52 closing |
+
+**Target test cumulativo**: 487 → 489-490 (Δ +2-3 con T1/T2/T3 modificati).
+**Modello frequencyModel coverage**: branch standard data_inizio futura testato T1/T2 + branch extended via par.6.188 fallback ancora coperto da `selectors.prossimaDoseFuoriPlan.test.js` esistente.
+
+#### Numerazione deviazioni par.6.NN attesa
+
+par.6.206 e par.6.207 (pre-allocate par.22.53) chiusura formale post-implementazione UI cumulativa CP2 (par.22.55) + CP3-bis (par.22.58). Eventuali fix emergenti CP4-bis browser allocati progressivamente da par.6.208.
+
+#### Stato baseline atteso Sessione 11-quater esecutiva
+
+- branch operativo `step-10-ux-n10-n11-rendering-oggi`, top commit doc-only post-par.22.57 closing parziale
+- 5 commit cumulativi sopra `main@b318f08`: `0a4bf9a` CP1 + `c8c7c89` doc-only par.22.54 + `074e1bf` CP2 codice + `8b684f0` doc-only par.22.55 + `<TBD>` doc-only par.22.57
+- tag latest `v3.0.0` invariato
+- `package.json` `3.0.0` invariato
+- 487/487 test verdi su 58 test files (rollback Sessione 11-ter ripristinato)
+- working tree clean
+
+#### Modalità delivery file
+
+Patcher Python idempotenti per CP3-bis (riordino esterno ternario OggiView + sub-component PianoFuturoEmptyState inline preservato + rollback NoDosesEmptyState body + file NEW OggiView.empty.test.jsx ri-emesso con T1/T2/T3 ri-pensati) + CP5 Changelog (par.22.58 + par.11.Q + bump `package.json` + sync `ImpostazioniTab.jsx`). Self-extracting bash scripts base64-encoded pattern par.22.51/par.22.54. Comandi git separati zsh-safe (single-quote, no `#` comments, no apostrofi italiani, `s.6.NN` invece di `par.6.NN` in commit messages).
+
+#### Pre-existing follow-up ancora flagged (carry-forward par.22.57)
+
+- par.6.119 cross-midnight cards visual deferred (interazione con CP3-bis Opzione A documentata: NEW branch attivo solo se TUTTI i farmaci `data_inizio > today`, cross-midnight non interferisce perché entries di ieri non popolano `selectFarmaciConDataInizioFutura`)
+- par.6.120 `actions.presa()` `simulated_now` DEV deferred (non interferisce con scope CP3-bis)
+- 15 findings registry Fase 2 polish + UX-N15 nuovo Sessione 11-ter (Salva disabled relazione_pasto)
+
+---
+
+
 ### 11.P-ter Prompt Sessione 11-ter dedicata — CP3 analisi-first pre-code (incongruenza §6.188 vs §6.207) + CP4 CP browser + CP5 closing cumulativo (continuazione Sessione 11-bis §22.55)
 
 **One-liner apertura:** `Esegui il prompt al §11.P-ter del Changelog.`
