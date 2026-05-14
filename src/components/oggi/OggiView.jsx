@@ -103,7 +103,7 @@ import { SospesaModal } from './modals/SospesaModal.jsx';
 import { RecuperoModal } from './modals/RecuperoModal.jsx';
 import { UndoModal } from './modals/UndoModal.jsx';
 // CP3 v3.0.0 Step 1 (par.6.169-171): empty states + preview giorno successivo.
-import { selectFarmaciAttivi, selectProssimoGiornoConDosi, selectProssimaDoseFuoriPlan } from '../../state/selectors.js';
+import { selectFarmaciAttivi, selectProssimoGiornoConDosi, selectProssimaDoseFuoriPlan, selectFarmaciConDataInizioFutura, selectDataInizioTerapia } from '../../state/selectors.js';
 import EmptyStateZeroFarmaci from './EmptyStateZeroFarmaci.jsx';
 import PreviewBlock from './PreviewBlock.jsx';
 
@@ -228,6 +228,19 @@ export default function OggiView() {
   const proxData = useMemo(
     () => selectProssimoGiornoConDosi(state, today),
     [state.farmaci, state.plan, today]
+  );
+
+  // CP3-bis Sessione 11-quater (par.6.207 re-design Opzione A): hint
+  // "Piano disponibile dal..." quando TUTTI i farmaci attivi hanno
+  // data_inizio futura (piano non ancora iniziato). dataInizioMin
+  // strict > today garantisce skip quando piano e' in corso.
+  const farmaciFuturi = useMemo(
+    () => selectFarmaciConDataInizioFutura(state, today),
+    [state.farmaci, today]
+  );
+  const dataInizioMin = useMemo(
+    () => selectDataInizioTerapia(state),
+    [state.farmaci]
   );
 
   // Auto-beep on dose crossings. Returns the Set of flashing entry keys
@@ -529,9 +542,16 @@ export default function OggiView() {
         {/* MULTI-DAY CARDS */}
         <div className="px-4 mt-1">
           {todayEntries.length === 0 ? (
-            // CP3 (par.6.169-171): triplo branch empty state
+            // CP3-bis Sessione 11-quater (par.6.207 Opzione A): quaternario
+            // lineare. L2-NEW PianoFuturoEmptyState PRECEDE L2-OLD
+            // PreviewBlock per coprire il caso "piano non ancora iniziato"
+            // (tutti i farmaci attivi hanno data_inizio > today). Quando
+            // piano e' in corso, dataInizioMin <= today -> L2-NEW skipped
+            // e PreviewBlock prevale (parity CP3 originale par.6.169-171).
             selectFarmaciAttivi(state).length === 0 ? (
               <EmptyStateZeroFarmaci />
+            ) : (farmaciFuturi.length > 0 && dataInizioMin != null && dataInizioMin > today) ? (
+              <PianoFuturoEmptyState farmaciFuturi={farmaciFuturi} today={today} theme={t} />
             ) : proxData ? (
               <PreviewBlock proxData={proxData} />
             ) : (
@@ -730,5 +750,31 @@ function NoDosesEmptyState({ state, today, theme: t }) {
     <p className="text-center text-sm mt-8" style={{ color: t.textSecondary }}>
       Nessuna dose programmata.
     </p>
+  );
+}
+
+// ============================================================
+// CP3-bis Sessione 11-quater (par.6.207 Opzione A) -- PianoFuturoEmptyState
+// inline. Visualizza l'hint "Piano disponibile dal..." quando il ternario
+// OggiView lo raggiunge (L2-NEW: tutti i farmaci attivi hanno data_inizio
+// > today). Renderizza solo il gruppo earliest (farmaciFuturi[0]),
+// alfabetico it-IT garantito dal selector selectFarmaciConDataInizioFutura.
+// Componente inline (non file separato) per coerenza col pattern locale
+// di NoDosesEmptyState.
+// ============================================================
+function PianoFuturoEmptyState({ farmaciFuturi, today, theme: t }) {
+  const earliest = farmaciFuturi[0];
+  if (!earliest) return null;
+  return (
+    <div className="text-center mt-8 px-4" data-testid="empty-state-piano-futuro">
+      <p className="text-base mb-3" style={{ color: t.textSecondary }}>
+        📅 Piano disponibile dal {formatDateLabel(earliest.data_inizio, today)}
+      </p>
+      <ul className="text-sm" style={{ color: t.textPrimary }}>
+        {earliest.farmaci.map((f) => (
+          <li key={f.id}>{f.nome}</li>
+        ))}
+      </ul>
+    </div>
   );
 }
