@@ -14217,3 +14217,238 @@ Nessun prompt par.11.S/T pre-frozen. Aperture opportunistiche su:
 One-liner sessione successiva dipende da delivery target ratificato in apertura sessione fresca.
 
 ---
+
+### 22.66 Stato post-Sessione 17 analisi-first revisione copy guide.html (UX-N17 + audit content, scope CP S18 frozen 4-CP, zero codice, pre-allocazione s.6.214 single cumulativa)
+
+**Modalita:** Sessione 17 analisi-first pura dedicata UX-N17 + audit content `public/guide.html` (17 maggio 2026). Pattern par.11.P / par.11.M / par.11.N replicato (analisi-first dedicata -> esecuzione sessione successiva a scope fissato). Token spesi ~5-10K. Wall-clock ~30-45 min. 3 step: CP0 baseline + dump `guide.html` integrale + audit content 8 finding inventario + ratifica blanket Q1-Q8 default raccomandati + scope CP S18 frozen 4-CP + pre-allocazione s.6.214.
+
+**CP0 baseline verde + 1 drift-doc-NEW:** branch main HEAD `908a36a` (doc-only `s.22.65 deploy Sessione 16 CHIUSO`) vs atteso `94fac42` per memoria interna par.22.65. Drift-doc-NEW S17 registrato (top commit doc-only S16 closing non menzionato testo par.22.65 retroattivo), principio par.6.71/85 -> no retro-correzione, carry-forward registry. 496/496 test su 59 files invariato, working tree clean, tag `v3.0.1-rc.3` allineato origin, package.json `3.0.1-rc.3`.
+
+**Dump `public/guide.html` integrale ricevuto:** 353 LOC / ~14.2KB (allineato par.6.192 CP12 Sessione 4 dimensione originale). Single consumer PROD confermato post-s.6.213: `ImpostazioniTab.jsx` riga 374 `SezioneAiuto` `guideUrl = ${import.meta.env.BASE_URL}guide.html` (alignment par.6.191 PWA basename `/pharmatimer/`).
+
+**Audit content 8 finding inventario (F1-F8):**
+
+| ID | Sev | Sezione | Issue | Q1=b in-scope |
+|---|---|---|---|---|
+| F1 | M | par.3 colori card badge-grey | "non ancora arrivata" UX-N17 equivoco | si |
+| F2 | H | par.2 path Config -> Farmaci | terminologia obsoleta post-s.6.212 | si |
+| F3 | H | par.6 path Config -> Impostazioni -> Dati | terminologia obsoleta + collisione naming | si |
+| F4 | M-H | footer `<a href="../">` | esce app PWA prod GitHub Pages | si (verifica empirica CP2) |
+| F5 | L | par.6 backup portabilita "v3.0.0" | stale (app v3.0.1-rc.3) | si |
+| F6 | M | 4 placeholder screenshot inline | paradossale post-prod v3.0.1-rc.3 | si (Q2=a rimozione) |
+| F7 | L | par.2 mancanza required-hint asterisco | post-s.6.209+s.6.211 Sessione 14 | si (add paragrafo) |
+| F8 | L | par.1 mancanza PWA UpdatePrompt | post-par.6.157/158 Step 10 | NO (Q1=b out-of-scope) |
+
+**Correzione preliminare:** inventario turno 2 dichiarava "5 sezioni placeholder", count effettivo 4 (par.1 + par.2 + par.3 + par.5; par.4 + par.6 no placeholder). Imprecisione preliminare corretta in CP0 dump empirico, principio par.6.118 rispettato pre-scope-freeze.
+
+**Q1-Q8 ratificate blanket "decidi tu" default raccomandati:**
+
+- Q1=b: audit Standard (UX-N17 + drift terminologia + placeholder + product state + required-hint), F8 escluso
+- Q2=a: rimozione 4 placeholder testuali + CSS rule `.placeholder` dead code (cattura asset binari deferred sessione dedicata)
+- Q3=a: split S17 analisi-first + S18 esecutiva (pattern par.22.55 split upfront)
+- Q4=a: riformulazione funzionale "scheda Impostazioni, sezione X" anti-collisione naming
+- Q5=a: phrasing release-agnostic (rimozione "v3.0.0" stale)
+- Q6=a-merit: fix `./` blanket + verifica empirica inglobata CP2 S18 CP browser (no extra round-trip Mac-side, lesson par.6.118)
+- Q7=a: single cumulativa s.6.214 (pattern par.22.62 lesson 2 esteso a cluster audit content same-file)
+- Q8=a: branch `step-13-guide-content-audit` da `main@<TBD-closing-S17>` + bump rc.3 -> rc.4 (guide.html runtime bundled via vite-plugin-pwa globPatterns, AMB-11.B.7 rispettato)
+
+**Sub-AMB Q4 deferred:** rinominazione sub-tab "Impostazioni" -> "Generali" o "App" per risolvere collisione naming definitiva. Fuori scope S17 / S18 (richiede modifica React + sub-AMB nuova pre-allocazione s.6.NN). Carry-forward registry scope futuro opportunistic.
+
+#### Scope CP Sessione 18 esecutiva pre-frozen (4 CP)
+
+| CP | Tema | File toccati attesi | Delta test stima | Note |
+|---|---|---|---|---|
+| CP0 | Baseline post-S17 + branch step-13-guide-content-audit da main HEAD + grep anchor pre-verification | - | 0 | Pattern par.22.51 CP0 + 1 step grep anchor |
+| CP1 (s.6.214) | Patcher Python idempotente content-based ~10 anchor `public/guide.html`. Sandbox verification round-trip + idempotency Run 2 SKIP. | `public/guide.html` | 0 | Single cumulativa F1-F7 + F6-bis CSS dead |
+| CP2 | CP browser empirico Roberto 7 scenari Q2.1-Q2.7 (UX-N17 risolto + path + footer link + zero placeholder + required-hint + dark mode) | - | 0 | Pattern par.22.51 CP4 + par.22.52 Q4.x replicato 7 scenari |
+| CP3 closing | Bump 3.0.1-rc.3 -> 3.0.1-rc.4 + sync ImpostazioniTab + cleanup + commit cumulativo branch + tag locale + merge ff + Changelog patcher s.22.67 | `package.json`, `ImpostazioniTab.jsx`, `PharmaTimer_Changelog_Fase2.md` | 0 | Pattern par.22.51 / par.22.52 closing replicato sotto-scala |
+
+**Delta test cumulativo target S18:** 0 (496/496 invariato).
+
+#### Deviazioni s.6.NN pre-allocate Sessione 18
+
+| ID | Wave | CP target | Scope |
+|---|---|---|---|
+| s.6.214 | UX-N17 + audit content guide.html | CP1 | Single cumulativa F1 badge-grey copy UX-N17 + F2 par.2 path + F3 par.6 path + F4 footer `../` -> `./` + F5 versione stale + F6 4 placeholder rimossi + F6-bis CSS rule `.placeholder` dead + F7 par.2 paragrafo required-hint (pattern par.22.62 lesson 2 esteso a cluster audit content same-file) |
+
+Numerazione progressiva da s.6.213 in avanti. Gap s.6.198 / s.6.199 placeholder preservati (principio par.6.71 / par.6.85 immutabile).
+
+#### Deviazioni s.6.NN emesse Sessione 17
+
+**Zero.** Sessione analisi-first pura, no codice modificato. s.6.214 pre-allocata ma scritta solo CP1 Sessione 18 esecutiva (pattern par.22.54 deviazione formal closure a CP esecutivo).
+
+#### Stato git post-Sessione 17
+
+- branch main HEAD `<TBD-closing-S17-commit>` allineato origin/main post-push doc-only closing
+- tag annotato `v3.0.1-rc.3` sha `5528c89` invariato (no bump analisi-first)
+- tag `v3.0.1-rc.2` sha `2a59177b` invariato
+- tag `v3.0.1-rc.1` invariato
+- gh-pages `db1b117` invariato (no redeploy analisi-first)
+- working tree clean post-commit doc-only
+- 496/496 test invariati su 59 files
+- package.json `3.0.1-rc.3` invariato (AMB-11.B.7 rispettato: no bump in analisi-first senza CP esecutivo)
+
+#### Pre-existing follow-up ancora flagged (carry-forward par.22.65)
+
+- par.6.119 cross-midnight cards visual deferred
+- par.6.120 actions.presa() simulated_now DEV deferred
+- 13 findings registry Fase 2 polish post-S16 -> 12 residui post-S18 atteso (UX-N17 risolto s.6.214 CP1 S18)
+- 4 drift-doc-NEW carry-forward par.22.65 + 1 NEW S17 (top commit `908a36a` doc-only non menzionato par.22.65) = 5 cumulativi
+- discovery-N7 data_inizio default today deferred opportunistic
+- Sub-AMB Q4 rinominazione sub-tab "Impostazioni" -> "Generali" / "App" deferred opportunistic
+
+#### Out-of-scope Sessione 17 (esplicito)
+
+- F8 PWA UpdatePrompt menzione par.1 caratteristiche (Q1=b scope Standard, scope futuro opportunistic Q1=c esteso)
+- Cattura asset binari screenshot reali (Q2=a placeholder rimossi solo testuali, sessione dedicata futura)
+- Sub-AMB Q4 rinominazione sub-tab "Impostazioni" -> "Generali" / "App" (richiede modifica React, pre-allocazione s.6.NN nuova sessione futura)
+- Sessione 18 esecutiva CP1 + CP2 + CP3 -> deferred S18 post-S17 closing
+- Fase 3 backend FastAPI+MariaDB pivot -> deferred sessione futura post-S18
+
+#### Lesson learned Sessione 17 (consolidate)
+
+1. **Audit content file singolo runtime-bundled trattato come modifica codice runtime AMB-11.B.7 bump-trigger:** `public/guide.html` e' bundled via vite-plugin-pwa `globPatterns:["**/*.html"]` nel service worker precache, qualsiasi modifica content richiede bump version semver pre-deploy. Treat-as-doc-only (Q8=c) violerebbe semantic versioning + AMB-11.B.7. Pattern coerente con par.6.192 originale CP12 v3.0.0-rc.2 che bumped per creazione guide.html iniziale.
+
+2. **Cluster audit content same-file single-deviation s.6.NN pattern par.22.62 lesson 2 esteso:** UX-N17 sintomo + 7 finding collaterali F2-F7 + F6-bis (drift terminologia, placeholder, versione stale, required-hint, footer link, CSS dead) emessi sotto unica s.6.214 cumulativa invece di s.6.214 - s.6.221 granulari. Audit trail piu' pulito, single-entry par.6.NN nel changelog, parallelismo con par.22.62 lesson 2 (sub-AMB 15.A italianizzazione cross-file stesso fix logico s.6.212) e par.22.64 lesson 2 (sub-AMB 15.A inglobata s.6.212).
+
+3. **Verifica empirica F4 footer link inglobata CP2 esistente invece di CP0-bis dedicato:** Q6=a-merit anticipa fix `./` blanket basato su algoritmico unambiguity (par.6.191 BASE_URL `/pharmatimer/` + assenza `<base>` -> `../` da `/pharmatimer/guide.html` punta `/`). Verifica empirica spostata a CP2 S18 CP browser empirico (Q2.4 inglobata 7 scenari esistenti), no extra round-trip Mac-side richiesto. Lesson par.6.118 rispettata: empirico pre-deploy invece di speculazione pre-code; verifica post-fix vs pre-fix accettabile data unambiguity algoritmica.
+
+#### Riferimenti par.22.66
+
+- **par.22.65**: deploy Sessione 16 v3.0.1-rc.3 (baseline S17 + drift-doc-NEW #14 segnalato)
+- **par.22.64**: closing Sessione 15 cluster C+D NavBar + Guida (origine UX-N17 finding content-level emerso CP3 empirico)
+- **par.22.62 lesson 2**: italianizzazione cross-file single-deviation s.6.212 (pattern esteso S17 s.6.214 cluster audit content same-file)
+- **par.22.55**: pattern split upfront sessione analisi-first + esecutiva (replicato S17 + S18)
+- **par.22.43 + par.6.192**: storia creazione `guide.html` CP12 Sessione 4 v3.0.0 Step 2 (baseline audit content S17)
+- **par.6.118**: pre-code scenario validation obbligatoria (rispettato in inventario 5 -> 4 placeholder correzione preliminare)
+- **par.6.157 / par.6.158**: UpdatePrompt Workbox registerSW + onNeedRefresh callback (F8 escluso Q1=b scope)
+- **par.6.191**: PWA basename `/pharmatimer/` (foundation Q6 fix `./` algoritmico)
+- **par.6.200 / par.6.205**: pattern sync 1 occorrenza runtime ImpostazioniTab post-bump (replicato CP3 S18)
+- **par.6.71 / par.6.85**: deviazioni storiche immutabili (gap s.6.198 / s.6.199 preservato, drift-doc-NEW S17 non corretto retroattivamente)
+- **AMB-11.B.7**: bump version solo a closing CP esecutivo completo (rispettato S17 no bump analisi-first)
+
+#### Sessione successiva
+
+Prompt `par.11.S` pre-frozen sotto questa sezione (Sessione 18 esecutiva guide.html audit content). One-liner apertura: `Esegui il prompt al par.11.S del Changelog.`
+
+---
+
+### 11.S Prompt Sessione 18 esecutiva — UX-N17 + audit content guide.html (CP1 patcher single cumulativo s.6.214 + CP2 CP browser empirico 7 scenari + CP3 closing bump rc.4)
+
+**One-liner apertura:** `Esegui il prompt al par.11.S del Changelog.`
+
+**Modalita:** Sessione 18 esecutiva secondo scope CP frozen par.22.66 (Q1-Q8 ratificate blanket S17). Pattern par.11.P / par.11.M / par.11.N / par.11.R-bis replicato (analisi-first dedicata S17 -> esecuzione S18 scope fissato + lesson par.6.118 pre-code scenario validation obbligatoria). Token spesi attesi 15-25K (CP0 sanity-light + 1 patcher idempotente ~10 anchor + CP browser empirico 7 scenari + CP3 closing pesante). Wall-clock atteso 1-1.5h distribuibili 1 giornata.
+
+#### Pre-letture obbligatorie (Claude in apertura S18)
+
+1. **par.22.66** integrale (sezione precedente + scope CP table + Q1-Q8 ratifiche + s.6.214 pre-allocata + risk notes)
+2. **par.22.65** integrale (baseline post-Sessione 16 deploy v3.0.1-rc.3 + smoke 5/5 verde)
+3. **par.22.64** integrale (closing S15 cluster C+D + origine UX-N17 CP3 empirico)
+4. **par.22.62 lesson 2 + par.22.43** (pattern single-deviation cluster cross-file, replicato S18 cluster audit content same-file)
+5. **par.6.192 + par.6.191** (storia creazione `guide.html` + PWA basename `/pharmatimer/`)
+6. **par.6.118 + par.22.42** (lesson learned: pre-code scenario validation + sub-AMB emergenti in cluster)
+7. **`public/guide.html`** dump integrale post-S17 (353 LOC, baseline anchor pre-CP1) — richiesto CP0 S18
+
+#### CP0 obbligatorio S18
+
+**Mac-side (Roberto):**
+
+```bash
+cd ~/Sviluppo/pharmatimer
+echo '=== CP0 baseline S18 esecutiva guide.html audit content ==='
+git status -sb
+git --no-pager log -3 --oneline --decorate
+git --no-pager tag --sort=-creatordate | head -3
+node -p "require('./package.json').version"
+npx vitest run 2>&1 | tail -8
+echo '--- branch operativi locali ---'
+git --no-pager branch
+echo '=== CP0 grep anchor pre-verification patcher CP1 ==='
+echo 'F1 badge-grey non ancora arrivata:'
+grep -n 'non ancora arrivata' public/guide.html
+echo 'F2 + F3 occorrenze Config:'
+grep -n 'Config' public/guide.html
+echo 'F4 footer href dotdot:'
+grep -n 'href="../"' public/guide.html
+echo 'F5 versione stale v3.0.0:'
+grep -n 'v3.0.0' public/guide.html
+echo 'F6 placeholder count:'
+grep -c 'class="placeholder"' public/guide.html
+echo 'F6-bis CSS rule placeholder occorrenze:'
+grep -n 'placeholder' public/guide.html | head -8
+echo '=== CP0 completato ==='
+```
+
+**Atteso baseline S18:**
+
+- branch main HEAD `<TBD-closing-S17-commit>` allineato origin/main, working tree clean
+- tag latest `v3.0.1-rc.3` invariato
+- package.json `3.0.1-rc.3` invariato (bump atteso CP3 S18)
+- 496/496 test su 59 files verdi
+- branch operativo step-13-guide-content-audit assente (creato CP0 S18 post-baseline)
+- Grep anchor pre-verification: F1 = 1 match, F2 + F3 >= 3 match Config nei path par.2 e par.6, F4 = 1 match footer href, F5 = 1 match v3.0.0 par.6 backup, F6 = 4 match `class="placeholder"`, F6-bis = CSS rule + 4 placeholder usage = 5+ occorrenze
+
+#### Scope frozen CP Sessione 18 (4 CP)
+
+| CP | Scope | Operazioni | Verifica |
+|---|---|---|---|
+| CP0 | Baseline sanity + branch + grep anchor | `git checkout -b step-13-guide-content-audit main` + grep anchor pre-verification 6 categorie | atteso anchor count: F1 = 1, F2 + F3 >= 3, F4 = 1, F5 = 1, F6 = 4, F6-bis CSS = 1+. Se divergente -> patcher v2 pre-prod |
+| CP1 (s.6.214) | Patcher Python idempotente content-based ~10 anchor `public/guide.html`. Sandbox verification round-trip + idempotency Run 2 SKIP gia eseguita Claude-side pre-delivery. | F1 badge-grey copy reformat ("Dose pianificata; l-orario di assunzione non e ancora arrivato") + F2 par.2 path "scheda Impostazioni, sezione Farmaci" + F3 par.6 path "scheda Impostazioni, sezione Dati" + F4 footer `href="../"` -> `href="./"` + F5 par.6 phrasing release-agnostic (rimozione "in v3.0.0") + F6 4 rimozione `<p class="placeholder">...</p>` + F6-bis rimozione CSS rule `.placeholder { ... }` dead code + F7 par.2 add paragrafo required-hint asterisco rosso + hint footer Salva | delta test 0 (no test guide.html, pwaManifest.test.js no impatto). Backup `.bak.cp1` untracked rimosso post-verifica empirica CP2 |
+| CP2 | CP browser empirico Roberto dev server o prod (post-build local) | Q2.1 par.3 badge-grey UX-N17 risolto: legge "Dose pianificata; l-orario di assunzione non e ancora arrivato" + Q2.2 par.2 path "scheda Impostazioni, sezione Farmaci" funzionale + Q2.3 par.6 path "scheda Impostazioni, sezione Dati" funzionale + Q2.4 footer "Torna all-app" click -> URL bar `/pharmatimer/` (verifica empirica Q6 inglobata) + Q2.5 zero placeholder visibili in tutte 6 sezioni + Q2.6 par.2 paragrafo required-hint asterisco leggibile + Q2.7 dark mode visivo OK post-rimozione CSS `.placeholder` (no broken layout) | 7/7 verde atteso. Sub-AMB CP2.4-bis emerge se Q2.4 falsifica Q6=a-merit |
+| CP3 closing | Bump + sync + cleanup + commit cumulativo + tag locale + merge ff + Changelog patcher s.22.67 | Bump 3.0.1-rc.3 -> 3.0.1-rc.4 `package.json` + sync `ImpostazioniTab.jsx` riga 484 "PharmaTimer 3.0.1-rc.3" -> "PharmaTimer 3.0.1-rc.4" (1 occ runtime par.6.200 / par.6.205, riferimenti storici header preservati par.6.71 / par.6.85) + cleanup `patcher_s6214_cp1.py` + `guide.html.bak.cp1` untracked + commit cumulativo branch operativo subject `CP3 S18 s.6.214 UX-N17 + audit content guide.html + bump v3.0.1-rc.4 + sync ImpostazioniTab + closing s.22.67` + tag annotato `v3.0.1-rc.4` LOCALE (NO push, deferred sessione successiva deploy follow-up pattern par.22.59 sotto-scala) + git checkout main + git merge --ff-only step-13-guide-content-audit + git branch -d step-13-guide-content-audit + Changelog patcher Python append-at-EOF par.22.67 closing S18 | delta test 0 (496/496 invariato) |
+
+**Delta test cumulativo target S18:** 0 (496/496 invariato, no test guide.html, no test ImpostazioniTab impattati sync version).
+
+#### Deviazioni s.6.NN pre-allocate Sessione 18
+
+| ID | Wave | CP target | Scope |
+|---|---|---|---|
+| s.6.214 | UX-N17 + audit content guide.html | CP1 | Single cumulativa F1 badge-grey copy UX-N17 + F2 par.2 path Config -> Impostazioni + F3 par.6 path Config -> Impostazioni -> Dati + F4 footer `../` -> `./` + F5 par.6 versione stale rimozione + F6 4 placeholder rimossi + F6-bis CSS dead `.placeholder` rule + F7 par.2 paragrafo required-hint (pattern par.22.62 lesson 2 + par.22.66 lesson 2 esteso cluster audit content same-file) |
+
+Numerazione progressiva da s.6.213 in avanti. Gap s.6.198 / s.6.199 placeholder preservati (principio par.6.71 / par.6.85 immutabile).
+
+#### Risk notes / pre-code scenario validation reminder S18
+
+1. **Pre-code dump anchor pre-CP1 OBBLIGATORIO** (lesson par.6.118 ricaduta ricorrente S14 + S15). Grep anchor CP0 valida F1-F7 match count pre-patcher delivery. Se grep mostra count divergente vs atteso (F1 = 1, F2 + F3 >= 3, F4 = 1, F5 = 1, F6 = 4) -> emettere patcher v2 prima di run prod, non blind in-prod.
+
+2. **Sandbox verification round-trip patcher CP1 pre-delivery** (lesson par.22.58 / par.22.62 / par.22.64 replicata). Claude esegue patcher su copia `/home/claude/guide_sandbox.html` + Run 2 SKIP idempotency verification + diff check anchor effettivi vs attesi pre-emit `/mnt/user-data/outputs/`. Sandbox e' la sicura contro silent discrepancies da memoria vs file reale (lesson par.6.71 / par.6.85).
+
+3. **Q4 collisione naming "Impostazioni" top-tab + sub-tab inevitabile:** F3 par.6 path rifrasato funzionale "scheda Impostazioni, sezione Dati" anti-collisione (Q4=a). Sub-AMB Q4-bis rinominazione sub-tab deferred opportunistic (richiede modifica React, pre-allocazione s.6.NN nuova).
+
+4. **CP2 Q2.4 footer empirico potenziale falsificazione Q6=a-merit:** se URL bar post-click footer "Torna all-app" diverso da `/pharmatimer/` (es. `/pharmatimer/index.html` esplicito necessario o redirect a `/`) -> sub-AMB CP2.4-bis emerge, patcher CP1-iter inline per fix alternativo (es. `./index.html` esplicito invece di `./` directory-relative). Pattern par.22.42 sub-AMB emergente CP browser empirico applicabile.
+
+5. **Bump 3.0.1-rc.3 -> 3.0.1-rc.4 trigger:** modifica `public/guide.html` runtime bundled via vite-plugin-pwa globPatterns -> bundle hash cambia -> AMB-11.B.7 bump version trigger semver. Sync ImpostazioniTab riga 484 (1 occ runtime) come par.6.200 / par.6.205. Riferimenti storici v3.0.0 / rc.1 / rc.2 / rc.3 in commenti header preservati par.6.71 / par.6.85.
+
+6. **Branch operativo cleanup post-merge ff main:** evitare ripetere lesson par.22.54 / par.22.55 branch operativo vivo locale tra sessioni. Cleanup nel CP3 stesso turno.
+
+7. **CP2 Q2.5 zero placeholder verifica deve coprire dark mode anche:** rimozione CSS rule `.placeholder` deve non lasciare orfani di styling (no `<p>` ex-placeholder con stile residual da altre rule). Q2.7 dark mode verifica complementare.
+
+#### Modalita delivery file Sessione 18
+
+Pattern par.22.58 + par.22.62 + par.22.64 replicato: patcher Python idempotente content-based anchor per `public/guide.html` (CP1) + patcher Python append-at-EOF per Changelog `par.22.67` (CP3 closing). Comandi git separati zsh-safe (single-quote echo, no `#`, no apostrofi italiani, `s.6.NN` invece di `par.6.NN` in commit messages, `-` invece di special chars). Tutti deliverable emessi da Claude come file via `present_files` da `/mnt/user-data/outputs/`, eseguiti Mac-side da `~/Downloads/`.
+
+#### Stato baseline atteso S18 chiusa positivamente
+
+- branch main HEAD `<TBD-merge-ff-S18>` 1-2 commit ahead origin/main (CP1 + CP3 cumulativo + Changelog patcher closing)
+- tag annotato `v3.0.1-rc.4` LOCALE (NO push, deferred sessione successiva deploy follow-up sotto-scala par.22.59)
+- branch operativo step-13-guide-content-audit cleanup post-merge ff (eliminato)
+- working tree clean post-cleanup patcher + `.bak.cp1` untracked
+- 496/496 test invariati su 59 files
+- package.json `3.0.1-rc.4`
+- ImpostazioniTab.jsx riga 484 "PharmaTimer 3.0.1-rc.4"
+- public/guide.html ~343 LOC atteso (353 - 10 net: F6 -4 placeholder rimossi + F6-bis -N CSS rule + F7 +K paragrafo required-hint + altre modifiche atomiche)
+- Changelog par.22.67 NEW (sintesi closing S18) + s.6.214 deviazione single cumulativa formalmente chiusa
+- 13 findings registry Fase 2 polish -> 12 residui (UX-N17 risolto s.6.214)
+- 5 drift-doc-NEW cumulativi invariati (carry-forward par.22.66)
+
+#### Out-of-scope S18 (esplicito)
+
+- F8 PWA UpdatePrompt par.1 caratteristiche (Q1=b Standard, scope futuro opportunistic Q1=c esteso)
+- Cattura asset binari screenshot reali (Q2=a placeholder rimossi solo testuali, sessione dedicata futura)
+- Sub-AMB Q4-bis rinominazione sub-tab "Impostazioni" -> "Generali" / "App" (richiede modifica React, pre-allocazione s.6.NN nuova sessione futura)
+- Push origin main + tag v3.0.1-rc.4 + redeploy gh-pages -> deferred sessione successiva deploy follow-up (aggregabile sotto-scala pattern par.22.59 + par.22.63 + par.22.65 simmetrici)
+- 12 findings registry residui post-S18 + 5 drift-doc-NEW cumulativi -> scope futuro opportunistic
+- Fase 3 backend FastAPI+MariaDB pivot -> deferred sessione successiva post-S18-deploy
+
+---
+
