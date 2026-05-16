@@ -48,7 +48,7 @@ export default function ConfigTabBar({ onTabClick } = {}) {
   return (
     <nav
       role="tablist"
-      aria-label="Sezioni Config"
+      aria-label="Sezioni Impostazioni"
       className="flex items-center gap-6 px-4 py-3 border-b"
       style={{ background: t.headerBg, borderColor: t.headerBorder }}
     >

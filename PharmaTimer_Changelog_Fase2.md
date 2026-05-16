@@ -14025,3 +14025,126 @@ Pattern par.22.58 + par.22.62 replicato: patcher Python idempotenti content-base
 - package.json 3.0.1-rc.3
 - Changelog par.22.63 NEW + eventuale par.11.S NEW
 - 14 findings registry Fase 2 polish -> 12 residui dopo Sessione 15 (UX-N1 + UX-N3 risolti s.6.212/213)
+
+
+### 22.63 Stato post-deploy Sessione 14 parte 2/2 retroattivo (push origin main + tag v3.0.1-rc.2 propagato + build bundle index-BghSZzVq.js + gh-pages forced update orphan-init + smoke 5/5 verde, emesso retroattivamente in CP4 closing Sessione 15 pattern par.22.59 aggregazione differita)
+
+**Modalita:** deploy follow-up sotto-scala inline post-CP5 Sessione 14 parte 2/2 (14 maggio 2026 sera tardi), emesso retroattivamente in CP4 closing Sessione 15 (16 maggio 2026 sera). Pattern par.22.59 aggregazione differita ratificata (sezione successiva con turno di chiusura). Token + wall-clock deploy attribuiti a Sessione 14 parte 2/2 originale.
+
+**Deploy operations:** push origin main commit cumulativo CP5 S14 parte 2/2 b8daf68 (subject "CP5 S14 parte 2/2 s.6.209 UX-N15 + s.6.211 sub-AMB 14.D hint asterisco + bump v3.0.1-rc.2 + sync ImpostazioniTab + closing s.22.61+s.22.62+s.11.R-bis") + tag annotato v3.0.1-rc.2 propagato sha 2a59177b + build production bundle index-BghSZzVq.js 431.06 kB / gzip 133.69 kB via vite-plugin-pwa generateSW + gh-pages forced update d0284d3..b16edf0 orphan-init pattern par.22.52 replicato (manuale cd dist + git init -b gh-pages, no npm run deploy script).
+
+**Smoke production curl 5/5 verde:** HTTP 200 root + bundle hash live index-BghSZzVq.js match esatto build local + grep 3.0.1-rc.2 embedded >=1 nel bundle + manifest 200 + sw.js 200. CDN propagazione GitHub Pages istantanea, nessuna stale cache. UpdatePrompt Workbox registerSW + onNeedRefresh par.6.157/158 scattera spontaneamente sui client gia installati nelle 24-48h post-deploy.
+
+**Verifica empirica retroattiva CP0 Sessione 15 (16 maggio 2026 ~21:12):** smoke 3/3 verdi (HTTP 200 root + bundle hash BghSZzVq match + 3.0.1-rc.2 embedded match), confermando propagazione stabile ~24h post-deploy. Tag annotato origin contiene audit trail completo via `git show v3.0.1-rc.2` (messaggio "cluster A+B FarmaciTab UX required-hint chiuso (s.6.208 UX-N8 + s.6.209 UX-N15 + s.6.211 sub-AMB 14.D hint asterisco)").
+
+**Zero deviazioni par.6.NN deploy Sessione 14 parte 2/2** (deploy + smoke + push, no codice). Findings registry invariati post-deploy. package.json 3.0.1-rc.2 invariato. Tests 495/495 invariati. Milestone deploy v3.0.1-rc.2 CHIUSA: PharmaTimer live https://timegates-code.github.io/pharmatimer/ bundle 3.0.1-rc.2 HTTP 200 + tag GitHub Releases + history lineare main-origin allineata.
+
+**Drift-doc-NEW retroattivo non corretto par.6.71/85:** par.11.R-bis riga 13950 cita "push origin main 443e156" mentre il commit effettivo pushato (e confermato empiricamente CP0 Sessione 15) e b8daf68 (HEAD main = origin/main = tag v3.0.1-rc.2). Discrepanza testuale par.11.R-bis non corretta retroattivamente, scope futuro opportunistico.
+
+#### Riferimenti par.22.63
+
+- **par.22.62**: closing Sessione 14 parte 2/2 (CP5 cumulativo s.6.209 + s.6.211, bump rc.2 tag locale pre-push)
+- **par.22.59**: pattern aggregazione differita deploy follow-up sotto-scala
+- **par.22.52**: pattern deploy v3.0.0 final originale replicato (gh-pages orphan-init manuale)
+- **par.6.157/158**: UpdatePrompt Workbox registerSW + onNeedRefresh callback
+- **par.6.71/85**: deviazioni storiche immutabili (drift 443e156 vs b8daf68 segnalato non corretto)
+
+---
+
+### 22.64 Stato post-Sessione 15 cluster C+D NavBar UX-N1 + Guida UX-N3 (CP0-bis discovery + CP1 s.6.212 NavBar gear + label Impostazioni + sub-AMB 15.A inglobata + CP2-a s.6.213 SezioneInfo single-affordance + CP2-bis defensive test +1 + CP3 browser empirico 6/6 verde + CP4 closing cumulativo, 496/496 verdi, bump 3.0.1-rc.3 tag locale, merge ff main, cluster C+D chiuso completo)
+
+**Modalita:** Sessione 15 mista (analisi-first locale apertura Q1-Q3 + esecutiva 5 CP esplosi a 6 step CP0-bis + CP1 + CP2-a + CP2-bis + CP3 + CP4 closing). Pattern par.11.R Sessione 14 replicato in scala simmetrica + lesson par.22.55 split safety-first applicato sub-CP intra-sessione (CP2 splittato in CP2-a code + CP2-bis defensive test post-discovery test struct). Token spesi totali ~30-40K (dentro preventivo 30-50K). Wall-clock totale ~2-2.5h.
+
+**CP0 baseline verde 9/9:** smoke deploy v3.0.1-rc.2 3/3 verde (HTTP 200 + bundle BghSZzVq + 3.0.1-rc.2 embedded), branch main top b8daf68 allineato origin/main tag v3.0.1-rc.2, package.json 3.0.1-rc.2, 495/495 test su 59 files, working tree clean, branch step-11-ux-required-hint-data-inizio assente. Discovery path NavBar.jsx: src/components/shared/ (NON src/components/nav/ come ipotizzato par.11.R-bis riga 13974, drift-doc-NEW retroattivo non corretto par.6.71/85). ImpostazioniTab.jsx con SezioneAiuto (righe 372-409 par.6.192) + SezioneInfo (righe 475-510 par.22.37 + par.6.162 closure Z) entrambi con link guide.html -> ridondanza single-affordance da risolvere.
+
+**Q1-Q3 analisi-first ratificate:** Q1=(a) scope visivo minimale NavBar gear icon + label italiano "Impostazioni" + sub-AMB Q1-bis/ter/quater decidi tu blanket (Lucide settings v0.383 path scelto, commento header sync, grep Config CP0-bis pre-patcher); Q2=(B) commitment esplicito design ratificato Roberto turno chiarimento "Conseguenze 4 opzioni" -> rimuovi link Guida da SezioneInfo, mantieni SezioneAiuto (single source of truth allineato par.6.192 + par.22.43 CP12 v3.0.0 Step 2); Q3=(alfa) split 5 CP base + sub-split CP2-a + CP2-bis post-discovery test struct lesson par.22.55.
+
+**CP0-bis discovery pre-patcher verde 6/6:** branch operativo step-12-ux-navbar-guida creato da main@b8daf68. Grep Config: 1 occorrenza canonica NavBar.jsx:17 (target CP1) + 1 occorrenza collaterale ConfigTabBar.jsx:51 aria-label "Sezioni Config" (sub-AMB 15.A italianizzata inglobata in s.6.212). Grep test Config: zero match -> no test refit CP1. Grep Guida/guideUrl/sezione-info in test files: zero match -> no test refit CP2. ImpostazioniTab.test.jsx 334 LOC con 5 describe top-level (Nome/Tema/Avanzate-DEV/Notifiche/Dati), no describe SezioneInfo/SezioneAiuto esistente. Defensive test CP2-bis append-at-EOF strategia ratificata (no riconfigurazione setup).
+
+**CP1 s.6.212 chiuso (UX-N1 NavBar gear icon + label Impostazioni + sub-AMB 15.A ConfigTabBar aria-label):** patcher Python idempotente content-based applicato pulito 2 file. Sandbox verification round-trip + idempotency Run 2 SKIP. 3 anchor modifiche atomiche:
+- NavBar.jsx TABS[3] line (riga 17): label Config -> Impostazioni + path SVG cerchio generico -> Lucide settings v0.383 (gear contour + cerchio centrale combinati in single d string per coerenza struttura componente esistente).
+- NavBar.jsx header comment (riga 7): "Config tab" -> "Impostazioni tab".
+- ConfigTabBar.jsx aria-label (riga 51): "Sezioni Config" -> "Sezioni Impostazioni" (sub-AMB 15.A emersa CP0-bis grep, italianizzazione collaterale stesso file-non-stesso-componente).
+- Delta test: 495/495 invariato (no test refit).
+- Commit isolato NON emesso (aggregato CP4 cumulativo).
+
+**CP2-a s.6.213 chiuso (UX-N3 SezioneInfo single-affordance):** patcher Python idempotente content-based 1 anchor multi-line. Sandbox verification + idempotency Run 2 SKIP.
+- ImpostazioniTab.jsx SezioneInfo (righe 475-510): rimosso const guideUrl dead post-link-removal + separator " ·{' '}" finale + intero blocco <a href={guideUrl}>Guida</a> 8 righe. Net -10 righe / +1 (compatta "by timegates" senza separator finale).
+- Delta test: 495/495 invariato (no test impattati grep CP0-bis).
+
+**CP2-bis defensive test chiuso:** patcher Python append-at-EOF idempotente marker-based (CP2-bis Sessione 15 s.6.213 univoco).
+- ImpostazioniTab.test.jsx (+28 righe append): 1 describe top-level + 1 it block "s.6.213 SezioneInfo non contiene link" con 3 asserzioni (queryAllByRole link length 0 + textContent /PharmaTimer/ + textContent /by timegates/). Pattern textContent vs getByText per robustezza markup quirks (em interleaved nel p parent).
+- Delta test: 495 -> 496 (+1, target rivisto CP0-bis discovery centrato esatto).
+
+**CP3 CP browser empirico verde 6/6:** dev server Mac Chrome localhost:5173/pharmatimer/. Q3.1 gear icon Lucide settings v0.383 riconoscibile a 20×20 stroke 1.8 verde; Q3.2 label "Impostazioni" no overflow mobile <=375px verde; Q3.3 click + active state verde; Q3.4 ConfigTabBar aria-label "Sezioni Impostazioni" DevTools confermato verde; Q3.5 bottone SezioneAiuto regression OK verde funzionale (finding nuovo emerso UX-N17 su CONTENT guide.html "non ancora arrivata" equivoco, deferred opportunistic sessione dedicata revisione copy); Q3.6 footer SezioneInfo solo PharmaTimer + by timegates verde. Zero sub-AMB CP3-iter inline necessari, pattern par.22.42 non triggerato (gear leggibile + label senza overflow).
+
+**CP4 closing cumulativo:** cleanup 3 file lavoro untracked (patcher_cp1_s6212.py + patcher_cp2a_s6213.py + patcher_cp2bis_s6213_test.py, drift .gitignore .bak.cp* + patcher_*.py carry-forward par.22.61/62 non risolto, scope futuro opportunistico). Bump package.json 3.0.1-rc.2 -> 3.0.1-rc.3 + sync ImpostazioniTab.jsx SezioneInfo riga 484 "PharmaTimer 3.0.1-rc.2" -> "PharmaTimer 3.0.1-rc.3" (1 sola occorrenza runtime post-CP2-a, pattern par.6.200/205, riferimenti storici header preservati par.6.71/85). Patcher Python Changelog append-at-EOF par.22.63 retroattivo deploy + par.22.64 closing S15 (questo file). Commit cumulativo unico su branch operativo: subject "CP4 S15 s.6.212 UX-N1 NavBar gear + label Impostazioni + s.6.213 UX-N3 single-affordance Guida + bump v3.0.1-rc.3 + sync ImpostazioniTab + closing s.22.63+s.22.64". 6 file changed (NavBar.jsx + ConfigTabBar.jsx + ImpostazioniTab.jsx + ImpostazioniTab.test.jsx + package.json + PharmaTimer_Changelog_Fase2.md). Tag annotato v3.0.1-rc.3 LOCALE su commit cumulativo (NO push, deferred sessione successiva deploy follow-up pattern par.22.59 sotto-scala). Checkout main + git merge --ff-only step-12-ux-navbar-guida (history lineare, N commit ahead origin/main). Cleanup branch operativo: git branch -d step-12-ux-navbar-guida (safe post-merge ff).
+
+**Deviazioni s.6.NN emesse Sessione 15:** 2 cumulative (s.6.212 + s.6.213, allineate pre-allocazione par.22.62 con shift forward post-consumo s.6.211 in Sessione 14).
+- **s.6.212** UX-N1 NavBar tab Config rebrand: gear icon Lucide settings v0.383 + label italianizzato "Impostazioni" + commento header sync + sub-AMB 15.A ConfigTabBar aria-label italianizzata inglobata.
+- **s.6.213** UX-N3 SezioneInfo single-affordance Guida: rimozione link doppio dal footer SezioneInfo + var morta guideUrl. Convergenza con par.6.192 SezioneAiuto consumer PROD ratificato (allineamento storia post-CP12 v3.0.0 Step 2).
+
+**Cluster C+D Sessione 15 CHIUSO COMPLETO:** UX-N1 (s.6.212 CP1) + UX-N3 (s.6.213 CP2-a + CP2-bis defensive test). Sub-AMB 15.A inglobata s.6.212 (no nuovo s.6.NN dedicato, audit trail single-deviation pattern par.22.62 lesson 2 esteso a italianizzazione cross-file stesso fix logico).
+
+**Finding nuovo emerso CP3 empirico:** UX-N17 copy `guide.html` "non ancora arrivata" equivoco (suggerisce indisponibilita farmaco invece di tempistica futura dose). Registry deferred opportunistic, scope sessione dedicata revisione copy guida HTML. Numerazione progressiva post-drift-doc-N13 par.22.62.
+
+**Drift-doc-NEW segnalati Sessione 15 NON corretti retroattivamente par.6.71/85:**
+- par.11.R-bis riga 13974 ipotizzava src/components/nav/ path NavBar, path effettivo src/components/shared/NavBar.jsx (discoverato CP0).
+- par.11.R-bis riga 13950 cita "push origin main 443e156" ma commit effettivo pushato e b8daf68 (par.22.63 ratificato empiricamente).
+
+**Lesson learned Sessione 15 (consolidate):**
+1. **Split safety-first sub-CP intra-sessione legittimo quando emerge necessita post-discovery:** CP2 originalmente unitario splittato in CP2-a (code change ImpostazioniTab.jsx) + CP2-bis (defensive test append-at-EOF) post-discovery struttura test file mostrava 5 describe top-level senza describe SezioneInfo. Pattern par.22.55 sub-split estesa a "post-discovery che rivela necessita pre-code scenario validation par.6.118 prima di emettere patcher test". Cost marginale +5K token, beneficio: patcher test calibrato su struttura reale invece di speculazione su anchor di insert.
+2. **Sub-AMB collaterale emersa CP0-bis grep legittimamente inglobata in deviazione esistente:** sub-AMB 15.A ConfigTabBar aria-label italianizzazione e' lo stesso fix logico di s.6.212 (label tab Config rebrand italianizzato) ma su file diverso. Inglobamento single-deviation audit trail piu pulito di s.6.NN dedicato. Pattern par.22.42 esteso a italianizzazione cross-file stesso fix logico.
+3. **CP browser empirico produce finding content-level distinto da finding affordance-level:** Q3.5 verde funzionale (bottone Guida apre guide.html: regression check OK) ma rosso content (guide.html "non ancora arrivata" copy equivoco). Separazione affordance vs content registrata via finding UX-N17 dedicato, no conflitto con chiusura UX-N3 affordance. Pattern par.22.42 esteso ulteriormente a finding-stratification per layer (affordance vs copy).
+
+#### Stato git post-Sessione 15
+
+- branch main HEAD <TBD-CP4-cumulative-commit> N commit ahead origin/main (CP1 + CP2-a + CP2-bis + CP4 cumulativo)
+- branch operativo step-12-ux-navbar-guida cleanup post-merge ff (eliminato)
+- tag annotato v3.0.1-rc.3 LOCALE su <TBD-CP4-cumulative-commit> (NO push)
+- tag v3.0.1-rc.2 su b8daf68 invariato
+- package.json 3.0.1-rc.3
+- 496/496 test verdi su 59 files
+- working tree clean post-cleanup patcher untracked
+
+#### Pre-existing follow-up ancora flagged (carry-forward par.22.62)
+
+- par.6.119 cross-midnight cards visual deferred
+- par.6.120 actions.presa() simulated_now DEV deferred
+- 14 findings registry Fase 2 polish post-S14 -> 13 residui post-S15 (UX-N1 risolto s.6.212 + UX-N3 risolto s.6.213; UX-N17 nuovo emerso CP3 deferred opportunistic)
+- 2 drift-doc-NEW S14 carry-forward (.gitignore + FormField duplicato ProfiliTab.jsx:529)
+- 2 drift-doc-NEW S15 nuovi (src/components/nav/ path par.11.R-bis riga 13974 + 443e156 commit ref par.11.R-bis riga 13950)
+- discovery-N7 data_inizio default today (par.6.210 NON emessa S14, gap preservato) -> deferred opportunistic futuro
+
+#### Out-of-scope Sessione 15 (esplicito)
+
+- Push origin main + tag v3.0.1-rc.3 + redeploy gh-pages -> deferred sessione successiva deploy follow-up (aggregabile sotto-scala pattern par.22.59)
+- UX-N17 copy guide.html -> sessione dedicata revisione copy guida HTML
+- 4 drift-doc-NEW cumulative + 13 findings registry residui -> scope futuro opportunistico
+- Fase 3 backend FastAPI+MariaDB pivot -> deferred sessione successiva post-S15
+
+#### Riferimenti par.22.64
+
+- **par.22.63**: retroattivo deploy S14 parte 2/2 (emesso stesso CP4 S15 closing)
+- **par.22.62**: closing S14 parte 2/2 + 3 lesson learned + pre-allocazione s.6.212 + s.6.213 TBD
+- **par.22.60**: branching-decisione S13 + ratifica cluster C+D + scope CP non pre-frozen par.11.R-bis
+- **par.22.58**: pattern patcher Python idempotente content-based replicato CP1 + CP2-a
+- **par.22.55**: pattern sub-CP split intra-sessione lesson learned (CP2-a + CP2-bis defensive test)
+- **par.22.42**: sub-AMB emergenti in cluster (sub-AMB 15.A CP0-bis grep + UX-N17 CP3 empirico)
+- **par.6.118**: pre-code scenario validation obbligatoria (rispettata sandbox CP1 + CP2-a + CP2-bis pre-delivery)
+- **par.6.71/85**: deviazioni storiche immutabili + gap numerazione preservato (drift-doc-NEW S15 non corretti)
+- **par.6.192 + par.22.43**: SezioneAiuto consumer PROD ratificato (storia s.6.213 single-affordance)
+- **AMB-11.B.7**: bump version solo a closing CP esecutivo completo (rispettato: bump 3.0.1-rc.3 a CP4)
+
+#### Sessione successiva
+
+Nessun par.11.S prompt pre-frozen. Aperture opportunistiche su:
+- Deploy follow-up sotto-scala S15 (push origin main + tag v3.0.1-rc.3 + redeploy gh-pages + smoke production verde) — aggregabile pattern par.22.59 + par.22.62 sotto-scala se sessione breve dedicata
+- 13 findings registry Fase 2 polish residui (cluster priority TBD)
+- UX-N17 revisione copy guide.html (sessione dedicata content guida HTML)
+- Pivot Fase 3 backend FastAPI+MariaDB (par.11.D eseguibile da par.22.36)
+- 4 drift-doc-NEW cumulative (.gitignore + FormField ProfiliTab + nav/ path + 443e156 ref) scope opportunistic
+
+One-liner sessione successiva dipende da delivery target ratificato in apertura sessione fresca.
+
+---

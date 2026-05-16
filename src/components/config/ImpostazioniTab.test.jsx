@@ -332,3 +332,31 @@ describe('ImpostazioniTab — Sezione Dati "Ricomincia da capo" (CP6 §6.180)', 
     expect(resetAllData).toHaveBeenCalledWith();
   });
 });
+
+
+// =====================================================================
+// CP2-bis Sessione 15 s.6.213 - Sezione Info single-affordance Guida
+// =====================================================================
+//
+// Defensive test for the single-affordance ratification: SezioneInfo
+// must no longer contain a Guida link (redundant residual link removed
+// by patcher CP2-a). SezioneAiuto remains the PROD-ratified consumer
+// for the guide HTML (cf. §6.192 + §22.43 CP12 v3.0.0 Step 2).
+//
+// Regression detector: if a future refactor reintroduces ANY link in
+// SezioneInfo (e.g. "Apri Guida", "Manuale", privacy policy, etc.),
+// this test fails. Branding text preservation is also asserted.
+
+describe('ImpostazioniTab — Sezione Info (CP2-bis Sessione 15 s.6.213)', () => {
+  it('s.6.213 SezioneInfo non contiene link (single-affordance Guida via SezioneAiuto)', () => {
+    renderWithProvider(<ImpostazioniTab />, {
+      stateOverrides: { impostazioni: {} },
+    });
+    const info = screen.getByTestId('sezione-info');
+    // Defensive: zero links inside SezioneInfo. Single source of truth = SezioneAiuto.
+    expect(within(info).queryAllByRole('link')).toHaveLength(0);
+    // Branding text retained.
+    expect(info.textContent).toMatch(/PharmaTimer/);
+    expect(info.textContent).toMatch(/by timegates/);
+  });
+});

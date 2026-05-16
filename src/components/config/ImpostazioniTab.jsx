@@ -474,7 +474,6 @@ function SezioneAvanzate() {
 
 function SezioneInfo() {
   const { tokens: t } = useTheme();
-  const guideUrl = `${import.meta.env.BASE_URL}guide.html`;
   return (
     <section
       data-testid="sezione-info"
@@ -482,15 +481,7 @@ function SezioneInfo() {
       style={{ borderTopColor: t.headerBorder }}
     >
       <p className="text-xs" style={{ color: t.textPrimary, opacity: 0.6 }}>
-        PharmaTimer 3.0.1-rc.2 · <em className="italic">by timegates</em> ·{' '}
-        <a
-          href={guideUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: t.textPrimary, textDecoration: 'underline' }}
-        >
-          Guida
-        </a>
+        PharmaTimer 3.0.1-rc.3 · <em className="italic">by timegates</em>
       </p>
     </section>
   );
