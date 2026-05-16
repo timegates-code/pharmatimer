@@ -14148,3 +14148,72 @@ Nessun par.11.S prompt pre-frozen. Aperture opportunistiche su:
 One-liner sessione successiva dipende da delivery target ratificato in apertura sessione fresca.
 
 ---
+
+
+### 22.65 Stato post-deploy Sessione 16 v3.0.1-rc.3 (push origin main 94fac42 + tag v3.0.1-rc.3 propagato sha 5528c89 + build bundle index-5olefnyQ.js + gh-pages forced update db1b117 orphan-init + smoke 5/5 verde post-CDN-soak ~75s, milestone deploy v3.0.1-rc.3 CHIUSA)
+
+**Modalita:** Sessione 16 deploy follow-up sotto-scala v3.0.1-rc.3 (16 maggio 2026 sera tardi). Pattern par.22.59 (S12 v3.0.1-rc.1) + par.22.63 (S14 retroattivo v3.0.1-rc.2) replicato esatto in scala simmetrica. Token spesi ~5-10K. Wall-clock ~30-40 min (incluso soak CDN ~6 min). 4 CP: CP0 baseline sanity-light + CP1 push origin main + tag + CP2 build production + gh-pages forced update + CP3 smoke production con re-smoke post-CDN-soak.
+
+**CP0 baseline sanity-light verde 6/6:** branch main HEAD 94fac42 (closing CP4 Sessione 15 par.22.64) 1 commit ahead origin/main pre-push + tag latest v3.0.1-rc.3 LOCALE su 94fac42 + package.json 3.0.1-rc.3 + 496/496 test su 59 files + working tree clean + gh-pages SHA pre-deploy b16edf0 (post-Sessione 14 deploy par.22.63).
+
+**CP1 push origin main + tag v3.0.1-rc.3 propagato:** push main 1 commit b8daf68..94fac42 (12 objects + 10 deltas) verde + push tag annotato v3.0.1-rc.3 sha 5528c89dc776d845ed76301cb6b5e078e403f778 nuovo verde. Post-push main allineato origin/main + tag object visibile su remote refs/tags/v3.0.1-rc.3.
+
+**CP2 build production + gh-pages forced update orphan-init:** npm run build verde via vite v5.4.21 + vite-plugin-pwa v0.20.5 generateSW. Bundle production index-5olefnyQ.js 431.48 kB / gzip 133.85 kB (vs precedente index-BghSZzVq.js 431.06 kB / gzip 133.69 kB rc.2, delta +0.42 kB raw / +0.16 kB gzipped per modifiche s.6.212 + s.6.213 + bump+sync CP4 Sessione 15). Workbox precache 17 entries 470.62 KiB. gh-pages orphan-init pattern par.22.52 / par.22.59 / par.22.63 replicato (cd dist + git init -b gh-pages + commit "Deploy v3.0.1-rc.3" + force push). Forced update b16edf0...db1b117 (sha db1b117631e00d14410e0ac3c36a4b04526b55a6). Cleanup dist/.git pre-CP3 (preservo dist/ artifacts locali).
+
+**CP3 smoke production curl 5/5 verde post-CDN-soak ~75s:** Round iniziale a t+10s post-deploy ha mostrato Smoke 2/3 rosso (CDN edge cache propagation lag GitHub Pages), pattern non documentato in par.22.59/par.22.63 ma anticipato par.11.R-bis riga 13957 ("Se Sessione 15 venisse aperta >2 settimane post-Sessione 14 parte 2/2 e il bundle hash live non corrispondesse piu..."). Re-smoke Round 1 a t+75s post-push verde 5/5 stabile (HTTP 200 root + LIVE=index-5olefnyQ.js match esatto LOCAL + grep 3.0.1-rc.3 embedded =1 nel bundle + manifest 200 + sw.js 200). Round 2 a t+195s + Round 3 a t+375s confermano stato stabile steady. Diagnostica addizionale: `git ls-remote origin refs/heads/gh-pages` ritorna db1b117 confermato + curl diretto `assets/index-5olefnyQ.js` HTTP 200. UpdatePrompt Workbox registerSW + onNeedRefresh par.6.157/158 scattera spontaneamente sui client v3.0.1-rc.2 cached nelle 24-48h.
+
+**Zero deviazioni par.6.NN Sessione 16** (deploy + smoke, no codice). package.json 3.0.1-rc.3 invariato (AMB-11.B.7 rispettato: no bump in deploy follow-up). Tests 496/496 invariati. 13 findings registry Fase 2 polish invariati carry-forward par.22.64 (UX-N17 + 12 residui). 4 drift-doc-NEW cumulative invariati carry-forward par.22.64. **Milestone deploy v3.0.1-rc.3 CHIUSA:** PharmaTimer live https://timegates-code.github.io/pharmatimer/ bundle 3.0.1-rc.3 HTTP 200 + tag GitHub Releases v3.0.1-rc.3 sha 5528c89 + history lineare main-origin allineata. Cluster C+D NavBar UX-N1 + ImpostazioniTab Guida UX-N3 raggiunti utenti finali via CDN GitHub Pages. Trilogia v3.0.1-rc.3 codice (par.22.64) + deploy (par.22.65) chiusa completa parte 1+2 di 2.
+
+**Lesson learned Sessione 16:**
+1. **CDN edge cache GitHub Pages propagation non istantanea:** mismatch a t+10s post-push attestato empiricamente, propagation stabile a t+75s nei test (range tipico osservato 60-120s post-push). Pattern soak minimo 60s prima del primo smoke raccomandato per future deploy follow-up. Lessico "CDN propagazione istantanea" par.22.59/63 NON corretto retroattivamente principio par.6.71/85, ma lesson learned operativa per future deploy.
+2. **Re-smoke loop pattern con pause cumulative funziona pulito:** 3 round con pause 50/120/180s incrementali permette di catturare CDN propagation quando avviene + verificare stabilita steady senza intervento manuale. Cost marginale ~6 min wall-clock, beneficio: zero ambiguita verdetto smoke vs CDN-lag temporaneo.
+3. **Diagnostica addizionale `git ls-remote` + curl diretto bundle URL complementari ai 5 smoke standard:** se Smoke 2 (bundle hash match) fallisce, curl diretto al NEW_BUNDLE conferma se il file e on-server (deploy verde + cache lag) o off-server (deploy fail). Pattern incluso nei prossimi deploy follow-up come step diagnostico standard.
+
+#### Stato git post-Sessione 16
+
+- branch main HEAD 94fac42 (post-CP4 Sessione 15) allineato origin/main post-push CP1
+- tag annotato v3.0.1-rc.3 sha 5528c89 propagato origin (vs LOCALE pre-Sessione 16)
+- tag v3.0.1-rc.2 sha 2a59177b invariato (par.22.63)
+- tag v3.0.1-rc.1 invariato
+- gh-pages db1b117 (vs b16edf0 par.22.63), forced update orphan-init
+- package.json 3.0.1-rc.3 invariato
+- 496/496 test invariati
+- working tree clean post-cleanup dist/.git (pre-doc-only commit par.22.65)
+
+#### Pre-existing follow-up ancora flagged (carry-forward par.22.64)
+
+- par.6.119 cross-midnight cards visual deferred
+- par.6.120 actions.presa() simulated_now DEV deferred
+- 13 findings registry Fase 2 polish (UX-N17 + 12 residui)
+- 4 drift-doc-NEW cumulative (.gitignore + FormField ProfiliTab.jsx:529 + nav/ path par.11.R-bis + 443e156 ref par.11.R-bis)
+- discovery-N7 data_inizio default today (par.6.210 gap preservato) -> deferred opportunistic
+- UX-N17 copy guide.html "non ancora arrivata" equivoco -> sessione dedicata revisione copy
+
+#### Out-of-scope Sessione 16 (esplicito)
+
+- UX-N17 revisione copy guide.html -> sessione dedicata
+- 4 drift-doc-NEW + 12 findings registry -> scope futuro opportunistic
+- Fase 3 backend FastAPI+MariaDB pivot -> sessione successiva
+
+#### Riferimenti par.22.65
+
+- **par.22.64**: closing Sessione 15 cluster C+D NavBar + Guida (codice CP4 cumulativo 94fac42)
+- **par.22.63**: retroattivo deploy Sessione 14 parte 2/2 v3.0.1-rc.2 (pattern replicato esatto)
+- **par.22.59**: deploy Sessione 12 v3.0.1-rc.1 (pattern originale)
+- **par.22.52**: deploy v3.0.0 final originale (pattern radice gh-pages orphan-init manuale)
+- **par.6.157/158**: UpdatePrompt Workbox registerSW + onNeedRefresh callback
+- **par.6.71/85**: deviazioni storiche immutabili (lessico "CDN propagazione istantanea" par.22.59/63 non corretto retroattivamente, lesson learned 1 documentato)
+- **AMB-11.B.7**: bump version solo a closing CP esecutivo (rispettato: no bump Sessione 16 deploy follow-up)
+- **par.11.R-bis riga 13957**: anticipava CDN propagation non garantita istantanea
+
+#### Sessione successiva
+
+Nessun prompt par.11.S/T pre-frozen. Aperture opportunistiche su:
+- UX-N17 revisione copy guide.html (sessione dedicata content guida HTML)
+- Cluster doc-only XS 4 drift-doc-NEW cleanup (.gitignore + FormField duplicato ProfiliTab.jsx:529 + 2 drift par.11.R-bis)
+- 12 findings registry Fase 2 polish residui (cluster priority TBD)
+- Pivot Fase 3 backend FastAPI+MariaDB (par.11.D eseguibile da par.22.36)
+
+One-liner sessione successiva dipende da delivery target ratificato in apertura sessione fresca.
+
+---
