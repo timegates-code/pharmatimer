@@ -13548,6 +13548,93 @@ Nessun prompt par.11.R pre-frozen. Aperture opportunistiche su Fase 2 polish res
 par.11.R Sessione 14 esecutiva micro-batch UX FarmaciTab cluster A+B (UX-N8 + UX-N15 + discovery-N7), one-liner "Esegui il prompt al par.11.R del Changelog". Sessione 15 par.11.R-bis (cluster C+D NavBar+Guida) deferred post-Sessione 14 closing per context fresh.
 
 
+### 22.61 Stato post-Sessione 14 parte 1/2 (CP1 chiuso s.6.208 UX-N8 asterisco Nome + hint footer, 493/493 verdi, split safety-first ratificato post-CP1, CP3 abortito a apertura Q5=b, parte 2/2 deferred par.11.R-cont)
+
+**Modalita:** Sessione 14 parte 1/2 chiusura parziale post-CP1. Pattern par.22.55 split safety-first applicato evidence-based (1 sub-AMB-NEW emersa CP0 + 1 ricaduta lesson par.6.118 patcher refit v1 abortito hanno consumato round superiori al nominale). CP2+CP4+CP5 deferred parte 2/2 con context fresh per qualita superiore. Token spesi parte 1/2 ~25-30K. Wall-clock parte 1/2 ~50-60 min.
+
+**CP0 baseline verde 6/7 + 1 follow-up CP0-ext:** branch main@b76bfde allineato origin/main (closing par.22.60+par.11.R doc-only di Sessione 13), tag latest v3.0.1-rc.1 su d4f48dc, package.json 3.0.1-rc.1, 490/490 test su 59 files verdi, working tree clean. Footprint FarmaciTab.jsx 1535 LOC. Branch operativo step-11-ux-required-hint-data-inizio NON creato in CP0 (output mostrava solo main), creato in CP0-ext con git switch -c.
+
+**CP0-ext dump empirico FarmaciTab.jsx + sub-AMB-NEW emerse:** Componenti FormField/FormSelect/FormTextarea definiti INLINE in FarmaciTab.jsx (linee 1432/1463/1493), non in file separati come avrei assunto. canSave (linea 846) = `(mode === 'create' || isDirty) && allRequiredFilled && !minimoInvalid` quattro condizioni disabled. Linea 138+433 conferma `data_inizio: tomorrowIso()` default preservato da Q5=(b) revert NON ratificato. Drift collaterale flagged out-of-scope: FormField duplicato in ProfiliTab.jsx:529 — estendere API in FarmaciTab.jsx NON propaga a ProfiliTab. Tracking come drift-doc-NEW scope futuro.
+
+**Sub-AMB-NEW 14.A/B/C ratificate blanket "decidi tu" su default raccomandati:**
+
+| AMB | Tema | Default ratificato |
+|---|---|---|
+| **14.A** | Layer intervento `*` required | (a) estendere prop `required` a FormField + FormSelect, render `*` inline + `aria-required` |
+| **14.B** | Posizionamento hint | (a) dentro `<footer>` sopra riga bottoni Annulla/Salva |
+| **14.C** | Condizione visibility hint | (a) `!allRequiredFilled` (no `!canSave`, evita fuorviante edit-non-dirty) |
+
+Sub-AMB emersa in CP0-ext post-analisi `canSave` empirica: Q3 letterale ("sempre quando Salva disabled") imprecisa, raffinata a `!allRequiredFilled`. Pattern par.22.42 sub-AMB emergenti in cluster + par.6.118 pre-code scenario validation obbligatoria estesa a decision tree gate Salva.
+
+**CP1 chiuso (commit `1cbe2cd` su branch operativo `step-11-ux-required-hint-data-inizio`):**
+
+- FarmaciTab.jsx (+15 -1): FormField API estesa prop `required` (asterisco `*` rosso aria-hidden nel label + aria-required="true" sull input), chiamata `<FormField label="Nome" required />` aggiornata, hint "Compila i campi obbligatori" piazzato in `<footer>` sopra riga bottoni condizionato a `!allRequiredFilled` (color `t.textPrimary` opacity-70, safe vs theme props incerte).
+- FarmaciTab.test.jsx (+71 -3): refit 3 site `getByLabelText('Nome')` → `getByLabelText(/^Nome/)` (collaterale par.6.208: asterisco dentro `<label>` cambia textContent a "Nome*", RTL non rispetta aria-hidden in questo setup empirico). 3 test NEW: (1) asterisco strutturale aria-required + span aria-hidden, (2) hint visible in create-mode form fresh, (3) hint hidden post-compilare Nome+Fisso+Relazione_pasto via waitFor.
+- Suite: 490 → **493/493 verdi** (+3 bound conservativo).
+- File `.bak.cp1` rimangono untracked (NON ignored — drift-doc-NEW minore: `.gitignore` non copre `.bak.cp*` pattern, memoria horizon dichiarava `.bak.cpN untracked via .gitignore` ma empirically `??` mostra in git status).
+
+**Lesson learned ricaduta parte 1/2 par.6.118 pre-code scenario validation:**
+
+- Rispettato in dump body FormField/FormSelect pre-patcher prod CP1.
+- Mancato sul context anchor test refit: patcher v1 abortito su S1 perche assumevo contesto sopra/sotto i 3 site `getByLabelText('Nome')` invece di dumparlo. Costo: 1 round bash supplementare + patcher v2. Site 1+2 erano IDENTICI riga-per-riga (`const nomeInput = within(drawer).getByLabelText('Nome');`), Site 3 univoco con `'TestFarmaco'`. Patcher v2 globale + univoco risolutivo. Lesson da reiterare in closing complessivo parte 2/2.
+
+**Decisione operativa Q5=(b) CP3 abortito a apertura:**
+
+Roberto ratificato (b) — preservare default `data_inizio = domani` (Q-S6 par.22.40) per rolling-window personale, accettando costo "1 tap manuale" novice-first che cambia data a oggi. Razionale: target v3.0.0 "UX-ready for novices" NON forza revert su default Roberto-specifico se costo utente novice e basso e gestibile. par.6.210 discovery-N7 NON emessa, gap preservato (pattern par.6.71/85 fatto-storico immutabile, replica par.6.198/199). Test esistente Q-S6 (asserta data_inizio = domani) NON refit (resta verde, valido). discovery-N7 torna a registry findings deferred opportunistic post-Sessione 14 (carry-forward).
+
+**Split safety-first ratificato post-CP1 evidence-based:**
+
+Roberto ratificato split parte 1/2 (CP1 done) + parte 2/2 (CP2 + CP4 + CP5) per context fresh. Pattern par.22.55 lesson learned: budget rounds vicino limit + sub-AMB-NEW emerse + 1 ricaduta lesson par.6.118 = trigger safety-first split anche se nominalmente la Sessione 14 era 1-session-end-to-end. Sub-sessione successiva apre fresh con state baseline ben definito (commit `1cbe2cd`, 493/493 verdi, branch step-11-ux-required-hint-data-inizio HEAD).
+
+**Out-of-scope parte 1/2 (esplicito):**
+
+- CP2 UX-N15 asterisco Relazione_pasto + hint extend → parte 2/2
+- CP4 CP browser empirico Roberto → parte 2/2
+- CP5 closing (bump 3.0.1-rc.2 + sync ImpostazioniTab + commit cumulativo + tag locale + merge ff main + cleanup branch) → parte 2/2
+- Push origin main + tag v3.0.1-rc.2 + redeploy gh-pages → deferred sessione successiva deploy follow-up
+- Drift `.gitignore` `.bak.cp*` pattern + drift FormField duplicato ProfiliTab.jsx:529 → drift-doc-NEW scope futuro opportunistico
+- Sessione 15 par.11.R-bis cluster C+D NavBar+Guida → deferred post-parte 2/2
+
+**Deviazioni par.6.NN emesse parte 1/2:**
+
+1 sola deviazione: **par.6.208 UX-N8** asterisco Nome required + hint Salva (FarmaciTab.jsx + test, commit `1cbe2cd`). par.6.209 (UX-N15) attesa parte 2/2 CP2. par.6.210 (discovery-N7) NON emessa (CP3 abortito Q5=b), gap preservato pattern par.6.71/85.
+
+**Pre-existing follow-up ancora flagged (carry-forward par.22.60):**
+
+- par.6.119 cross-midnight cards visual deferred
+- par.6.120 actions.presa() simulated_now DEV deferred
+- 17 findings registry Fase 2 polish → 16 residui (UX-N8 risolto par.6.208), UX-N15 sub-allocato parte 2/2, discovery-N7 torna a deferred opportunistic (NO risoluzione Sessione 14), UX-N1+UX-N3 sub-allocati Sessione 15 cluster C+D
+
+#### Stato git post-Sessione 14 parte 1/2
+
+- branch `main` HEAD `b76bfde` invariato (CP1 NON ancora merged)
+- branch operativo `step-11-ux-required-hint-data-inizio` HEAD `1cbe2cd` (1 commit ahead main)
+- tag latest `v3.0.1-rc.1` su `d4f48dc` invariato (no bump parte 1/2)
+- working tree clean post-commit CP1
+- 493/493 test verdi su 59 files
+- file `.bak.cp1` untracked (drift `.gitignore` minore segnalato)
+
+#### Drift-doc segnalato NON corretto retroattivamente (principio par.6.71/85)
+
+- Memoria horizon dichiara `.bak.cpN files untracked via .gitignore` — empiricamente `.gitignore` NON copre pattern `.bak.cp*`, file appaiono come `??` in git status. drift-doc-NEW minore, fix `.gitignore` scope futuro opportunistico.
+
+#### Riferimenti par.22.61
+
+- **par.22.60**: closing Sessione 13 branching-decisione + par.11.R prompt parte 1+2 originale
+- **par.22.55**: split safety-first pattern lesson learned applicato qui evidence-based
+- **par.22.40**: Q-S6 ratifica `data_inizio default domani` preservata (NO revert, Q5=b)
+- **par.6.71/85**: deviazioni storiche immutabili + gap numerazione preservato (par.6.210 NON emessa, replica par.6.198/199)
+- **par.6.118**: pre-code scenario validation obbligatoria — ricaduta minor su anchor test refit
+- **par.22.42**: sub-AMB emergenti in cluster (sub-AMB-NEW 14.A/B/C emerse in CP0-ext)
+- **AMB-11.B.7**: bump version solo a closing CP esecutivo completo (rispettato: no bump parte 1/2, bump atteso parte 2/2 CP5)
+- **par.22.58**: pattern patcher Python idempotenti content-based anchor replicato
+
+#### Sessione successiva
+
+par.11.R-cont Sessione 14 parte 2/2 esecutiva CP2 UX-N15 + CP4 CP browser + CP5 closing, one-liner `Esegui il prompt al par.11.R-cont del Changelog`.
+
+---
+
 ### 11.R Prompt Sessione 14 esecutiva — micro-batch UX FarmaciTab cluster A+B (UX-N8 asterisco Nome + UX-N15 asterisco Relazione_pasto + discovery-N7 data_inizio default today, continuazione Sessione 13 branching par.22.60)
 
 **One-liner apertura:** `Esegui il prompt al par.11.R del Changelog.`
@@ -13657,3 +13744,284 @@ Pattern par.22.58 replicato: patcher Python idempotenti content-based anchor per
 - package.json `3.0.1-rc.2`
 - Changelog par.22.61 NEW (sintesi closing Sessione 14) + par.11.R-bis NEW (prompt Sessione 15 C+D)
 - 17 findings registry Fase 2 polish -> 14 residui (UX-N8/N15 + discovery-N7 risolti par.6.208-210)
+
+### 11.R-cont Prompt Sessione 14 parte 2/2 esecutiva — CP2 UX-N15 asterisco Relazione_pasto + CP4 CP browser empirico + CP5 closing cumulativo (continuazione parte 1/2 par.22.61, CP3 abortito a apertura parte 1/2 Q5=b)
+
+**One-liner apertura:** `Esegui il prompt al par.11.R-cont del Changelog.`
+
+**Modalita:** Sessione 14 parte 2/2 **esecutiva** (CP2 quasi clone CP1 su FormSelect + CP4 empirico Roberto + CP5 closing pesante con bump + tag locale + merge ff + Changelog patcher par.22.62 + par.11.R-bis). Continuazione split safety-first par.22.61 parte 1/2. Token spesi attesi 15-25K. Wall-clock atteso 1-1.5 ore.
+
+#### Pre-letture obbligatorie (Claude in apertura parte 2/2)
+
+1. **par.22.61** integrale (mini-closing parte 1/2, sub-AMB 14.A/B/C ratificate, CP1 commit `1cbe2cd`, lesson learned, Q5=b CP3 abortito, scope CP2+CP4+CP5 frozen)
+2. **par.11.R** integrale (prompt originale Sessione 14, scope CP table, deviazioni pre-allocate, risk notes)
+3. **par.22.60** integrale (branching-decisione Sessione 13, contesto registry findings)
+4. **par.6.118** integrale (pre-code scenario validation obbligatoria, lesson ricaduta parte 1/2 da reiterare)
+
+#### CP0 obbligatorio Sessione 14 parte 2/2
+
+**Mac-side (Roberto):**
+
+```bash
+cd ~/Sviluppo/pharmatimer
+echo '=== CP0 baseline Sessione 14 parte 2/2 ==='
+git status -sb
+git --no-pager log -3 --oneline --decorate
+git --no-pager tag --sort=-creatordate | head -3
+node -p "require('./package.json').version"
+npx vitest run 2>&1 | tail -8
+echo '--- branch operativo Sessione 14 ---'
+git --no-pager branch | head -10
+echo '=== CP0-ext dump FormSelect body integrale pre-CP2 ==='
+sed -n '1463,1495p' src/components/config/FarmaciTab.jsx
+echo '=== CP0 parte 2/2 completato ==='
+```
+
+**Atteso baseline parte 2/2:**
+
+- branch operativo `step-11-ux-required-hint-data-inizio` HEAD `1cbe2cd` (CP1 commit)
+- branch `main` HEAD `b76bfde` invariato (CP1 NON ancora merged)
+- tag latest `v3.0.1-rc.1` invariato
+- package.json `3.0.1-rc.1` invariato (bump atteso CP5)
+- 493/493 test su 59 files verdi
+- working tree clean
+- dump FormSelect body ricevuto (linee 1463-1495) per anchor patcher CP2
+
+#### Scope frozen CP Sessione 14 parte 2/2 (3 CP)
+
+| CP | Scope | Operazioni | Verifica |
+|---|---|---|---|
+| **CP2** | par.6.209 UX-N15 asterisco Relazione_pasto | patcher Python idempotente: FormSelect API + prop `required` + render `*` aria-hidden + `aria-required` sull select. Chiamata `<FormSelect label="Relazione con il pasto" required />` aggiornata. Hint footer GIA attivo da CP1 (allRequiredFilled include relazione_pasto). Test NEW: 1-2 (asterisco strutturale select + aria-required). Possibile refit test `getByLabelText('Relazione con il pasto')` se asterisco rompe textContent (verificare empiricamente come CP1, dump pre-code). | atteso +1-2 test, 493 → 494/495 |
+| **CP4** | CP browser empirico Roberto 2 scenari | Q4.1 form Farmaci Nome vuoto → asterisco rosso visibile + Salva disabled + hint "Compila i campi obbligatori" visibile sotto Salva (sopra riga bottoni). Q4.2 Relazione_pasto vuoto + Nome compilato → asterisco rosso visibile + Salva disabled + hint persiste. (Q4.3 data_inizio esce: CP3 abortito Q5=b). | atteso 2/2 verde, eventuale finding emergente → sub-AMB par.22.42 |
+| **CP5 closing** | bump + sync + commit cumulativo + tag locale + merge ff + Changelog | bash zsh-safe: cleanup branch operativo NON ancora (vivere fino merge), bump package.json 3.0.1-rc.1 → 3.0.1-rc.2, sync 1 occorrenza ImpostazioniTab.jsx riga 485 (versione mostrata), commit cumulativo CP2+CP5, tag annotato v3.0.1-rc.2 LOCALE (no push), checkout main + merge ff step-11-ux-required-hint-data-inizio + cleanup branch operativo, working tree clean post-merge. Changelog patcher Python par.22.62 NEW (closing cumulativo Sessione 14 parte 1+2) + par.11.R-bis NEW (prompt Sessione 15 cluster C+D NavBar+Guida deferred). Push origin main + redeploy gh-pages → deferred sessione successiva. | atteso main avanzato 2 commit ahead origin/main (CP1 + CP2/CP5), tag v3.0.1-rc.2 locale, branch operativo cleanup post-merge ff |
+
+#### Deviazioni par.6.NN attese parte 2/2
+
+1 deviazione: **par.6.209 UX-N15** asterisco Relazione_pasto required + hint extend (FormSelect API + chiamata + test). Coerente con par.22.60 + par.22.61 pre-allocate. par.6.210 discovery-N7 NON emessa (CP3 abortito Q5=b parte 1/2, gap preservato par.6.71/85). Eventuali deviazioni nuove emerse CP2-CP4 → par.6.211+ progressivo.
+
+#### Target test delta atteso parte 2/2
+
+| Bound | Delta | Range 493 baseline |
+|---|---|---|
+| Conservativo | +1 | 494/494 |
+| Atteso | +2 | 495/495 |
+| Espansivo | +3 | 496/496 |
+
+Sforo bound espansivo (>+3) → trigger valutazione manuale (improbabile CP2 quasi clone CP1).
+
+#### Risk notes / pre-code scenario validation reminder parte 2/2
+
+1. **FormSelect body dump pre-CP2 OBBLIGATORIO** (lesson par.6.118 ricaduta parte 1/2). Incluso nel CP0 bash sopra.
+2. **Refit test `getByLabelText('Relazione con il pasto')` potenziale collaterale par.6.209.** Verificare empirically via vitest run post-patcher CP2 prod. Se rompe (come `'Nome'` parte 1/2), emettere patcher refit a regex `/^Relazione/` (replica pattern parte 1/2).
+3. **Hint footer NON va toccato in CP2.** Gia copertura completa da CP1 via `!allRequiredFilled` che include `form.relazione_pasto !== ''`. Solo verifica empirica CP4.
+4. **CP5 closing pesante:** patcher Python Changelog (par.22.62 + par.11.R-bis) e operazioni git in sequenza (commit + tag + checkout + merge + cleanup). Tenere zsh-safe (single-quote echo, no `#`, no apostrofi italiani, `s.6.NN` invece di `par.6.NN` in commit messages).
+5. **Branch operativo cleanup post-merge ff main:** evitare ripetere lesson par.22.54/55 branch operativo vivo locale tra sessioni. Cleanup nel CP5 stesso turno.
+
+#### Modalita delivery file parte 2/2
+
+Pattern par.22.58 + par.22.61 replicato: patcher Python idempotenti content-based anchor + comandi git separati zsh-safe. Tutti i deliverable (patcher prod CP2, eventuale patcher refit test, patcher add-tests CP2, patcher Changelog par.22.62+par.11.R-bis) emessi da Claude come file via `present_files` da `/mnt/user-data/outputs/`, eseguiti Mac-side da `~/Downloads/`.
+
+#### Stato baseline atteso parte 2/2 chiusa positivamente
+
+- branch `main` HEAD `<TBD-merge-ff>` 2 commit ahead origin/main (CP1 `1cbe2cd` + CP2/CP5 cumulativo)
+- tag annotato `v3.0.1-rc.2` locale
+- branch operativo `step-11-ux-required-hint-data-inizio` cleanup post-merge ff (eliminato)
+- working tree clean, 493+1-3/493+1-3 test verdi (atteso 495)
+- package.json `3.0.1-rc.2`
+- Changelog par.22.62 NEW (sintesi closing cumulativo Sessione 14 parte 1+2) + par.11.R-bis NEW (prompt Sessione 15 cluster C+D)
+- 17 findings registry Fase 2 polish → 15 residui (UX-N8 risolto par.6.208 + UX-N15 risolto par.6.209), discovery-N7 deferred opportunistic (CP3 abortito Q5=b), UX-N1+UX-N3 Sessione 15
+
+#### Out-of-scope parte 2/2 (esplicito)
+
+- discovery-N7 (CP3 abortito parte 1/2 Q5=b) — registry deferred opportunistic
+- Push origin main + tag v3.0.1-rc.2 + redeploy gh-pages — deferred sessione successiva deploy follow-up (aggregabile post-Sessione 15 sotto-scala pattern par.22.59)
+- Drift `.gitignore` `.bak.cp*` + drift FormField duplicato ProfiliTab.jsx:529 — drift-doc-NEW scope futuro opportunistico
+- Sessione 15 cluster C+D NavBar+Guida — deferred post-parte 2/2
+
+---
+### 22.62 Stato post-Sessione 14 parte 2/2 (CP2 + CP2-iter + CP4 + CP5 closing cumulativo s.6.209 UX-N15 + s.6.211 sub-AMB 14.D hint asterisco, 495/495 verdi, bump 3.0.1-rc.2 tag locale, merge ff main, cluster A+B chiuso completo)
+
+**Modalita:** Sessione 14 parte 2/2 esecutiva (continuazione split safety-first par.22.61). Token spesi parte 2/2 ~15-20K (dentro preventivo 15-25K). Wall-clock parte 2/2 ~1.5h. Pattern par.22.58 patcher Python idempotenti content-based anchor replicato simmetricamente CP1 parte 1/2.
+
+**CP0 baseline verde 6/7 + 1 drift atteso:** branch operativo step-11-ux-required-hint-data-inizio HEAD 1cbe2cd (CP1 commit), main HEAD b76bfde invariato (CP1 non ancora merged), tag latest v3.0.1-rc.1 su d4f48dc, package.json 3.0.1-rc.1, 493/493 test su 59 files verdi, working tree con drift attesi M Changelog (par.22.61 closing parte 1/2 non committed, aggregabile CP5) + 2 untracked .bak.cp1 (drift .gitignore minore segnalato par.22.61). Dump FormSelect body (linee 1463-1495) ricevuto pre-CP2: signature identica a FormField pre-CP1 strutturalmente, anchor patcher applicabile simmetrico.
+
+**Pre-code scenario validation par.6.118 ricaduta parte 1/2 anticipata:** S1 prop required=true rende span asterisco aria-hidden inside label + aria-required="true" su select; S2 chiamate esistenti senza required = comportamento invariato (default false); S3 test getByLabelText('Relazione con il pasto') rompe textContent post-asterisco -> refit regex /^Relazione/. Tutti e 3 ratificati pre-patcher.
+
+**CP2 chiuso (s.6.209 UX-N15 asterisco Relazione_pasto):** patcher Python idempotente 1 file applicato pulito 2 file modificati (FarmaciTab.jsx + FarmaciTab.test.jsx). Sandbox verification sandbox/ replica filesystem pre-delivery (first run OK + re-run SKIP marker idempotente).
+- FarmaciTab.jsx (+9 -2): FormSelect API estesa prop required (asterisco span aria-hidden ml-1 text-red-500 inside label + aria-required="true" su select), chiamata Relazione_pasto aggiornata con required.
+- FarmaciTab.test.jsx (+27 -2): 2 refit site getByLabelText('Relazione con il pasto') -> regex /^Relazione/ (replica pattern parte 1/2 lesson par.6.118) + 1 describe NEW con 1 test asterisco + aria-required.
+- Delta test: 493 -> 494/494 (+1, bound conservativo centrato). Test files 59 invariati.
+- Commit s.6.209 NON emesso isolato (aggregato CP5 cumulativo).
+
+**CP2-iter chiuso (s.6.211 sub-AMB 14.D hint footer asterisco rosso):** finding emersa CP4 empirico Roberto post-CP2 verde (richiesta visiva: "(*)" alla fine stringa "Compila i campi obbligatori" con solo asterisco rosso). Pattern par.22.42 sub-AMB emergenti in cluster + flusso par.6.118 (osservazione empirica post-CP4 -> iterazione non-speculativa).
+- FarmaciTab.jsx (+1 -1): hint footer text "Compila i campi obbligatori" -> "Compila i campi obbligatori (<span aria-hidden=\"true\" className=\"text-red-500\">*</span>)". Parentesi default footer color (t.textPrimary opacity-70), asterisco rosso, span aria-hidden no announce duplicato screen reader.
+- FarmaciTab.test.jsx (+23): 3 refit site (2 getByText + 1 queryByText) 'Compila i campi obbligatori' -> regex /^Compila i campi obbligatori/ + 1 describe NEW con 1 test asterisco aria-hidden dentro p[role=status].
+- Delta test: 494 -> 495/495 (+1).
+- Sandbox verification ok + idempotenza re-run skip.
+
+**CP4 chiuso verde 2/2 + sanity check:** dev server Mac Chrome verificato.
+- Q4.1 fresh form: asterisco rosso Nome + asterisco rosso Relazione_pasto + Salva disabilitato + hint "Compila i campi obbligatori (*)" visibile sotto Salva nel footer.
+- Q4.2 Nome compilato + radio Fisso + Relazione_pasto = "-- seleziona --": asterisco persiste + Salva disabled + hint persiste.
+- Sanity opzionale fuori Q4: selezione Relazione_pasto qualsiasi -> Salva si abilita + hint scompare.
+- CP4 quick check par.6.211 post-CP2-iter via HMR live: stringa "(*)" appare con asterisco rosso confermato visivamente.
+
+**CP5 closing cumulativo:**
+- Patcher Python Changelog append-at-EOF par.22.62 + par.11.R-bis (questo file via patcher_cp5_changelog.py).
+- Bump package.json 3.0.1-rc.1 -> 3.0.1-rc.2.
+- Sync ImpostazioniTab.jsx riga 485 "PharmaTimer 3.0.1-rc.1 ·" -> "PharmaTimer 3.0.1-rc.2 ·" (1 sola occorrenza runtime SezioneInfo, pattern par.6.200/205, riferimenti storici header preservati par.6.71/85).
+- Cleanup file lavoro pre-commit: backup .bak.cp1 + .bak.cp2 + .bak.cp2-iter su 2 file FarmaciTab (totale 6 backup) + 3 patcher .py untracked (patcher_cp2.py + patcher_cp2_iter.py + patcher_cp5_changelog.py) -> NON tracked tramite gitignore drift segnalato Sessione 14 parte 1/2 (.gitignore non copre .bak.cp*, drift-doc-NEW scope futuro opportunistico). Removed pre-commit per working tree pulito.
+- Commit cumulativo unico sulla branch operativa: subject "CP5 S14 parte 2/2 s.6.209 UX-N15 + s.6.211 sub-AMB 14.D hint asterisco + bump v3.0.1-rc.2 + sync ImpostazioniTab + closing s.22.61+s.22.62+s.11.R-bis". 7 file changed (FarmaciTab.jsx + FarmaciTab.test.jsx + package.json + ImpostazioniTab.jsx + PharmaTimer_Changelog_Fase2.md).
+- Tag annotato v3.0.1-rc.2 LOCALE su commit cumulativo (NO push, deferred sessione successiva deploy follow-up pattern par.22.59 sotto-scala).
+- Checkout main + git merge --ff-only step-11-ux-required-hint-data-inizio (history lineare, 1 commit ahead origin/main da CP1 commit 1cbe2cd + 1 commit ahead da CP5 cumulativo).
+- Cleanup branch operativo: git branch -d step-11-ux-required-hint-data-inizio (safe post-merge ff).
+
+**Deviazioni s.6.NN emesse Sessione 14 parte 2/2:** 2 cumulative (s.6.209 + s.6.211).
+- **s.6.209** UX-N15 asterisco Relazione_pasto required + aria-required + sostegno pattern hint footer (gia attivo CP1 via allRequiredFilled include relazione_pasto).
+- **s.6.211** sub-AMB 14.D hint footer asterisco rosso (NUOVO non pre-allocato par.22.60, emerso CP4 empirico, pattern par.22.42).
+- **s.6.210** discovery-N7 data_inizio default today NON emessa (CP3 abortito Q5=b apertura parte 1/2). Gap s.6.210 preservato per principio par.6.71/85, pattern replica s.6.198/199/etc.
+
+**Shift pre-allocazione Sessione 15 (post-consumo s.6.211 inatteso):** par.22.60 elencava "TBD Sessione 15 par.6.211 UX-N1 + par.6.212 UX-N3" come previsioni (not committed). Sessione 15 ora usera par.6.212 UX-N1 NavBar ingranaggio + par.6.213 UX-N3 doppia affordance Guida (slittamento forward, no retro-correzione par.22.60 testo per principio par.6.71/85).
+
+**Cluster A+B Sessione 14 CHIUSO COMPLETO:** UX-N8 (par.6.208 CP1 parte 1/2) + UX-N15 (par.6.209 CP2 parte 2/2) + sub-AMB 14.D hint asterisco (par.6.211 CP2-iter parte 2/2). Discovery-N7 (par.6.210 CP3 abortito Q5=b) deferred opportunistico futuro.
+
+**Lesson learned parte 2/2 (consolidate):**
+1. **Pattern split safety-first parte 1/2 -> parte 2/2 funziona pulito a basso costo:** parte 2/2 ha consumato 15-20K token vs 35-50K stima monolitica par.22.60 (saving netto ~15-30K). Context fresh + scope ristretto a 3 CP residui ha permesso patcher quasi clone CP1 senza nuove sub-AMB intra-CP.
+2. **Sub-AMB emersa CP4 empirico legittima iterazione inline (CP2-iter) prima di CP5:** sub-AMB 14.D scoperta da Roberto visualmente post-CP4 (richiesta "(*)" finale hint) non era pre-frozen scope. Pattern par.22.42 esteso: sub-AMB emergenti post-CP browser empirico sono LEGITTIME se costo marginale basso (~15-20 min) e closure cluster + lesson par.6.118 rispettata (osservazione empirica non speculazione).
+3. **Pre-allocazione devianze nominali in pre-frozen prompt sono previsioni, non commitment immutabili:** par.22.60 "TBD" non vincola la numerazione effettiva, shift forward sempre legittimo se motivato. Retro-correzione testo par.22.60 vietata per par.6.71/85, ma la pre-allocazione TBD-prefixed e' superseded da fatto storico effettivo emesso (par.6.211 = sub-AMB 14.D, non par.6.211 = UX-N1).
+
+#### Stato git post-Sessione 14 parte 2/2
+
+- branch main HEAD <TBD-CP5-cumulative-commit> allineato CP1 ff + CP5 cumulativo (2 commit ahead origin/main: 1cbe2cd CP1 + <TBD> CP5)
+- branch operativo step-11-ux-required-hint-data-inizio cleanup post-merge ff
+- tag annotato v3.0.1-rc.2 LOCALE su <TBD-CP5-cumulative-commit> (NO push)
+- tag v3.0.1-rc.1 su d4f48dc invariato
+- package.json 3.0.1-rc.2
+- 495/495 test verdi su 59 files
+- working tree clean post-cleanup .bak + patcher
+- 3 file lavoro untracked rimossi pre-commit (patcher_cp2.py + patcher_cp2_iter.py + patcher_cp5_changelog.py)
+- 6 backup .bak.cp* rimossi pre-commit
+
+#### Pre-existing follow-up ancora flagged (carry-forward par.22.61)
+
+- par.6.119 cross-midnight cards visual deferred
+- par.6.120 actions.presa() simulated_now DEV deferred
+- 17 findings registry Fase 2 polish -> 14 residui dopo Sessione 14 (UX-N8 risolto par.6.208 + UX-N15 risolto par.6.209 + sub-AMB 14.D risolto par.6.211; discovery-N7 NON risolto, torna a deferred opportunistic; UX-N1 + UX-N3 sub-allocati Sessione 15 par.11.R-bis)
+- drift-doc-NEW .gitignore non copre .bak.cp* pattern (scope futuro opportunistico, segnalato par.22.61)
+- drift-doc-NEW FormField duplicato ProfiliTab.jsx:529 (estensione API in FarmaciTab.jsx NON propagata, scope futuro opportunistico, segnalato par.22.61)
+
+#### Out-of-scope Sessione 14 parte 2/2 (esplicito)
+
+- Push origin main + tag v3.0.1-rc.2 + redeploy gh-pages -> deferred sessione successiva deploy follow-up (aggregabile con Sessione 15 closing sotto-scala pattern par.22.59 se entrambe chiuse, oppure inline post-Sessione 14 a discrezione Roberto)
+- Cleanup drift .gitignore .bak.cp* + drift FormField duplicato ProfiliTab.jsx -> scope futuro opportunistico
+- discovery-N7 data_inizio default today (par.6.210 NON emessa, gap preservato) -> deferred opportunistico futuro
+- Sessione 15 cluster C+D NavBar+Guida -> par.11.R-bis sotto
+
+#### Riferimenti par.22.62
+
+- **par.22.61**: closing parziale Sessione 14 parte 1/2, CP1 s.6.208 + sub-AMB 14.A/B/C
+- **par.22.60**: branching-decisione Sessione 13 + par.11.R prompt originale
+- **par.22.58**: pattern patcher Python idempotente content-based anchor replicato
+- **par.22.42**: sub-AMB emergenti in cluster (sub-AMB 14.D emersa CP4 empirico)
+- **par.6.118**: pre-code scenario validation obbligatoria (rispettata pre-CP2 + flusso CP2-iter non-speculativo)
+- **par.6.71/85**: deviazioni storiche immutabili + gap numerazione preservato (s.6.210 NON emessa)
+- **AMB-11.B.7**: bump version solo a closing CP esecutivo completo (rispettato: bump 3.0.1-rc.2 a CP5)
+
+#### Sessione successiva
+
+par.11.R-bis Sessione 15 mista (analisi-first apertura locale Q + esecutiva 5 CP) cluster C+D NavBar UX-N1 + Guida UX-N3, one-liner `Esegui il prompt al par.11.R-bis del Changelog`. Pre-frozen scope minimo (no CP scope rigid pre-defined, analisi-first apertura decidera). 2 deviazioni TBD par.6.212 + par.6.213 (shift forward post-consumo s.6.211 CP2-iter). Branch operativo nuovo step-12-ux-navbar-guida da creare CP0. Bump target 3.0.1-rc.2 -> 3.0.1-rc.3 (micro-patch UX coerente semver).
+
+---
+
+### 11.R-bis Prompt Sessione 15 stub — micro-batch UX cluster C+D NavBar UX-N1 + Guida UX-N3 (deferred post-Sessione 14 closing par.22.62, no pre-freeze scope CP, analisi-first apertura ratifica scope frozen)
+
+**One-liner apertura:** `Esegui il prompt al par.11.R-bis del Changelog.`
+
+**Modalita:** Sessione 15 **mista** (analisi-first locale apertura Q1-Q3 + esecutiva ~5 CP + closing). Pattern par.11.R Sessione 14 replicato in scala simmetrica. Token attesi 30-50K. Wall-clock atteso 1.5-2.5 ore. Bump target 3.0.1-rc.2 -> 3.0.1-rc.3 (micro-patch UX coerente semver).
+
+#### Pre-letture obbligatorie (Claude in apertura Sessione 15)
+
+1. **par.22.62** integrale (questa, closing Sessione 14 parte 2/2 + cluster A+B chiuso + 3 lesson learned)
+2. **par.22.60** integrale (branching-decisione Sessione 13, contesto 17 findings registry + ratifica cluster C+D)
+3. **par.6.118** integrale (pre-code scenario validation obbligatoria)
+4. **par.22.42** integrale (sub-AMB emergenti in cluster, applicabile a CP design Q affordance Guida)
+
+#### Nota apertura Sessione 15: emissione par.22.63 retroattivo deploy Sessione 14 parte 2/2
+
+Sessione 14 parte 2/2 ha eseguito deploy follow-up sotto-scala inline post-CP5 (push origin main 443e156 + tag v3.0.1-rc.2 propagato sha 2a59177b + build production bundle index-BghSZzVq.js 431.06 kB gzip 133.69 kB + gh-pages forced update d0284d3..b16edf0 orphan-init + smoke production curl 5/5 verde) **senza emissione contestuale Changelog par.22.63** (pattern par.22.59 aggregazione differita ratificata, sezione successiva par.22.62 con Roberto turno chiusura). Tag annotato origin contiene audit trail completo `git show v3.0.1-rc.2` messaggio "cluster A+B FarmaciTab UX required-hint chiuso (s.6.208 UX-N8 + s.6.209 UX-N15 + s.6.211 sub-AMB 14.D hint asterisco)".
+
+**Azione obbligatoria Claude apertura Sessione 15:**
+1. Verifica empirica stato deploy via 3 smoke curl: `curl -sI https://timegates-code.github.io/pharmatimer/ | head -1` atteso HTTP/2 200, `curl -s https://timegates-code.github.io/pharmatimer/ | grep -oE 'index-[A-Za-z0-9]+\.js'` atteso `index-BghSZzVq.js`, `curl -s https://timegates-code.github.io/pharmatimer/assets/index-BghSZzVq.js | grep -c '3\.0\.1-rc\.2'` atteso >=1.
+2. Aggiungi al CP5 closing cumulativo Sessione 15 una sezione **par.22.63 retroattivo Stato post-deploy Sessione 14 parte 2/2** PRIMA della sezione par.22.64 (closing S15 proprio). Pattern par.22.59 + par.22.62 replicato: 3-5 paragrafi sintetici (deploy operations + smoke verde 5/5 + UpdatePrompt soak 24-48h scattera spontaneo + zero deviazioni par.6.NN deploy + stato git post-deploy + riferimenti par.22.62).
+3. Se smoke curl ritorna mismatch o errore -> NON procedere con Sessione 15 CP, segnalare anomalia stato remote vs atteso e attendere ratifica Roberto (revert/repair/altro).
+
+Se Sessione 15 venisse aperta >2 settimane post-Sessione 14 parte 2/2 e il bundle hash live `BghSZzVq` non corrispondesse piu (perche soak Workbox autoUpdate par.6.157/158 ha re-hashed via stesso bundle o redeploy intermedio), il `git ls-remote origin refs/heads/gh-pages` mostrera comunque sha aggiornato e tag `v3.0.1-rc.2` su `2a59177b` resta puntatore stabile per audit storico.
+
+#### CP0 obbligatorio Mac-side + Claude-side
+
+**Mac-side (Roberto):**
+
+```bash
+cd ~/Sviluppo/pharmatimer
+echo '=== CP0 baseline Sessione 15 ==='
+git status -sb
+git --no-pager log -3 --oneline --decorate
+git --no-pager tag --sort=-creatordate | head -3
+node -p "require('./package.json').version"
+npx vitest run 2>&1 | tail -8
+echo '--- branch ---'
+git --no-pager branch | head -10
+echo '=== CP0 dump NavBar + ImpostazioniTab Guida section ==='
+ls -la src/components/nav/ 2>/dev/null || echo 'nav dir absent'
+grep -rn 'Guida' src/components/ --include='*.jsx' | head -20
+echo '=== CP0 completato ==='
+```
+
+**Atteso baseline (precondizione lock):**
+
+- branch main HEAD post-par.22.62 CP5 cumulativo allineato CP1+CP5 merge ff
+- tag latest v3.0.1-rc.2 LOCALE invariato
+- package.json 3.0.1-rc.2
+- 495/495 test verdi su 59 files
+- working tree clean
+- branch step-11-ux-required-hint-data-inizio assente (cleanup post-merge par.22.62)
+- dump NavBar component path + grep Guida site identificati per anchor analisi-first
+
+**Claude in apertura Sessione 15:**
+
+1. Legge NavBar component body integrale + ImpostazioniTab Guida section integrale.
+2. Apre analisi-first locale Q1-Q3:
+   - Q1 UX-N1 NavBar ingranaggio: scope visivo (icon size up, contrast bump, label hidden) o anche refactor a-z (semantic role + aria-label review)?
+   - Q2 UX-N3 Guida doppia affordance: 2 entry point (NavBar + SezioneInfo) sono utili o ridondanti? Design decision: mantenere entrambi, rimuovere uno, oppure unificare in 1 sito con shortcut?
+   - Q3 ratifica scope CP: micro-batch unitario (1-2 CP) vs split (2-3 CP per affordance Guida + visual refresh NavBar)?
+3. Sub-AMB Q ratificati blanket "decidi tu" su default raccomandati -> Claude propone scope CP frozen.
+
+#### Scope CP Sessione 15 (TBD post-analisi-first apertura)
+
+Scope CP non pre-frozen. Atteso 3-5 CP + closing. 2 deviazioni s.6.212 + s.6.213 pre-allocate (shift post-consumo s.6.211 par.22.62), allocazioni nominali progressive.
+
+#### Risk notes / pre-code scenario validation reminder Sessione 15
+
+1. **Pre-code dump NavBar.jsx + sezione Guida ImpostazioniTab.jsx OBBLIGATORIO pre-patcher** (lesson par.6.118 ricaduta ricorrente Sessione 14 parte 1/2 + parte 2/2).
+2. **Q2 UX-N3 design decision NON e style preference:** ratificare doppia affordance vs unificazione richiede commitment esplicito utente, no "decidi tu" su decision tree UX strutturale (precedente Q-CP4-CRITICA Sessione 11-ter par.22.57).
+3. **Pre-allocazione s.6.212 + s.6.213 shift par.22.62:** non retro-correzione par.22.60 testo (pre-allocazione TBD-prefixed superseded fact-history par.6.71/85).
+4. **CP5 closing pattern par.22.62 replicato sotto-scala:** patcher Python Changelog + bump rc.2 -> rc.3 + sync ImpostazioniTab + commit + tag locale + merge ff + cleanup branch.
+
+#### Modalita delivery file Sessione 15
+
+Pattern par.22.58 + par.22.62 replicato: patcher Python idempotenti content-based anchor per modifiche src/ + comandi git separati zsh-safe (single-quote, no `#`, no apostrofi italiani, `s.6.NN` invece di `par.6.NN` in commit messages). CP5 closing emette patcher Python per Changelog par.22.63 + eventuale par.11.S (prompt sessione successiva opzionale Fase 2 polish o Fase 3 pivot).
+
+#### Out-of-scope Sessione 15 (esplicito)
+
+- Push origin main + tag v3.0.1-rc.3 + redeploy gh-pages -> deferred sessione successiva (aggregabile sotto-scala pattern par.22.59 con par.22.62 pending deploy se ratificato)
+- Cluster A+B (FarmaciTab UX-N8/N15/discovery-N7) CHIUSO par.22.62 + s.6.208/209/211 (s.6.210 gap permanente)
+- Fase 3 backend FastAPI+MariaDB pivot -> deferred Sessione successiva post-Sessione 15 closing
+
+#### Stato baseline atteso Sessione 15 chiusa positivamente
+
+- branch main HEAD <TBD-cumulative-Sessione-15> 2+N commit ahead origin/main
+- tag annotato v3.0.1-rc.3 LOCALE
+- branch operativo step-12-ux-navbar-guida cleanup post-merge ff
+- working tree clean, 495+N/495+N test verdi
+- package.json 3.0.1-rc.3
+- Changelog par.22.63 NEW + eventuale par.11.S NEW
+- 14 findings registry Fase 2 polish -> 12 residui dopo Sessione 15 (UX-N1 + UX-N3 risolti s.6.212/213)

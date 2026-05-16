@@ -477,7 +477,7 @@ describe('FarmaciTab — CP5 v3.0.0 Step 1 Mit-C toast trigger (§6.177)', () =>
     //   dosi_giornaliere: già default '1', orari[0] = makeDefaultOrario(1).
     await user.type(within(drawer).getByLabelText(/^Nome/), 'TestFarmaco');
     await user.click(within(drawer).getByLabelText('Fisso'));
-    fireEvent.change(within(drawer).getByLabelText('Relazione con il pasto'), {
+    fireEvent.change(within(drawer).getByLabelText(/^Relazione/), {
       target: { value: 'indifferente' },
     });
 
@@ -541,7 +541,7 @@ describe('FarmaciTab — CP1 Sessione 14 par.6.208 UX-N8 asterisco Nome + hint f
 
     // Form is fresh: Nome empty, tipo_frequenza empty, relazione_pasto empty
     // -> !allRequiredFilled -> hint visible.
-    expect(within(drawer).getByText('Compila i campi obbligatori')).toBeInTheDocument();
+    expect(within(drawer).getByText(/^Compila i campi obbligatori/)).toBeInTheDocument();
   });
 
   it('hint sparisce dopo aver compilato tutti i required (Nome + tipo_frequenza + relazione_pasto)', async () => {
@@ -555,19 +555,67 @@ describe('FarmaciTab — CP1 Sessione 14 par.6.208 UX-N8 asterisco Nome + hint f
     const drawer = screen.getByTestId('farmaco-drawer');
 
     // Pre-condition: hint visible (form fresh).
-    expect(within(drawer).getByText('Compila i campi obbligatori')).toBeInTheDocument();
+    expect(within(drawer).getByText(/^Compila i campi obbligatori/)).toBeInTheDocument();
 
     // Fill all required: Nome + radio Fisso + select Relazione_pasto.
     // data_inizio already default tomorrowIso(), dosi_giornaliere default '1'.
     await user.type(within(drawer).getByLabelText(/^Nome/), 'X');
     await user.click(within(drawer).getByLabelText('Fisso'));
-    fireEvent.change(within(drawer).getByLabelText('Relazione con il pasto'), {
+    fireEvent.change(within(drawer).getByLabelText(/^Relazione/), {
       target: { value: 'indifferente' },
     });
 
     // Post-condition: allRequiredFilled=true -> hint hidden.
     await waitFor(() => {
-      expect(within(drawer).queryByText('Compila i campi obbligatori')).not.toBeInTheDocument();
+      expect(within(drawer).queryByText(/^Compila i campi obbligatori/)).not.toBeInTheDocument();
     });
+  });
+});
+
+// CP2 Sessione 14 par.6.209 — UX-N15 asterisco Relazione_pasto required.
+describe('FarmaciTab — CP2 Sessione 14 par.6.209 UX-N15 asterisco Relazione_pasto', () => {
+  it('label Relazione con il pasto rende asterisco aria-hidden e select ha aria-required="true"', async () => {
+    const user = userEvent.setup();
+    renderWithProvider(<FarmaciTab />, {
+      stateOverrides: { farmaci: buildFarmaci(), profili: [buildProfiloAttivo()] },
+      actions: {},
+    });
+
+    await user.click(screen.getByRole('button', { name: /nuovo farmaco/i }));
+    const drawer = screen.getByTestId('farmaco-drawer');
+
+    // Select semantically marked required (a11y).
+    const relazioneSelect = within(drawer).getByLabelText(/^Relazione/);
+    expect(relazioneSelect).toHaveAttribute('aria-required', 'true');
+
+    // Visual asterisk inside the label, aria-hidden so screen readers
+    // do not announce it twice with aria-required.
+    const relazioneLabel = drawer.querySelector('label[for="farmaco-relazione-pasto"]');
+    expect(relazioneLabel).not.toBeNull();
+    const star = relazioneLabel.querySelector('span[aria-hidden="true"]');
+    expect(star).not.toBeNull();
+    expect(star).toHaveTextContent('*');
+  });
+});
+
+// CP2-iter Sessione 14 par.6.211 — sub-AMB 14.D hint footer asterisco rosso.
+describe('FarmaciTab — CP2-iter Sessione 14 par.6.211 hint footer asterisco', () => {
+  it('hint footer rende asterisco rosso aria-hidden alla fine della stringa', async () => {
+    const user = userEvent.setup();
+    renderWithProvider(<FarmaciTab />, {
+      stateOverrides: { farmaci: buildFarmaci(), profili: [buildProfiloAttivo()] },
+      actions: {},
+    });
+
+    await user.click(screen.getByRole('button', { name: /nuovo farmaco/i }));
+    const drawer = screen.getByTestId('farmaco-drawer');
+
+    // Hint paragraph: role=status, contiene asterisco aria-hidden in span red.
+    const hint = within(drawer).getByRole('status');
+    expect(hint).toHaveTextContent(/^Compila i campi obbligatori/);
+
+    const star = hint.querySelector('span[aria-hidden="true"]');
+    expect(star).not.toBeNull();
+    expect(star).toHaveTextContent('*');
   });
 });

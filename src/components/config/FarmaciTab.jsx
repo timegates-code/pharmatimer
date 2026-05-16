@@ -1148,6 +1148,7 @@ function FarmacoDrawer({
           onChange={(v) => updateField('relazione_pasto', v)}
           options={RELAZIONE_PASTO_OPTIONS}
           theme={t}
+          required
         />
         <FormField
           id="farmaco-dettaglio-pasto"
@@ -1209,7 +1210,7 @@ function FarmacoDrawer({
               role="status"
               style={{ color: t.textPrimary }}
             >
-              Compila i campi obbligatori
+              Compila i campi obbligatori (<span aria-hidden="true" className="text-red-500">*</span>)
             </p>
           )}
           <div className="flex gap-2">
@@ -1474,7 +1475,7 @@ function FormField({ id, label, value, onChange, type, theme: t, warning, requir
   );
 }
 
-function FormSelect({ id, label, value, onChange, options, theme: t }) {
+function FormSelect({ id, label, value, onChange, options, theme: t, required }) {
   return (
     <div className="flex flex-col gap-1">
       <label
@@ -1483,11 +1484,15 @@ function FormSelect({ id, label, value, onChange, options, theme: t }) {
         style={{ color: t.textPrimary }}
       >
         {label}
+        {required && (
+          <span aria-hidden="true" className="text-red-500 ml-1">*</span>
+        )}
       </label>
       <select
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        aria-required={required || undefined}
         className="rounded px-3 py-2 border"
         style={{
           background: t.modalBg,
