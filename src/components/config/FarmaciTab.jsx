@@ -903,6 +903,7 @@ function FarmacoDrawer({
           onChange={(v) => updateField('nome', v)}
           type="text"
           theme={t}
+          required
           warning={duplicateMatch ? `Nome già usato da «${duplicateMatch}»` : null}
         />
         <FormField
@@ -1202,6 +1203,15 @@ function FarmacoDrawer({
               Elimina
             </button>
           )}
+          {!allRequiredFilled && (
+            <p
+              className="text-xs text-center opacity-70"
+              role="status"
+              style={{ color: t.textPrimary }}
+            >
+              Compila i campi obbligatori
+            </p>
+          )}
           <div className="flex gap-2">
             <button
               type="button"
@@ -1429,7 +1439,7 @@ function SectionHeading({ children, theme: t }) {
   );
 }
 
-function FormField({ id, label, value, onChange, type, theme: t, warning }) {
+function FormField({ id, label, value, onChange, type, theme: t, warning, required }) {
   return (
     <div className="flex flex-col gap-1">
       <label
@@ -1438,12 +1448,16 @@ function FormField({ id, label, value, onChange, type, theme: t, warning }) {
         style={{ color: t.textPrimary }}
       >
         {label}
+        {required && (
+          <span aria-hidden="true" className="text-red-500 ml-1">*</span>
+        )}
       </label>
       <input
         id={id}
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        aria-required={required || undefined}
         className="rounded px-3 py-2 border"
         style={{
           background: t.modalBg,

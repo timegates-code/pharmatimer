@@ -371,7 +371,7 @@ describe('FarmaciTab — 8d-A-continue §6.98 UnsavedChanges guard su close', ()
     expect(drawer).toBeInTheDocument();
 
     // Dirty the form: type into Nome field.
-    const nomeInput = within(drawer).getByLabelText('Nome');
+    const nomeInput = within(drawer).getByLabelText(/^Nome/);
     await user.type(nomeInput, 'Test');
 
     // Click Annulla in drawer footer (scope via within to avoid any
@@ -425,7 +425,7 @@ describe('FarmaciTab — 8d-A-continue §6.98 UnsavedChanges guard su close', ()
     // Open drawer in create mode + dirty il form.
     await user.click(screen.getByRole('button', { name: /nuovo farmaco/i }));
     const drawer = screen.getByTestId('farmaco-drawer');
-    const nomeInput = within(drawer).getByLabelText('Nome');
+    const nomeInput = within(drawer).getByLabelText(/^Nome/);
     await user.type(nomeInput, 'Test');
 
     // Tap Annulla → UnsavedChangesModal apre.
@@ -475,7 +475,7 @@ describe('FarmaciTab — CP5 v3.0.0 Step 1 Mit-C toast trigger (§6.177)', () =>
     //   nome (typed), tipo_frequenza (radio), relazione_pasto (select).
     //   data_inizio: già default tomorrowIso() (§6.178), valid (>= today).
     //   dosi_giornaliere: già default '1', orari[0] = makeDefaultOrario(1).
-    await user.type(within(drawer).getByLabelText('Nome'), 'TestFarmaco');
+    await user.type(within(drawer).getByLabelText(/^Nome/), 'TestFarmaco');
     await user.click(within(drawer).getByLabelText('Fisso'));
     fireEvent.change(within(drawer).getByLabelText('Relazione con il pasto'), {
       target: { value: 'indifferente' },
@@ -501,5 +501,73 @@ describe('FarmaciTab — CP5 v3.0.0 Step 1 Mit-C toast trigger (§6.177)', () =>
 
     // Drawer chiuso post-success.
     expect(screen.queryByTestId('farmaco-drawer')).not.toBeInTheDocument();
+  });
+});
+
+// CP1 Sessione 14 par.6.208 — UX-N8 asterisco Nome required + hint footer.
+describe('FarmaciTab — CP1 Sessione 14 par.6.208 UX-N8 asterisco Nome + hint footer', () => {
+  it('label Nome rende asterisco aria-hidden e input ha aria-required="true"', async () => {
+    const user = userEvent.setup();
+    renderWithProvider(<FarmaciTab />, {
+      stateOverrides: { farmaci: buildFarmaci(), profili: [buildProfiloAttivo()] },
+      actions: {},
+    });
+
+    await user.click(screen.getByRole('button', { name: /nuovo farmaco/i }));
+    const drawer = screen.getByTestId('farmaco-drawer');
+
+    // Input semantically marked required (a11y).
+    const nomeInput = within(drawer).getByLabelText(/^Nome/);
+    expect(nomeInput).toHaveAttribute('aria-required', 'true');
+
+    // Visual asterisk inside the label, aria-hidden so screen readers
+    // don't announce it twice with aria-required.
+    const nomeLabel = drawer.querySelector('label[for="farmaco-nome"]');
+    expect(nomeLabel).not.toBeNull();
+    const star = nomeLabel.querySelector('span[aria-hidden="true"]');
+    expect(star).not.toBeNull();
+    expect(star).toHaveTextContent('*');
+  });
+
+  it('hint "Compila i campi obbligatori" visibile in create-mode con form vuoto', async () => {
+    const user = userEvent.setup();
+    renderWithProvider(<FarmaciTab />, {
+      stateOverrides: { farmaci: buildFarmaci(), profili: [buildProfiloAttivo()] },
+      actions: {},
+    });
+
+    await user.click(screen.getByRole('button', { name: /nuovo farmaco/i }));
+    const drawer = screen.getByTestId('farmaco-drawer');
+
+    // Form is fresh: Nome empty, tipo_frequenza empty, relazione_pasto empty
+    // -> !allRequiredFilled -> hint visible.
+    expect(within(drawer).getByText('Compila i campi obbligatori')).toBeInTheDocument();
+  });
+
+  it('hint sparisce dopo aver compilato tutti i required (Nome + tipo_frequenza + relazione_pasto)', async () => {
+    const user = userEvent.setup();
+    renderWithProvider(<FarmaciTab />, {
+      stateOverrides: { farmaci: buildFarmaci(), profili: [buildProfiloAttivo()] },
+      actions: {},
+    });
+
+    await user.click(screen.getByRole('button', { name: /nuovo farmaco/i }));
+    const drawer = screen.getByTestId('farmaco-drawer');
+
+    // Pre-condition: hint visible (form fresh).
+    expect(within(drawer).getByText('Compila i campi obbligatori')).toBeInTheDocument();
+
+    // Fill all required: Nome + radio Fisso + select Relazione_pasto.
+    // data_inizio already default tomorrowIso(), dosi_giornaliere default '1'.
+    await user.type(within(drawer).getByLabelText(/^Nome/), 'X');
+    await user.click(within(drawer).getByLabelText('Fisso'));
+    fireEvent.change(within(drawer).getByLabelText('Relazione con il pasto'), {
+      target: { value: 'indifferente' },
+    });
+
+    // Post-condition: allRequiredFilled=true -> hint hidden.
+    await waitFor(() => {
+      expect(within(drawer).queryByText('Compila i campi obbligatori')).not.toBeInTheDocument();
+    });
   });
 });
