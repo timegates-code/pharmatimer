@@ -14559,3 +14559,217 @@ One-liner sessione successiva dipende da delivery target ratificato in apertura 
 
 ---
 
+### 22.68 Decisione strategica post-Sessione 18 (Opzione 2 ridotta + minimo effort verso tag finale v3.1.0, scope rilascio finale ratificato, 17 Q discriminanti pre-elaborate, par.11.T analisi-first pre-frozen)
+
+**Modalita:** closing doc-only post-Sessione 18 (17 maggio 2026). Pattern par.22.55 (split upfront analisi-first/esecutiva) + par.22.66 (consolidamento Q pre-elaborate sessione corrente per sessione analisi-first successiva) replicato in scala strategica multi-sessione. Zero codice modificato. Token spesi ~10-15K. Wall-clock ~30 min.
+
+**Contesto.** Dopo closing Sessione 18 (par.22.67) Roberto ha posto domanda strategica: "Considerare il progetto chiuso?". Analisi Claude-side ha identificato 3 livelli di chiusura (prodotto utilizzabile / spec eseguita integralmente / no piu sessioni utili) e ha chiarito che la PWA e funzionalmente stabile ma roadmap non eseguita per ~70% (Fase 1 backend FastAPI+MariaDB + Fase 3 viste Log/Export + Fase 4 estensioni). Roberto ha chiarito due vincoli operativi nuovi:
+1. **App attualmente NON utilizzata da nessuno** (no utenti su gh-pages live, no Roberto stesso ancora dipendente da PWA per terapia).
+2. **No rilasci intermedi necessari** (deploy follow-up sotto-scala per ogni sessione pattern par.22.59/63/65 NON obbligato).
+
+Questi vincoli aprono spazio decisionale per chiusura formale "rilascio finale" senza pressione di backward-compat o smoke utenti.
+
+**Decisione ratificata Roberto + raccomandazione Claude: Opzione 2 ridotta verso tag finale `v3.1.0`.** Definizione esatta:
+- **Include:** deploy aggregato finale + vista Log + vista Export + cleanup mirato.
+- **Esclude:** Fase 1 backend FastAPI+MariaDB (mantiene LocalRepository Dexie come consumer unico, no swap ApiRepository) + Fase 4 estensioni (parametri vitali, grafici aderenza, multi-utente familiare, Apple Health, accesso remoto Tailscale).
+- **Persistenza:** Dexie IndexedDB locale-only.
+- **Tag finale:** `v3.1.0` (semver continuo: 3.0.0 milestone novizi + 3.0.1.x polish UX -> 3.1.0 viste complete + closing rilascio).
+- **Findings residui non-bloccanti:** dichiarati "known limitations v3.1.0" in Spec v1.3, fuori scope rilascio finale, scope futuro opportunistic post-v3.1.0 (sessioni patch v3.1.x se condizioni cambiano).
+
+**Stima Opzione 2 ridotta minimo effort: 4-5 sessioni totali wall-clock cumulativo 6-10 ore distribuibili 2-3 settimane:**
+- N+1 analisi-first par.11.T (17 Q discriminanti pre-elaborate sotto)
+- N+2 vista Log esecutiva minima (scope Q-LOG defaults raccomandati)
+- N+3 vista Export CSV esecutiva minima (scope Q-EXP defaults raccomandati)
+- N+4 cleanup mirato XS (par.6.119 fix bloccante + drift-doc batch + Sessione 18 deploy inglobato finale)
+- N+5 closing v3.1.0 (Spec v1.3 + README + guide.html sezioni Log/Export + tag annotato + deploy gh-pages unico finale)
+
+**Set 17 Q discriminanti pre-elaborate par.11.T (5 Log + 5 Export + 5 Cleanup + 4 Final + Q-CLEAN.5 NEW soglia findings):**
+
+| Cluster | Q | Descrizione | Default raccomandato minimo effort |
+|---|---|---|---|
+| Log | Q-LOG.1 | Scope filtri (a min / b std / c esteso) | **a** (data + farmaco singolo/tutti) |
+| Log | Q-LOG.2 | Display per riga (a compatto / b std / c esteso) | **a** (5 colonne: data, farmaco, ora_prev, ora_eff, stato) |
+| Log | Q-LOG.3 | Interazioni (a read-only / b dettaglio / c azioni post-fatto) | **a** (read-only puro) |
+| Log | Q-LOG.4 | Performance (a in-memory / b paginazione / c virtual) | **a** (in-memory) |
+| Log | Q-LOG.5 | Posizione NavBar | verifica empirica CP0 dump src/components/shared/NavBar.jsx + decisione in apertura analisi-first |
+| Export | Q-EXP.1 | Formati (a CSV / b CSV+JSON / c +PDF) | **a** (CSV only) |
+| Export | Q-EXP.2 | Meccanismo download (a Blob / b Web Share API / c entrambi) | **a** (Blob+download attribute, universale) |
+| Export | Q-EXP.3 | Filtri export riusa Log (a yes / b standalone / c entrambi) | **a** (riusa filtri Log, bottone Esporta nella vista Log) |
+| Export | Q-EXP.4 | Encoding CSV (a `,` / b `;` Italian-friendly / c opzione utente) | **b** (`;` IT Excel-friendly da userPreferences Roberto) |
+| Export | Q-EXP.5 | Scope dati (a solo assunzioni / b + farmaci snapshot / c full backup) | **a** (solo log_assunzioni, import non in scope v3.1.0) |
+| Cleanup | Q-CLEAN.1 | Bug deferred par.6.119 cross-midnight visual + par.6.120 simulated_now DEV | **solo par.6.119** (visual user-facing bloccante; par.6.120 DEV-only out-of-scope rilascio prod) |
+| Cleanup | Q-CLEAN.2 | 12 findings registry residui (triage criterio) | **(a) minimo: registry chiuso "as-is"** (12 findings UX dichiarati known limitations Spec v1.3) |
+| Cleanup | Q-CLEAN.3 | 7 drift-doc cumulativi (batch XS / lascia carry-forward) | **batch doc-only XS** in sessione N+4 cleanup (ripulitura registry pre-closing) |
+| Cleanup | Q-CLEAN.4 | Sub-AMB Q4-bis rinominazione sub-tab "Impostazioni" (chiudere / lasciare) | **escludere** (sub-tab Q4-bis fuori scope minimo, scope futuro opportunistic v3.1.x) |
+| Cleanup | Q-CLEAN.5 NEW | Soglia inclusione findings v3.1.0 (a minimo / b bilanciato triage / c massimo chiusura completa) | **(a) minimo as-is** (UX-N18 sticky guida + altri findings UX scope futuro v3.1.x opportunistic) |
+| Final | Q-FINAL.1 | Tag finale `v3.1.0` semver / `v1.0.0` rebranding | **a** (v3.1.0 semver continuo) |
+| Final | Q-FINAL.2 | Documentazione finale (README + Spec v1.3 + guide.html nuove sezioni) | **tutti** (README minimo + Spec v1.3 chiude formalmente Fase 1+4 out-of-scope + guide.html Log/Export sezioni) |
+| Final | Q-FINAL.3 | Strategia tag intermedi sessioni esecutive | **b** (no tag intermedi, solo v3.1.0 finale, sessioni N+2/N+3/N+4 commit cumulativi senza tag annotato, package.json bump in-session ma no tag git) |
+| Final | Q-FINAL.4 | Deploy gh-pages strategia (sessione / milestone / finale) | **b** (deploy finale solo a v3.1.0 chiusura, Sessione 18 deploy inglobato nel deploy finale unico) |
+
+**Razionale decisioni in-session par.22.68:**
+
+1. **App non-utilizzata vincolo abilitante:** no smoke utente cross-sessione, no UpdatePrompt deferred ai client esistenti, no rollback rapido richiesto. Permette deploy finale unico vs deploy incrementale per sessione (Q-FINAL.4=b). Riduce ~4 CP per sessione (CP push origin + CP build + CP gh-pages + CP smoke) cumulativi su 4 sessioni esecutive = ~16 CP risparmiati = ~3-4 ore wall-clock cumulative + ~10-15K token risparmiati.
+
+2. **Tag intermedi rinunciati Q-FINAL.3=b:** AMB-11.B.7 originale "package.json bump solo a closing CP esecutivo completo" mantenuto, ma tag git annotato saltato per sessioni N+2/N+3/N+4 (solo bump package + sync ImpostazioniTab pattern par.6.200/205 mantenuti). Tag annotato v3.1.0 finale unico CP closing sessione N+5. Razionale: tag git intermedi servono per rollback fast pattern par.22.51, ma con app non-utilizzata rollback non urgente -> ridondanti. Deviazione formale par.6.NN nuova ratifica AMB-11.B.7-bis pre-allocata sessione N+5 closing.
+
+3. **Spec v1.3 chiude formalmente roadmap par.11 non-eseguita:** sezione par.11 "Roadmap di Sviluppo" attualmente elenca 4 Fasi senza marcare quali eseguite/escluse. v1.3 aggiunge marker esplicito: Fase 1 backend "OUT-OF-SCOPE rilascio v3.1.0 (riapribile sessione futura par.11.D)", Fase 4 estensioni "OUT-OF-SCOPE rilascio v3.1.0 (scope futuro opportunistic non pianificato)". Audit trail leggibile cosa e formalmente chiuso vs cosa e accantonato.
+
+4. **UX-N18 sticky link guida + altri 11 findings UX NEW emersi -> registry chiuso as-is:** Q-CLEAN.5=a ratificato. Pattern par.6.71/85 esteso a registry-level: i finding emergono naturalmente come prodotto si evolve, non possono essere "tutti chiusi" senza diventare ricorsivo. Accettazione esplicita known limitations v3.1.0 nella Spec dichiarata. UX-N18 esempio rappresentativo: affordance secondaria (link footer esiste funzionante), benefit uso ripetuto, no bloccante novizio, no impact terapia -> classificazione "polish post-rilascio" coerente.
+
+5. **Closing N+5 aggregato deploy unico v3.1.0 finale:** Sessione 18 deploy follow-up sotto-scala par.11.S out-of-scope esplicito ("Push origin main + tag v3.0.1-rc.4 + redeploy gh-pages -> deferred sessione successiva") **viene inglobato nel deploy finale v3.1.0** Sessione N+5. Tag intermedio v3.0.1-rc.4 LOCALE su commit `022a357` resta LOCALE perpetuo (no push), sara historicamente "tag locale work-in-progress saltato" pattern par.6.71/85. Razionale: app non-utilizzata + no rilasci intermedi -> tag intermedio v3.0.1-rc.4 perde senso, deploy aggregato semplifica. Documentato esplicitamente Spec v1.3.
+
+**Deviazioni s.6.NN emesse closing par.22.68:** Zero. Doc-only + decisione strategica + prompt par.11.T pre-frozen, no codice modificato.
+
+**Drift-doc-NEW segnalati NON corretti retroattivamente par.6.71/85:** Zero nuovi. 7 drift-doc cumulativi carry-forward par.22.67 invariati, sub-allocati sessione N+4 cleanup batch.
+
+**Lesson learned par.22.68 (consolidate):**
+1. **Vincoli operativi nuovi sblocco decisioni strategiche:** "app non-utilizzata" + "no rilasci intermedi" sono state dichiarate da Roberto solo post-S18 closing in risposta a domanda Claude "consideri il progetto chiuso?". Pattern lesson: chiedere esplicitamente i vincoli operativi correnti pre-analisi-first strategica e' essenziale, defaults raccomandati con vincoli sbagliati saturano i bilanci effort/risultati. Da applicare sistematicamente in CP0 sessioni strategiche future.
+2. **3 livelli di chiusura distinti (prodotto utilizzabile / spec eseguita / no piu sessioni utili) sono framework utile per disambiguare "progetto chiuso":** pattern Q-FINAL semantica multi-livello replicabile in altri progetti per evitare equivoci tipo "tutto fatto?" → "tutto della spec? tutto utile? tutto polished?".
+3. **Q-CLEAN.5 emerso dinamicamente come Q-NEW post Q-set iniziale:** pattern AMB-NEW emergente conversazione strategica (UX-N18 esempio concreto ha sollevato Q soglia findings registry generale). Conferma pattern par.22.42 sub-AMB emergente in cluster esteso a Q-set strategici, no rigid 16-Q set immutabile.
+
+#### Stato git post-par.22.68
+
+- branch main HEAD `<TBD-closing-par.22.68-commit>` 2 commit ahead origin/main (s.6.214 cumulativo par.22.67 + doc-only par.22.68)
+- tag annotato v3.0.1-rc.4 LOCALE su `022a357` invariato (NO push, **deferred deploy finale aggregato Sessione N+5** v3.1.0)
+- tag v3.0.1-rc.3 / rc.2 / rc.1 / v3.0.0 invariati
+- gh-pages db1b117 invariato (no redeploy)
+- working tree clean post-doc-only commit
+- package.json 3.0.1-rc.4 invariato (no bump in doc-only)
+- 496/496 test invariati
+
+#### Sessione successiva
+
+Prompt `par.11.T` pre-frozen sotto questa sezione (Sessione N+1 analisi-first dedicata scope rilascio finale v3.1.0 + 17 Q ratifica + roadmap concreta N+2 a N+5 + prompt one-liner sequenziali). One-liner apertura: `Esegui il prompt al par.11.T del Changelog.`
+
+---
+
+### 11.T Prompt Sessione N+1 analisi-first dedicata scope rilascio finale v3.1.0 (Opzione 2 ridotta minimo effort, 17 Q discriminanti pre-elaborate par.22.68, roadmap N+2-N+5 da ratificare, pattern par.11.M/N/P/S replicato analisi-first pura zero codice)
+
+**One-liner apertura:** `Esegui il prompt al par.11.T del Changelog.`
+
+**Modalita:** Sessione N+1 analisi-first **pura** (no CP esecutivi inline, regola critica #1 rispettata). Pattern par.11.M / par.11.N / par.11.P / par.11.S replicato (analisi-first dedicata pre-esecutiva). Token spesi attesi 10-20K. Wall-clock atteso 60-90 min distribuibili 1 sessione.
+
+#### Pre-letture obbligatorie (Claude in apertura N+1)
+
+1. **par.22.68** integrale (sezione precedente, decisione strategica + 17 Q discriminanti + defaults raccomandati + razionale + roadmap stima N+2-N+5)
+2. **par.22.67** integrale (closing Sessione 18 esecutiva + stato git post-S18)
+3. **par.22.66** integrale (closing Sessione 17 analisi-first + scope CP S18 + Q1-Q8 ratificate pattern)
+4. **Spec par.11 Roadmap** (4 Fasi originali, baseline per Spec v1.3 update sessione N+5)
+5. **par.6.118 + par.22.42** (lesson learned pre-code scenario validation + sub-AMB emergenti in cluster)
+6. **par.6.71 / par.6.85** (deviazioni storiche immutabili principio)
+7. **AMB-11.B.7** (bump version solo a closing CP esecutivo completo, eventualmente AMB-11.B.7-bis ratifica tag intermedi saltati Q-FINAL.3=b)
+
+#### CP0 obbligatorio N+1
+
+**Mac-side (Roberto):**
+
+```bash
+cd ~/Sviluppo/pharmatimer
+echo '=== CP0 baseline N+1 analisi-first scope v3.1.0 ==='
+git status -sb
+git --no-pager log -3 --oneline --decorate
+git --no-pager tag --sort=-creatordate | head -3
+node -p "require('./package.json').version"
+npx vitest run 2>&1 | tail -8
+echo '--- branch operativi locali ---'
+git --no-pager branch
+echo '=== CP0 verifica empirica Q-LOG.5 dump NavBar.jsx ==='
+echo 'NavBar TABS structure:'
+grep -n 'TABS\s*=\|label:' src/components/shared/NavBar.jsx | head -20
+echo '=== CP0 completato ==='
+```
+
+**Atteso baseline N+1:**
+
+- branch main HEAD `<TBD-closing-par.22.68-commit>` 2 commit ahead origin/main (s.6.214 par.22.67 + doc-only par.22.68) — push origin **NON** ancora fatto, deferred deploy aggregato Sessione N+5
+- tag latest v3.0.1-rc.4 LOCALE su 022a357 invariato
+- package.json 3.0.1-rc.4 invariato
+- 496/496 test su 59 files verdi
+- branch operativi locali: `* main` solo
+- NavBar TABS dump: 4 voci attese (Oggi · ?Storico? · Impostazioni · Aiuto) per disambiguazione Q-LOG.5 (verifica empirica vs assunzione)
+
+#### Scope CP Sessione N+1 (analisi-first pura)
+
+| CP | Tema | Operazioni | Verifica |
+|---|---|---|---|
+| CP0 | Baseline + dump NavBar empirico | Git status + tag + test + grep NavBar.jsx TABS | atteso 6/6 + Q-LOG.5 NavBar shape disambiguata |
+| CP1 | Ratifica 17 Q discriminanti + sub-Q emergenti | Roberto batch single-round "decidi tu" defaults raccomandati par.22.68 + eventuali sub-Q emergenti pattern par.22.42 | atteso 17 Q chiuse + sub-Q chiuse se emerse + scope frozen 4 sessioni esecutive |
+| CP2 | Roadmap concreta N+2-N+5 + prompt par.11.U/V/W/X pre-frozen | Stesura prompt one-liner sequenziali Sessione N+2 (Log) + N+3 (Export) + N+4 (cleanup XS) + N+5 (closing v3.1.0) con scope CP table + deviazioni s.6.NN pre-allocate + risk notes | atteso 4 prompt par.11.U-X pre-frozen ratificati + s.6.NN pre-allocate (par.6.215 vista Log + par.6.216 vista Export + par.6.217 cleanup par.6.119 + par.6.218 closing finale doc-only AMB-11.B.7-bis) |
+| CP3 closing | par.22.69 doc-only + closing N+1 + commit unico | Patcher Python Changelog append-at-EOF par.22.69 (chiude N+1 analisi-first) + par.11.U/V/W/X (prompt esecutivi pre-frozen) | atteso commit doc-only su main (no branch operativo per analisi-first), no bump package, no tag |
+
+**Delta test cumulativo target N+1:** 0 (496/496 invariato, analisi-first pura).
+
+#### Deviazioni s.6.NN emesse Sessione N+1
+
+**Zero atteso.** Pattern par.22.66 / par.22.68 replicato: analisi-first pura zero codice.
+
+#### Deviazioni s.6.NN pre-allocate Sessioni N+2-N+5 (in CP2 N+1)
+
+| ID | Sessione | Scope |
+|---|---|---|
+| s.6.215 | N+2 | Vista Log minima (Q-LOG.1=a + Q-LOG.2=a + Q-LOG.3=a + Q-LOG.4=a). NEW file src/components/log/LogView.jsx + selector selectLogEntriesFiltered + integrazione NavBar (Q-LOG.5 ratificato N+1) + test minimi T-LOG.1-5. |
+| s.6.216 | N+3 | Vista Export CSV minima (Q-EXP.1=a + Q-EXP.2=a + Q-EXP.3=a + Q-EXP.4=b + Q-EXP.5=a). NEW utility src/utils/exportCsv.js (encoding `;` IT + UTF-8 BOM) + bottone Esporta inline LogView consumendo filtri correnti + Blob+download attribute browser + test T-EXP.1-3. |
+| s.6.217 | N+4 | Cleanup par.6.119 cross-midnight visual bug + drift-doc batch XS 7 cumulativi. planBuilder.js fix bump entry.dateStr quando ora_ricalcolata cross-midnight (lesson par.6.118/6.119 documentate). Drift-doc cumulativi 7: .gitignore + FormField duplicato ProfiliTab.jsx:529 + 2 drift par.11.R-bis + drift S17 TBD + drift S18 line-number par.11.S + 2 drift S18 closing nuovi. |
+| s.6.218 | N+5 | Closing v3.1.0 finale aggregato. Bump 3.0.1-rc.4 -> 3.1.0 + sync ImpostazioniTab + Spec v1.3 update (par.11 Roadmap Fase 1 OUT-OF-SCOPE + Fase 4 OUT-OF-SCOPE + sezione "rilascio finale v3.1.0 known limitations") + README minimo + guide.html sezioni nuove Log/Export + tag annotato v3.1.0 + deploy gh-pages finale unico (push origin main + tag + build + gh-pages orphan-init pattern par.22.65 replicato) + smoke production curl 5/5. AMB-11.B.7-bis ratifica tag intermedi saltati N+2/N+3/N+4 deviazione formale. |
+
+Numerazione progressiva da s.6.214 in avanti. Gap s.6.198 / s.6.199 placeholder preservati (principio par.6.71 / par.6.85 immutabile).
+
+#### Risk notes Sessione N+1
+
+1. **Q-LOG.5 verifica empirica NavBar CP0:** assunzione 4 voci (Oggi + ?Storico? + Impostazioni + Aiuto) basata su memoria horizon, dump empirico CP0 disambigua. Se voce "Storico" gia esiste come placeholder -> Q-LOG.5=replacement, se 4 voci tutte occupate -> Q-LOG.5=aggiunta 5a voce (potenziale UX overflow mobile <=375px), se 3 voci attive + 1 slot libero -> Q-LOG.5=aggiunta naturale.
+
+2. **Sub-AMB Q-NEW emergenti N+1:** pattern par.22.42 + par.22.68 lesson 3 (Q-CLEAN.5 emerso dinamicamente). Roberto in apertura analisi-first potrebbe sollevare Q nuove (es. Q-LOG.6 vista Log inclusione assunzioni "saltata" / "sospesa" inline o sezione separata; Q-EXP.6 footer file CSV con metadata "esportato da PharmaTimer v3.1.0 il [data]"; Q-CLEAN.6 cleanup commenti TODO/FIXME sparsi codebase). CP1 N+1 deve restare aperto a sub-Q emergenti, non blindato sul 17-Q set.
+
+3. **Roadmap N+2-N+5 prompt par.11.U/V/W/X pre-frozen ma scope rigid blocked vs pattern par.22.55 split safety-first:** se sessione esecutiva successiva rileva mid-stream necessita split intra-sessione (pattern par.22.55 / par.22.61 / par.22.62), accettabile + documentato in par.22.NN closing. Prompt par.11.U/V/W/X pre-frozen NON blindano scope esecutivo, sono guideline.
+
+4. **Tag intermedi saltati AMB-11.B.7-bis nuova deviazione formale Sessione N+5:** pre-allocata s.6.218. Pattern AMB-11.B.7 originale "bump solo a closing CP esecutivo completo" da estendere a "bump in-session N+2/N+3/N+4 ma tag git deferred N+5 finale". Sub-AMB testuale documentata in apertura N+5 + ratifica AMB-11.B.7-bis closing.
+
+5. **Spec v1.3 update scope formalizzazione out-of-scope Fase 1+4:** lesson par.22.36 (Spec update accompagna chiusura formale milestone) replicata Sessione N+5. CP separato Spec v1.3 + commit doc-only dedicato pre-tag v3.1.0.
+
+6. **Findings registry chiuso as-is Q-CLEAN.5=a:** 12 findings UX dichiarati known limitations Spec v1.3 sezione dedicata. **Roberto puo riaprire scope futuro opportunistic v3.1.x** se utenti reali (Roberto stesso + eventuali) sollevano specifico finding come bloccante uso pratico. Pattern par.22.49 / par.22.60 branching-decisione registry-driven replicabile post-v3.1.0.
+
+7. **Pattern par.22.55 split upfront vs intra-sessione applicabile N+2 (vista Log):** vista Log scope minimo Q-LOG defaults raccomandati produce stima ~120-180 LOC + 5-8 test, dentro budget singola sessione esecutiva. **Se CP0 N+2 rileva complessita superiore (es. paginazione necessaria mid-session anche se Q-LOG.4=a in-memory)** -> split safety-first intra-sessione legittimo, sub-CP nuova allocata.
+
+#### Modalita decisionale CP1 N+1 (raccomandata)
+
+Pattern par.22.32 / par.22.36 / par.22.50 / par.22.66 replicato: **batch unico con "decidi tu" globale su defaults raccomandati par.22.68** + sub-Q emergenti gestite intra-sessione single-round. Token-light ~10-15K. Wall-clock 30-45 min CP1 + 20-30 min CP2 + 15 min CP3 = ~70-90 min totale.
+
+Alternativa: round multi-Q dialogato Q-by-Q se Roberto preferisce calibrare singola decisione (pattern par.22.43 ratifica turno-1 turno-2 turno-3). Token-heavier ~20-30K. Wall-clock ~120-150 min.
+
+**Defaults raccomandati N+1 CP1 batch: tutti accettare par.22.68 defaults minimo effort + verifica empirica Q-LOG.5 CP0 + sub-Q emergenti decidi tu blanket.**
+
+#### Riferimenti par.11.T
+
+- **par.22.68**: closing strategico post-S18 + 17 Q discriminanti pre-elaborate + defaults raccomandati minimo effort + roadmap stima N+2-N+5
+- **par.22.67**: closing Sessione 18 esecutiva + stato git post-S18 + lesson learned 4 consolidate
+- **par.22.66**: closing S17 analisi-first guide.html + scope CP S18 frozen pattern replicato N+1
+- **par.22.55**: pattern split upfront analisi-first/esecutiva replicato N+1->N+2-N+5
+- **par.22.42**: sub-AMB emergenti in cluster (sub-Q N+1 ratifica)
+- **par.6.118**: pre-code scenario validation obbligatoria
+- **par.6.71 / par.6.85**: deviazioni storiche immutabili
+- **AMB-11.B.7**: bump version solo closing CP esecutivo, estensione AMB-11.B.7-bis tag git intermedi saltati Q-FINAL.3=b
+- **Spec par.11 Roadmap originale**: baseline Spec v1.3 update Sessione N+5
+
+#### Stato baseline atteso N+1 chiusa positivamente
+
+- branch main HEAD `<TBD-closing-N+1-commit>` 3 commit ahead origin/main (par.22.67 + par.22.68 + par.22.69)
+- working tree clean post-commit doc-only N+1 (no branch operativo per analisi-first)
+- 17 Q discriminanti ratificate + eventuali sub-Q chiuse
+- 4 prompt par.11.U/V/W/X pre-frozen scope CP table + deviazioni s.6.NN pre-allocate (s.6.215-218)
+- 496/496 test invariati su 59 files (analisi-first pura zero codice)
+- package.json 3.0.1-rc.4 invariato (AMB-11.B.7 rispettato no bump analisi-first)
+- tag annotato v3.0.1-rc.4 LOCALE invariato
+
+#### Out-of-scope Sessione N+1 (esplicito)
+
+- Implementazione vista Log -> deferred Sessione N+2 par.11.U
+- Implementazione vista Export -> deferred Sessione N+3 par.11.V
+- Cleanup par.6.119 fix + drift-doc batch -> deferred Sessione N+4 par.11.W
+- Closing v3.1.0 finale + Spec v1.3 + README + guide.html + tag + deploy aggregato -> deferred Sessione N+5 par.11.X
+- Fase 1 backend FastAPI+MariaDB pivot -> dichiarato OUT-OF-SCOPE rilascio v3.1.0 (Spec v1.3 formalizzata Sessione N+5), riapribile sessione futura via par.11.D
+- Fase 4 estensioni (parametri vitali, grafici aderenza, Apple Health, multi-utente, Tailscale) -> dichiarato OUT-OF-SCOPE rilascio v3.1.0 (Spec v1.3 formalizzata Sessione N+5), scope futuro opportunistic
+- 12 findings UX registry residui post-S18 -> dichiarati known limitations v3.1.0 (Spec v1.3 formalizzata Sessione N+5), scope futuro opportunistic v3.1.x
+
+---
+
