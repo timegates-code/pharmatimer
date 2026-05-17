@@ -53,7 +53,7 @@ export default function App() {
         <Route path="/oggi" element={<OggiView />} />
         <Route path="/config/*" element={<ConfigView />} />
         <Route path="/log" element={<CronologiaView />} />
-        <Route path="/export" element={<Placeholder title="Export" />} />
+        <Route path="/export" element={<Navigate to="/log" replace />} />
         <Route path="*" element={<Navigate to="/oggi" replace />} />
       </Routes>
       <UpdatePrompt />
@@ -87,16 +87,5 @@ function OnboardingGate() {
       farmaciAttiviCount={farmaciAttivi.length}
       onComplete={handleComplete}
     />
-  );
-}
-
-function Placeholder({ title }) {
-  return (
-    <div className="min-h-screen flex items-center justify-center p-8 text-center">
-      <div>
-        <h2 className="text-xl font-bold mb-2">{title}</h2>
-        <p className="text-sm opacity-70">Non ancora implementato in questa fase.</p>
-      </div>
-    </div>
   );
 }

@@ -28,6 +28,7 @@ import { selectLogEntriesFiltered } from "../../state/selectors.js";
 import { repo } from "../../data/repository/index.js";
 import { Badge } from "../shared/Badge.jsx";
 import { useTheme } from "../../hooks/useTheme.js";
+import { entriesToCsv, DEFAULT_COLUMNS, triggerCsvDownload } from "../../utils/exportCsv.js";
 
 // Stato → label IT (s.6.215.B inline mapping)
 const STATO_LABELS = {
@@ -123,6 +124,16 @@ export default function CronologiaView() {
     return m;
   }, [farmaci]);
 
+  // s.6.216 CP2: export CSV handler.
+  // Sub-Q-NEW.B=a: filename uses today (recomputed at click time).
+  // Sub-Q-NEW.C=a: button always enabled; empty filtered exports header-only.
+  const handleExport = () => {
+    const todayIso = toIsoDateStr(new Date());
+    const filename = `pharmatimer-log-${todayIso}.csv`;
+    const csv = entriesToCsv(filtered, DEFAULT_COLUMNS, { farmacoNameById });
+    triggerCsvDownload(filename, csv);
+  };
+
   return (
     <div className="min-h-screen p-4 max-w-3xl mx-auto" data-testid="log-view">
       <h1 className="text-xl font-bold mb-3">Storico assunzioni</h1>
@@ -184,6 +195,19 @@ export default function CronologiaView() {
             ))}
           </select>
         </label>
+        <button
+          type="button"
+          onClick={handleExport}
+          className="rounded px-3 py-1.5 border text-sm font-medium whitespace-nowrap"
+          style={{
+            background: t.modalBg,
+            color: t.textPrimary,
+            borderColor: t.tapBd,
+          }}
+          data-testid="log-export-csv"
+        >
+          Esporta CSV
+        </button>
       </div>
 
       {loading && (

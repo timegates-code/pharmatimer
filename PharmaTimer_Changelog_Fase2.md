@@ -15001,6 +15001,103 @@ par.11.U Sessione N+2 esecutiva vista Log minima (scope frozen N+1 par.22.69, de
 
 ---
 
+### 22.71 Stato post-Sessione N+3 esecutiva vista Export CSV minima (s.6.216 ratificata + s.6.219 doc-only adeguamento terminology drift pre-frozen vs effettivo N+2 + drift-doc-NEW N22/N23 carry-forward batch s.6.217 N+4) v3.1.0-rc.2 (+3 test 501->504, bump rc.1->rc.2, NO tag git AMB-11.B.7-bis seconda applicazione, commit cumulativo singolo)
+
+**Data:** 17 maggio 2026.
+**Modalita:** esecutiva mista 6 CP (CP0 baseline + CP1 utility exportCsv + CP2 bottone UI CronologiaView + CP3a/b route /export + dead code cleanup + CP4 CP browser empirico + CP5 closing). Scope CP frozen par.22.69 + s.6.216 pre-allocata rispettato. Pattern par.22.55 split safety-first replicato a livello sub-CP (CP3a diagnostic + CP3b execute) per Anchor 2 forma function `Placeholder` unknown da CP0. Token spesi ~20-25K (dentro preventivo par.11.V 15-25K). Wall-clock ~1.5h distribuiti 1 giornata.
+**Esito:** OK vista Export CSV (bottone "Esporta CSV" inline `CronologiaView.jsx` accanto a filtri + utility pure `entriesToCsv` + DOM trigger `triggerCsvDownload` + redirect rotta `/export` -> `/log` + cleanup function locale orfana `Placeholder` in App.jsx) funzionante **504/504** verdi su 62 files (+3 vs baseline 501/61 par.22.70) + 1 deviazione `s.6.216` ratificata + 1 deviazione doc-only `s.6.219` ratificata in apertura CP0 (terminology drift prompt par.11.V vs reale post-N+2 s.6.215.A-E) + 2 drift-doc-NEW cumulativi (N22 commento header App.jsx riga 16 stale + N23 header Changelog "Ultima modifica" stale post-par.22.60) carry-forward batch s.6.217 N+4 + bump v3.1.0-rc.2 + commit cumulativo singolo + AMB-11.B.7-bis seconda applicazione (no tag git intermedio, ratifica formale demandata par.11.Y N+5).
+
+#### Scope consegnato Sessione N+3 cumulativa
+
+**CP0 baseline + ext:** branch `main`, top commit `1cecaaa` (s.6.215.A-E vista Log v3.1.0-rc.1 + bump + closing par.22.70) sopra `fa13807` (par.22.69 doc-only) sopra `be6a857` (par.22.68 doc-only), package.json `3.1.0-rc.1`, **501/501** verdi su 61 files, working tree clean. CP0-ext per terminology drift (regola critica #2): localizzato `src/components/cronologia/CronologiaView.jsx` (254 LOC, NOT `src/components/log/LogView.jsx`), firma `selectLogEntriesFiltered(logsArray, filters)` (NOT `(state, filtri)`), rotta `/export` cablata `<Placeholder title="Export" />` (function locale orfana riga 93 App.jsx).
+
+#### Sub-Q-NEW chiuse apertura CP0 (4 totali, pattern par.22.42)
+
+| ID | Domanda | Default racc. | Esito |
+|---|---|---|---|
+| Sub-Q-NEW.A | Colonne CSV (5 / 8-9 / full schema) | (a) 5 colonne mirror Q-LOG.2 | OK ratificata "decidi tu" |
+| Sub-Q-NEW.B | Filename date semantica (today / range filtri / max-data) | (a) `pharmatimer-log-{today}.csv` recomputed at click | OK ratificata "decidi tu" |
+| Sub-Q-NEW.C | Empty log behavior (header-only / bottone disabled / toast) | (a) bottone abilitato + CSV header-only | OK ratificata "decidi tu" |
+| Sub-Q-NEW.D (esplicita prompt par.11.V) | Route /export (redirect / placeholder / NavBar rimozione) | (a) `<Navigate to="/log" replace />` | OK ratificata "decidi tu" |
+
+#### Sub-decisioni minor in-CP1 (sub-scope s.6.216, no nuovo s.6.NN)
+
+Documentate in commento header `src/utils/exportCsv.js`:
+- **Date format CSV** = ISO `YYYY-MM-DD` raw (Excel IT auto-recognizes as date, sortable, parse-friendly). Display IT `DD/MM/YY` resta UI-only.
+- **Time format CSV** = HH:MM raw (strip ISO datetime prefix via helper `extractHHMM`, mirror difensivo `formatOraDisplay` CronologiaView post-drift-doc-N16).
+- **null/undefined** = empty string in CSV (cleaner Excel import).
+- **Line ending** = `\r\n` CRLF (RFC 4180 standard).
+- **Escape** RFC 4180-style: field with `;` / CR / LF / `"` is quoted; embedded `"` becomes `""`.
+
+#### Architettura split pure vs impure `exportCsv.js`
+
+CP2 introduce in `src/utils/exportCsv.js` due funzioni distinte:
+- **`entriesToCsv(entries, columns, ctx) -> string`** pure helper (testabile in isolamento T-EXP.1/2).
+- **`triggerCsvDownload(filename, csv, opts)`** impure DOM-side (Blob + anchor click cleanup + URL.createObjectURL/revoke; testabile T-EXP.3 con mock spies su `URL.createObjectURL`/`revokeObjectURL` + `document.body.appendChild`/`removeChild` + `HTMLAnchorElement.prototype.click`).
+
+CronologiaView consuma entrambe in `handleExport` come plumbing senza logica embedded. Pattern Separation of Concerns testable, no AppContext setup richiesto per T-EXP.3.
+
+#### CP table esito
+
+| CP | Tema | Operazioni eseguite | Verifica |
+|---|---|---|---|
+| CP0 | Baseline + dump shape | Verde 6/6. CP0-ext post terminology drift (regola critica #2 rispettata): localizzato CronologiaView, firma selector, rotta /export, function Placeholder orfana | 501/501 OK |
+| CP1 | NEW `src/utils/exportCsv.js` + test | Pure helper `entriesToCsv` + `triggerCsvDownload` + 2 test T-EXP.1/2 (encoding base + escape RFC 4180-style) | 503/503 OK |
+| CP2 | Bottone "Esporta CSV" inline CronologiaView + T-EXP.3 | Patcher Python idempotente 3 anchor (import + handleExport + button) + T-EXP.3 mock URL/anchor cleanup verificati | 504/504 OK |
+| CP3a | Route /export redirect | Patcher Python idempotente 1 anchor (`<Route path="/export" element={<Navigate to="/log" replace />} />`) | 504/504 stabile OK |
+| CP3b | Rimozione function `Placeholder` orfana App.jsx | Patcher Python idempotente 1 anchor (10 righe function + blank line precedente). App.jsx 102 -> 91 LOC. Build vite success | 504/504 stabile OK |
+| CP4 | CP browser empirico Mac | 4/5 scenari PASS espliciti+impliciti (bottone visibile + redirect /export + CSV vuoto solo header + Numbers macOS UTF-8 BOM accenti integri). Scenari 4/5/7 skip giustificato (log vuoto demo, no Excel, no farmaco char speciali) | empirico verde OK |
+| CP5 closing | par.22.71 + bump + commit cumulativo | Patcher Changelog par.22.71 + bump `3.1.0-rc.1` -> `3.1.0-rc.2` + sync ImpostazioniTab + cleanup `.bak.cp2/cp3a/cp3b` + 3 patcher transients + commit cumulativo unico. **NO tag git** (AMB-11.B.7-bis seconda applicazione) | clean OK |
+
+**Delta test cumulativo N+3:** +3 (501 -> 504), target par.11.V `+3 (range +2 a +5)` centrato. **+1 file test** (`src/utils/exportCsv.test.js` NEW: 62 vs 61 baseline).
+
+#### Lesson learned
+
+1. **Terminology drift fra prompt pre-frozen e implementazione effettiva** (pattern par.22.42 + par.6.118): il prompt par.11.V usava `src/components/log/LogView.jsx` + `selectLogEntriesFiltered(state, filtri)` ma N+2 aveva ratificato `s.6.215.C` (rename `log` -> `cronologia` componente) + `s.6.215.A` (signature array locale). Pattern: i prompt pre-frozen vanno re-validati empiricamente in CP0 contro lo stato post-sessione effettivo. Regola critica #2 ha funzionato (fermata + segnalazione drift + 4 sub-Q in apertura + CP0-ext mirato) producendo `s.6.219` ratificata "adeguamento prompt par.11.V terminology post-N+2" (deviazione doc-only no-impact codice).
+2. **Split CP3 safety-first applicato pre-emptive intra-sessione**: Anchor 2 (rimozione function `Placeholder` body) era unknown da CP0 dump (solo line-number visibile). Diviso in CP3a (apply Anchor 1 + dump diagnostic integrale App.jsx) + CP3b (apply Anchor 2 mirato su forma reale). Pattern par.22.55 split safety-first scalato a sub-CP granularity. Zero rischio anchor-mismatch, +1 round trip.
+3. **Function locale orfana JS rimovibile post-cleanup**: `Placeholder({ title })` non-export non rompe runtime Vite/JS module loader (dead code locale legittimo in Module Pattern). Rimossa in CP3b per pulizia. Drift-doc-NEW N22 segnala commento header App.jsx riga 16 stale ("Log and Export stub to redirect") carry-forward batch s.6.217 N+4.
+4. **Pattern split `pure helper` + `DOM trigger` in stesso modulo testable**: `entriesToCsv` (pure, dependency-free) + `triggerCsvDownload` (impure, DOM-side mocked) consente coverage completo senza AppContext + mock provider overhead. Pattern replicabile per future utility che mescolano logic + side-effect (es. export PDF, share API).
+
+#### Deviazioni s.6.NN ratificate Sessione N+3
+
+| ID | Tipo | Scope | Stato |
+|---|---|---|---|
+| `s.6.216` | code+test | Vista Export CSV minima (CP1+CP2+CP3a+CP3b cumulativo) | OK chiusa |
+| `s.6.219` | doc-only ratifica in-CP0 | Adeguamento prompt par.11.V terminology post-N+2 (CronologiaView vs LogView, signature array vs state, route Placeholder vs Navigate) | OK chiusa |
+
+**Numerazione `s.6.219` legittima**: gap `s.6.215.A-E` sub-suffix (par.22.70) + `s.6.216` (vista Export prompt par.11.V) + `s.6.217` (cleanup pre-allocato par.11.W) + `s.6.218` (closing pre-allocato par.11.Y) + `s.6.219` NUOVA Sessione N+3 (deviazione emergente CP0 non pre-allocata). Pattern par.6.71/85 immutabilita preservato (no retro-correzione, allocazione progressiva).
+
+#### Drift-doc-NEW cumulativi (carry-forward s.6.217 N+4)
+
+8 drift-doc-NEW Sessione N+2 par.22.70 (N14-N21) invariati + **2 nuovi Sessione N+3**:
+- **N22**: commento header App.jsx riga 16 "Only Oggi and Config are implemented in Fase 2; Log and Export stub to redirect." stale post-N+2 (CronologiaView funzionale) + N+3 (Export rotta redirect to /log non stub). NON corretto retroattivamente principio par.6.71/85.
+- **N23**: header Changelog "Versione: 3.0.1-rc.1" + sommario "Ultima modifica" cumulativo enumerato fino a par.22.60 = Sessione 13 16 maggio 2026 stale; sessioni 14-15-16-17-18-N+1-N+2-N+3 non enumerate (par.22.61-71 esistenti file). NON corretto retroattivamente principio par.6.71/85. Batch s.6.217 N+4 cleanup target.
+
+**Totale drift-doc cumulativi pre-N+4 cleanup:** 10 (N14-N23). Aggiornare prompt par.11.W batch count "8 totali" -> "10 totali" e' sub-AMB emergente da chiudere in apertura Sessione N+4 (pattern par.22.42 sub-AMB drift dinamico).
+
+#### Findings deferred Fase 2 polish
+
+15 findings registry par.22.52 invariati carry-forward + 10 drift-doc-NEW cumulativi (batch s.6.217 N+4 par.11.W). par.6.119 cross-midnight visual bug confermato presente non bloccante CP browser empirico CP4 (deferred N+4 ratifica Q-CLEAN.1).
+
+#### Sessione successiva
+
+**par.11.W Sessione N+4 esecutiva XS cleanup mirato** (scope frozen par.22.69, deviazione s.6.217). One-liner: `Esegui il prompt al par.11.W del Changelog.`
+
+Batch cleanup atteso aggiornato: 10 drift-doc cumulativi (N14-N23) inc. N22 commento App.jsx + N23 header Changelog "Ultima modifica" stale + Sessione N+3 par.22.71 enumerata.
+
+#### Riferimenti par.22.71
+
+- **par.22.69 / par.22.70**: closing N+1 + N+2 + scope CP frozen N+3 + AMB-11.B.7-bis pre-allocata + Q-EXP.1-5 defaults
+- **par.22.68**: defaults Q-EXP ratificati par.22.69
+- **par.22.55**: pattern split safety-first replicato sub-CP granularity (CP3a + CP3b)
+- **par.22.42**: sub-AMB emergenti in cluster (Sub-Q-NEW.A-D apertura CP0)
+- **par.6.118**: pre-code scenario validation esteso a empirical CP0 verify vs pre-frozen prompt terminology
+- **par.6.71 / par.6.85**: deviazioni storiche immutabili (drift-doc-NEW N22/N23 no correzione retroattiva)
+- **par.6.200 / par.6.205**: sync runtime ImpostazioniTab mandatory bump pattern (1 occorrenza sync, occorrenze storiche preservate principio par.6.71/85)
+- **AMB-11.B.7-bis**: bump intermedio senza tag git seconda applicazione, ratifica formale demandata par.11.Y N+5
+
+---
+
 ### 11.U Prompt Sessione N+2 esecutiva vista Log minima (s.6.215, Q-LOG.1-5 ratificati par.22.69)
 
 **One-liner apertura:** `Esegui il prompt al par.11.U del Changelog.`
