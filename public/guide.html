@@ -102,18 +102,6 @@
       font-size: 0.875em;
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     }
-    .placeholder {
-      display: block;
-      margin: 1rem 0;
-      padding: 1.5rem;
-      background: var(--bg-alt);
-      border: 1px dashed var(--border);
-      border-radius: 8px;
-      color: var(--text-muted);
-      font-size: 0.875rem;
-      text-align: center;
-      font-style: italic;
-    }
     .badge {
       display: inline-block;
       padding: 0.1rem 0.55rem;
@@ -181,14 +169,13 @@
         <li>Funziona anche offline una volta installata come app sulla schermata Home.</li>
         <li>Tutti i dati restano sul tuo dispositivo: nessun account, nessun cloud.</li>
       </ul>
-      <p class="placeholder">[Screenshot: schermata Oggi con dosi del giorno — disponibile in v3.0.1]</p>
     </section>
 
     <section id="aggiungere-farmaci">
       <h2>2. Aggiungere farmaci</h2>
       <p>
-        Per aggiungere un farmaco vai alla scheda <strong>Config</strong> e
-        seleziona la tab <strong>Farmaci</strong>. Premi il bottone
+        Per aggiungere un farmaco vai alla scheda <strong>Impostazioni</strong> e
+        seleziona la sezione <strong>Farmaci</strong>. Premi il bottone
         <strong>+ Nuovo farmaco</strong> in alto a destra: si aprirà il form
         di compilazione.
       </p>
@@ -207,10 +194,17 @@
       </ul>
 
       <p>
+        <strong>Campi obbligatori.</strong> I campi <strong>Nome</strong> e
+        <strong>Relazione pasto</strong> sono contrassegnati con un asterisco
+        rosso. Il pulsante <strong>Salva</strong> resta disabilitato finché
+        entrambi non sono compilati; un breve avviso nel footer del form
+        indica quali campi mancano.
+      </p>
+
+      <p>
         Premi <strong>Salva</strong> per confermare. Riceverai una notifica
         di conferma con la data e l'ora della prima dose pianificata.
       </p>
-      <p class="placeholder">[Screenshot: form aggiunta farmaco — disponibile in v3.0.1]</p>
     </section>
 
     <section id="colori-card">
@@ -222,7 +216,7 @@
         di stato sono sempre riconoscibili:
       </p>
       <ul>
-        <li><span class="badge badge-grey">In attesa</span> Dose pianificata, non ancora arrivata. Nessuna azione richiesta.</li>
+        <li><span class="badge badge-grey">In attesa</span> Dose pianificata; l'orario di assunzione non è ancora arrivato. Nessuna azione richiesta.</li>
         <li><span class="badge badge-yellow">In arrivo</span> La dose è imminente, entro la finestra di tolleranza.</li>
         <li><span class="badge badge-blue">In ritardo</span> L'orario previsto è passato ma la dose è ancora prendibile entro la soglia di sicurezza.</li>
         <li><span class="badge badge-green">Presa</span> Dose registrata correttamente, in orario o entro la tolleranza.</li>
@@ -233,7 +227,6 @@
         Quando si tocca una card, il timestamp di assunzione viene registrato
         immediatamente e la card passa allo stato <em>presa</em>.
       </p>
-      <p class="placeholder">[Screenshot: card nei vari stati — disponibile in v3.0.1]</p>
     </section>
 
     <section id="gap-recovery">
@@ -308,7 +301,6 @@
         <li><strong>Recupero gap disabilitato.</strong> Per gli intervalli plurigiornalieri il recupero di alcuni minuti è clinicamente irrilevante (circa lo 0,2% per un intervallo di 168h) e visivamente confondente; è quindi disattivato.</li>
         <li><strong>Empty state.</strong> Nei giorni in cui nessuna dose ricade (es. mercoledì e giovedì se la dose è settimanale al martedì), la schermata Oggi mostra "Nessuna assunzione programmata" insieme alla data della prossima dose.</li>
       </ul>
-      <p class="placeholder">[Screenshot: form frequenza estesa + empty state Oggi — disponibile in v3.0.1]</p>
     </section>
 
     <section id="privacy">
@@ -328,8 +320,8 @@
 
       <h3>Cancellare i dati</h3>
       <p>
-        Per azzerare completamente i dati dell'app, vai a
-        <strong>Config → Impostazioni → Dati</strong> e premi
+        Per azzerare completamente i dati dell'app, vai alla
+        <strong>scheda Impostazioni, sezione Dati</strong> e premi
         <strong>"Ricomincia da capo"</strong>. L'azione cancella farmaci,
         profili personalizzati e cronologia delle assunzioni; non può
         essere annullata. L'app si riavvia in modalità onboarding.
@@ -340,14 +332,14 @@
         Poiché i dati risiedono nel browser, la disinstallazione dell'app
         o la cancellazione dei dati del sito comportano la perdita
         irreversibile della cronologia. Una funzione di esportazione/importazione
-        non è ancora disponibile in v3.0.0.
+        non è ancora disponibile.
       </p>
     </section>
   </main>
 
   <footer>
     <p>PharmaTimer · <em>by timegates</em></p>
-    <p><a href="../">Torna all'app</a></p>
+    <p><a href="./">Torna all'app</a></p>
   </footer>
 </body>
 </html>
