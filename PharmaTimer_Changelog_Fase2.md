@@ -14773,3 +14773,335 @@ Alternativa: round multi-Q dialogato Q-by-Q se Roberto preferisce calibrare sing
 
 ---
 
+
+### 22.69 Stato post-Sessione N+1 analisi-first scope rilascio finale v3.1.0 (17 Q discriminanti ratificate blanket "decidi tu", Q-LOG.5 auto-risolta CP0, 4 prompt par.11.U/V/W/Y pre-frozen con rename forward-looking X->Y per collisione namespace pre-esistente 11.X, modalita A pure analisi-first)
+
+**Data:** 17 maggio 2026.
+**Modalita:** analisi-first pura (no CP esecutivi inline, regola critica #1 rispettata). Pattern par.22.36 / par.22.50 / par.22.53 / par.22.66 replicato. Token consumati ~12-18K.
+**Esito:** OK 17 Q discriminanti ratificate (1 auto-risolta CP0 + 16 blanket "decidi tu") + 4 sub-Q-NEW chiuse + roadmap N+2-N+5 concreta + 4 prompt par.11.U/V/W/X pre-frozen + 4 deviazioni s.6.215-218 ratificate definitivamente.
+
+#### Scope consegnato N+1
+
+Pattern par.22.32 / par.22.36 / par.22.50 / par.22.66 replicato batch unico "decidi tu" globale su defaults raccomandati par.22.68 + sub-Q emergenti chiuse single-round. Wall-clock effettivo CP1+CP2+CP3 ~70-90 min stimati. Q-LOG.5 (posizione vista Log in NavBar) **auto-risolta empiricamente CP0**: NavBar.jsx gia pre-cablato con 4 tab `Oggi / Log / Export / Impostazioni` su rotte `/oggi`, `/log`, `/export`, `/config` (icone SVG pertinenti document-lines per Log, download arrow per Export). Sub-tab Farmaci/Profili/Avanzate/Aiuto nested dentro `/config` via `ConfigTabBar.jsx`. **Riduce scope -1 sub-CP NavBar in ciascuna sessione N+2/N+3 (-2 CP cumulativi).**
+
+#### CP0 baseline verde 6/6
+
+- branch `main`, top commit `be6a857` doc-only post-par.22.68 + par.11.T emesso (popolato il `<TBD-closing-par.22.68-commit>`)
+- 2 commit ahead origin/main (`be6a857` doc-only par.22.68+par.11.T sopra `022a357` tag v3.0.1-rc.4 cumulativo S18)
+- tag latest `v3.0.1-rc.4` LOCALE invariato, package.json `3.0.1-rc.4` invariato
+- **496/496** test verdi su 59 test files invariati (analisi-first pura zero codice)
+- working tree clean post-comando CP0
+
+#### 17 Q discriminanti ratificate (1 auto-risolta CP0 + 16 batch "decidi tu")
+
+| # | Q | Default ratificato par.22.68 |
+|---|---|---|
+| 1 | Q-LOG.1 | a -- scope filtri minimo (data + farmaco singolo/tutti) |
+| 2 | Q-LOG.2 | a -- display 5 colonne compatto (data, farmaco, ora_prev, ora_eff, stato) |
+| 3 | Q-LOG.3 | a -- read-only puro |
+| 4 | Q-LOG.4 | a -- in-memory |
+| 5 | Q-LOG.5 | **auto-risolta empiricamente CP0** (NavBar `/log` gia pronto) |
+| 6 | Q-EXP.1 | a -- CSV only |
+| 7 | Q-EXP.2 | a -- Blob + download attribute universale |
+| 8 | Q-EXP.3 | a -- riusa filtri Log + bottone Esporta inline LogView |
+| 9 | Q-EXP.4 | b -- `;` IT Excel-friendly + UTF-8 BOM |
+| 10 | Q-EXP.5 | a -- solo `log_assunzioni` (no farmaci snapshot, no import) |
+| 11 | Q-CLEAN.1 | par.6.119 only (par.6.120 DEV-only out-of-scope prod) |
+| 12 | Q-CLEAN.2 | a -- registry chiuso as-is (12 findings = known limitations Spec v1.3) |
+| 13 | Q-CLEAN.3 | batch doc-only XS in sessione N+4 (9 drift cumulativi incl. NEW count error par.22.68 "17 vs 19" + NEW namespace collision par.11.X) |
+| 14 | Q-CLEAN.4 | escludere sub-tab Q4-bis (scope futuro v3.1.x) |
+| 15 | Q-CLEAN.5 NEW | a -- soglia minimo as-is (UX-N18 + altri findings opportunistic v3.1.x) |
+| 16 | Q-FINAL.1 | a -- tag `v3.1.0` semver continuo |
+| 17 | Q-FINAL.2 | tutti (README minimo + Spec v1.3 + guide.html Log/Export) |
+| 18 | Q-FINAL.3 | b -- no tag intermedi, solo v3.1.0 finale (AMB-11.B.7-bis pre-allocata s.6.218) |
+| 19 | Q-FINAL.4 | b -- deploy gh-pages finale unico v3.1.0 |
+
+**Nota count drift par.22.68:** header pre-elaborazione dichiarava "17 Q (5 Log + 5 Export + 5 Cleanup + 4 Final + Q-CLEAN.5 NEW)". Somma effettiva tabella = 19 Q (Q-CLEAN.5 NEW dentro i 5 Cleanup, non addizionale). 8 drift-doc-NEW carry-forward cumulativo, batch cleanup s.6.217 N+4. **Nessuna correzione retroattiva** (par.6.71/85).
+
+#### 4 sub-Q-NEW emergenti chiuse single-round + 1 sub-Q-NEW emergente CP3 closing
+
+| # | Sub-Q-NEW | Decisione |
+|---|---|---|
+| A | Routes `/log` e `/export` montate in `App.jsx` o NavLink fallthrough? | **Verifica obbligatoria CP0 N+2** (grep Route in App.jsx). Pre-allocata azione CP3 par.11.U: mount Route se assente. Simmetrico par.11.V per `/export`. |
+| B | Icone SVG NavBar Log/Export adeguate o ridisegno? | **No ridisegno**. Icone pertinenti, scope minimo effort. NavBar invariato in N+2/N+3. |
+| C | ConfigTabBar.jsx coesistenza secondaria invariata? | **Si invariata** (ratifica operativa Q-CLEAN.4=escludere). |
+| D | Correzione retroattiva count par.22.68 "17 vs 19"? | **No retroattiva** (par.6.71/85). 8 drift-doc-NEW cumulativo, fix batch s.6.217 N+4. |
+| E NEW CP3 closing | Collisione namespace par.11.X (pre-esistente `### 11.X Note operative comuni` riga 4553 vs nuovo `### 11.X Prompt Sessione N+5`)? | **Rename forward-looking par.11.X -> par.11.Y per la NUOVA pre-allocazione** (regola critica #2 rispettata: fermo + segnalazione + ratifica scelta `a`). Pre-esistente `11.X Note operative comuni` invariato (par.6.71/85 history immutability). Roadmap diventa par.11.U/V/W/**Y**. par.22.68 pre-allocation "par.11.X" rimane history immutabile in par.22.68 + par.11.T (no edit retroattivo), il rinominio si applica solo alle nuove sezioni emesse par.22.69. Drift-doc-NEW (cumulativo 9 incluso questo) batch s.6.217 N+4. Lesson par.6.118 estesa a pre-code scenario validation namespace per future pre-allocation strategiche multi-sessione: grep `### N.LETTERA` su Changelog completo pre-pre-allocazione. |
+
+#### Deviazioni s.6.NN pre-allocate definitivamente (Sessioni N+2-N+5)
+
+| ID | Sessione | Scope sintetico |
+|---|---|---|
+| s.6.215 | N+2 par.11.U | NEW `src/components/log/LogView.jsx` + selector `selectLogEntriesFiltered` + Route `/log` mount + test T-LOG.1-5 |
+| s.6.216 | N+3 par.11.V | NEW `src/utils/exportCsv.js` (`;` IT + UTF-8 BOM) + bottone Esporta inline LogView + Blob+download attribute + test T-EXP.1-3 |
+| s.6.217 | N+4 par.11.W | Cleanup par.6.119 cross-midnight visual bug planBuilder.js + drift-doc batch 8 cumulativi (7 carry-forward + 1 NEW count par.22.68) |
+| s.6.218 | N+5 par.11.Y | Closing v3.1.0 finale: Spec v1.3 (Fase 1+4 out-of-scope + known limitations 12 findings + Log/Export funzionalita) + README minimo + guide.html sezioni Log/Export + tag annotato `v3.1.0` + push origin main + deploy gh-pages unico + smoke prod + AMB-11.B.7-bis ratifica |
+
+#### AMB-11.B.7-bis nuova deviazione formale pre-allocata Sessione N+5
+
+Estensione AMB-11.B.7 originale "bump solo a closing CP esecutivo completo": bump package.json in-session N+2/N+3/N+4 ma **tag git intermedi saltati** (Q-FINAL.3=b ratificato), tag annotato unico `v3.1.0` su closing N+5 finale. Documentata in apertura N+5 + ratifica in CP closing N+5.
+
+#### Stato git post-par.22.69
+
+- branch `main` HEAD `<TBD-closing-par.22.69-commit>` 3 commit ahead origin/main (`be6a857` par.22.68+par.11.T + commit doc-only N+1 NUOVO sopra `022a357` tag v3.0.1-rc.4)
+- working tree clean post-commit doc-only N+1 (no branch operativo per analisi-first pura)
+- tag annotato v3.0.1-rc.4 LOCALE invariato
+- package.json `3.0.1-rc.4` invariato (AMB-11.B.7 rispettato no bump analisi-first)
+- **496/496** test invariati su 59 files
+
+#### Deviazioni s.6.NN emesse Sessione N+1
+
+**Zero.** Pattern par.22.66 / par.22.68 replicato: analisi-first pura zero codice.
+
+#### Drift-doc-NEW segnalati NON corretti retroattivamente
+
+**2 NEW (cumulativo 9):**
+1. Count error par.22.68 "17 Q (5+5+5+4+1 NEW)" vs effettivo 19 Q (5+5+5+4) -- Q-CLEAN.5 NEW gia dentro i 5 Cleanup, non addizionale.
+2. Namespace collision par.11.X pre-allocato par.22.68 vs pre-esistente `### 11.X Note operative comuni` (sub-Q-NEW E sopra). Rename forward-looking applicato par.11.U/V/W/Y. par.22.68 + par.11.T preservati immutabili.
+
+7 drift-doc carry-forward par.22.67 invariati + 2 NEW = **9 totali**. Sub-allocati batch s.6.217 cleanup N+4. Principio par.6.71 / par.6.85.
+
+#### Lesson learned par.22.69 consolidate
+
+1. **CP0 verifica empirica puo auto-risolvere Q pre-allocate:** Q-LOG.5 (posizione vista Log NavBar) pre-allocata par.22.68 come "verifica empirica vs assunzione" -- dump NavBar CP0 ha mostrato infrastruttura `/log`+`/export` gia pre-cablata da Sessione 7b-1 (AMB-7b.E). Lesson: CP0 dump empirico riduce scope decisionale se rivela infrastruttura pre-esistente non documentata; replicabile in sessioni analisi-first future per Q che possono essere disambiguate da grep/cat invece di decisione utente.
+2. **Pattern par.22.68 elaborazione Q pre-elaborate funziona bene per ratifica batch:** 19 Q in tabella unificata + defaults raccomandati pre-elaborati permette CP1 token-light ~5-8K vs Q-by-Q dialogato ~20-30K (-60-75%). Pattern replicabile per future sessioni strategiche.
+3. **Sub-Q-NEW emergenti durante CP1 batch sono indicatore di completezza Q-set originale, non difetto:** 4 sub-Q-NEW (A/B/C/D) emerse single-round CP1 confermano pattern par.22.42 sub-AMB cluster ma anche che il Q-set par.22.68 era robusto (sub-Q tutte chiusibili con default raccomandato senza re-design Q-set).
+4. **Pre-code scenario validation par.6.118 estesa a pre-allocation namespace multi-sessione:** par.22.68 ha pre-allocato `par.11.U/V/W/X` senza grep namespace `### 11.LETTERA` su Changelog completo, emergente CP3 closing N+1 come sub-Q-NEW E (collisione 11.X). Mitigazione adottata: rename forward-looking X->Y, history immutabile preservata. Mitigazione futura: ogni pre-allocazione strategica multi-sessione `par.NN.LETTERA` deve essere preceduta da `grep -E "^### [0-9]+\.[A-Z]" Changelog` per check namespace libero. Aggiungere a checklist apertura sessione strategica.
+
+#### Sessione successiva
+
+par.11.U Sessione N+2 esecutiva vista Log minima (scope frozen N+1 par.22.69, deviazione s.6.215). One-liner: `Esegui il prompt al par.11.U del Changelog.`
+
+#### Riferimenti par.22.69
+
+- **par.22.68**: decisione strategica + 17(=19) Q discriminanti pre-elaborate + roadmap N+2-N+5 stimata
+- **par.22.67**: closing Sessione 18 esecutiva (S18 deploy inglobato N+5)
+- **par.22.66 / par.22.50 / par.22.36 / par.22.32**: pattern analisi-first pura zero-codice replicato
+- **par.22.42**: sub-AMB emergenti in cluster (sub-Q-NEW A/B/C/D)
+- **par.6.118**: pre-code scenario validation obbligatoria
+- **par.6.71 / par.6.85**: deviazioni storiche immutabili
+- **AMB-11.B.7 + AMB-11.B.7-bis nuova**: bump version + tag git policy estesa
+
+---
+
+### 11.U Prompt Sessione N+2 esecutiva vista Log minima (s.6.215, Q-LOG.1-5 ratificati par.22.69)
+
+**One-liner apertura:** `Esegui il prompt al par.11.U del Changelog.`
+
+**Modalita:** esecutiva mista (CP0 audit + 4 CP impl + CP closing). Scope frozen par.22.69. Token attesi 20-30K. Wall-clock 1.5-2 ore.
+
+#### Pre-letture obbligatorie
+
+1. **par.22.69** integrale (closing N+1 + Q-LOG ratifica + Q-LOG.5 auto-risolta CP0 + sub-Q-NEW A/B/C/D)
+2. **par.22.68** integrale (defaults Q-LOG/Q-EXP/Q-CLEAN/Q-FINAL)
+3. **par.22.55** pattern split safety-first intra-sessione se complessita superiore
+4. **par.6.118** + **par.22.42** (pre-code scenario validation + sub-AMB cluster)
+
+#### CP0 obbligatorio Mac-side
+
+```bash
+cd ~/Sviluppo/pharmatimer
+echo '=== CP0 baseline N+2 par.11.U vista Log ==='
+git branch --show-current
+git --no-pager log -3 --oneline --decorate
+git status -sb
+node -p "require('./package.json').version"
+npx vitest run 2>&1 | tail -8
+echo '=== CP0 sub-Q-NEW A verifica Route /log in App.jsx ==='
+grep -n 'Route\|path=' src/App.jsx | head -30
+echo '=== CP0 dump selectors.js export list ==='
+grep -n 'export function select' src/state/selectors.js
+echo '=== CP0 dump schema log_assunzioni ==='
+grep -n 'log_assunzioni\|stores\.log' src/data/db.js src/state/repositories/LocalRepository.js 2>/dev/null | head -20
+echo '=== CP0 completato ==='
+```
+
+**Atteso baseline:** branch `main`, top doc-only closing par.22.69, package `3.0.1-rc.4`, **496/496** test, working tree clean.
+
+#### Scope CP table
+
+| CP | Tema | Operazioni | Verifica |
+|---|---|---|---|
+| CP0 | Baseline + dump | Sub-Q-NEW A verifica Route + schema log_assunzioni | atteso 496/496 + sub-Q-NEW A risolta |
+| CP1 | Selector `selectLogEntriesFiltered` | NEW selector in selectors.js: input `state` + `{from, to, farmacoId}` -> ordered DESC by `ora_eff`. Test T-LOG.1-3 (empty, single-farmaco, multi-day). | atteso 499/499 |
+| CP2 | LogView.jsx component | NEW `src/components/log/LogView.jsx` con date pickers + farmaco dropdown + tabella 5 colonne (data, farmaco, ora_prev, ora_eff, stato badge). Read-only puro. In-memory rendering. Test T-LOG.4-5 (render + filtro). | atteso 501/501 |
+| CP3 | Route mount | Se sub-Q-NEW A CP0 negativo: aggiungi `<Route path="/log" element={<LogView/>}/>` in App.jsx. Smoke render. | atteso 501/501 stabile |
+| CP4 | CP browser | 5 scenari: empty log + filtro data + filtro farmaco + cross-midnight visual (linkato par.6.119 deferred N+4) + navigazione NavBar tab Log | empirico verde |
+| CP5 closing | par.22.70 + bump | Patcher Python Changelog par.22.70 + bump package `3.0.1-rc.4` -> `3.1.0-rc.1`. **NO tag git** (AMB-11.B.7-bis). Commit cumulativo `s.6.215 vista Log + bump v3.1.0-rc.1`. | atteso clean |
+
+**Delta test atteso:** +5 (range +3 a +8). **Deviazioni s.6.NN:** s.6.215 ratificata + s.6.219+ se sub-AMB emergenti.
+
+#### Riferimenti par.11.U
+
+- **par.22.69**: closing N+1 + scope frozen N+2
+- **par.22.68**: defaults Q-LOG ratificati par.22.69
+- **par.6.118 + par.22.42**: pre-code scenario validation + sub-AMB cluster
+- **AMB-11.B.7-bis**: bump intermedio senza tag git
+
+**Sessione successiva:** par.11.V Sessione N+3 vista Export CSV.
+
+---
+
+### 11.V Prompt Sessione N+3 esecutiva vista Export CSV minima (s.6.216, Q-EXP.1-5 ratificati par.22.69)
+
+**One-liner apertura:** `Esegui il prompt al par.11.V del Changelog.`
+
+**Modalita:** esecutiva mista (CP0 audit + 4 CP impl + CP closing). Scope frozen par.22.69. Token attesi 15-25K. Wall-clock 1-1.5 ore.
+
+#### Pre-letture obbligatorie
+
+1. **par.22.69** integrale + **par.22.70** (closing N+2)
+2. **par.11.U** (Sessione N+2 contesto LogView)
+3. **par.6.118 + par.22.42** (pre-code scenario validation + sub-AMB cluster)
+
+#### CP0 obbligatorio Mac-side
+
+```bash
+cd ~/Sviluppo/pharmatimer
+echo '=== CP0 baseline N+3 par.11.V vista Export ==='
+git --no-pager log -3 --oneline --decorate
+git status -sb
+node -p "require('./package.json').version"
+npx vitest run 2>&1 | tail -8
+echo '=== CP0 dump LogView.jsx N+2 ==='
+wc -l src/components/log/LogView.jsx
+echo '=== CP0 grep utility CSV pre-esistenti ==='
+grep -rn 'csv\|CSV\|exportCsv\|Blob' src/ --include='*.js' --include='*.jsx' | head -10
+echo '=== CP0 completato ==='
+```
+
+**Atteso baseline:** branch `main`, top closing par.22.70, package `3.1.0-rc.1`, **~501/501** test, working tree clean.
+
+#### Scope CP table
+
+| CP | Tema | Operazioni | Verifica |
+|---|---|---|---|
+| CP0 | Baseline + dump | LogView shape integrale + utility CSV pre-esistenti | atteso 501/501 |
+| CP1 | NEW `src/utils/exportCsv.js` | Pure helper `entriesToCsv(entries, columns) -> string`. Encoding `;` IT + UTF-8 BOM (`\uFEFF`). Escape virgolette doppie + quote campi con `;`/CR/LF. Test T-EXP.1-2 (encoding + escape). | atteso 503/503 |
+| CP2 | Bottone Esporta inline LogView | Aggiunta bottone `Esporta CSV` accanto filtri LogView. Consuma `selectLogEntriesFiltered(state, filtri)` correnti. Blob+download attribute (`URL.createObjectURL` + `<a download>` + `URL.revokeObjectURL`). Filename `pharmatimer-log-{YYYY-MM-DD}.csv`. Test T-EXP.3 (mock blob + assert filename). | atteso 504/504 |
+| CP3 | Route /export decisione | Sub-Q-NEW intra-sessione: route standalone vs inline only? **Default raccomandato in apertura:** route `/export` come empty placeholder + redirect a `/log` (NavBar tab tappabile rispettato + scope minimo: export logic vive in LogView). | atteso 504/504 |
+| CP4 | CP browser | 4 scenari: export log vuoto + export filtri attivi + apertura CSV in Excel IT verifica `;` + apertura in Numbers verifica UTF-8 BOM | empirico verde |
+| CP5 closing | par.22.71 + bump | Patcher Changelog par.22.71 + bump `3.1.0-rc.1` -> `3.1.0-rc.2`. **NO tag git**. Commit `s.6.216 vista Export + bump v3.1.0-rc.2`. | atteso clean |
+
+**Delta test atteso:** +3 (range +2 a +5). **Deviazioni s.6.NN:** s.6.216 ratificata.
+
+#### Riferimenti par.11.V
+
+- **par.22.69 + par.22.70**: closing N+1 + N+2
+- **par.22.68**: defaults Q-EXP ratificati
+- **AMB-11.B.7-bis**: bump intermedio senza tag git
+
+**Sessione successiva:** par.11.W Sessione N+4 cleanup.
+
+---
+
+### 11.W Prompt Sessione N+4 esecutiva XS cleanup mirato (s.6.217, Q-CLEAN.1-5 ratificati par.22.69)
+
+**One-liner apertura:** `Esegui il prompt al par.11.W del Changelog.`
+
+**Modalita:** esecutiva XS (CP0 + 3 CP + closing). Token attesi 10-20K. Wall-clock ~1 ora.
+
+#### Pre-letture obbligatorie
+
+1. **par.22.69 + par.22.70 + par.22.71** (closing N+1/N+2/N+3)
+2. **par.6.118 + par.6.119** (lesson cross-midnight isCrossMidnightRecalc ISO-aware + bug latente)
+3. **par.6.71 / par.6.85** (drift-doc cumulativi principi)
+
+#### CP0 obbligatorio Mac-side
+
+```bash
+cd ~/Sviluppo/pharmatimer
+echo '=== CP0 baseline N+4 par.11.W cleanup ==='
+git --no-pager log -3 --oneline --decorate
+git status -sb
+node -p "require('./package.json').version"
+npx vitest run 2>&1 | tail -8
+echo '=== CP0 par.6.119 dump planBuilder.js cross-midnight handling ==='
+grep -n 'ora_ricalcolata\|dateStr\|crossMidnight\|midnight' src/state/planBuilder.js | head -20
+echo '=== CP0 verifica .gitignore esistenza *.bak ==='
+cat .gitignore 2>/dev/null | grep -E 'bak|backup' || echo 'NO bak entry'
+echo '=== CP0 completato ==='
+```
+
+**Atteso baseline:** branch `main`, top closing par.22.71, package `3.1.0-rc.2`, **~504/504** test, working tree clean.
+
+#### Scope CP table
+
+| CP | Tema | Operazioni | Verifica |
+|---|---|---|---|
+| CP0 | Baseline + dump | planBuilder.js cross-midnight current behavior + drift-doc inventory | atteso 504/504 + 8 drift confermati |
+| CP1 | Fix par.6.119 | Patcher planBuilder.js: quando `ora_ricalcolata` ISO date prefix > `entry.dateStr` originale, bump `entry.dateStr` a nuovo giorno. Pattern `isCrossMidnightRecalc` par.6.118 riusato. Test NEW T-119.1-3 (cross-midnight bump + same-day no-op + multi-cross-midnight). | atteso 507/507 |
+| CP2 | Batch drift-doc XS 8 cumulativi | Doc-only edits Changelog + Spec se necessario: (1) `.gitignore` `*.bak` entry, (2) FormField duplicato ProfiliTab.jsx:529, (3-4) 2 drift par.11.R-bis, (5) drift S17, (6) drift S18 line-number par.11.S, (7-8) 2 drift S18 closing nuovi + 1 NEW count error par.22.68 "17 vs 19" = **8 totali**. | atteso 507/507 stabile |
+| CP3 closing | par.22.72 + bump | Patcher Changelog par.22.72 + bump `3.1.0-rc.2` -> `3.1.0-rc.3`. **NO tag git**. Commit unico `s.6.217 cleanup par.6.119 + drift-doc batch 8 + bump v3.1.0-rc.3`. | atteso clean |
+
+**Delta test atteso:** +3 (range +2 a +5). **Deviazioni s.6.NN:** s.6.217 ratificata.
+
+#### Riferimenti par.11.W
+
+- **par.22.69 a 22.71**: closing N+1/N+2/N+3
+- **par.6.118 / par.6.119**: cross-midnight lesson + bug latente
+- **par.6.71 / par.6.85**: drift-doc principio immutabilita
+- **AMB-11.B.7-bis**: bump intermedio senza tag git
+
+**Sessione successiva:** par.11.Y Sessione N+5 closing finale (rename forward-looking par.11.X -> par.11.Y per collisione namespace pre-esistente 11.X, sub-Q-NEW E par.22.69).
+
+---
+
+### 11.Y Prompt Sessione N+5 closing finale v3.1.0 (s.6.218, Q-FINAL.1-4 ratificati par.22.69, AMB-11.B.7-bis formalizzata, rename forward-looking ex-par.11.X sub-Q-NEW E par.22.69)
+
+**One-liner apertura:** `Esegui il prompt al par.11.Y del Changelog.`
+
+**Modalita:** mista doc-heavy + deploy (CP0 + 5 CP + closing). Token attesi 25-40K. Wall-clock 2-3 ore.
+
+#### Pre-letture obbligatorie
+
+1. **par.22.69 a 22.72** (closing N+1 a N+4 cumulativo)
+2. **PharmaTimer_Project_Spec.md v1.2** integrale (input per update v1.3)
+3. **par.22.36** (Spec update accompagna chiusura formale milestone, pattern replicato)
+4. **AMB-11.B.7-bis** ratifica formale
+
+#### CP0 obbligatorio Mac-side
+
+```bash
+cd ~/Sviluppo/pharmatimer
+echo '=== CP0 baseline N+5 par.11.X closing v3.1.0 ==='
+git --no-pager log -5 --oneline --decorate
+git status -sb
+git --no-pager tag --sort=-creatordate | head -5
+node -p "require('./package.json').version"
+npx vitest run 2>&1 | tail -8
+echo '=== CP0 dump Spec v1.2 sezione Roadmap + Fase 1+4 ==='
+grep -n '^## \|^### \|Fase 1\|Fase 4\|Roadmap' PharmaTimer_Project_Spec.md | head -30
+echo '=== CP0 verifica origin/main sync ==='
+git fetch origin
+git rev-list --count origin/main..HEAD
+echo '=== CP0 completato ==='
+```
+
+**Atteso baseline:** branch `main`, top closing par.22.72, package `3.1.0-rc.3`, **~507/507** test, **5 commit ahead origin/main** cumulativi (par.22.69 doc-only + s.6.215 + s.6.216 + s.6.217 + par.22.72 se separato), working tree clean.
+
+#### Scope CP table
+
+| CP | Tema | Operazioni | Verifica |
+|---|---|---|---|
+| CP0 | Baseline + Spec input | Spec v1.2 sezioni input per update v1.3 | atteso 507/507 + 5 ahead origin |
+| CP1 | Spec v1.3 update | Patcher Spec: (a) sezione "Out-of-scope rilascio v3.1.0" con Fase 1 backend + Fase 4 estensioni formalizzati, (b) sezione "Known limitations v3.1.0" con 12 findings registry residui, (c) sezione "Funzionalita v3.1.0" Log + Export aggiunte, (d) header bump v1.3. | doc-only commit |
+| CP2 | README minimo | NEW `README.md` (o update esistente): scope app + tech stack + setup dev + link guide.html + persistence Dexie locale + tag v3.1.0 features. | doc-only commit |
+| CP3 | guide.html sezioni Log/Export | Patcher `public/guide.html`: 2 nuove sezioni "Storico assunzioni" + "Esporta dati" con copy italiano + placeholder screenshot v3.1.x. | doc-only commit |
+| CP4 | Bump finale + tag annotato + push | Bump package `3.1.0-rc.3` -> **`3.1.0`**. Commit cumulativo `s.6.218 closing v3.1.0 + Spec v1.3 + README + guide.html sezioni Log/Export + bump v3.1.0`. **Tag annotato `v3.1.0`** su HEAD. Push origin main + push tag. | atteso tag v3.1.0 + main sync |
+| CP5 | Deploy gh-pages finale + smoke | `npm run build` + deploy gh-pages unico (engloba S18 + N+2 + N+3 + N+4 + N+5). Smoke production 5/5 verde (pattern par.22.59 / par.22.63 / par.22.65): home load + NavBar 4 tab tappabili + Log render + Export download + manifest icone. | smoke prod verde |
+| CP closing | par.22.73 + AMB-11.B.7-bis ratifica | Patcher Changelog par.22.73 = closing finale v3.1.0 + ratifica AMB-11.B.7-bis (tag intermedi N+2/N+3/N+4 saltati legittimi) + lesson learned closing v3.1.0. Commit doc-only `par.22.73 closing v3.1.0 finale`. | atteso clean |
+
+**Delta test atteso:** 0 (doc-only + deploy). **Deviazioni s.6.NN:** s.6.218 ratificata + AMB-11.B.7-bis formalizzata.
+
+#### Riferimenti par.11.Y
+
+- **par.22.69 a 22.72**: closing N+1 a N+4 cumulativo
+- **par.22.36**: Spec update accompagna chiusura milestone (pattern v2.7.0 / v3.0.0 replicato v3.1.0)
+- **par.22.52 / par.22.59 / par.22.65 / par.22.67**: deploy gh-pages pattern + smoke production
+- **AMB-11.B.7-bis**: tag intermedi saltati formalizzati
+- **par.22.69 sub-Q-NEW E**: rename forward-looking ex-par.11.X -> par.11.Y per collisione namespace pre-esistente
+
+**Sessione successiva:** **nessuna obbligatoria** (rilascio v3.1.0 chiuso). Aperture opportunistiche v3.1.x patch su findings utenti reali, oppure par.11.D Fase 3 backend pivot, oppure Fase 4 estensioni.
+
+---
