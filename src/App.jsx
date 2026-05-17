@@ -13,7 +13,7 @@ import { useApp } from "./state/AppContext.jsx";
 import { selectImpostazione, selectFarmaciAttivi } from "./state/selectors.js";
 
 // Shell with bottom nav and route outlets.
-// Only Oggi and Config are implemented in Fase 2; Log and Export stub to redirect.
+// Oggi, Config, and Cronologia are functional; Export route redirects to Cronologia (s.6.216 N+3, ratifica N+4).
 //
 // Sessione 7b-1 (AMB-7b.D): `ThemedShell` wraps the whole surface and paints
 // pageBg + textPrimary on the root. Without it, the Log/Export placeholders

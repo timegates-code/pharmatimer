@@ -15098,6 +15098,96 @@ Batch cleanup atteso aggiornato: 10 drift-doc cumulativi (N14-N23) inc. N22 comm
 
 ---
 
+### 22.72 Stato post-Sessione N+4 cleanup esecutiva XS scope ridotto (s.6.217 SCOPE REDIRECTED prompt par.11.W literal, CP1 setup empirico abortito, par.6.119 closure formale DEFERRED par.11.Y N+5 CP6-bis, batch drift-doc cumulativi documentati senza retro-correzione par.6.71/85, N22 App.jsx riga 16 closure code only) v3.1.0-rc.3 (504/504 invariato delta zero, bump rc.2 → rc.3, NO tag git AMB-11.B.7-bis terza applicazione, commit cumulativo singolo)
+
+**Data:** 17 maggio 2026.
+**Modalita:** esecutiva XS scope ridotto vs prompt par.11.W literal. Pattern par.22.55 split safety-first applicato post-CP1 setup empirico abortito + regola critica #5 session sizing applicata pragmaticamente (chiusura scope ridotto a ~35-40K token vs forzare CP1 funzionante con +20K degradanti). Token spesi totali ~35-40K (fuori preventivo XS 10-20K per debug empirico + diagnostico storia par.6.119). Wall-clock effettivo ~1.5h.
+
+**Esito:** OK scope ridotto. ZERO code change runtime + N22 App.jsx riga 16 closure commento stale (1 edit). par.6.119 closure formale **deferred a Sessione N+5 par.11.Y CP6-bis CP browser empirico** (scope eredita +15-25 min wall-clock). Diagnostico cronologico storia git + Changelog cross-reference completato in CP0.H: **par.6.119 GIA' CHIUSO codice-side step 11-B AMB-11.B.1 commit `ae33b1f` 3 maggio 2026** via opzione B `groupEntriesByDayAndMomento` partition per `effectiveDateStr` in `src/utils/uiState.js`, validato da par.22.35 + par.6.160 + 8 test cross-midnight in `uiState.test.js` (3 `isCrossMidnightRecalc` + 5 `groupEntriesByDayAndMomento promotion`). Mis-attribution par.22.70/22.71 "par.6.119 confermato presente CP browser empirico" tracciata drift-doc-NEW N25, carry-forward closing N+5.
+
+**Test:** 504/504 invariato su 62 files (zero delta vs baseline par.22.71). Test NEW T-119.1-3 attesi in prompt par.11.W literal **NON emessi** -- opzione B test set gia' presente dal 3 maggio 2026 (8 test cumulativi cross-midnight uiState.test.js, evidenza git blame riga 246 commit ae33b1f).
+
+#### Sub-AMB-NEW chiuse Sessione N+4 (7 totali, pattern par.22.42 cluster esteso)
+
+| ID | Tema | Chiusura |
+|---|---|---|
+| Sub-AMB-A | batch drift-doc count "8 totali" prompt par.11.W literal vs "10 totali" par.22.71 closing N+3 | ratificata (a): batch effettivo 10+ con count discrepancy par.22.70 (17) vs par.22.71 (10) documentata, ratifica MAX cumulativa target s.6.218 N+5 |
+| Sub-AMB-B | scope CP1 opzione A bump `entry.dateStr` (prompt par.11.W) vs opzione B raggruppamento UI (par.6.119 pre-existing options) | ratificata (a) opzione B, poi **superseded by fatto storico**: opzione B gia' in produzione step 11-B AMB-11.B.1 3 maggio 2026 commit `ae33b1f` |
+| Sub-AMB-C | batch effettivo 10 → 9 (drift `.gitignore *.bak` chiuso retroattivamente sessione 14/15 non identificata) | ratificata (a) superseded by fatto storico, batch effettivo +N24 NEW = 10 documentati |
+| Sub-AMB-D | par.6.119 GIA' CHIUSO step 11-B AMB-11.B.1, scope s.6.217 redirected doc-only ratifica retroattiva + closure formale deferred CP6-bis | ratificata (a) sì + Q-CP0.4=(c) ratifica CP browser empirico safety-first |
+| Sub-AMB-E NEW CP1 | shape `__pt.app.getState()` reale (`state.simulatedNow` camelCase, no `state.now`) vs assunzione memoria progetto + shape entry annidato `orario.{farmaco_id, dose_numero}` | empirica via 3 dump CP1 setup, drift-doc-NEW N26 |
+| Sub-AMB-F NEW CP1 | setup farmaci pre-esistenti `intervallo_ore: null` non compatibile scenario 1 cross-midnight, richiesto addFarmaco ad-hoc | ratificata (a) addFarmaco ad-hoc, esecuzione poi abortita Sub-AMB-G |
+| Sub-AMB-G NEW CP1 | `addFarmaco TestCrossMidnight` ritorna `OK` ma PLAN non popolato post-`rebuildPlan` (verosimile schema validation silent reject o persistence async race) | abortita CP1 empirico, deferred par.11.Y CP6-bis con diagnostico schema farmaci payload Mac-side |
+
+#### Discrepanza count drift-doc par.22.70 vs par.22.71
+
+par.22.70 closing N+2 esplicita: `9 carry-forward par.22.69 + 8 NEW N+2 = 17 totali batch s.6.217 N+4`. par.22.71 closing N+3 invece esplicita: `Totale drift-doc cumulativi pre-N+4 cleanup: 10 (N14-N23)`. Discrepanza par.22.70 (17) vs par.22.71 (10) **non corretta retroattivamente** (par.6.71/85). Batch cumulativo s.6.217 N+4 effettivo: documentati entrambi count con rationale ratifica MAX(17, 10) + 3 NEW Sessione N+4 (N24/N25/N26) = ~20 drift-doc cumulativi. Listato esaustivo deferred audit puntuale par.11.Y N+5 (CP6-bis o post-closing) o opportunistico v3.1.x post-rilascio, NON bloccante v3.1.0.
+
+#### Drift-doc-NEW Sessione N+4 (3 NEW, cumulativo ~20)
+
+- **N24**: prompt par.11.W path `src/state/planBuilder.js` errato vs reale `src/domain/planBuilder.js` (lesson par.6.118 esteso path verification empirica CP0 vs prompt pre-frozen literal). NON corretto retroattivamente par.6.71/85.
+- **N25**: par.22.70/22.71 mis-attribution "par.6.119 cross-midnight visual bug confermato presente CP browser empirico" vs reale fatto storico par.6.119 GIA' CHIUSO step 11-B AMB-11.B.1 3 maggio 2026 commit `ae33b1f`. Scenario (i) plausibile (osservazione bug diverso mis-attribuito) o (ii) (placeholder generico senza riproduzione empirica). Falsificazione/ratifica deferred CP6-bis par.11.Y. NON corretto retroattivamente.
+- **N26**: assunzione setup empirico CP1 `__pt.app.getState()` shape memorizzata vs realta empirica (3 dump richiesti debug). Pattern par.6.118 esteso a tool dev `__pt.*` shape verification. NON corretto retroattivamente.
+
+#### Deviazioni s.6.NN ratificate Sessione N+4
+
+| ID | Tipo | Scope ridefinito | Stato |
+|---|---|---|---|
+| `s.6.217` | doc-only + 1 code edit | **SCOPE REDIRECTED** prompt par.11.W literal (`code+test fix planBuilder.js opzione A`) → `doc-only ratifica diagnostica par.6.119 GIA' CHIUSO step 11-B AMB-11.B.1 + closure formale DEFERRED par.11.Y CP6-bis + N22 App.jsx riga 16 closure code (1 edit) + batch drift-doc cumulativi documentati senza retro-correzione + bump rc.2 → rc.3` | OK chiusa |
+
+#### Out-of-scope Sessione N+4 (esplicito, deferred par.11.Y N+5)
+
+- Closure formale par.6.119 in section 6 Changelog → **eredita par.11.Y CP6-bis CP browser empirico** prerequisito ratifica + emissione section sezione 6
+- CP1 empirico setup `addFarmaco` schema farmaci payload Mac-side debug (Sub-AMB-G) → **eredita par.11.Y CP6-bis**
+- Drift-doc batch retroattivo correzione: NON applicabile par.6.71/85
+- Test NEW T-119.1-3: NON applicabile (8 test gia' in produzione 3 maggio 2026)
+- Push origin main + redeploy gh-pages: deferred par.11.Y CP4/CP5 (deploy aggregato finale v3.1.0)
+
+#### Lesson learned Sessione N+4 (4 consolidate)
+
+1. **CP0 audit findings storia git + Changelog cross-reference obbligatorio pre-implementazione cleanup**: finding registry "deferred" pre-allocato in roadmap multi-sessione (par.22.69 s.6.217 cleanup par.6.119) puo' essere gia' chiuso codice-side da sessione precedente non visibile da test green (504/504 verde non implica finding chiuso, AMB-11.B.1 closure 3 maggio non riflesso registry deferred par.22.70/22.71). Pattern lesson par.6.118 esteso: ogni cleanup pre-allocato richiede `git log + git blame + grep Changelog cross-reference` PRIMA di patcher emit. Mitigazione future: in CP0 di sessioni cleanup, sempre eseguire `grep -n "<finding-id>|AMB-<id>" Changelog completo + git blame su file target sospetti` (~30 sec extra, evita 1+ sessione fix-only).
+
+2. **Token budget XS sessione pesantemente sforato (~35-40K vs 10-20K preventivo)**: CP0 esteso multi-step (A-H) + CP1 empirico setup 7 round-trip debug shape `__pt.*` + 3 ipotesi addFarmaco/rebuildPlan/persistence consumo ~25K token solo setup. Lesson: sessioni "XS cleanup" con scope codice non trivial (anche se "just one fix") meritano allocazione M minima oppure split upfront analisi-first + esecutiva. Regola critica #5 session sizing applicata pragmaticamente: chiusura scope ridotto preserva qualita' commit (vs forzare CP1 funzionante con +20K token degradanti).
+
+3. **"Decidi tu" delegation rispettata fino al gate diagnostico**: Q-CP0.1/2/3/4 + Q-CLOSE.1 ratificate blanket default raccomandato, ma Q-CP1 setup empirico stop esplicito (regola critica #2) per shape `__pt` non assumibile. Pattern: "decidi tu" non e' scudo per assunzioni empiriche non verificate; quando emerge fatto-empirico che invalida assunzione, fermarsi e diagnosticare (vs forzare scenario su path errato).
+
+4. **Sub-AMB cluster pattern par.22.42 esteso 7 unita' single-sessione**: A/B/C apertura + D CP0 + E/F/G CP1 setup. Confermato sub-AMB emergente IS normale in cleanup multi-sessione con prompt pre-frozen 3+ sessioni indietro. Sub-AMB-D in particolare (par.6.119 GIA' CHIUSO discovery) e' tipologia "scope-collapse by fatto storico" replicabile per future findings pre-allocati.
+
+#### Stato git atteso post-Sessione N+4
+
+- branch `main` HEAD `<TBD-CP3-commit-cumulativo>` 6 commit ahead origin/main (5 pre-N+4: be6a857 + fa13807 + 1cecaaa + d7dc400 + 1 NEW Sessione N+4 cumulativo par.22.72 + N22 + bump)
+- working tree clean post-commit
+- tag annotato v3.0.1-rc.4 LOCALE su `022a357` invariato (NO push, deferred deploy finale aggregato Sessione N+5 v3.1.0)
+- package.json `3.1.0-rc.3` (bump rc.2 → rc.3, AMB-11.B.7-bis terza applicazione)
+- ImpostazioniTab.jsx runtime "PharmaTimer 3.1.0-rc.3" sync (mandatory bump pattern par.6.200 / par.6.205)
+- **504/504** test invariati su 62 files
+
+#### Pre-existing follow-up carry-forward par.22.71
+
+- par.6.119 cross-midnight cards visual: **scope ridefinito** -- GIA' CHIUSO codice step 11-B AMB-11.B.1 3 maggio 2026, closure formale Changelog section 6 deferred par.11.Y CP6-bis empirico
+- par.6.120 `actions.presa()` simulated_now DEV: invariato (workaround override esplicito documentato)
+- ~20 drift-doc-NEW cumulativi: batch documentato senza retro-correzione, audit puntuale opportunistico v3.1.x post-rilascio
+- 15 findings registry par.22.52 invariati
+
+#### Riferimenti par.22.72
+
+- **par.22.69 / 22.70 / 22.71**: closing N+1/N+2/N+3 cumulativo
+- **par.6.118 + par.6.119**: lesson cross-midnight ISO-aware + bug latente (chiuso codice step 11-B)
+- **par.6.71 / par.6.85**: deviazioni storiche immutabili (drift-doc-NEW N24/N25/N26 no retro-correzione)
+- **par.22.35 + par.6.160 + AMB-11.B.1**: closure codice step 11-B opzione B 3 maggio 2026 commit `ae33b1f`
+- **par.22.42**: sub-AMB cluster 7 unita' single-sessione
+- **par.22.55**: split safety-first pattern (chiusura scope ridotto pragmatica)
+- **AMB-11.B.7-bis**: bump intermedio senza tag git terza applicazione, ratifica formale demandata par.11.Y N+5
+- **Regola critica #5 session sizing**: chiusura pragmatica scope ridotto a ~35-40K token vs forzare CP1 funzionante (+20K degradanti)
+
+#### Sessione successiva
+
+**par.11.Y Sessione N+5 closing finale v3.1.0 scope esteso** (eredita s.6.218 base + closure par.6.119 ratifica CP6-bis CP browser empirico + audit drift-doc batch puntuale opportunistico). One-liner invariato: `Esegui il prompt al par.11.Y del Changelog.`
+
+**Scope esteso atteso N+5 (vs par.11.Y literal):** CP6-bis NEW pre-CP closing: (a) ratifica empirica par.6.119 closure via 3 scenari CP browser (1 cross-midnight bucketing "Domani" + 2 same-day regression guard + 3 multi-cross-midnight) con setup farmaco ad-hoc o `updateFarmaco` esistente intervallo_ore 12h + 1 dose 14:00; (b) se ratifica verde -> emissione section ## 6.119-bis Changelog sezione 6 "Stato post-step 11-B AMB-11.B.1: chiusa via opzione B 3 maggio 2026 commit ae33b1f, ratifica empirica CP6-bis Sessione N+5"; (c) se ratifica rossa -> split N+5.1 / N+5.2 fix bug regression latente + closing v3.1.0 N+5.3. Sub-AMB-G addFarmaco payload schema debug eredito (Mac-side `cat src/data/db.js + src/state/actions.js@addFarmaco` per shape validazione corretta). Wall-clock atteso +15-25 min rispetto par.11.Y literal.
+
+---
+
 ### 11.U Prompt Sessione N+2 esecutiva vista Log minima (s.6.215, Q-LOG.1-5 ratificati par.22.69)
 
 **One-liner apertura:** `Esegui il prompt al par.11.U del Changelog.`
