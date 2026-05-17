@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import CronologiaView from "./components/cronologia/CronologiaView.jsx";
 import OggiView from "./components/oggi/OggiView.jsx";
 import ConfigView from "./components/config/ConfigView.jsx";
 import NavBar from "./components/shared/NavBar.jsx";
@@ -51,7 +52,7 @@ export default function App() {
         <Route path="/" element={<Navigate to="/oggi" replace />} />
         <Route path="/oggi" element={<OggiView />} />
         <Route path="/config/*" element={<ConfigView />} />
-        <Route path="/log" element={<Placeholder title="Log" />} />
+        <Route path="/log" element={<CronologiaView />} />
         <Route path="/export" element={<Placeholder title="Export" />} />
         <Route path="*" element={<Navigate to="/oggi" replace />} />
       </Routes>

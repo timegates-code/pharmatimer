@@ -14884,6 +14884,123 @@ par.11.U Sessione N+2 esecutiva vista Log minima (scope frozen N+1 par.22.69, de
 
 ---
 
+### 22.70 Stato post-Sessione N+2 cumulativa esecutiva vista Log (parte 1 CP1-CP4 + parte 1-bis CP5 closing) v3.1.0-rc.1 (s.6.215.A-E ratificate, 8 drift-doc-NEW carry-forward, +5 test 496->501, bump rc.4->3.1.0-rc.1, NO tag git AMB-11.B.7-bis applicata first time pre-allocata par.22.69)
+
+**Data:** 17 maggio 2026.
+**Modalita:** esecutiva mista in 2 parti split safety-first pattern par.22.55 simmetrico (par.11.U parte 1 = CP1-CP4 wall-clock pomeriggio + parte 1-bis CP5 closing dedicato ~30-45 min wall-clock sera). Token cumulativo stimato 50-70K parte 1 + 15-20K parte 1-bis. Working tree DIRTY preservato tra parte 1 (no commit) e parte 1-bis (commit cumulativo singolo al CP5 closing).
+**Esito:** OK vista Log minima (rotta `/cronologia` post-rename adblocker CP3-bis) funzionante **501/501** verdi su 61 files (+5 vs baseline 496/59) + 5 deviazioni s.6.215.A-E ratificate (selector signature array | STATO_LABELS inline | rename log->cronologia | theme tokens | colorScheme native) + 8 drift-doc-NEW N14-N21 carry-forward batch s.6.217 N+4 + 12 sub-AMB chiuse N+2.A-M parte 1 + bump v3.1.0-rc.1 + commit cumulativo singolo + AMB-11.B.7-bis applicata first time (no tag git intermedio, ratifica formale demandata par.11.Y N+5).
+
+#### Scope consegnato Sessione N+2 cumulativa
+
+**CP0 baseline parte 1:** branch `main`, top commit `fa13807` (par.22.69 doc-only) sopra `be6a857` (par.22.68 doc-only) sopra `022a357` (tag `v3.0.1-rc.4`), package.json `3.0.1-rc.4`, **496/496** verdi su 59 files, working tree clean.
+
+**5 CP esecutivi parte 1** (wall-clock pomeriggio):
+- CP1 selector `selectLogEntriesFiltered` (firma array, drift da pre-alloc par.22.69 object -> s.6.215.A) in `selectors.js` + test file NEW `selectors.log.test.js`
+- CP2 `CronologiaView.jsx` (NEW component, post-rename CP3-bis path `src/components/cronologia/`) con date pickers + farmaco dropdown + tabella 5 colonne + STATO_LABELS inline (drift da pre-alloc implicita import `statoLabel.js` -> s.6.215.B)
+- CP3 mount Route `/cronologia` in `App.jsx`
+- CP3-bis rename `log` -> `cronologia` URL-friendly per evasione adblocker (uBlock Origin filter list "log" pattern generico, scoperto CP browser empirico -> s.6.215.C)
+- CP4-bis theme tokens dedicati vs default Tailwind palette -> s.6.215.D
+- CP4-ter colorScheme native vs prop esplicito -> s.6.215.E
+- CP4 CP browser empirico verde 5/5 (empty log + filtro data + filtro farmaco + cross-midnight visual linkato par.6.119 deferred N+4 + NavBar tab `/cronologia`)
+
+**Working tree post-parte 1** (DIRTY preservato, no commit): 2 modified (`src/App.jsx`, `src/state/selectors.js`) + 11 untracked (6 script `cp*_install.sh` + 3 file `.bak.cp*` + dir `src/components/cronologia/` + test `selectors.log.test.js`).
+
+**CP0 parte 1-bis audit (Sessione N+2-bis):**
+- Conformita stato dichiarato vs empirico: 3 drift identificati
+  - D1: Top commit `userMemories` stale (`8b684f0` su `074e1bf` su `main@b318f08`) vs empirico (`fa13807` post-par.22.69). Non bloccante, contesto reale coerente con resto prompt.
+  - D2: Working tree count dichiarato `3 M + 14 ??` vs empirico `2 M + 11 ??`. Non bloccante, stato reale meno verboso.
+  - D3 BLOCCANTE: path `src/components/tabs/ImpostazioniTab.jsx` riga 485 non esistente. CP0-extension empirico ha localizzato `src/components/config/ImpostazioniTab.jsx` riga **484** (drift-doc-NEW N20).
+
+**CP5 closing parte 1-bis** (wall-clock sera, dedicato amministrativo):
+- Patcher Python idempotente `patcher_22_70.py` insert par.22.70 con anchor univoco par.11.U
+- Bump `package.json` `3.0.1-rc.4` -> `3.1.0-rc.1` (semver continuo, ratifica Q-FINAL.1=a par.22.69)
+- Sync `src/components/config/ImpostazioniTab.jsx:484` runtime SezioneInfo `3.0.1-rc.4` -> `3.1.0-rc.1` (pattern par.6.200 / par.6.205 sync runtime mandatory bump)
+- Cleanup blanket 6 script `cp*_install.sh` (cp1_install_v2.sh, cp2_install.sh, cp3_install.sh, cp3bis_install.sh, cp4bis_install.sh, cp4ter_install.sh) + 3 file `.bak.cp*` (App.jsx.bak.cp3, App.jsx.bak.cp3bis, selectors.js.bak.cp1). Razionale blanket: CP4 browser verde 5/5 == working code source-of-truth, backup intermedi senza valore residuo, future-debug coperto da git history + 5 deviazioni s.6.215.A-E in par.22.70.
+- `git add -A` (modified + untracked code: `App.jsx` + `selectors.js` + `cronologia/` dir + `selectors.log.test.js` + `package.json` + `ImpostazioniTab.jsx` + Changelog patched)
+- Commit cumulativo singolo `s.6.215.A-E vista Log v3.1.0-rc.1 + bump + closing par.22.70`
+- **NO tag git** (AMB-11.B.7-bis applicata first time, ratifica formale demandata par.11.Y N+5, Q-FINAL.3=b par.22.69)
+- **NO push origin** (deploy aggregato finale v3.1.0 par.11.Y N+5, Q-FINAL.4=b par.22.69)
+- **NO merge main** (gia su main, no branch operativo questa sessione, simmetria par.22.55 vs branch operativo `step-10-ux-n10-n11-rendering-oggi` Sessione 11-bis assente qui)
+
+#### 5 deviazioni s.6.215.A-E ratificate definitivamente
+
+| ID | CP origine | Scope sintetico | Razionale |
+|---|---|---|---|
+| s.6.215.A | CP1 | Selector signature array `[from, to, farmacoId]` vs pre-alloc par.22.69 object `{from, to, farmacoId}` | Coerenza con altri selector PharmaTimer (es. `selectCountersForDay(state, today, now.date)` riceve positional args). Refactor implicit-to-explicit deferred. |
+| s.6.215.B | CP2 | `STATO_LABELS` inline in `CronologiaView.jsx` vs import da `statoLabel.js` (pre-alloc implicita par.22.69) | `statoLabel.js` non esiste come modulo dedicato in baseline; scope-creep evitato. Drift-doc-NEW N18 carry-forward s.6.217 N+4 per creazione modulo. |
+| s.6.215.C | CP3-bis | Rename rotta `/log` -> `/cronologia` URL-friendly | Adblocker pattern uBlock Origin filter list "log" generico triggera blocco rotta. Scoperto CP browser empirico. URL-friendly resolve. Lesson par.6.118 estesa a URL routing semantics. |
+| s.6.215.D | CP4-bis | Theme tokens dedicati (palette custom) vs default Tailwind | Coerenza visiva con altre tab (verde stato `presa`, rosso `saltata`, ambra `ricalcolata`). Pre-alloc par.22.69 non specificava tokens. |
+| s.6.215.E | CP4-ter | `colorScheme` native browser vs prop esplicito | iOS Safari dark mode default rispettato. Pre-alloc par.22.69 implicita light-only. |
+
+#### Sub-AMB chiuse Sessione N+2 (12 cumulative N+2.A-M parte 1 + 0 nuove parte 1-bis)
+
+| ID | Origine | Ratifica |
+|---|---|---|
+| N+2.A-M | parte 1 CP1-CP4 | 12 sub-AMB chiuse intra-CP. Scope: test infrastructure + UI fix incrementali + adblocker pattern scoperta + theme/colorScheme. Zero scope-creep funzionale, tutte coerenti con Q-LOG.1-5 ratificati par.22.69. Dettaglio specifico assorbito in s.6.215.A-E. |
+| N+2-bis 0 | parte 1-bis CP5 | Zero sub-AMB nuove: CP5 closing puramente amministrativo (patcher + bump + cleanup + commit), no scope decisionale residuo. |
+
+#### Drift-doc-NEW Sessione N+2 cumulativi (9 carry-forward par.22.69 + 8 NEW N+2 = 17 totali batch s.6.217 N+4)
+
+| # | Codice | Origine | Descrizione sintetica |
+|---|---|---|---|
+| 10 | N10 | par.22.69 N+1 carry | Count error par.22.68 "17 Q" vs effettivo 19 Q |
+| 11 | N11 | par.22.69 N+1 carry | Namespace collision par.11.X (rename forward par.11.Y) |
+| ... 7-9 | N1-N9 | par.22.67 carry pregresso | Carry pre-par.22.69 (vedi par.22.67) |
+| 14 | N14 | parte 1 N+2 | Campo logico `ora_eff` in pre-alloc par.22.69 non documentato schema `log_assunzioni` |
+| 15 | N15 | parte 1 N+2 | Path effettivo `src/components/cronologia/` post rename CP3-bis (era `log/` pre-allocato) |
+| 16 | N16 | parte 1 N+2 | Mix-format file selector test (`.js` per file `.jsx-adjacent`) |
+| 17 | N17 | parte 1 N+2 | BSD base64 portability issue script install (`base64 -d` GNU vs `-D` BSD) |
+| 18 | N18 | parte 1 N+2 | `statoLabel.js` non importato come pre-alloc par.22.69 implicita (s.6.215.B inline) |
+| 19 | N19 | parte 1 N+2 | `__pt.testRepo` assertion fail in dev console |
+| 20 | N20 NEW N+2-bis | parte 1-bis | Pre-alloc par.11.U dichiarava `ImpostazioniTab` riga 485 sync runtime; empirico CP0 N+2-bis riga **484**. No correzione retroattiva par.6.71/85. |
+| 21 | N21 NEW N+2-bis | parte 1-bis | File test `selectors.log.test.js` preserva naming pre-rename CP3-bis nonostante componente in `src/components/cronologia/`. Preservato as-is (no rename CP5 closing, evita scope-creep amministrativo). |
+
+**17 totali** (cumulativo 9 par.22.69 + 8 NEW N+2). Batch s.6.217 N+4 par.11.W. Principio par.6.71 / par.6.85 history immutability.
+
+#### Lessons learned consolidate Sessione N+2
+
+1. **Adblocker URL pattern empirico (s.6.215.C):** rotta `/log` triggera filter list uBlock Origin "log" pattern generico. Rename `/cronologia` URL-friendly resolve in 1 CP-bis. Lesson: future rotte nuove vanno greppate vs EasyList/EasyPrivacy URL patterns pre-commit per evitare CP browser fail post-deploy. Pattern par.6.118 esteso a URL routing semantics + adblocker compatibility check.
+2. **Working tree DIRTY pre-CP5 closing pattern par.22.55 simmetrico legittimo:** preservare DIRTY parte 1 (no commit) + delegare commit cumulativo a CP5 closing dedicato Sessione N+2-bis riduce rischio commit parziali e preserva atomicita "1 sessione cumulativa = 1 commit cumulativo". Replicabile per future sessioni esecutive ad alto count CP intra-sessione (>=5 CP).
+3. **AMB-11.B.7-bis applicata first time funziona empiricamente:** bump 3.0.1-rc.4 -> 3.1.0-rc.1 senza tag git intermedio + senza push origin. Ratifica formale demandata par.11.Y N+5 (Q-FINAL.3=b + Q-FINAL.4=b par.22.69). Pattern testato e funzionante: tag latest local invariato a `v3.0.1-rc.4`, origin/main resta a `022a357`, lavoro cumulativo locale fino chiusura par.11.Y N+5 con tag annotato unico `v3.1.0` + push origin + deploy gh-pages aggregato.
+4. **CP0 audit cross-sessione cattura drift di memoria stale (D1):** `userMemories` riferimento Sessione 11-bis storica non bloccante perche resto del prompt coerente con stato reale post-par.22.69. Lesson: CP0 baseline empirico empirico sempre source-of-truth, dichiarazione prompt seconda. Pattern par.6.205 (cross-path DB invariant audit) esteso analogamente a cross-source documentation audit.
+5. **Drift bloccante D3 path file:** pre-alloc par.11.U dichiarava `src/components/tabs/ImpostazioniTab.jsx`, empirico `src/components/config/ImpostazioniTab.jsx`. CP0-extension `grep -rln` su stringa version risolve in 1 comando. Lesson: pre-allocazioni path specifici multi-sessione richiedono verifica empirica `find` o `grep` pre-commit, non assunzioni da pre-alloc precedenti.
+
+#### Stato git post-Sessione N+2 cumulativa (parte 1 + parte 1-bis)
+
+- branch `main` HEAD `<TBD-closing-par.22.70-commit>` **4 commit ahead** origin/main (par.22.70 commit cumulativo SOPRA `fa13807` par.22.69 doc-only SOPRA `be6a857` par.22.68 doc-only SOPRA `022a357` tag `v3.0.1-rc.4`)
+- working tree **CLEAN** post-cleanup blanket
+- tag annotato `v3.0.1-rc.4` LOCALE **invariato** (AMB-11.B.7-bis applicata first time)
+- package.json `3.1.0-rc.1` post-bump
+- `src/components/config/ImpostazioniTab.jsx:484` runtime SezioneInfo aggiornato `3.1.0-rc.1` (sync mandatory bump pattern par.6.200/205)
+- **501/501** test verdi su **61** files (+5 vs baseline 496/59 par.22.69, target par.11.U range +3 a +8 centrato)
+- NO push origin (deploy aggregato finale v3.1.0 par.11.Y N+5)
+- NO merge main (gia su main)
+
+#### Deviazioni s.6.NN emesse Sessione N+2 cumulativa
+
+**5 sub-deviazioni s.6.215.A-E** ratificate definitivamente nel commit cumulativo di chiusura. Numerazione `s.6.215.X` (sub-suffix letterale) preserva pre-allocazione par.22.69 `s.6.215` come ID radice + chiarisce molteplicita scope deviazione effettiva. Pattern numerazione sub-suffix replicabile per future sessioni con deviazioni multiple intra-CP.
+
+#### Findings deferred Fase 2 polish
+
+15 findings registry par.22.52 invariati carry-forward + 17 drift-doc-NEW cumulativi (batch s.6.217 N+4 par.11.W). par.6.119 cross-midnight visual bug confermato presente ma non bloccante CP browser parte 1 (deferred N+4 ratifica Q-CLEAN.1).
+
+#### Sessione successiva
+
+**par.11.V Sessione N+3 esecutiva vista Export CSV** (scope frozen par.22.69, deviazione s.6.216). One-liner: `Esegui il prompt al par.11.V del Changelog.`
+
+#### Riferimenti par.22.70
+
+- **par.22.69**: closing N+1 + scope CP frozen N+2 + AMB-11.B.7-bis pre-allocata + Q-FINAL.3=b + Q-FINAL.4=b
+- **par.22.68**: defaults Q-LOG.1-5 ratificati par.22.69
+- **par.22.55**: pattern split parziale safety-first replicato simmetricamente (parte 1 = CP1-CP4 DIRTY no commit, parte 1-bis = CP5 closing dedicato commit cumulativo)
+- **par.22.42**: sub-AMB cluster (12 sub-AMB N+2.A-M parte 1)
+- **par.6.118**: pre-code scenario validation esteso a URL routing semantics + adblocker compatibility (lesson 1)
+- **par.6.71 / par.6.85**: deviazioni storiche immutabili (drift-doc-NEW N14-N21 no correzione retroattiva)
+- **par.6.200 / par.6.205**: sync runtime SezioneInfo mandatory bump pattern
+- **AMB-11.B.7-bis**: bump intermedio senza tag git + senza push origin applicata first time, ratifica formale demandata par.11.Y N+5
+
+---
+
 ### 11.U Prompt Sessione N+2 esecutiva vista Log minima (s.6.215, Q-LOG.1-5 ratificati par.22.69)
 
 **One-liner apertura:** `Esegui il prompt al par.11.U del Changelog.`

@@ -676,3 +676,36 @@ export function selectFarmaciConDataInizioFutura(state, today) {
       .sort((a, b) => a.nome.localeCompare(b.nome, 'it')),
   }));
 }
+
+
+/**
+ * Filter and sort log_assunzioni entries for the Log view.
+ *
+ * Deviation s.6.215.A: input is a local logs array (not `state`), since
+ * LogView fetches via repository.getLogByRange() onMount to support
+ * multi-day ranges outside state.plan window (Spec §3.8 by-design).
+ *
+ * @param {Array} logsArray - log_assunzioni rows from repository
+ * @param {Object} filters
+ * @param {string} [filters.from] - YYYY-MM-DD inclusive (null = no lower bound)
+ * @param {string} [filters.to]   - YYYY-MM-DD inclusive (null = no upper bound)
+ * @param {number} [filters.farmacoId] - filter to single farmaco (null = all)
+ * @returns {Array} filtered + sorted DESC by (data, ora_effettiva ?? ora_prevista, dose_numero)
+ */
+export function selectLogEntriesFiltered(logsArray, filters = {}) {
+  if (!Array.isArray(logsArray) || logsArray.length === 0) return [];
+  const { from, to, farmacoId } = filters;
+  const filtered = logsArray.filter((entry) => {
+    if (from != null && entry.data < from) return false;
+    if (to != null && entry.data > to) return false;
+    if (farmacoId != null && entry.farmaco_id !== farmacoId) return false;
+    return true;
+  });
+  return filtered.sort((a, b) => {
+    if (a.data !== b.data) return a.data < b.data ? 1 : -1;
+    const ka = a.ora_effettiva ?? a.ora_prevista ?? "";
+    const kb = b.ora_effettiva ?? b.ora_prevista ?? "";
+    if (ka !== kb) return ka < kb ? 1 : -1;
+    return (b.dose_numero ?? 0) - (a.dose_numero ?? 0);
+  });
+}
