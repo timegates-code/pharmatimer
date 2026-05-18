@@ -147,6 +147,8 @@
       <li><a href="#colori-card">Stati e colori delle card</a></li>
       <li><a href="#gap-recovery">Recupero gap</a></li>
       <li><a href="#frequenza-estesa">Frequenze estese</a></li>
+      <li><a href="#storico-assunzioni">Storico assunzioni</a></li>
+      <li><a href="#esporta-dati">Esporta dati</a></li>
       <li><a href="#privacy">Privacy e dati locali</a></li>
     </ol>
   </nav>
@@ -303,8 +305,75 @@
       </ul>
     </section>
 
+    <section id="storico-assunzioni">
+      <h2>6. Storico assunzioni</h2>
+      <p>
+        La <strong>scheda Storico</strong> mostra tutte le assunzioni
+        registrate, ordinate dalla più recente. Per ogni dose vedi data,
+        nome del farmaco, ora prevista, ora effettiva e stato finale
+        (presa, saltata, sospesa, ricalcolata).
+      </p>
+
+      <h3>Filtri disponibili</h3>
+      <ul>
+        <li><strong>Intervallo date</strong> — scegli "dal" e "al" per
+          limitare l'elenco a un periodo specifico (es. ultima settimana,
+          mese in corso).</li>
+        <li><strong>Farmaco</strong> — seleziona un singolo farmaco per
+          isolare la sua cronologia, oppure "Tutti" per la vista
+          complessiva.</li>
+      </ul>
+
+      <p>
+        La vista è in sola lettura: serve per consultare e controllare le
+        assunzioni passate, non per modificarle. Le correzioni
+        retroattive (segnare come saltata, sospesa, modifica orario) si
+        fanno dalla scheda Oggi nel giorno corrispondente.
+      </p>
+    </section>
+
+    <section id="esporta-dati">
+      <h2>7. Esporta dati</h2>
+      <p>
+        Dalla scheda Storico puoi <strong>esportare i dati</strong>
+        visualizzati con il pulsante <strong>"Esporta"</strong>. Il file
+        scaricato contiene esattamente le righe che stai vedendo: se hai
+        attivato filtri (intervallo date o farmaco), l'export rispetta i
+        filtri attivi.
+      </p>
+
+      <h3>Formato del file</h3>
+      <ul>
+        <li><strong>CSV</strong> con separatore <code>;</code>
+          (punto e virgola), compatibile direttamente con Excel italiano
+          senza wizard di importazione.</li>
+        <li>Codifica <strong>UTF-8 con BOM</strong>, per preservare
+          accenti e caratteri speciali nei nomi farmaco e nelle note.</li>
+        <li>Una riga per ogni dose, con colonne:
+          data, farmaco, dose, ora prevista, ora effettiva, delta minuti,
+          stato, note.</li>
+      </ul>
+
+      <h3>Quando usarlo</h3>
+      <ul>
+        <li>Backup periodico della cronologia prima di cancellare o
+          reinstallare l'app.</li>
+        <li>Condivisione dei dati di aderenza terapeutica con il medico
+          (apri il file in Excel, stampa o invia in allegato).</li>
+        <li>Analisi personale dell'aderenza in un intervallo (es. ultimo
+          mese, ultimo trimestre).</li>
+      </ul>
+
+      <p>
+        L'importazione di un file CSV nel database dell'app
+        <strong>non è disponibile</strong> in questa versione: l'export
+        serve come archivio leggibile e portabile, non come canale di
+        backup-and-restore.
+      </p>
+    </section>
+
     <section id="privacy">
-      <h2>6. Privacy e dati locali</h2>
+      <h2>8. Privacy e dati locali</h2>
       <p>
         PharmaTimer è progettata per la massima privacy: tutti i dati di
         terapia, profili e cronologia delle assunzioni risiedono
@@ -331,8 +400,10 @@
       <p>
         Poiché i dati risiedono nel browser, la disinstallazione dell'app
         o la cancellazione dei dati del sito comportano la perdita
-        irreversibile della cronologia. Una funzione di esportazione/importazione
-        non è ancora disponibile.
+        irreversibile della cronologia. Per ridurre il rischio, esporta
+        periodicamente la cronologia in formato CSV dalla scheda Storico
+        (vedi sezione 7). L'importazione di un file CSV nel database
+        dell'app non è invece disponibile in questa versione.
       </p>
     </section>
   </main>
