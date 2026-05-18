@@ -15347,6 +15347,114 @@ One-liner: `Esegui il prompt al par.11.Y.2 del Changelog.`
 
 ---
 
+### 22.74 Stato post-Sessione N+5.B par.11.Y.2 CP5 deploy + smoke 5/5 verde + CP6 cleanup .bak.* gitignore extension (push origin main 21af019 + tag v3.1.0 propagato sha 294c563 target e10b971 + bundle prod index-BUC2ky9Z.js + gh-pages forced update 0f93b63 orphan-init + smoke 5/5 verde first-try post-CDN-soak 75s, MILESTONE RILASCIO v3.1.0 CHIUSA)
+
+**Data:** 18 maggio 2026 sera.
+
+**Modalita:** Sessione N+5.B esecutiva deploy follow-up + closing finale (CP0 + CP5a-e + CP6 + CP closing). Pattern par.22.55 split safety-first replicato sub-CP (N+5.A CP1-4 + CP6-bis done / N+5.B CP5 + CP6 + closing). Token spesi ~8-10K (sotto preventivo 10-20K par.11.Y.2). Wall-clock ~30 min (CDN soak ~75s + smoke ~5s + cleanup ~5s + closing patcher ~5min). 8 CP totali eseguiti tutti verdi al first-try.
+
+**Esito:** OK 8/8 CP verdi. Smoke 5/5 production verde first-try post-CDN-soak 75s (zero re-smoke loop necessario, lesson par.22.65 #1 confermata). Working tree post-closing clean + 1 commit doc-only NEW oltre tag v3.1.0. **MILESTONE RILASCIO v3.1.0 CHIUSA COMPLETA**: PharmaTimer live `https://timegates-code.github.io/pharmatimer/` bundle 3.1.0, tag annotato `v3.1.0` propagato origin GitHub Releases, history main-origin allineata, 504/504 test invariati.
+
+#### Scope consegnato Sessione N+5.B
+
+**CP0 baseline sanity-light verde 7/7 + 2 drift-CP0:** branch `main` HEAD `21af019` (vs atteso `e10b971` par.22.73) 8 commit ahead origin/main (vs atteso 7), tag latest `v3.1.0` LOCALE su `e10b971` confermato target tag annotato, package.json `3.1.0`, **504/504** test su 62 files, working tree clean eccetto 2 untracked `.bak.*` (cleanup-N2 esteso). Remote `git@github.com:timegates-code/pharmatimer.git`. **Dev-CP0.1**: HEAD `21af019` e' commit doc-only closing N+5.A (par.22.73 + s.6.119-bis + par.11.Y.2 pre-frozen) emesso post-tag e10b971, pattern simmetrico par.22.65 (tag su 94fac42 + closing doc-only successivo 908a36a). Ratificata. **Dev-CP0.2**: 2 untracked `.bak.*` invece di 1 (estensione cleanup-N2 dal patcher Python closing N+5.A che ha generato `PharmaTimer_Changelog_Fase2.md.bak.closingN5A`). Ratificata, root cause identica gitignore `*.bak` non matcha `.bak.<suffix>` composito.
+
+**Pre-flight SSH + fast-forward verde:** `ssh -T git@github.com` autenticato, 8 commit fast-forward pushable, history lineare leggibile (s.6.215 + s.6.216 + s.6.217 + s.6.218 + s.6.119-bis + par.22.69 + par.22.68 cumulativi).
+
+**CP5a push origin main + tag v3.1.0 propagato:** `git push origin main` 8 commit pushed pre-image `93509fe..21af019` (60.11 KiB / 68 objects). `git push origin v3.1.0` tag annotato NEW propagato (1 object 909 bytes). Post-push verifica: `ls-remote --tags origin v3.1.0` ritorna SHA tag-object `294c563d74278fc4714dba6b2bf89b35b25dbacf` (vs SHA commit target `e10b971` via `git rev-parse v3.1.0`; distinzione tag-object/commit-target, nota operativa lesson #4). `ls-remote --heads origin main` ritorna `21af019f399fac579b46152d25d870e1c232fb6e`.
+
+**CP5b build production verde:** `npm run build` via vite v5.4.21 + vite-plugin-pwa v0.20.5 generateSW. Output bundle `dist/assets/index-BUC2ky9Z.js` 437.76 kB raw / 135.83 kB gzipped (vs Sessione 16 v3.0.1-rc.3 `index-5olefnyQ.js` 431.48 kB / 133.85 kB, delta +6.28 kB raw / +1.98 kB gzipped, +1.5% entrambe le metriche, dentro stima par.11.Y.2 rischio #3). Build time 1.20s. 103 modules transformed. Workbox precache 17 entries 479.53 KiB (vs 470.62 KiB rc.3, +8.91 KiB coerente con delta bundle + guide.html). CSS bundle 15.48 kB / 4.00 kB gzipped invariato. Artifacts PWA: `dist/guide.html` 16866 byte (vs ~14.2 kB rc.3 + ~2.6 kB per 2 sezioni nuove Storico/Esporta s.6.218.C), `dist/manifest.webmanifest` 628 byte, `dist/sw.js` 2179 byte. dist/ totale 556K.
+
+**CP5c deploy gh-pages orphan-init verde:** pattern par.22.65 / par.22.63 / par.22.59 / par.22.52 replicato esatto. Pre-deploy SHA gh-pages `db1b117` (post-Sessione 16 par.22.65). `cd dist + git init -b gh-pages -q + git add . + git -c user.email/name commit -m "Deploy v3.1.0" -q + git remote add origin git@github.com:timegates-code/pharmatimer.git + git push --force origin gh-pages`. Force-update `+ db1b117...0f93b63 gh-pages -> gh-pages (forced update)`. Post-deploy SHA gh-pages `0f93b6367324d0752da935a1432bffe73176f679`. Cleanup `rm -rf dist/.git` post-push verde (dist/ ripristinato come build-artifact non-git).
+
+**CP5d CDN soak 75s + CP5e smoke 5/5 verde first-try:** sleep 75s (lesson par.22.65 #1, range tipico 60-120s). Smoke production curl 5/5 verde tutti al first-try post-soak: (1) HTTP 200 root `https://timegates-code.github.io/pharmatimer/`, (2) LIVE bundle `index-BUC2ky9Z.js` MATCH LOCAL bundle (CDN propagation completa entro 75s), (3) grep `3.1.0` embedded in bundle ritorna count = 1 (minimo atteso, sync `ImpostazioniTab.jsx:484` runtime `PharmaTimer 3.1.0` o `package.json` literal embedded), (4) HTTP 200 manifest.webmanifest, (5) HTTP 200 sw.js. Zero re-smoke loop necessari (vs lesson par.22.65 dove primo round mostro' Smoke 2/3 rosso post-+10s). UpdatePrompt Workbox par.6.157/158 scattera spontaneamente sui client v3.0.1-rc.3 cached nelle 24-48h post-deploy (jump 5 minor versions, nessun blocker noto).
+
+**CP6 cleanup .bak.* + .gitignore extension verde:** `rm -f public/guide.html.bak.cp3 PharmaTimer_Changelog_Fase2.md.bak.closingN5A` (2 file untracked). `echo '*.bak.*' >> .gitignore` (pattern aggiunto in coda, 9 LOC totali post-edit vs 8 pre-edit). Sanity-check pattern attivo via test artificiale: `touch test.bak.xyz && git status --porcelain test.bak.xyz` ritorna vuoto (file ignorato), `TEST OK: pattern *.bak.* matcha .bak.xyz`. Cleanup-N2 risolto definitivamente (root cause cumulativa Sessioni N+5.A + N+5.B per `.bak.cp3` + `.bak.closingN5A`).
+
+**CP closing par.22.74 (questa sezione):** patcher Python content-based idempotente. Anchor "One-liner par.11.Y.2 + --- + ### 11.U" univoca, count == 1 pre-edit, count == 1 post-edit. Pre-state `### 22.74` count == 0, post-state count == 1. Pattern par.22.58 / par.6.118 rispettato. Commit doc-only cumulativo `par.22.74 closing finale v3.1.0 deploy completato + cleanup .bak.* gitignore extension` ingloba modifica `.gitignore` + Changelog (Q1=a ratificata, AMB-11.B.7 NON si applica per cosmetico `.gitignore` zero-impact runtime).
+
+#### Test
+
+504/504 invariato su 62 files (zero delta vs baseline par.22.73 / par.22.72). Nessun test NEW emesso (CP5 deploy + CP6 cleanup + CP closing doc-only, no codice runtime modificato). Allineato a pattern par.22.65 / par.22.63 / par.22.59 delta zero in deploy follow-up.
+
+#### Tag git e push
+
+- **Tag annotato `v3.1.0`** sha tag-object `294c563` target commit `e10b971` PROPAGATO origin (vs LOCALE pre-Sessione N+5.B). Pattern simmetrico a v3.0.1-rc.3 par.22.65 (tag-object `5528c89` target commit `94fac42` propagato Sessione 16).
+- **AMB-11.B.7-bis sequenza 4 cicli formalizzata FINALE**: `v3.0.1-rc.4` (S18 par.22.67 closing) → `3.1.0-rc.1` (N+2 par.22.70 no-tag-intermedio) → `rc.2` (N+3 par.22.71 no-tag-intermedio) → `rc.3` (N+4 par.22.72 no-tag-intermedio) → `3.1.0` (N+5.A par.22.73 tag annotato unico LOCALE) → PROPAGATO origin N+5.B par.22.74 (questa sezione). Pattern empiricamente confermato funzionante: bump rc.x intermedi senza tag git intermedi riduce overhead 3 sessioni (N+2/N+3/N+4) + tag finale unico annotato su milestone semver v3.1.0 mantiene history release-meaningful pulita.
+- Push origin main `21af019` allineato CP5a. Push tag `v3.1.0` propagato CP5a. Push doc-only commit par.22.74 (questa sezione) emesso CP closing finale.
+
+#### Deviazioni s.6.NN emesse Sessione N+5.B
+
+**s.6.220 cumulativa ratificata** nel commit doc-only closing par.22.74. Sotto-deviazioni:
+- s.6.220.A: deploy gh-pages orphan-init pattern par.22.65 replicato esatto (force-push, single-commit, branch build-output-only)
+- s.6.220.B: `.gitignore` pattern `*.bak.*` esteso (oltre pattern `*.bak` standalone preesistente)
+- s.6.220.C: commit closing par.22.74 ingloba `.gitignore` modifica (Q1=a ratificata, AMB-11.B.7 non applicabile per cosmetic `.gitignore`)
+
+#### Sub-AMB Sessione N+5.B (1 totale, cluster minimal vs N+5.A 5 unita)
+
+| ID | Tema | Chiusura |
+|---|---|---|
+| Sub-AMB-N5B.A | Scope `.gitignore` nel commit doc-only closing (opzione a vs b separazione code/doc) | ratificata (a) inglobamento atomico, AMB-11.B.7 non applicabile a `.gitignore` cosmetic, pattern par.22.55 split safety-first non applicabile (no rischio runtime) |
+
+#### Finding NEW carry-forward (1 totale, drift-doc cosmetic)
+
+- **drift-doc-N27**: terminology `ls-remote --tags` ritorna SHA tag-object (es. `294c563`) vs `rev-parse v3.1.0` ritorna SHA commit-target (es. `e10b971`); distinzione cosmetic ma confondibile in diagnostic post-push. NON corretto retroattivamente principio par.6.71/85. Audit puntuale opportunistico v3.1.x o sessione future deploy-related.
+
+#### Lesson learned Sessione N+5.B
+
+1. **CDN propagation GitHub Pages 75s soak sufficiente first-try N+5.B vs Sessione 16 par.22.65 che ha richiesto re-smoke loop**: variabilita osservata 60-120s tipica, soak 75s minimo raccomandato continua a funzionare ma re-smoke loop pattern par.22.65 #2 resta valid fallback se Smoke 2/3 rosso al first-try. Empiricamente N+5.B non ha attivato fallback.
+
+2. **Pattern split safety-first par.22.55 intra-sessione applicato N+5.A/N+5.B funziona empiricamente**: N+5.A 50-60K token + 2.5h wall-clock (CP1-4 + CP6-bis empirico), N+5.B 8-10K token + 30 min wall-clock (CP5 + CP6 + closing). Closing milestone tecnico naturale (commit + tag locale) > forzare deploy con context noise accumulato. Pattern raccomandato per sessioni chiusura prodotto v1.0 / milestone semver finale dove deploy e' azione non revocabile e CP browser empirico ha richiesto debugging multi-iterazione.
+
+3. **`.gitignore` pattern `*.bak.*` necessario per backup compositi `.bak.<suffix>`**: `*.bak` standalone glob shell semantics NON matcha `.bak.cp3` ne `.bak.closingN5A` (richiede suffisso esatto). Patcher Python content-based pattern par.22.58 / par.6.118 / par.22.67 genera tipicamente backup con suffisso descrittivo (`.bak.cp3`, `.bak.closingN5A`) per audit pre/post patch. Pattern `*.bak.*` aggiunto in `.gitignore` risolve root cause cleanup-N2 cumulativa Sessioni N+5.A + N+5.B. Lesson da replicare in future patcher-based session: aggiungere preventivamente pattern in `.gitignore` se non gia' presente.
+
+4. **Distinzione `ls-remote --tags` SHA tag-object vs `rev-parse` SHA commit-target**: nota operativa per diagnostic post-push tag annotato. `ls-remote --tags origin <tag>` ritorna SHA del tag-object (1 GitHub Releases entry), `rev-parse <tag>` lato locale ritorna SHA del commit puntato. Per smoke verify `tag punta a commit atteso` usare `rev-parse` o `git show <tag> | head -3`. Drift-doc-N27 NEW registrato cosmetic non funzionale.
+
+#### Stato git post-Sessione N+5.B
+
+- branch `main` HEAD `<closing-commit-NEW>` (commit doc-only par.22.74) **allineato origin/main** post-push closing
+- working tree **clean** (gitignore pattern `*.bak.*` attivo, nessun untracked atteso)
+- tag annotato `v3.1.0` sha tag-object `294c563` target `e10b971` PROPAGATO origin (GitHub Releases visibile)
+- tag latest invariati `v3.0.1-rc.4` ÷ `v3.0.0-alpha.1`
+- gh-pages SHA `0f93b63` (vs `db1b117` par.22.65, forced update orphan-init)
+- package.json `3.1.0` invariato (AMB-11.B.7 rispettato: no bump in deploy follow-up, pattern par.22.65 / par.22.63 / par.22.59 replicato)
+- src/components/config/ImpostazioniTab.jsx:484 runtime sync `PharmaTimer 3.1.0` invariato
+- **504/504** test invariati su 62 files
+- bundle PROD live `index-BUC2ky9Z.js` 437.76 kB / 135.83 kB gzipped accessibile via CDN `https://timegates-code.github.io/pharmatimer/`
+
+#### Pre-existing follow-up carry-forward par.22.73 (chiusura cumulativa v3.1.0)
+
+- **par.6.119 closure formale RATIFICATA via §6.119-bis γ-path multi-source** (par.22.73). Carry-forward chiuso definitivo.
+- **cleanup-N2 chiuso definitivo** (CP6 N+5.B: 2 file `.bak.*` rimossi + `.gitignore` pattern `*.bak.*` esteso). Carry-forward chiuso.
+- par.6.120 `actions.presa()` simulated_now DEV: invariato (workaround override esplicito documentato, DEV-only)
+- ~20 drift-doc cumulativi + N27 NEW (28-30 cumulativi): batch documentato senza retro-correzione, audit puntuale opportunistico v3.1.x post-rilascio
+- ~12 findings registry par.22.52 + 5 NEW N+5.A (D-snap-1/2/3 + cleanup-N1 + commit-msg-typo-N1) = ~17 cumulativi carry-forward v3.1.x opportunistic
+- Sub-AMB-G addFarmaco payload undefined: carry-forward v3.1.x opportunistic (path α browser smoke blocked, γ-path empirically sufficient)
+
+#### Riferimenti par.22.74
+
+- **par.22.73**: closing N+5.A (CP1-4 + CP6-bis) che ha deferred CP5 deploy
+- **par.22.65**: procedura deploy manuale orphan-init pattern radice + CDN soak 75s lesson originale
+- **par.22.52 / par.22.59 / par.22.63**: deploy pattern replicato 3 volte precedenti (v3.0.0 / v3.0.1-rc.1 / v3.0.1-rc.2 retroattivo)
+- **par.22.55**: pattern split safety-first replicato sub-CP intra-sessione (N+5.A / N+5.B simmetrici)
+- **par.6.119 / §6.119-bis**: bug originale + ratifica empirica γ-path closure
+- **par.6.157 / par.6.158**: UpdatePrompt Workbox registerSW + onNeedRefresh callback (client v3.0.1-rc.3 cached riceveranno notifica update v3.1.0 nelle 24-48h post-deploy)
+- **par.6.71 / par.6.85**: deviazioni storiche immutabili (drift-doc-N27 + AMB-11.B.7-bis ratifica sequenza 4 cicli no retro-correzione)
+- **par.6.118 / par.22.58 / par.22.67**: patcher Python content-based pattern idempotente + assertion uniqueness/pre-post
+- **AMB-11.B.7-bis**: formalizzazione finale closing v3.1.0 sequenza 4 cicli accumulati no-tag-intermedio + tag annotato unico propagato origin N+5.B
+
+#### Sessione successiva
+
+**NESSUNA OBBLIGATORIA.** Rilascio v3.1.0 chiuso completo end-to-end (codice + test + Spec v1.3 + README + guide.html + tag annotato propagato + deploy gh-pages + smoke production 5/5 verde + Changelog closing).
+
+Aperture opportunistiche disponibili (nessuna pre-frozen, sessione fresca dedicata):
+- **Patch v3.1.x opportunistic** su single finding registry promosso da "polish" a "bloccante uso pratico" (pattern par.22.49 / par.22.60 branching-decisione registry-driven, ~17 findings carry-forward + N27 cosmetic)
+- **Riapertura Fase 1 backend** FastAPI+MariaDB self-hosted: one-liner `Esegui il prompt al par.11.D del Changelog (Sessione Fase 3 Step 1 esecutiva — backend scaffolding + schema + seed + smoke endpoint)` + ratifica iniziale "stato corrente e' v3.1.0 PWA standalone, riapro Fase 1 backend". Eventuale rivisitazione sub-AMB F3-S1.A÷H se contesto cambiato (es. stack DB diverso da MariaDB pianificata, Spec sez. 11.5.4)
+- **Riapertura Fase 4 estensioni** (parametri vitali, grafici aderenza, Apple Health, multi-utente familiare, accesso remoto Tailscale): sessione di analisi-first dedicata per singola voce, no prompt pre-frozen disponibile
+- **Audit drift-doc batch ~28-30 cumulativi**: sessione dedicata cleanup doc-only, optional opportunistic v3.1.x
+
+---
+
 ### 11.U Prompt Sessione N+2 esecutiva vista Log minima (s.6.215, Q-LOG.1-5 ratificati par.22.69)
 
 **One-liner apertura:** `Esegui il prompt al par.11.U del Changelog.`

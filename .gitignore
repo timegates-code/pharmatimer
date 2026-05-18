@@ -6,3 +6,4 @@ dist/
 .vite/
 .backup_*/
 *.bak
+*.bak.*
