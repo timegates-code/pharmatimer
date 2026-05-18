@@ -4054,6 +4054,53 @@ Senza riproduzione runtime browser-side, fix mirato non è componibile.
 
 ---
 
+### 6.119-bis Ratifica empirica retroattiva closure §6.119 cross-midnight bucketing (Sessione N+5.A par.11.Y CP6-bis, γ-path test mirati Mac-side + lettura sorgente concordante + commit log ae33b1f + bundle PROD live 14gg, path α browser smoke blocked da §6.120 obstruction + DB multi-anomalia + Sub-AMB-G)
+
+**Tema:** ratifica empirica retroattiva closure §6.119 (cross-midnight bucketing "Domani" per dose ricalcolata).
+
+**Contesto:** §6.119 originale (Sessione 9-A) registrava bug DOM bucketing: dose con `ora_ricalcolata` cross-midnight (es. `ora_prevista=23:00`, `ora_ricalcolata=01:30`) restava sotto separator "Oggi" anziché migrare a "Domani". §6.119 fu chiusa code-side step 11-B AMB-11.B.1 commit `ae33b1f` (3 maggio 2026): helper `effectiveDateStr(entry)` + partition in `groupEntriesByDayAndMomento` per bucketing UI corretto. Test mirati cluster 11-B verdi al commit. Smoke browser CP empirico **non eseguito al tempo** del fix.
+
+**Promozione a ratifica empirica:** par.22.72 (Sessione N+4 closing) ereditò CP6-bis come pre-bump check obbligatorio v3.1.0 per applicare lesson par.22.72 #1 ("test verdi non implicano closure ratificata empiricamente").
+
+**Esecuzione CP6-bis Sessione N+5.A par.11.Y:**
+
+- Tentativo smoke browser PROD live (`https://timegates-code.github.io/pharmatimer/`) → blocked: bundle minified non espone debug interface (`window.__pt = undefined` accertato).
+- Tentativo selector-side console dev mode `localhost:5173` → blocked: DB locale ha 4 anomalie pre-esistenti (D-snap-1/2/3 + state-path-N1 nuovi finding). Antibiotico+Zoloft seed con `data_inizio=2030-01-01` esclude test row dal plan via filtro forward-window planBuilder. Setup farmaco ad-hoc richiederebbe risoluzione Sub-AMB-G (par.22.72 carry-forward: `addFarmaco` persiste `tipo_frequenza="undefined"` letterale, TestCrossMidnight residuo N+4 conferma).
+- Discovery laterale: memoria userspace ipotizzava campo materializzato `effectiveDateStr` in plan entries; bundle live mostra solo helper-call runtime su entries con solo `dateStr` (architettura più pulita: zero data duplication). Dicitura registry "partition per effectiveDateStr" letteralmente corretta, interpretazione operativa drift mio Claude (no drift Changelog).
+
+**Ratifica multi-source (γ-path):**
+
+1. **Lettura sorgente** `src/utils/uiState.js`: `effectiveDateStr` helper puro linea 61, `getCardState` linea 91-96 con cross-midnight handling, `isCrossMidnightRecalc` predicato linea 125, `groupEntriesByDayAndMomento` linea 243-256 con partition per `effectiveDateStr(entry)` runtime (commento linea 246: "Partition by effective dateStr 11-B AMB-11.B.1: cross-midnight").
+2. **Re-run test cluster mirati Mac-side** commit `c6d294d` (top main pre-CP4):
+   - `vitest -t 'groupEntriesByDayAndMomento'` → 14/14 verdi
+   - `vitest -t 'cross-midnight'` → 10/10 verdi
+   - `vitest -t 'isCrossMidnightRecalc'` → 3/3 verdi
+   - Set unione: ~17 test distinti su 3 filtri sovrapposti
+3. **Commit `ae33b1f` log message esplicito**: "CP1: helper effectiveDateStr + groupEntriesByDayAndMomento partition by effective bucket + bucketDateStr prop chain (uiState + DoseCard + OggiView) +9 test (6 uiState + 3 DoseCard)".
+4. **Bundle PROD live** `index-5olefnyQ.js` (Sessione 16 deploy par.22.65) attivo da 3 maggio 2026 (~14 giorni), zero report bug cross-midnight rendering.
+
+**Decisione:** §6.119 closure RATIFICATA EMPIRICAMENTE via path γ (test mirati + sorgente + commit log + esposizione live). Path α (smoke browser) blocked da §6.120 obstruction + DB multi-anomalia + Sub-AMB-G; deferred opportunistic post-v3.1.0 se finding torna visibile. Lesson par.22.72 #1 onorata in forma adattata: ratifica multi-source > smoke browser quando lo smoke è blocked da finding pre-esistenti documentati.
+
+**Finding NEW emersi durante CP6-bis (5 cumulativi, carry-forward registry par.22.52):**
+
+- **D-snap-1**: Antibiotico (id=1) + Zoloft (id=2) seed `data_inizio=2030-01-01`. Esclude dosi today via planBuilder forward filter. Origine seed sconosciuta (probabile staging/test artifact). Doc drift, non funzionale per la fix par.6.119.
+- **D-snap-2**: `orari_base.ora_prevista=undefined` su tutti i 3 record persistiti. Drift Spec sez. 3.5 (campo dichiarato calcolato runtime dal profilo attivo, write-side unused). Doc drift Spec, non funzionale.
+- **D-snap-3 / Sub-AMB-G confermato amplificato**: TestCrossMidnight residuo N+4 (CP1 abortito par.22.72) con `tipo_frequenza="undefined"` (stringa letterale) + `dosi_giornaliere=undefined`. `addFarmaco` persiste payload con campi undefined non-coerced. Bloccante setup farmaco ad-hoc empirico cross-midnight, deferred opportunistic v3.1.x se serve smoke browser su altro finding.
+- **cleanup-N1**: row test CP6-bis in DB localhost:5173 IndexedDB (farmaco_id=1 dose_numero=99 note="CP6-bis empirical test row"). Vive solo su DB browser dev, isolato per origin (`localhost:5173` ≠ PROD `https://timegates-code.github.io`). Zero impatto PROD. Cleanup deferred opportunistic riavvio `npm run dev`.
+- **commit-msg-typo-N1**: commit `e10b971` message contiene letterale `frase Backup riferisce all\export CSV` invece di `all'export CSV` per escape sequence apostrofo italiano collassato male da zsh heredoc. Cosmetico, non bloccante. Fix richiederebbe `git commit --amend` che invaliderebbe tag `v3.1.0` già applicato. Costo-beneficio sfavorevole, preservato come-is principio par.6.71/par.6.85.
+
+**Riferimenti §6.119-bis:**
+
+- **§6.119**: bug originale Sessione 9-A
+- **§6.120**: actions.presa() simulated_now DEV (blocker smoke procedurale path α, deferred)
+- **AMB-11.B.1 / commit ae33b1f**: closure codice step 11-B 3 maggio 2026
+- **par.22.35 / par.6.160**: validazione closure step 11-B
+- **par.22.72**: ereditarietà CP6-bis Sessione N+5
+- **par.22.73**: closing N+5.A che incorpora §6.119-bis
+- **par.6.71 / par.6.85**: principio immutabilità deviazioni storiche (commit-msg-typo-N1 preservato as-is)
+
+---
+
 ## 7. Roadmap Fase 2 (closed v2.7.0) + Fase 3 — avanzamento
 
 | Step | Contenuto | Stato | Note |
@@ -15188,6 +15235,118 @@ par.22.70 closing N+2 esplicita: `9 carry-forward par.22.69 + 8 NEW N+2 = 17 tot
 
 ---
 
+### 22.73 Stato post-Sessione N+5.A par.11.Y CP1-CP4 done + CP6-bis ratifica empirica γ-path + CP5 deploy DEFERRED N+5.B (commit cumulativo e10b971 + tag v3.1.0 LOCALE pre-push, package.json 3.1.0 + ImpostazioniTab sync, Spec v1.3 emessa KB-only, README v3.1.0 refresh sostanziale, guide.html +71 righe 2 sezioni nuove Storico/Esporta, 5 finding NEW emersi, AMB-11.B.7-bis ratificata empiricamente sequenza 3.0.1-rc.4 → 3.1.0-rc.1 → rc.2 → rc.3 → 3.1.0 + tag annotato unico)
+
+**Data:** 18 maggio 2026.
+
+**Modalità:** mista doc-heavy + bump + tag locale (CP0 + CP1 + CP2 + CP3 + CP6-bis + CP4). Token spesi ~50-60K (dentro preventivo 25-40K stimato par.11.Y, fuori per debug empirico CP6-bis multi-iterazione). Wall-clock effettivo ~2.5h. CP5 deploy + smoke production deferred Sessione N+5.B par.11.Y.2 pre-frozen (pattern par.22.55 split safety-first applicato sub-CP).
+
+**Esito:** OK CP1-4 + CP6-bis ratifica γ-path. CP5 deferred. Tag `v3.1.0` LOCALE su commit cumulativo `e10b971` pre-push. Working tree clean post-CP4 (eccetto untracked `public/guide.html.bak.cp3` orfano, gitignore pattern `*.bak` non matcha suffisso composito, finding cleanup minore).
+
+#### Scope consegnato Sessione N+5.A
+
+**CP0 baseline:** branch `main` HEAD `c6d294d` (par.22.72 closing N+4) 6 commit ahead origin/main + tag latest `v3.0.1-rc.4` LOCALE invariato + package.json `3.1.0-rc.3` + **504/504** verdi su 62 files + working tree clean + ImpostazioniTab.jsx:484 runtime `3.1.0-rc.3` sync. CP0 anomalia D scoperta: Spec NON in repo Mac-side (`grep: PharmaTimer_Project_Spec.md: No such file or directory`), convention "Spec KB-only" identificata (cfr Q-OPEN.4 ratificata "decidi tu" su default (a) preservazione KB-only).
+
+**CP1 Spec v1.3 emessa KB-only:** delivery file completo via `present_files` (`/mnt/user-data/outputs/PharmaTimer_Project_Spec.md` 535 LOC vs v1.2 454 LOC, +81 LOC). 5 macro-edit applicati: M1 header v1.2→v1.3 + changelog v1.3, M2 sez. 3.8 cross-reference Sessioni N+2/N+3, M3 sez. 5.1 nota Log+Export v3.1.0, M4 sez. 11 Roadmap riformulata (Fase 1 ⏸ OUT-OF-SCOPE / Fase 2 ✅ COMPLETATA / Fase 3 splittata / Fase 4 ⏸ OUT-OF-SCOPE), M5 sez. 11.5 NUOVA "Stato rilascio v3.1.0" con sotto-sezioni funzionalità/out-of-scope/known limitations/riapertura, M6 collaterale sez. 12.4 NUOVA "Storia del rilascio v3.1.0" cross-reference par.22.67-22.73. Roberto upload manuale in KB Claude.ai sostituendo v1.2. Zero commit git Spec (convention preservata).
+
+**CP2 README v3.1.0 refresh sostanziale:** delivery file completo via `present_files`. 199 LOC vs v2.8.0 190 LOC, +35 -26 LOC netti (+9 cumulativi). Modifiche: header bump 2.8.0→3.1.0 + tagline PWA standalone completa + rimossa frase "prodotto chiuso mantenuto solo hotfix critici", +2 bullet "Cosa fa" (Log + Export CSV), +2 bullet "Caratteristiche" (Log read-only + Export CSV Excel-friendly), "Limitazioni note" sezione header 2.8.0→3.1.0 + sostituita frase "Non è disponibile export automatico" con Export CSV è unico meccanismo portabilità v3.1.0, "Stack tecnico" 430→504 test 42→62 file + Vite PWA plugin `prompt` → `autoUpdate` UpdatePrompt UI + selector Log/Export menzionati, "Stato del progetto" estesa history con v3.0.0/v3.0.1.x/v3.1.0, "Sviluppo futuro" riformulato split Log/Export riassorbiti vs backend Fase 1+3 originaria + Fase 4 ⏸ pausa indefinita, "Riapertura Fase 3" rinominata "Riapertura Fase 1 (backend)", footer 2.8.0→3.1.0 + data 4 maggio→18 maggio 2026.
+
+**CP3 guide.html +71 righe via patcher Python idempotente content-based:** 345 LOC → 416 LOC. 4 anchor edits: E1 indice navigazione +2 voci linkate (Storico assunzioni + Esporta dati), E2 insert 2 nuove `<section>` prima di Privacy (id="storico-assunzioni" h2=6 "Storico assunzioni" + id="esporta-dati" h2=7 "Esporta dati"), E2-inglobato rinumerazione Privacy h2 6→8, E4 frase finale "Backup e portabilità" sostituita riferendo all'export CSV scheda Storico + nota import non disponibile. Sandbox verification round-trip pattern par.22.58 / par.6.118 replicato: Run 1 + Run 2 idempotency check verde 100% pre-delivery. Bug fix in-sandbox: E1 anchor inizialmente con indentazione errata (8 spazi vs 6 reali dal dump), corretta pre-applicazione Mac-side. Backup `public/guide.html.bak.cp3` creato dal patcher (untracked, gitignore pattern `*.bak` non matcha suffisso composito `.bak.cp3`, finding cleanup-N2 NEW).
+
+**CP6-bis ratifica empirica retroattiva §6.119 closure via γ-path multi-source:** vedi §6.119-bis dedicata. Esito verde via 3 filtri vitest mirati (14 `groupEntriesByDayAndMomento` + 10 `cross-midnight` + 3 `isCrossMidnightRecalc` = set unione ~17 distinti) + lettura sorgente concordante + commit `ae33b1f` log esplicito + bundle PROD live 14gg + ratifica multi-source documentata. Path α (browser smoke) blocked da §6.120 obstruction + DB multi-anomalia (D-snap-1/2/3) + Sub-AMB-G (carry-forward par.22.72). 5 finding NEW emersi: D-snap-1/2/3 + cleanup-N1 + commit-msg-typo-N1 (vedi §6.119-bis).
+
+**CP4 bump + commit cumulativo + tag annotato LOCALE:** bump package.json `3.1.0-rc.3` → `3.1.0` + sync ImpostazioniTab.jsx:484 (1 sola occorrenza runtime, riga 466 commento storico `3.0.0` preservato principio par.6.71/85). Commit cumulativo singolo `e10b971` con messaggio multi-line + 4 file modificati (README + guide.html + package.json + ImpostazioniTab.jsx, +111 -31 LOC). Tag annotato `v3.1.0` LOCALE su `e10b971` con messaggio milestone esteso (funzionalità incluse + out-of-scope formalizzato + known limitations + test counts). NO push origin (deferred CP5 atomic con deploy gh-pages). Working tree post-CP4: `?? public/guide.html.bak.cp3` untracked persistente, finding cleanup-N2.
+
+**CP5 DEFERRED Sessione N+5.B par.11.Y.2:** scope CP5 (deploy gh-pages + smoke production + cleanup) + emissione formale §6.119-bis (anticipata in questo §22.73 in forma di sezione doc-only) + closing par.22.74. Pattern par.22.55 split safety-first applicato sub-CP per sizing sessione (Q-OPEN.5=a ratificata): chiusura disciplinata milestone tecnico naturale (commit + tag locale) > forzare deploy con context noise accumulato.
+
+#### Test
+
+504/504 invariato su 62 files (zero delta vs baseline par.22.72). Nessun test NEW emesso (CP6-bis γ-path è re-run di test esistenti, non aggiunta). Allineato a pattern par.22.72 (delta zero in cleanup esecutivo XS).
+
+#### Tag git e push
+
+- **Tag `v3.1.0` LOCALE** su `e10b971` (no push origin). Pattern AMB-11.B.7-bis estesa: 4 cicli accumulati no-tag-intermedio (`v3.0.1-rc.4` → `3.1.0-rc.1` N+2 → `rc.2` N+3 → `rc.3` N+4 → `3.1.0` N+5.A) + tag finale annotato unico su closing milestone v3.1.0.
+- Push origin main + tag deferred CP5 Sessione N+5.B atomic con deploy gh-pages.
+
+#### Deviazioni s.6.NN emesse Sessione N+5.A
+
+**s.6.218 cumulativa ratificata** nel commit `e10b971`. Sotto-deviazioni:
+- s.6.218.A: Spec v1.3 KB-only convention preservata (Q-OPEN.4=a)
+- s.6.218.B: README v3.1.0 refresh sostanziale (+35 -26 LOC, no append)
+- s.6.218.C: guide.html +71 righe 2 sezioni nuove
+- s.6.218.D: bump 3.1.0-rc.3 → 3.1.0 (AMB-11.B.7 finale chiusura ciclo bump)
+- s.6.218.E: tag annotato `v3.1.0` LOCALE su `e10b971` (AMB-11.B.7-bis quarta + finale, no push CP5 deferred)
+
+#### Sub-AMB-NEW Sessione N+5.A (5 totali, pattern par.22.42 cluster esteso)
+
+| ID | Tema | Chiusura |
+|---|---|---|
+| Sub-AMB-N5A.A | Spec KB-only vs git repo (asimmetria convention) | ratificata "decidi tu" default (a) preservare KB-only, delivery `present_files` upload manuale Roberto |
+| Sub-AMB-N5A.B | CP6-bis profondità ratifica (literal 3 scenari vs adattata) | ratificata (c) smoke browser leggero 1 scenario → poi escalation γ-path quando α blocked |
+| Sub-AMB-N5A.C | par.6.119 ratifica empirica retroattiva ambiguità memoria utente | ratificata path γ multi-source (test + sorgente + commit log + PROD esposto) |
+| Sub-AMB-N5A.D | mismatch dev `localhost:5173` vs PROD `github.io` during CP6-bis (debug interface esposta dev, undefined PROD) | risolto empiricamente con check `window.location.origin` |
+| Sub-AMB-N5A.E | CP5 deploy procedura non in userMemories, inferita da `package.json` + filesystem | risolta via `project_knowledge_search` par.22.65 (manuale orphan-init confermato pattern par.22.52/59/63/65 replicato) |
+
+#### Finding NEW carry-forward (5 + 1 totali)
+
+- **D-snap-1**: Antibiotico+Zoloft seed `data_inizio=2030-01-01` (origine sconosciuta)
+- **D-snap-2**: `orari_base.ora_prevista=undefined` drift Spec sez. 3.5
+- **D-snap-3 / Sub-AMB-G amplificato**: TestCrossMidnight residuo + `addFarmaco` payload undefined letterale
+- **cleanup-N1**: row test CP6-bis in DB localhost (isolato per origin, zero PROD impact)
+- **cleanup-N2 NEW**: `public/guide.html.bak.cp3` untracked, gitignore pattern `*.bak` non matcha suffisso composito
+- **commit-msg-typo-N1**: `e10b971` message escape sequence apostrofo collassato (cosmetico)
+
+#### Lesson learned Sessione N+5.A
+
+1. **userMemories è sintesi interpretata, non dump fedele Changelog:** dicitura "par.6.119 closure opzione B groupEntriesByDayAndMomento partition per effectiveDateStr" letteralmente corretta, ma interpretazione operativa "campo materializzato in plan entries" errata. Drift interpretativo Claude, no drift Changelog. Mitigazione: pre-CP browser/empirical operation, consultare `project_knowledge_search` su anchor `commit-id + AMB-id` per validazione tecnica fine (vs solo summary memoria). Pattern par.6.118 esteso a "memory-interpretation pre-validation".
+
+2. **Procedura operativa dettagliata (deploy comando esatto, schema payload, path state) NON entra in userMemories ma è in Changelog par.22.NN:** sintomo emerso CP5 inferendo deploy procedura da filesystem invece di leggere par.22.65. Mitigazione: CP0 sanity-light esteso include `project_knowledge_search` su anchor "deploy procedure" / "X procedure pattern" quando azione operativa non documentata in memoria. Pattern par.6.205 (cross-path DB audit) esteso analogamente a cross-source documentation audit.
+
+3. **Sub-CP split safety-first pattern par.22.55 simmetrico applicabile a closing sessione con context noise accumulato:** CP1-CP4 + CP6-bis = milestone tecnico naturale (commit + tag locale, push deferred). CP5 deploy + smoke + closing finale = nuova sessione fresh con CP0 pulito + procedura par.22.65 pre-letta. Pattern raccomandato per sessioni chiusura prodotto v1.0 / milestone semver finale dove deploy è azione non revocabile.
+
+4. **Path `__pt.app.getState()` corretto vs `__pt.app.store.getState()` o `__pt.getState()`:** drift discovery durante CP6-bis selector-side, risolto empiricamente Step V1. Doc drift userspace, non funzionale.
+
+5. **Convention Spec KB-only formalizzata empiricamente vs convention Changelog git+KB-mirror:** asimmetria pre-esistente identificata in CP0 anomalia D (Spec assente da repo). Ratificata "decidi tu" default (a) preservare KB-only. Documentazione asimmetria registry par.22.73 + cross-reference §11.5.4 Spec v1.3 "Riapertura scope post-v3.1.0".
+
+#### Stato git post-Sessione N+5.A
+
+- branch `main` HEAD `e10b971` (commit cumulativo CP1-CP4) **7 commit ahead** origin/main (6 pre-Sessione N+5 + 1 NEW Sessione N+5.A cumulativo CP4)
+- working tree clean eccetto `?? public/guide.html.bak.cp3` (finding cleanup-N2)
+- **tag annotato `v3.1.0` LOCALE** su `e10b971` (NO push, deferred CP5 N+5.B)
+- tag latest invariati `v3.0.1-rc.4` ÷ `v3.0.0-alpha.1`
+- package.json `3.1.0`
+- src/components/config/ImpostazioniTab.jsx:484 runtime sync `PharmaTimer 3.1.0` (riga 466 commento storico stale `3.0.0` preservato par.6.71/85)
+- **504/504** test invariati su 62 files
+- NO push origin (deferred CP5 atomic N+5.B)
+- NO build/deploy gh-pages (deferred CP5 N+5.B)
+
+#### Pre-existing follow-up carry-forward par.22.72
+
+- **par.6.119 closure formalmente RATIFICATA via §6.119-bis** (γ-path multi-source). Carry-forward chiuso.
+- par.6.120 `actions.presa()` simulated_now DEV: invariato (workaround override esplicito documentato)
+- ~20 drift-doc-NEW cumulativi: batch documentato senza retro-correzione, audit puntuale opportunistico v3.1.x post-rilascio
+- ~12 findings registry par.22.52 invariati + 5 NEW Sessione N+5.A (D-snap-1/2/3 + cleanup-N1/N2 + commit-msg-typo-N1) = ~17 cumulativi carry-forward v3.1.x opportunistic
+
+#### Riferimenti par.22.73
+
+- **par.22.69 a 22.72**: closing N+1 a N+4 cumulativo
+- **par.22.65**: deploy procedura manuale orphan-init pattern ratificato CP5 N+5.B
+- **par.22.55**: pattern split safety-first replicato sub-CP intra-sessione (CP1-CP4 + CP6-bis done / CP5 deferred N+5.B)
+- **par.6.119 / §6.119-bis**: bug originale + ratifica empirica γ-path
+- **par.6.120**: blocker path α smoke browser
+- **par.6.71 / par.6.85**: deviazioni storiche immutabili (commit-msg-typo-N1 + riga 466 ImpostazioniTab.jsx + drift userMemories no retro-correzione)
+- **par.6.118 / par.6.205 esteso**: cross-source documentation audit nuovo principio operativo lesson learned 2
+- **par.22.42**: sub-AMB emergenti in cluster (5 unità Sessione N+5.A)
+- **AMB-11.B.7-bis**: 4 cicli accumulati no-tag-intermedio + tag finale unico (formalizzazione finale closing v3.1.0)
+
+#### Sessione successiva
+
+**par.11.Y.2 Sessione N+5.B closing finale v3.1.0 deploy + smoke production** (scope frozen N+5.A par.22.73, deviazione s.6.220 pre-allocata).
+
+One-liner: `Esegui il prompt al par.11.Y.2 del Changelog.`
+
+---
+
 ### 11.U Prompt Sessione N+2 esecutiva vista Log minima (s.6.215, Q-LOG.1-5 ratificati par.22.69)
 
 **One-liner apertura:** `Esegui il prompt al par.11.U del Changelog.`
@@ -15406,6 +15565,71 @@ echo '=== CP0 completato ==='
 - **AMB-11.B.7-bis**: tag intermedi saltati formalizzati
 - **par.22.69 sub-Q-NEW E**: rename forward-looking ex-par.11.X -> par.11.Y per collisione namespace pre-esistente
 
-**Sessione successiva:** **nessuna obbligatoria** (rilascio v3.1.0 chiuso). Aperture opportunistiche v3.1.x patch su findings utenti reali, oppure par.11.D Fase 3 backend pivot, oppure Fase 4 estensioni.
+**Sessione successiva:** par.11.Y.2 Sessione N+5.B closing finale v3.1.0 deploy + smoke production (deferred scope par.22.73 N+5.A).
+
+---
+
+### 11.Y.2 Prompt Sessione N+5.B closing finale v3.1.0 deploy + smoke production (s.6.220, scope deferred CP5 par.11.Y N+5.A par.22.73, pattern par.22.65 manuale orphan-init replicato)
+
+**One-liner apertura:** `Esegui il prompt al par.11.Y.2 del Changelog.`
+
+**Modalità:** Sessione N+5.B esecutiva deploy follow-up + closing finale (CP0 sanity-light + CP5 deploy + smoke + CP closing finale). Token attesi 10-20K. Wall-clock atteso 30-45 min (incluso CDN soak ~75s pattern par.22.65 lesson #1).
+
+#### Pre-letture obbligatorie
+
+1. **par.22.73** integrale (stato post-Sessione N+5.A: commit `e10b971` + tag `v3.1.0` LOCALE pre-push, 504/504 test, working tree clean eccetto `cleanup-N2`)
+2. **par.22.65** (procedura deploy manuale orphan-init gh-pages pattern: `npm run build` + `cd dist && git init -b gh-pages && git add . && git commit -m "Deploy v3.1.0" && git remote add origin <repo-url> && git push --force origin gh-pages && cd .. && rm -rf dist/.git`; CDN soak ~75s pre-smoke)
+3. **par.22.52 / par.22.59 / par.22.63** (pattern deploy replicato 4 volte, contesto storico)
+4. **§6.119-bis** (ratifica empirica γ-path già emessa in par.22.73, no re-emit)
+
+#### CP0 sanity-light obbligatorio Mac-side
+
+```bash
+cd ~/Sviluppo/pharmatimer
+echo '=== CP0 N+5.B baseline pre-deploy ==='
+git --no-pager log -1 --oneline --decorate
+git status -sb
+git --no-pager tag -l v3.1.0
+node -p "require('./package.json').version"
+npx vitest run 2>&1 | tail -5
+echo '=== CP0 verifica remote URL ==='
+git remote -v
+echo '=== CP0 completato ==='
+```
+
+**Atteso baseline:** branch `main` HEAD `e10b971` con tag `v3.1.0` LOCALE, 7 commit ahead origin/main, package.json `3.1.0`, **504/504** test, working tree clean eccetto `?? public/guide.html.bak.cp3` (cleanup-N2), remote origin `git@github.com:timegates-code/pharmatimer.git`.
+
+#### Scope CP table N+5.B
+
+| CP | Tema | Operazioni | Verifica |
+|---|---|---|---|
+| CP0 | Sanity-light | Verifica baseline atteso par.22.73 | atteso 6/6 verde |
+| CP5a | Push origin main + tag | `git push origin main && git push origin v3.1.0` | atteso 2 push verdi + `git ls-remote --tags origin v3.1.0` ritorna SHA `e10b971` |
+| CP5b | Build production | `npm run build`. Output `dist/` con bundle hashato NEW + workbox sw.js + manifest + assets PWA + guide.html. | atteso dist/ con bundle `index-<NEW-hash>.js` |
+| CP5c | Deploy gh-pages orphan-init | Pattern par.22.65 manuale: `cd dist && git init -b gh-pages && git add . && git commit -m "Deploy v3.1.0" && git remote add origin git@github.com:timegates-code/pharmatimer.git && git push --force origin gh-pages && cd .. && rm -rf dist/.git`. | atteso forced update gh-pages SHA NEW |
+| CP5d | CDN soak | `sleep 75` (lesson par.22.65 #1). | atteso pause |
+| CP5e | Smoke production 5/5 | (1) `curl -s -o /dev/null -w 'HTTP %{http_code}' https://timegates-code.github.io/pharmatimer/` = 200, (2) `curl -sL https://timegates-code.github.io/pharmatimer/ \| grep -oE 'index-[A-Za-z0-9]+\.js' \| head -1` match `dist/assets/index-*.js`, (3) `curl -sL https://timegates-code.github.io/pharmatimer/assets/index-<NEW-hash>.js \| grep -c '3\.1\.0'` ≥ 1, (4) manifest 200, (5) sw.js 200. | atteso 5/5 verde |
+| CP6 cleanup | cleanup-N2 | `rm -f public/guide.html.bak.cp3` + ratifica `.gitignore` pattern `*.bak.*` opportunistico | atteso working tree clean |
+| CP closing | par.22.74 + ratifica AMB-11.B.7-bis | Patcher Changelog par.22.74 = closing finale v3.1.0 deploy + ratifica AMB-11.B.7-bis sequenza 4 cicli + tag finale + lesson learned. Commit doc-only `par.22.74 closing finale v3.1.0 deploy completato`. Push doc-only commit. | atteso clean |
+
+**Delta test atteso:** 0 (deploy + doc-only). **Deviazioni s.6.NN:** s.6.220 ratificata.
+
+#### Rischi noti
+
+1. **CDN edge cache GitHub Pages propagation non istantanea** (lesson par.22.65 #1): mismatch a t+10s post-push atteso, propagation stabile a t+75s tipico. Soak minimo 75s prima del primo smoke. Re-smoke loop opzionale con pause cumulative 50/120/180s se Smoke 2 fail iniziale.
+2. **Tag v3.1.0 già LOCALE su `e10b971`**: push tag normale, nessun problema atteso.
+3. **Bundle hash NEW atteso ≠ index-5olefnyQ.js** (Sessione 16 v3.0.1-rc.3): cambia per modifiche s.6.215 Log + s.6.216 Export + s.6.217 N22 cleanup + s.6.218 README + guide.html + bump 3.1.0. Stima delta bundle: +5-10 kB raw / +2-4 kB gzipped per Log + Export views.
+4. **Push tag prima o dopo push main**: ordine raccomandato `push main` poi `push tag` per evitare tag-orfano-temporaneo se push main fallisce.
+
+#### Riferimenti par.11.Y.2
+
+- **par.22.73**: closing N+5.A che ha deferred CP5 deploy
+- **par.22.65**: procedura deploy manuale orphan-init pattern radice
+- **par.22.52 / par.22.59 / par.22.63**: pattern deploy replicato 3 volte precedenti (v3.0.0 / v3.0.1-rc.1 / v3.0.1-rc.2 retroattivo)
+- **§6.119-bis**: ratifica empirica già emessa par.22.73 (no re-emit)
+- **AMB-11.B.7-bis**: ratifica formale finale ciclo 4 + tag annotato unico v3.1.0
+- **par.6.157 / par.6.158**: UpdatePrompt Workbox registerSW + onNeedRefresh callback (client v3.0.1-rc.3 cached riceveranno notifica update v3.1.0 nelle 24-48h post-deploy)
+
+**Sessione successiva:** **nessuna obbligatoria** (rilascio v3.1.0 chiuso completo). Aperture opportunistiche v3.1.x patch su findings utenti reali, oppure par.11.D Fase 3 backend pivot, oppure Fase 4 estensioni.
 
 ---
