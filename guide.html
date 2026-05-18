@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Guida utente — PharmaTimer</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-alt: #f5f5f7;
+      --text: #1d1d1f;
+      --text-muted: #6e6e73;
+      --border: #d2d2d7;
+      --accent: #007aff;
+      --code-bg: #f0f0f3;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0c0c0e;
+        --bg-alt: #1c1c1e;
+        --text: #f5f5f7;
+        --text-muted: #98989d;
+        --border: #38383a;
+        --accent: #0a84ff;
+        --code-bg: #2c2c2e;
+      }
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    header {
+      padding: 2rem 1.5rem 1.5rem;
+      background: var(--bg-alt);
+      border-bottom: 1px solid var(--border);
+    }
+    header h1 {
+      margin: 0 0 0.25rem;
+      font-size: 1.75rem;
+      font-weight: 600;
+    }
+    header p {
+      margin: 0;
+      color: var(--text-muted);
+    }
+    nav {
+      max-width: 720px;
+      margin: 1.5rem auto 0;
+      padding: 1rem 1.5rem;
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    nav h2 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+    nav ol { margin: 0; padding-left: 1.5rem; }
+    nav li { margin: 0.25rem 0; }
+    nav a { color: var(--accent); text-decoration: none; }
+    nav a:hover { text-decoration: underline; }
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 1rem 1.5rem 3rem;
+    }
+    section {
+      margin: 2.5rem 0;
+      scroll-margin-top: 1rem;
+    }
+    section h2 {
+      font-size: 1.375rem;
+      font-weight: 600;
+      margin: 0 0 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    section h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 1.25rem 0 0.5rem;
+    }
+    section p { margin: 0.75rem 0; }
+    section ul, section ol { padding-left: 1.5rem; }
+    section li { margin: 0.4rem 0; }
+    code {
+      background: var(--code-bg);
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      font-size: 0.875em;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.1rem 0.55rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      margin-right: 0.4rem;
+      vertical-align: baseline;
+    }
+    .badge-grey   { background: #d2d2d7; color: #1d1d1f; }
+    .badge-yellow { background: #ffcc00; color: #1d1d1f; }
+    .badge-blue   { background: #007aff; color: #ffffff; }
+    .badge-green  { background: #34c759; color: #ffffff; }
+    .badge-red    { background: #ff3b30; color: #ffffff; }
+    .badge-black  { background: #1d1d1f; color: #ffffff; }
+    @media (prefers-color-scheme: dark) {
+      .badge-grey  { background: #48484a; color: #f5f5f7; }
+      .badge-black { background: #f5f5f7; color: #1d1d1f; }
+    }
+    footer {
+      padding: 2rem 1.5rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+    footer p { margin: 0.25rem 0; }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>PharmaTimer</h1>
+    <p>Guida utente</p>
+  </header>
+
+  <nav aria-label="Indice della guida">
+    <h2>Indice</h2>
+    <ol>
+      <li><a href="#cos-e">Cos'è PharmaTimer</a></li>
+      <li><a href="#aggiungere-farmaci">Aggiungere farmaci</a></li>
+      <li><a href="#colori-card">Stati e colori delle card</a></li>
+      <li><a href="#gap-recovery">Recupero gap</a></li>
+      <li><a href="#frequenza-estesa">Frequenze estese</a></li>
+      <li><a href="#storico-assunzioni">Storico assunzioni</a></li>
+      <li><a href="#esporta-dati">Esporta dati</a></li>
+      <li><a href="#privacy">Privacy e dati locali</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <section id="cos-e">
+      <h2>1. Cos'è PharmaTimer</h2>
+      <p>
+        PharmaTimer è un'app per gestire la terapia farmacologica quotidiana.
+        Configuri i tuoi farmaci con la frequenza prescritta dal medico e
+        l'app pianifica le dosi del giorno, ti ricorda quando assumerle e
+        registra le assunzioni effettuate.
+      </p>
+      <p>Caratteristiche principali:</p>
+      <ul>
+        <li>Pianificazione automatica delle dosi giornaliere in base alla terapia configurata.</li>
+        <li>Tracciamento delle assunzioni con cronologia completa.</li>
+        <li>Ricalcolo automatico degli orari quando una dose viene presa con ritardo (recupero gap).</li>
+        <li>Supporto per frequenze sia infra-giornaliere (ogni 8h, 12h ecc.) sia plurigiornaliere (ogni 7 giorni ecc.).</li>
+        <li>Funziona anche offline una volta installata come app sulla schermata Home.</li>
+        <li>Tutti i dati restano sul tuo dispositivo: nessun account, nessun cloud.</li>
+      </ul>
+    </section>
+
+    <section id="aggiungere-farmaci">
+      <h2>2. Aggiungere farmaci</h2>
+      <p>
+        Per aggiungere un farmaco vai alla scheda <strong>Impostazioni</strong> e
+        seleziona la sezione <strong>Farmaci</strong>. Premi il bottone
+        <strong>+ Nuovo farmaco</strong> in alto a destra: si aprirà il form
+        di compilazione.
+      </p>
+
+      <h3>Campi del form</h3>
+      <ul>
+        <li><strong>Nome.</strong> Il nome commerciale del farmaco (es. "Medrol 16mg").</li>
+        <li><strong>Principio attivo.</strong> Il principio farmacologico (es. "metilprednisolone").</li>
+        <li><strong>Funzione.</strong> Descrizione breve dello scopo terapeutico (es. "cortisone broncospasmo").</li>
+        <li><strong>Tipo frequenza.</strong> Scegli tra <em>intervallo</em> (ogni N ore) e <em>fisso</em> (orari prefissati).</li>
+        <li><strong>Intervallo.</strong> Per il tipo "intervallo" si imposta come coppia <strong>giorni + ore</strong> (es. 0 giorni e 8 ore = ogni 8h; 7 giorni e 0 ore = settimanale).</li>
+        <li><strong>Dosi/die.</strong> Numero di somministrazioni al giorno (es. 3 per ogni 8h).</li>
+        <li><strong>Data inizio.</strong> Data della prima dose. Default: domani.</li>
+        <li><strong>Relazione pasto.</strong> Vincolo con i pasti (prima/durante/dopo, a stomaco pieno, lontano dai pasti, indifferente).</li>
+        <li><strong>Note.</strong> Informazioni aggiuntive (es. "sciacquare bocca dopo", "rallenta i riflessi").</li>
+      </ul>
+
+      <p>
+        <strong>Campi obbligatori.</strong> I campi <strong>Nome</strong> e
+        <strong>Relazione pasto</strong> sono contrassegnati con un asterisco
+        rosso. Il pulsante <strong>Salva</strong> resta disabilitato finché
+        entrambi non sono compilati; un breve avviso nel footer del form
+        indica quali campi mancano.
+      </p>
+
+      <p>
+        Premi <strong>Salva</strong> per confermare. Riceverai una notifica
+        di conferma con la data e l'ora della prima dose pianificata.
+      </p>
+    </section>
+
+    <section id="colori-card">
+      <h2>3. Stati e colori delle card</h2>
+      <p>
+        Nella schermata <strong>Oggi</strong> ogni dose è rappresentata da
+        una card il cui colore ne indica lo stato corrente. I colori esatti
+        possono variare a seconda del tema (chiaro/scuro), ma le sei classi
+        di stato sono sempre riconoscibili:
+      </p>
+      <ul>
+        <li><span class="badge badge-grey">In attesa</span> Dose pianificata; l'orario di assunzione non è ancora arrivato. Nessuna azione richiesta.</li>
+        <li><span class="badge badge-yellow">In arrivo</span> La dose è imminente, entro la finestra di tolleranza.</li>
+        <li><span class="badge badge-blue">In ritardo</span> L'orario previsto è passato ma la dose è ancora prendibile entro la soglia di sicurezza.</li>
+        <li><span class="badge badge-green">Presa</span> Dose registrata correttamente, in orario o entro la tolleranza.</li>
+        <li><span class="badge badge-red">Saltata</span> La dose non è stata presa entro la soglia massima di ritardo. È possibile annullarla o lasciarla saltata.</li>
+        <li><span class="badge badge-black">Ricalcolata</span> Dose il cui orario è stato spostato dal recupero gap di una dose precedente.</li>
+      </ul>
+      <p>
+        Quando si tocca una card, il timestamp di assunzione viene registrato
+        immediatamente e la card passa allo stato <em>presa</em>.
+      </p>
+    </section>
+
+    <section id="gap-recovery">
+      <h2>4. Recupero gap</h2>
+      <p>
+        Quando una dose viene assunta con ritardo significativo, le dosi
+        successive vengono <strong>ricalcolate</strong> automaticamente per
+        rispettare l'intervallo minimo di sicurezza tra una somministrazione
+        e l'altra.
+      </p>
+
+      <h3>Come funziona</h3>
+      <p>
+        Esempio: l'intervallo nominale del farmaco è 8 ore con minimo di
+        sicurezza di 4 ore. Tocchi "presa" per la dose delle 13:00 alle
+        16:00 (3 ore di ritardo). La dose successiva era pianificata per
+        le 21:00. L'app la posticipa alle 20:00 in modo che restino almeno
+        4 ore dalla dose appena presa, e mostra un riepilogo prima di
+        applicare la modifica.
+      </p>
+
+      <h3>Soglia minima</h3>
+      <p>
+        L'intervallo minimo di sicurezza è configurabile per ogni farmaco
+        nel form, alla voce <code>intervallo_minimo_ore</code>. Il default
+        è il 50% dell'intervallo nominale (es. 4h se l'intervallo è 8h).
+        L'utente non può impostare un recupero che riduca l'intervallo
+        sotto questo valore.
+      </p>
+
+      <h3>Quando si attiva il prompt</h3>
+      <p>
+        Il prompt di recupero appare solo se almeno una dose successiva
+        viene effettivamente spostata. Se l'assunzione tardiva non
+        impatta gli orari successivi (es. ritardo entro la finestra di
+        tolleranza), nessun prompt viene mostrato.
+      </p>
+
+      <h3>Limitazioni</h3>
+      <p>
+        Il recupero gap <strong>non è disponibile</strong> per le frequenze
+        estese (intervalli superiori a 24 ore). Vedi la sezione successiva
+        per il dettaglio.
+      </p>
+    </section>
+
+    <section id="frequenza-estesa">
+      <h2>5. Frequenze estese</h2>
+      <p>
+        PharmaTimer supporta anche terapie con intervalli superiori a 24
+        ore — tipicamente trattamenti settimanali (es. metotrexato, 168h)
+        o multi-giornalieri (48h, 72h ecc.).
+      </p>
+
+      <h3>Come configurarle</h3>
+      <p>
+        Nel form di aggiunta farmaco, scegli tipo frequenza
+        <em>intervallo</em> e imposta la coppia <strong>giorni + ore</strong>
+        in modo che la somma sia maggiore di 24h. Esempi:
+      </p>
+      <ul>
+        <li><strong>Settimanale</strong> (es. metotrexato): 7 giorni e 0 ore.</li>
+        <li><strong>Ogni 48 ore:</strong> 2 giorni e 0 ore.</li>
+        <li><strong>Ogni 72 ore:</strong> 3 giorni e 0 ore.</li>
+        <li><strong>Ogni 36 ore:</strong> 1 giorno e 12 ore.</li>
+      </ul>
+
+      <h3>Comportamento specifico</h3>
+      <ul>
+        <li><strong>Data inizio = àncora.</strong> Per le frequenze estese, la data di inizio è anche la data della prima dose; le successive cadono a multipli esatti dell'intervallo. Esempio: data inizio martedì 5 maggio + intervallo 7 giorni → dosi martedì 5, 12, 19, 26 maggio.</li>
+        <li><strong>Una dose al giorno.</strong> Il numero di dosi/die è forzato a 1: la combinazione "più dosi/die con intervallo plurigiornaliero" non è semanticamente coerente.</li>
+        <li><strong>Recupero gap disabilitato.</strong> Per gli intervalli plurigiornalieri il recupero di alcuni minuti è clinicamente irrilevante (circa lo 0,2% per un intervallo di 168h) e visivamente confondente; è quindi disattivato.</li>
+        <li><strong>Empty state.</strong> Nei giorni in cui nessuna dose ricade (es. mercoledì e giovedì se la dose è settimanale al martedì), la schermata Oggi mostra "Nessuna assunzione programmata" insieme alla data della prossima dose.</li>
+      </ul>
+    </section>
+
+    <section id="storico-assunzioni">
+      <h2>6. Storico assunzioni</h2>
+      <p>
+        La <strong>scheda Storico</strong> mostra tutte le assunzioni
+        registrate, ordinate dalla più recente. Per ogni dose vedi data,
+        nome del farmaco, ora prevista, ora effettiva e stato finale
+        (presa, saltata, sospesa, ricalcolata).
+      </p>
+
+      <h3>Filtri disponibili</h3>
+      <ul>
+        <li><strong>Intervallo date</strong> — scegli "dal" e "al" per
+          limitare l'elenco a un periodo specifico (es. ultima settimana,
+          mese in corso).</li>
+        <li><strong>Farmaco</strong> — seleziona un singolo farmaco per
+          isolare la sua cronologia, oppure "Tutti" per la vista
+          complessiva.</li>
+      </ul>
+
+      <p>
+        La vista è in sola lettura: serve per consultare e controllare le
+        assunzioni passate, non per modificarle. Le correzioni
+        retroattive (segnare come saltata, sospesa, modifica orario) si
+        fanno dalla scheda Oggi nel giorno corrispondente.
+      </p>
+    </section>
+
+    <section id="esporta-dati">
+      <h2>7. Esporta dati</h2>
+      <p>
+        Dalla scheda Storico puoi <strong>esportare i dati</strong>
+        visualizzati con il pulsante <strong>"Esporta"</strong>. Il file
+        scaricato contiene esattamente le righe che stai vedendo: se hai
+        attivato filtri (intervallo date o farmaco), l'export rispetta i
+        filtri attivi.
+      </p>
+
+      <h3>Formato del file</h3>
+      <ul>
+        <li><strong>CSV</strong> con separatore <code>;</code>
+          (punto e virgola), compatibile direttamente con Excel italiano
+          senza wizard di importazione.</li>
+        <li>Codifica <strong>UTF-8 con BOM</strong>, per preservare
+          accenti e caratteri speciali nei nomi farmaco e nelle note.</li>
+        <li>Una riga per ogni dose, con colonne:
+          data, farmaco, dose, ora prevista, ora effettiva, delta minuti,
+          stato, note.</li>
+      </ul>
+
+      <h3>Quando usarlo</h3>
+      <ul>
+        <li>Backup periodico della cronologia prima di cancellare o
+          reinstallare l'app.</li>
+        <li>Condivisione dei dati di aderenza terapeutica con il medico
+          (apri il file in Excel, stampa o invia in allegato).</li>
+        <li>Analisi personale dell'aderenza in un intervallo (es. ultimo
+          mese, ultimo trimestre).</li>
+      </ul>
+
+      <p>
+        L'importazione di un file CSV nel database dell'app
+        <strong>non è disponibile</strong> in questa versione: l'export
+        serve come archivio leggibile e portabile, non come canale di
+        backup-and-restore.
+      </p>
+    </section>
+
+    <section id="privacy">
+      <h2>8. Privacy e dati locali</h2>
+      <p>
+        PharmaTimer è progettata per la massima privacy: tutti i dati di
+        terapia, profili e cronologia delle assunzioni risiedono
+        <strong>esclusivamente sul tuo dispositivo</strong>, in un database
+        locale del browser (IndexedDB).
+      </p>
+      <ul>
+        <li>Nessun account utente, nessuna registrazione.</li>
+        <li>Nessun invio di dati a server esterni.</li>
+        <li>Nessun tracking analitico né pubblicitario.</li>
+        <li>Nessuna sincronizzazione cloud.</li>
+      </ul>
+
+      <h3>Cancellare i dati</h3>
+      <p>
+        Per azzerare completamente i dati dell'app, vai alla
+        <strong>scheda Impostazioni, sezione Dati</strong> e premi
+        <strong>"Ricomincia da capo"</strong>. L'azione cancella farmaci,
+        profili personalizzati e cronologia delle assunzioni; non può
+        essere annullata. L'app si riavvia in modalità onboarding.
+      </p>
+
+      <h3>Backup e portabilità</h3>
+      <p>
+        Poiché i dati risiedono nel browser, la disinstallazione dell'app
+        o la cancellazione dei dati del sito comportano la perdita
+        irreversibile della cronologia. Per ridurre il rischio, esporta
+        periodicamente la cronologia in formato CSV dalla scheda Storico
+        (vedi sezione 7). L'importazione di un file CSV nel database
+        dell'app non è invece disponibile in questa versione.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    <p>PharmaTimer · <em>by timegates</em></p>
+    <p><a href="./">Torna all'app</a></p>
+  </footer>
+</body>
+</html>
