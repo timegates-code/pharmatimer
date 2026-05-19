@@ -4739,6 +4739,132 @@ Esegui il prompt al §11.D del Changelog (Sessione Fase 3 Step 1 esecutiva — b
 
 **Pattern operativi confermati per Step 1 esecutiva.** Pattern §22.33-§22.35 (CP impl + commit unico finale + bash installer Mac-side + cleanup `.bak.*` + Changelog delivery con bump versione). Bash zsh-safe (echo single-quoted, no `#`, no apostrofi italiani).
 
+### 11.D-rev Prompt Sessione F3-S0 analisi-first revisione Fase 3 con setup Mini headless + SSH tunnel + Web Push (post-v3.1.0, scope esteso vs par.11.D originale)
+
+**Scope alto livello.** Sessione analisi-first dedicata di **revisione** par.11.C/par.11.D pre-frozen alla luce del setup operativo nuovo emerso post-rilascio v3.1.0 (par.22.74 milestone CHIUSA). Output: 12 Q ratificate + 5 sub-AMB F3-S0.A÷E + 8 AMB-F3.A÷H riviste con delta vs par.11.C + prompt par.11.D-S1 pre-frozen per F3-S1 esecutiva scaffolding backend Mini-side + calibrazione totale sessioni F3-S2÷F3-S9 con Web Push incluso. **Zero codice scritto** (regola critica #1).
+
+**Modalità.** Q&A iterativa con default raccomandati blanket "decidi tu" applicabile pattern §11.C/§22.42. Token attesi 15-25K (+50% vs §11.C originale per scope esteso). Wall-clock 1.5-2.5h.
+
+**One-liner apertura:**
+
+```
+Esegui il prompt al par.11.D-rev del Changelog.
+```
+
+#### Pre-letture obbligatorie
+
+1. **par.11.C integrale** (analisi-first Fase 3 originale CLOSED con 8 AMB-F3.A÷H ratificate + 9 Q ratificate)
+2. **par.11.D integrale** (scope CP planning Step 1 pre-frozen originale, MariaDB + Studio + Docker)
+3. **par.22.36 closure Fase 2 v2.8.0** (anomalia install MariaDB→MySQL 9.6 sul Studio, DBs `pharmatimer_dev`/`pharmatimer_test` residui, lesson learned cleanup CP0-α-bis)
+4. **par.22.74 closing v3.1.0** (stato corrente PWA standalone Dexie + 504/504 test + bundle live `index-BUC2ky9Z.js`)
+5. **Spec sez. 8 + sez. 9** (stack tecnologico dichiarato MariaDB 10.x/11.x + 14 endpoint REST attesi)
+
+#### Setup ratificato (vincoli operativi pre-Sessione, NON sub-AMB)
+
+| Asse | Valore ratificato | Note |
+|---|---|---|
+| **MySQL prod** | Mac M4 Mini, già installato e configurato in produzione, sempre acceso 24/7 | Versione esatta TBD CP0 F3-S0 via `mysql --version` over SSH |
+| **API server prod** | Mini (FastAPI gira sul Mini) | Studio resta dev di backup |
+| **Dev workflow** | Studio → Mini via SSH (Mini headless, no monitor/tastiera) | App "TimeGates StockFusion SQL" gestisce tunnel persistente Studio:3307 → Mini:3306 |
+| **Frontend** | gh-pages invariato (smartphone-friendly invariato) | Edit locale Studio o Mini-via-SSH (Q1 da ratificare) |
+| **Scope notifiche** | Web Push backend-driven INCLUSO (no fallback foreground-only) | Riapre AMB-9.E Wave B + Fase 3 estesa post-Step 11 originale |
+
+#### Q1-Q12 candidate (default raccomandato in **grassetto**, ratifica blanket "decidi tu" applicabile)
+
+| Q | Tema | Opzioni candidate | Default raccomandato |
+|---|---|---|---|
+| **Q1** | Workflow dev edit Mini headless | (A) VS Code Remote-SSH Mini / (B) Edit locale Studio + git pull Mini / (C) rsync push Studio → Mini | **(A)** standard de-facto, single working tree, indicizzazione + debug coerente lato Mini |
+| **Q2** | DB engine reale prod | (A) MySQL 8.0+ / (B) MySQL 9.x / (C) downgrade MariaDB | **TBD CP0** `mysql --version` Mini via SSH; nessuna preferenza, A o B compatibili |
+| **Q3** | Adattamento spec MariaDB → MySQL | (A) doc-only deviazione s.6.NN inline F3-S1 / (B) riversamento spec v1.4 separato | **(A)** immediato, riversamento differito F3-S7 closing milestone |
+| **Q4** | Repo layout backend | (A) `~/Sviluppo/pharmatimer/backend/` Mini come repo separato / (B) sub-folder monorepo esistente + branch dedicato `fase-3-backend` / (C) repo monorepo unico Studio + sync Mini | **(B)** sub-folder monorepo, branch `fase-3-backend` da `main@<sha-post-par.22.74>`, conserva history continua frontend+backend, push origin GitHub include backend code |
+| **Q5** | Network prod smartphone→Mini | (A) Tailscale magic-DNS (riapertura AMB-F3.E=A originale) / (B) IP pubblico router + port-forward + dyndns / (C) Cloudflare Tunnel / (D) ngrok paid | **(A)** coerente single-user, no DNS costs, no router config, free tier sufficient, già usato in spec sez. 11.5 contesto multi-utente |
+| **Q6** | CORS prod | (A) restrictive Tailscale FQDN + `https://timegates-code.github.io` origin / (B) permissive `*` LAN-only | **(A)** strict, dev permissive `localhost:5173` invariato |
+| **Q7** | Auth API | (A) nessuna (Tailscale trust-mesh) / (B) JWT minimal single-user / (C) shared secret header | **(A)** coerente single-user; eventuale upgrade JWT in Fase 4 multi-utente familiare |
+| **Q8** | Container vs nativo Mini | (A) docker-compose (FastAPI + scheduler) / (B) launchd service + native Python venv / (C) PM2 + native | **(A)** reproducibility + healthcheck + restart automation + isolamento; (B) accettabile se preferenza utente per zero-docker-overhead Mini M4 |
+| **Q9** | Web Push scheduler | (A) APScheduler intra-FastAPI process / (B) cron + python script standalone / (C) Celery + Redis broker | **(A)** zero dipendenze extra, single-process, sufficiente per single-user load |
+| **Q10** | VAPID key generation | (A) `pywebpush` CLI `pywebpush --gen-keys` in F3-S8 CP0 / (B) `openssl ecparam` manuale | **(A)** standardizzato, output ready-to-use Pydantic settings |
+| **Q11** | Backup automation MySQL | (A) cron `mysqldump` Mini → local file + retention 7gg / (B) bind-mount external disk + script / (C) cloud backup S3/B2 | **(A)** minimal Mini-local, sufficiente single-user; (B/C) eventuale upgrade Fase 4 |
+| **Q12** | Migration Dexie → MySQL | (A) one-shot export JSON da PWA via vista Esporta + script Python import / (B) PWA boot Fase 3 invia stato corrente / (C) skip migration, parti DB vuoto Roberto rifa onboarding | **(C)** raccomandato: Roberto non ha ancora dati reali in DB Dexie v3.1.0 (PWA appena installata), partenza DB vuoto evita complessità migration zero-valore |
+
+#### Sub-AMB F3-S0.A÷E (workflow operativi nuovi non coperti par.11.C originale)
+
+| Sub-AMB | Tema | Risoluzione attesa |
+|---|---|---|
+| **F3-S0.A** | Workflow file edit dev Mini headless | Risolve Q1, raccomandato (A) VS Code Remote-SSH |
+| **F3-S0.B** | Branch strategy Studio↔Mini single source-of-truth | Risolve Q4, raccomandato (B) sub-folder monorepo branch dedicato |
+| **F3-S0.C** | Smoke testing CP browser execution location | Decisione: pytest gira sul Mini via SSH (single source-of-truth code), CP browser frontend gira sul Studio Chrome dev server (vite + ApiRepository via SSH tunnel Studio:3307 → Mini:3306 MySQL + Studio:8000 → Mini:8000 FastAPI). 2 tunnel SSH paralleli necessari. |
+| **F3-S0.D** | Backup automation MySQL invariante | Risolve Q11, raccomandato (A) cron mysqldump + retention 7gg |
+| **F3-S0.E** | Network prod path-decision con deferral a F3-S6 | Risolve Q5, raccomandato (A) Tailscale; setup effettivo a F3-S6 (no anticipare a F3-S1 dato che dev usa SSH tunnel) |
+
+#### AMB-F3.A÷H riviste vs par.11.C originale
+
+| AMB | par.11.C ratificato | par.11.D-rev delta |
+|---|---|---|
+| **F3.A** Stack backend FastAPI layout | (B) modulare minimal `pharmatimer_api/{routers,services,repository,models}` | **Invariato** |
+| **F3.B** Auth | (A) nessuna Tailscale trust-mesh | **Invariato** ratificato Q7=(A) |
+| **F3.C** Migration dati Dexie → MariaDB | (A) one-shot Mac-side export JSON + Python script | **Sostituito** Q12=(C) skip migration DB vuoto, eliminazione F3-S4 dal count se ratificato in F3-S0 |
+| **F3.D** ApiRepository swap strategy | (A) feature-flag runtime dual-mode 1 settimana | **Invariato** |
+| **F3.E** Networking | (A) Tailscale magic-DNS | **Invariato** ratificato Q5=(A) |
+| **F3.F** Deploy Mac Mini | (A) docker-compose | **Invariato** ratificato Q8=(A), Mini sostituisce Studio originale |
+| **F3.G** Sync conflict resolution | (C) server-authoritative no client offline writes | **Invariato** single-user, no conflict |
+| **F3.H** Vista Log + Vista Export scope Fase 3 | (B) split: Log Fase 3, Export Fase 4 | **Obsoleto**: Log + Export GIÀ implementati v3.1.0 Sessione N+2/N+3 (par.11.U/V), riassorbiti standalone Dexie. Out-of-scope Fase 3, mantenuti operativi su `LocalRepository` o portati su `ApiRepository` in F3-S5 senza nuovo lavoro UI |
+
+#### Calibrazione preliminare sessioni F3-S0÷F3-S9 (rivedibile in apertura F3-S0)
+
+| Sessione | Scope | Tipo | Note vs par.11.C/D originale |
+|---|---|---|---|
+| **F3-S0** | Questa sessione: revisione AMB + Q12 + prompt F3-S1 pre-frozen | Analisi-first | NEW |
+| **F3-S1** | Scaffolding Mini (project layout + schema MySQL + seed + 2 endpoint smoke + pytest setup + SSH tunnel doc + CP0 audit MySQL version Mini) | Esecutiva | invariato par.11.D, +adattamento MySQL intra-CP1 |
+| **F3-S2** | CRUD farmaci + orari + profili (10-12 endpoint, Pydantic models, repository SQL diretto) | Esecutiva ×2-3 | invariato |
+| **F3-S3-pre** | Analisi-first intermedia: AMB transazioni atomiche `setProfiloAttivoConCleanup` + edge case recalc lato server (8 sub-AMB candidate) | Analisi-first | NEW pattern par.22.42 split safety-first preventivo |
+| **F3-S3** | Endpoint `GET /api/oggi` + `POST /api/assunzione` + porting `planBuilder.js` + `recalc.js` JS → Python | Esecutiva ×2 | invariato |
+| **F3-S5-pre** | Analisi-first intermedia: ApiRepository swap strategy con SSH tunnel dev + feature-flag runtime + fallback strategy + error mapping vocabulary | Analisi-first | NEW |
+| **F3-S5** | `ApiRepository` classe parallela, feature-flag `VITE_USE_API_REPO`, dual-mode safety, integration test end-to-end | Esecutiva ×2 | invariato |
+| **F3-S6** | Deploy prod + networking: docker-compose Mini, Tailscale setup, CORS prod restrictive, healthcheck Mini, backup automation MySQL cron mysqldump | Esecutiva ×2 | +1 vs baseline per networking prod ripensato + Mini SPOF mitigation |
+| **F3-S7** | Closing v3.2.0: cutover feature-flag, build PWA + redeploy gh-pages, tag, Changelog Fase 3 closing, smoke production 5/5 end-to-end | Esecutiva | invariato |
+| **F3-S8-pre** | Analisi-first Web Push: VAPID keys, push subscription endpoint, SW push handler, delivery scheduler design, iOS 16.4+ vs Android compatibility | Analisi-first | NEW post-baseline par.11.D |
+| **F3-S8** | Web Push impl: backend (VAPID + subscription + scheduler APScheduler) + frontend (SW push handler + permission flow) | Esecutiva ×2 | NEW scope core push |
+| **F3-S9** | Web Push smoke + Closing v3.3.0: test iOS app chiusa + Android app chiusa + Mac app chiusa + tag finale + Changelog | Esecutiva | NEW smoke + closing |
+
+**Totale stima par.11.D-rev:** **15-16 sessioni** (11-12 esecutive + 4 analisi-first), wall-clock **25-45 ore** distribuibili **3-4 mesi** a 1-2 sessioni/settimana, token cumulativi **700K-1.1M**.
+
+**Variabile riduttrice principale:** Q12=(C) skip migration elimina F3-S4 = **-1 sessione** vs par.11.C/D = **14-15 sessioni** effettive.
+
+#### Decisioni in-session candidate F3-S0
+
+1. **Spin-off `PharmaTimer_Changelog_Fase3.md`** vs continuazione `PharmaTimer_Changelog_Fase2.md`: decisione a CP closing F3-S1 (pattern par.11.D originale invariato)
+2. **Backend versioning** (`pyproject.toml` 0.1.0 separato vs unificato `package.json` v3.2.0): decisione a CP closing F3-S1
+3. **Tag F3-S1** (skip vs `v3.2.0-alpha.1` vs altro): decisione a CP closing F3-S1
+4. **Bump v3.1.0 → v3.2.0** semver minor (nuova fonte dati ApiRepository) vs v4.0.0 major (breaking persistence layer): decisione a F3-S7 closing milestone
+
+#### Pattern operativi confermati F3-S0÷F3-S9
+
+- Pattern §22.33-§22.35 (CP impl + commit unico finale + bash installer + cleanup `.bak.*` + Changelog delivery + bump)
+- Bash zsh-safe (echo single-quoted, no `#`, no apostrofi italiani) invariato par.11.D
+- Pattern par.22.55 split safety-first applicabile a Sessioni esecutive >40K token preventivo
+- Pattern par.6.118 pre-code scenario validation 2-3 scenari concreti per CP esecutiva
+- Pattern par.22.58/par.22.67 patcher Python content-based idempotente con assertion uniqueness/pre-post
+- AMB-11.B.7 ratifica: `package.json` invariato durante sessioni analisi-first, bump effettivo a CP closing esecutiva
+
+#### Sessione successiva post-F3-S0
+
+**F3-S1 esecutiva scaffolding backend Mini**, one-liner pre-frozen output F3-S0:
+
+```
+Esegui il prompt al par.11.D-S1 del Changelog.
+```
+
+#### Riferimenti par.11.D-rev
+
+- **par.11.C** (analisi-first Fase 3 originale, 8 AMB-F3.A÷H + 9 Q ratificate): base di partenza per revisione
+- **par.11.D** (Step 1 esecutiva pre-frozen originale): replaced da par.11.D-S1 generato in apertura F3-S0
+- **par.22.36** (closure Fase 2 v2.8.0 + anomalia MariaDB→MySQL Studio): lesson learned MySQL compatibility
+- **par.22.74** (closing v3.1.0 milestone): stato corrente baseline pre-Fase 3
+- **Spec sez. 8 + sez. 9** (stack + endpoint API attesi): autoritativo per scope CRUD F3-S2
+- **AMB-9.E par.22.20** (Wave B notifiche foreground-only): scope esteso Web Push backend-driven riapre la decisione originale
+
+---
+
 ## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3 + 8-pre + 8a + 8b + 8c-parz + 8c-2 + 9-A + 9-B + 9-D + 10-A + 10-B + 10-C + 10-C-fix + 11-A CP1a + 11-A CP1b + 11-B
 
 | File | Step | Note |
