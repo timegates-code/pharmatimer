@@ -15626,6 +15626,121 @@ Aperture opportunistiche disponibili (nessuna pre-frozen, sessione fresca dedica
 
 ---
 
+### 22.75 Stato post-Sessione consolidamento par.11.D-rev v3 (CP0÷CP4-bis doc-only KB-mirror Changelog: 6 op anchor-based + patcher Python idempotente + 18 assertions + dry-run sandbox bit-perfect vs Mac-side exec + emit par.22.75 split post-49bb026 drift commit-msg)
+<!-- par.22.75 emit closing -->
+
+**Data:** 20 maggio 2026.
+
+**Modalita:** Sessione consolidamento doc-only KB-mirror Changelog. 4 CP esecutivi (CP0 baseline empirico + CP1 disegno 6 replacement payloads + CP2 patcher Python idempotente content-based + CP3 esecuzione Mac-side) + CP4 commit cumulativo `49bb026` propagato origin (drift commit-msg vs content) + CP4-bis emit par.22.75 split rimedio. Pattern par.22.74 / par.22.58 / par.22.67 replicato esatto. Token spesi ~16K (sopra preventivo 12-18K par.11.D-rev consolidamento, +2K per drift recovery CP4-bis). Wall-clock ~70 min.
+
+**Esito:** OK 4/4 CP verdi + dry-run sandbox bit-perfect vs Mac-side exec (SHA-256 input/output identici, line count delta -15 identico) + CP4-bis emit par.22.75 doc-only recupero drift commit-msg 49bb026 vs content (subject cita par.22.75 ma contenuto solo CP3 Op1-Op6). **par.11.D-rev v3 CONSOLIDATA e PROPAGATA origin** via commit `49bb026`: Q13-Q17 ratificate come blocco strutturato dedicato (NEW sotto-sezione), Q-IMPORT.1-4 + Q-SAFETY.1 + Q-SYNC come sotto-sezione "Import/Export workflow server-side ratificato" (NEW), tabella Calibrazione sessioni rivista 15-16 -> 19-21 multi-tenant + Import/Export con F3-S4 caregiver + F3-S4-bis import dedicata, AMB-F3.H riga estesa "Obsoleto + esteso multi-tenant" con nota Q-IMPORT chiude scope ex-Fase 3, UX-N28 elevato a entry par.11.D-rev v3 sezione "Findings carry-forward F3-S4/S5", sezione "Ratifiche conversazionali post-d8c44c9" (59 righe transitorie) RIMOSSA. par.11.D-rev pronta per `Esegui il prompt al par.11.D-rev del Changelog` come apertura F3-S0 esecutiva (post-buy-in sorella+cognato).
+
+#### Scope consegnato Sessione consolidamento
+
+**CP0 baseline empirico verde 7/7 + 2 anomalie anchor risolte:** branch `main` HEAD `7ca86a8` allineato origin/main, working tree clean, file Changelog 15929 righe / 1567424 byte, mappatura empirica 6 punti modifica + range 4742-4924 par.11.D-rev (183 righe corpo) + range 4866-4924 Ratifiche conversazionali da rimuovere (59 righe), 7 anchor empirici univoci individuati e verificati `count == 1`. **Anomalia A5** "Ratifiche conversazionali post-d8c44c9" count=3 tutte interne a sezione Op6 risolta usando header markdown `#### Ratifiche conversazionali post-d8c44c9` univoco. **Anomalia A4** "F3.H. Vista Log" count=0 (regex `.` wildcard space mismatch) risolta usando anchor letterale completo con `**F3.H**` esplicito.
+
+**CP1 disegno 6 replacement payloads:** Op1+Op2 INSERT Q13-Q17 ratificate + Q-IMPORT/SAFETY/SYNC block (~+40 righe), Op3 REPLACE tabella Calibrazione 15-16 -> 19-21 sessioni multi-tenant (~+4 righe net), Op4 REPLACE riga F3.H estesa multi-tenant (~0 righe net), Op5+Op6 fusi atomica REPLACE Ratifiche (59 righe) -> Findings carry-forward F3-S4/S5 UX-N28 (8 righe), marker HTML invisible idempotenza inserito subito dopo header par.11.D-rev. Ottimizzazione emersa: Op5+Op6 fusi in singola REPLACE atomica riduce assertions da 2 a 1 + atomicita maggiore (vs Op5 INSERT + Op6 DELETE separati).
+
+**CP2 patcher Python idempotente content-based 5 op + 18 assertions:** 7 pre-flight anchor `count == 1` + 11 post-conditions. Backup `.bak.consolidamento` pre-write. SHA-256 input/output report stdout. Re-run safe via SENTINEL early-exit (verificato empiricamente sandbox secondo run = NO-OP). Zero dipendenze esterne (stdlib only). Encoding UTF-8 esplicito gestione caratteri italiani + simboli `÷ → È à`. Dry-run sandbox `/home/claude/work/` verde first-try (SHA-256 input `eb972f3...003a` -> output `812788...2c98b`).
+
+**CP3 esecuzione Mac-side verde bit-perfect vs sandbox:** SHA-256 input/output identici sandbox dry-run, line count delta -15 identico, bytes delta -874 identici, 7 pre-flight + 11 post-conditions PASS first-try, backup `.bak.consolidamento` ignorato gitignore `*.bak.*` (par.22.74 esteso), 5 grep empirici verifica chirurgica post-patch tutti verdi.
+
+**CP4 commit + push DRIFT (rimedio CP4-bis applicato sub-AMB-CONS.B):** bash CP4 originale step1 `cp ~/Downloads/patcher_par22_75_closing.py` FAIL (file non consegnato da Claude in CP4 disegno fase Q&A ratifica), step2 `python3 patcher_par22_75_closing.py` FAIL (file mancante), step3 `grep -c '### 22.75' = 0` (par.22.75 NON inserito empiricamente), MA bash CP4 step5 add+commit proseguito senza abort-on-fail con commit-msg pre-disegnato CP4 assumendo par.22.75 inserito. Commit `49bb026` propagato origin/main con subject `par.22.75 closing sessione consolidamento par.11.D-rev v3 + 6 op anchor-based + Q13-Q17 + Q-IMPORT + UX-N28 + rimozione Ratifiche transitoria` ma contenuto SOLO modifiche Op1-Op6 patcher CP3 (delta +61 -76 = -15 righe coerenti con dry-run sandbox CP2). Drift commit-msg vs content propagato origin push `7ca86a8..49bb026`. Rimedio (A) Q1 ratificato in-session: emit par.22.75 in commit secondario doc-only post-49bb026 + lesson learned #5 abort-early formalizzata sub-AMB-CONS.B. Rimedio (B) rewrite history scartato per par.6.71/85 (deviazioni storiche immutabili post-push).
+
+**CP4-bis emit par.22.75 (questo commit):** patcher Python mini idempotente content-based `patcher_par22_75_closing.py` INSERT par.22.75 PRIMA di anchor `### 11.U Prompt Sessione N+2 esecutiva vista Log minima` con SENTINEL HTML invisible markdown rendering pattern par.11.D-rev v3 idempotenza early-exit. Bash CP4-bis zsh-safe con abort-early `[ -f <file> ] || exit 1` (lesson #5 applicata empiricamente). Commit doc-only secondario subject onesto `par.22.75 emit closing sessione consolidamento (split post-49bb026 drift commit-msg)`. Push fast-forward origin main `49bb026..<closing-commit-NEW2>`. KB upload manuale post-push.
+
+#### Test
+
+504/504 invariati su 62 files (zero delta vs baseline par.22.74). Nessun test NEW emesso (doc-only KB-mirror Changelog modificato, no codice runtime modificato). Allineato pattern par.22.74 / par.22.65 / par.22.63 / par.22.59 delta zero in sessioni doc-only / deploy follow-up.
+
+#### Tag git e push
+
+- **Tag git: NO** (AMB-11.B.7 rispettato: doc-only KB-mirror, no milestone tecnico). Tag `v3.1.0` propagato origin par.22.74 ultimo emesso, invariato.
+- **Bump package.json: NO** (AMB-11.B.7 rispettato: doc-only KB-mirror, no nuovo codice runtime, package `3.1.0` invariato).
+- **Push origin main:** **2 commit fast-forward sequenziali** (split CP4 drift recovery):
+  - Push #1 `7ca86a8..49bb026`: par.11.D-rev v3 consolidato (Op1-Op6 + SENTINEL CP3) propagato origin con commit-msg drift (subject cita par.22.75 ma contenuto solo CP3). Drift documentato sub-AMB-CONS.B, immutabile par.6.71/85.
+  - Push #2 `49bb026..<closing-commit-NEW2>`: par.22.75 emit closing doc-only secondario propagato origin con subject onesto.
+
+#### Deviazioni s.6.NN emesse Sessione consolidamento
+
+**ZERO deviazioni s.6.NN emesse.** Sessione doc-only KB-mirror Changelog modificato esclusivamente (Op1+Op2+Op3+Op4+Op5+Op6 + SENTINEL par.11.D-rev v3 + emit par.22.75 + SENTINEL par.22.75): nessuna modifica a file source / test / config / Spec / README / `guide.html` / `package.json`. Allineato pattern par.22.74 / par.22.65 / par.22.59 zero deviazioni in sessioni doc-only / deploy follow-up. Gap numerazione s.6.NN preservato principio par.6.71 / par.6.85 (ultimo emesso s.6.220 cumulativa par.22.74).
+
+#### Sub-AMB Sessione consolidamento (2 totali)
+
+| ID | Tema | Chiusura |
+|---|---|---|
+| Sub-AMB-CONS.A | Anchor empirico A5 "Ratifiche conversazionali post-d8c44c9" count=3 (tutte interne sezione Op6) + A4 "F3.H... Vista Log..." count=0 (regex `.` wildcard space mismatch) | Risolte CP0 in-session usando anchor markdown header `####` univoco per A5 e anchor letterale completo `**F3.H**` per A4. Pattern par.22.42 sub-AMB emergenti CP0 audit empirico. |
+| Sub-AMB-CONS.B | Drift commit-msg `49bb026` vs content (subject `par.22.75 closing ...` ma diff staged contiene SOLO Op1-Op6 CP3) propagato origin/main push #1 | Rimedio (A) Q1 ratificato in-session: emit par.22.75 in commit secondario doc-only CP4-bis post-49bb026 + lesson learned #5 abort-early formalizzata + subject secondario onesto `par.22.75 emit closing sessione consolidamento (split post-49bb026 drift commit-msg)`. Rimedio (B) rewrite history `git reset --soft HEAD~1 + amend + push --force` scartato per violazione par.6.71/85 (deviazioni storiche immutabili post-push) + rischio cloni divergenti (gh-pages locale, altri device Roberto). Drift commit-msg 49bb026 immutabile, documentato qui come known drift recovered. |
+
+#### Finding NEW carry-forward Sessione consolidamento
+
+**ZERO finding NEW emessi.** UX-N28 NON emesso come finding NEW Sessione consolidamento (era pre-esistente registrato dentro sezione "Ratifiche conversazionali post-d8c44c9" rimossa Op6 + ri-emesso in nuova sezione "Findings carry-forward F3-S4/S5" Op5 come `entry par.11.D-rev v3` consolidata). Findings registry cumulativo par.22.74 invariato (~17 + drift-doc-N27 cosmetic), UX-N28 elevato come entry par.11.D-rev v3 separata perche ha home naturale F3-S4 multi-tenant scope.
+
+#### Lesson learned Sessione consolidamento
+
+1. **SENTINEL HTML invisible markdown ideale per idempotenza patcher doc-only KB-mirror:** marker HTML comment inserito subito dopo header sezione target invisibile in markdown rendering KB-side / GitHub web UI, leggibile in raw text via `grep -F`. Pattern raccomandato per future sessioni consolidamento doc-only multi-operazione. Early-exit re-run produce NO-OP idempotente verificato empiricamente sandbox secondo run. **Lesson collaterale:** mai citare letteralmente la stringa SENTINEL all'interno di altri payload Changelog (interferisce con count assertions patcher che la gestisce, count inflato +N per ogni citazione testuale); sostituire con descrizione non-letterale tipo "marker HTML invisible" o "HTML comment idempotenza".
+
+2. **CP0 audit empirico anchor pre-flight obbligatorio:** anchor disegnate in CP1 SENZA verifica empirica `grep -c` count rischiano regex mismatch (lesson Sub-AMB-CONS.A.A4 con `.` wildcard space) o uniqueness assumption violata (lesson Sub-AMB-CONS.A.A5 count=3). Pattern par.6.118 pre-code scenario validation esteso a anchor-validation: ogni anchor empirico `grep -c` count verificato in CP0 baseline + grep esatto in patcher pre-flight assertion `count == 1`.
+
+3. **Pattern par.22.55 split safety-first preventivo + Op5+Op6 fused atomica:** ottimizzazione emersa CP1 (Op5 INSERT + Op6 DELETE separati fusi in REPLACE atomica singola). Riduce assertions da 2 a 1 + atomicita maggiore + idempotenza piu robusta. Pattern raccomandato future patcher quando INSERT/DELETE consecutivi su range adiacenti.
+
+4. **Sandbox dry-run bit-perfect vs Mac-side exec:** patcher Python deterministico content-based produce output bit-perfect identico tra sandbox `/home/claude/work/` Linux Ubuntu Python 3.13 e Mac Studio macOS Tahoe 26.0.1 Python 3.13. Allineato pattern par.22.58 / par.22.67. SHA-256 input/output identici verificano determinismo bit-perfect cross-platform Python. Lesson estesa: bash CP3 puo procedere blanket "decidi tu" se sandbox dry-run verde (rischio Mac-side exec failure trascurabile).
+
+5. **Bash CP step-1 dependency check obbligatorio (NEW, lesson empirica CP4 drift):** bash blocchi multi-step che dipendono da file esterni (`cp ~/Downloads/<file>`, `python3 <file>`) DEVONO abort early se step 1 file-existence-check fallisce. Pattern raccomandato: inserire `[ -f <file> ] || { echo "ERRORE file mancante: <file>"; exit 1; }` PRIMA di ogni `cp`/`python3`/altra op che richiede file pre-esistente. Lesson empirica par.22.75 CP4 drift recovery: bash CP4 originale step1 `cp` fallito `No such file or directory` + step2 `python3` fallito `[Errno 2]` + step3 `grep -c '### 22.75' = 0` (par.22.75 NON inserito) NON ha attivato abort, Roberto ha proseguito step5 `git add + commit` con commit-msg pre-disegnato CP4 assumendo par.22.75 inserito -> commit `49bb026` propagato origin con drift commit-msg vs content. Rimedio CP4-bis emit par.22.75 split post-49bb026 (rimedio A, par.6.71/85 rispettato). Pattern bash zsh-safe esteso: oltre echo single-quoted + no `#` + no apostrofi italiani, AGGIUNGERE abort-early file-existence-check per bash blocchi multi-step esecutivi (es. esecuzione patcher esterno o build pipeline).
+
+#### Stato git post-Sessione consolidamento (post-CP4-bis)
+
+- branch `main` HEAD `<closing-commit-NEW2>` (commit doc-only par.22.75 emit) **allineato origin/main** post-push #2
+- working tree **clean** (gitignore pattern `*.bak.*` par.22.74 attivo: backup `.bak.consolidamento` + `.bak.par2275` ignorati auto)
+- tag annotato `v3.1.0` sha tag-object `294c563` target `e10b971` invariato (propagato origin par.22.74)
+- tag latest invariati `v3.0.1-rc.4` ÷ `v3.0.0-alpha.1`
+- gh-pages SHA `0f93b63` invariato (no redeploy, doc-only KB-mirror)
+- package.json `3.1.0` invariato (AMB-11.B.7 rispettato)
+- src/components/config/ImpostazioniTab.jsx:484 runtime sync `PharmaTimer 3.1.0` invariato
+- **504/504** test invariati su 62 files
+- bundle PROD live `index-BUC2ky9Z.js` 437.76 kB / 135.83 kB gzipped invariato CDN
+- **2 commit emessi Sessione consolidamento**: `49bb026` (CP3 patcher Op1-Op6 + SENTINEL par.11.D-rev v3, drift commit-msg documentato sub-AMB-CONS.B) + `<closing-commit-NEW2>` (CP4-bis emit par.22.75 doc-only secondario, subject onesto)
+
+#### Pre-existing follow-up carry-forward par.22.74
+
+- ~17 findings registry cumulativo Fase 2 + drift-doc-N27 cosmetic carry-forward par.22.74 invariati (UX-N28 elevato come entry par.11.D-rev v3 separata, NON nuovo finding)
+- **UX-N28** elevato come entry par.11.D-rev v3 sezione "Findings carry-forward F3-S4/S5 (v3.1.x -> v3.2.0)", triage (B) assorbito F3-S4 refactor PWA role-based UI multi-tenant + ApiRepository swap F3-S5
+- par.6.120 `actions.presa()` simulated_now DEV: invariato (workaround override esplicito documentato, DEV-only)
+- Sub-AMB-G `addFarmaco` payload undefined: carry-forward v3.1.x opportunistic invariato
+- ~20-28 drift-doc cumulativi carry-forward par.22.74: batch documentato senza retro-correzione, audit puntuale opportunistico v3.1.x post-rilascio
+
+#### Pre-existing follow-up NEW Sessione consolidamento (2 totali)
+
+- **Precondizione strategica esterna sorella + cognato buy-in** (non Claude-decidibile, **BLOCCANTE apertura F3-S0 esecutiva**): 19-21 sessioni Claude + Mini sempre acceso + caregiver write Roberto sui loro dati medici richiedono buy-in esplicito da parte loro. Da chiarire fuori-Claude prima di lanciare F3-S0 esecutiva (one-liner `Esegui il prompt al par.11.D-rev del Changelog`). Stato esterno non riflesso in Changelog ne in git, gestione manuale Roberto-side.
+- **Drift commit-msg `49bb026` cosmetic-documented**: subject cita par.22.75 ma contenuto solo CP3 Op1-Op6. Recuperato CP4-bis emit par.22.75 split secondario. Drift immutabile post-push principio par.6.71/85. Sub-AMB-CONS.B chiusa as-is. Lesson #5 abort-early applicata empiricamente CP4-bis bash.
+
+#### Riferimenti par.22.75
+
+- **par.11.D-rev (consolidata v3)**: target sessione consolidamento + scope Fase 3 multi-tenant + Web Push + Import/Export ratificato 19-21 sessioni
+- **par.22.74**: closing milestone rilascio v3.1.0 + procedura deploy gh-pages orphan-init + gitignore `*.bak.*` esteso
+- **par.22.58 / par.22.67**: pattern patcher Python idempotente content-based + assertion `count == 1` pre/post replicato esatto
+- **par.22.55**: pattern split safety-first preventivo (CP0+CP1+CP2 disegno safety-first / CP3+CP4 esecuzione)
+- **par.6.118**: pre-code scenario validation esteso a anchor-validation empirica CP0 audit
+- **par.6.71 / par.6.85**: deviazioni storiche immutabili + gap numerazione s.6.NN preservato (zero s.6.NN nuove emesse Sessione consolidamento) + drift commit-msg 49bb026 immutabile post-push
+- **AMB-11.B.7**: no bump package.json + no tag git in sessioni doc-only / analisi-first (rispettato)
+- **par.22.42**: sub-AMB emergenti CP0 (Sub-AMB-CONS.A.A4 + A5 anchor empirico) + CP4 drift recovery (Sub-AMB-CONS.B)
+
+#### Sessione successiva
+
+**NESSUNA OBBLIGATORIA pre-frozen.** par.11.D-rev v3 consolidata pronta per `Esegui il prompt al par.11.D-rev del Changelog` come apertura **F3-S0 esecutiva**, MA condizionata a **precondizione strategica esterna sorella + cognato buy-in** (non Claude-decidibile, bloccante).
+
+Aperture opportunistiche disponibili pre-F3-S0:
+
+- **Patch v3.1.x opportunistic** su single finding registry promosso da "polish" a "bloccante uso pratico" (pattern par.22.49 / par.22.60 branching-decisione registry-driven, ~17 findings carry-forward + N27 cosmetic)
+- **Audit drift-doc batch ~28-30 cumulativi**: sessione dedicata cleanup doc-only, optional opportunistic v3.1.x
+- **Riapertura Fase 4 estensioni single-user** (parametri vitali, grafici aderenza, Apple Health): sessione di analisi-first dedicata per singola voce, no prompt pre-frozen disponibile
+
+Post-buy-in sorella + cognato risolto fuori-Claude: `Esegui il prompt al par.11.D-rev del Changelog` apre F3-S0 esecutiva (scope ratificato par.11.D-rev v3: 12 Q originali + 5 Q ratificate multi-utente + 5 sub-AMB F3-S0.A÷E + 8 AMB-F3.A÷H riviste + Decisione 5 build multi-PWA TBD + calibrazione 19-21 sessioni).
+
+---
+
+---
+
 ### 11.U Prompt Sessione N+2 esecutiva vista Log minima (s.6.215, Q-LOG.1-5 ratificati par.22.69)
 
 **One-liner apertura:** `Esegui il prompt al par.11.U del Changelog.`
