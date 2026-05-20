@@ -15918,6 +15918,116 @@ Post-buy-in utenti paziente N-1 risolto fuori-Claude: `Esegui il prompt al par.1
 
 ---
 
+### 22.77 Stato post-Sessione consolidamento dogfooding par.11.D-rev v3.2 + Q-DOG.1-3 (CP0÷CP4 doc-only KB-mirror Changelog: 3 op anchor-based + patcher Python idempotente + 14 assertions + audit residui PRE-write empirico lesson 6 par.22.76 self-applied verde 0/0/0)
+<!-- par.22.77 emit closing -->
+
+**Data:** 21 maggio 2026.
+
+**Modalita:** Sessione doc-only KB-mirror Changelog consolidamento strategia rilascio graduale dogfooding. 4 CP esecutivi (CP0 baseline empirico + CP1 disegno 3 replacement payloads + CP2 patcher Python idempotente content-based sandbox dry-run + CP3 esecuzione Mac-side) + CP4 closing (questa sezione). Pattern par.22.74 / par.22.75 / par.22.76 / par.22.58 / par.22.67 replicato esatto + lesson #1 / #5 / #6 par.22.75 + par.22.76 self-applied empiricamente preventivamente. Token spesi ~9K (sotto preventivo 10-15K, sessione lineare zero drift). Wall-clock ~30 min.
+
+**Esito:** OK 4/4 CP verdi + dry-run sandbox bit-perfect vs Mac-side exec (SHA-256 input/output identici, line count delta +33 identico, bytes delta +4821 identici) + lesson #6 audit residui PRE-write empirico self-applied verde 0/0/0 (zero sorella + zero cognato + zero "bloccante F3-S0" naked in par.11.D-rev v3.2 range). **par.11.D-rev v3.2 STRATEGIA DOGFOODING + Q-DOG.1-3 PROPAGATA origin** via commit `097372b`: 3 fasi sequenziali ratificate (Fase A dogfooding solo-owner 2-4 settimane post-deploy v3.2.0 + Fase B esposizione paziente A reale buy-in + Fase C eventuale gradualizzazione pazienti reali successivi) + Q-DOG.1 durata 2-4 settimane uso reale + Q-DOG.2 scope dati paziente A simulato profilo vuoto + 1-2 vitamine mock + Q-DOG.3 migrazione reset + onboarding from-scratch + riformulazione precondizione strategica esterna NON più bloccante F3-S0 fase A dogfooding (bloccante solo fasi B+C esposizione pazienti reali). Spec v1.4 KB-only **invariata** (Q-DOG.1-3 sono operational/strategic decisions, non architectural; schema DB + endpoint API + naming convention non toccati). **F3-S0 esecutiva SBLOCCATA per fase A dogfooding solo-owner**: `Esegui il prompt al par.11.D-rev del Changelog` apre F3-S0 senza precondizione esterna bloccante.
+
+#### Scope consegnato Sessione consolidamento dogfooding
+
+**CP0 baseline empirico verde 4/4 anchor + bit-perfect KB upload check:** branch `main` HEAD `ceec600` allineato origin/main post-CP4 sessione par.22.76, working tree clean, file Changelog 16173 righe SHA `dded206...7926a` bit-perfect KB upload verificato cross-platform (Mac-side empirico vs Claude `/mnt/project/`). Mappatura 4 anchor univoche `count == 1` empirico verificate (SENTINEL v3.1, Sub-AMB F3-S0 INSERT BEFORE, precondizione strategica REPLACE, F3-S1 scope REPLACE). par.22.76 immutable range 15773-15887 contiene 3 riferimenti precondizione bloccante legittimi storici par.6.71/85 (NON toccati). Zero sub-decisioni emergenti CP0 (struttura sezione Q-DOG separata dedicata default raccomandato applicato).
+
+**CP1 disegno 3 replacement payloads:** Op1 INSERT sotto-sezione NEW "Strategia rilascio graduale dogfooding (Q-DOG.1-3 ratificati 21/05/2026)" con 3 fasi sequenziali A/B/C + Sub-AMB Q-DOG.1-3 tabella ratifica + riformulazione precondizione (~+28 righe). Op2 REPLACE riga precondizione strategica esterna originale par.11.D-rev v3.1 con versione riformulata (NON più bloccante F3-S0 fase A, bloccante solo fasi B+C). Op3 REPLACE riga F3-S1 scope con estensione "+ setup paziente A simulato dogfooding Q-DOG.2 deferred F3-S4 esecutiva". SENTINEL v3.2 idempotenza HTML invisible markdown rendering pattern par.11.D-rev v3.1 / v3 ereditato.
+
+**CP2 patcher Python idempotente content-based sandbox first-try verde:** 4 pre-flight anchor `count == 1` + 10 post-conditions + **audit residui PRE-write empirico lesson #6 par.22.76 self-applied** (range delimitato par.11.D-rev v3.2 boundary inizio + fine, target 0 sorella + 0 cognato + 0 "bloccante F3-S0" naked verde 0/0/0 first-try). Backup `.bak.dogfooding` auto-ignored gitignore `*.bak.*`. Zero dipendenze esterne stdlib only. Re-run safe via SENTINEL early-exit (verificato empiricamente sandbox secondo run = NO-OP). Lesson #1 par.22.75 self-applied: zero citazioni letterali SENTINEL nei payload (verified empiricamente 0 false positive). Dry-run sandbox `/home/claude/work/` verde first-try (SHA-256 input `dded206...7926a` -> output `2e4df0bc...cbf9`).
+
+**CP3 esecuzione Mac-side verde bit-perfect vs sandbox:** SHA-256 input/output identici sandbox dry-run, line count delta +33 identico, bytes delta +4821 identici, 4 pre-flight + 10 post-conditions + 3 audit residui PRE-write PASS first-try, backup `.bak.dogfooding` ignorato gitignore `*.bak.*`, 4 grep delimited verifica chirurgica post-patch tutti verdi (SENTINEL v3.2=1, SENTINEL v3.1 preservato=1, Strategia rilascio graduale header=1, Q-DOG.1 ratification=1). git status post-patch: `M PharmaTimer_Changelog_Fase2.md` + `?? patcher_dogfooding_d_rev_v3_2.py` (no backup tracked grazie gitignore). Commit `097372b` push origin main fast-forward `ceec600..097372b` propagato origin (lesson #5 par.22.75 abort-early self-applied + lesson cosmetic par.22.76 grep delimitato self-applied = sessione lineare zero drift commit-msg vs content).
+
+**CP4 emit par.22.77 (questo commit):** patcher Python mini idempotente content-based `patcher_par22_77_closing.py` INSERT par.22.77 PRIMA di anchor `### 11.U Prompt Sessione N+2 esecutiva vista Log minima` con SENTINEL HTML invisible idempotenza early-exit. Bash CP4 zsh-safe con abort-early (lesson #5 par.22.75 self-applied). Commit doc-only secondario subject onesto `par.22.77 closing sessione consolidamento dogfooding par.11.D-rev v3.2 + Q-DOG.1-3`. Push fast-forward origin main `097372b..<closing-commit-NEW>`. KB upload manuale singolo post-push (solo Changelog, Spec v1.4 invariata).
+
+#### Test
+
+504/504 invariati su 62 files (zero delta vs baseline par.22.74). Nessun test NEW emesso (doc-only KB-mirror Changelog modificato, no codice runtime modificato). Allineato pattern par.22.74 / par.22.75 / par.22.76 / par.22.65 / par.22.63 / par.22.59 delta zero in sessioni doc-only.
+
+#### Tag git e push
+
+- **Tag git: NO** (AMB-11.B.7 rispettato: doc-only, no milestone tecnico). Tag `v3.1.0` propagato origin par.22.74 ultimo emesso, invariato.
+- **Bump package.json: NO** (AMB-11.B.7 rispettato: doc-only, no nuovo codice runtime, package `3.1.0` invariato).
+- **Push origin main:** **2 commit fast-forward sequenziali** (pattern par.22.74/22.76 corretto):
+  - Push #1 `ceec600..097372b`: CP3 patcher Changelog par.11.D-rev v3.2 dogfooding + Q-DOG.1-3 + SENTINEL v3.2 (commit-msg onesto scope tecnico)
+  - Push #2 `097372b..<closing-commit-NEW>`: CP4 emit par.22.77 closing doc-only secondario (subject onesto scope chiusura)
+
+#### Deviazioni s.6.NN emesse Sessione consolidamento dogfooding
+
+**ZERO deviazioni s.6.NN emesse.** Sessione doc-only KB-mirror Changelog modificato esclusivamente (Op1+Op2+Op3 + SENTINEL v3.2 + emit par.22.77): nessuna modifica a file source / test / config / Spec / README / `guide.html` / `package.json`. Allineato pattern par.22.74 / par.22.75 / par.22.76 / par.22.65 / par.22.59 zero deviazioni in sessioni doc-only. Gap numerazione s.6.NN preservato principio par.6.71 / par.6.85 (ultimo emesso s.6.220 cumulativa par.22.74).
+
+#### Sub-AMB Sessione consolidamento dogfooding (0 totali)
+
+**ZERO sub-AMB emesse.** Sessione lineare zero drift: nessun drift inventario CP0 (4 anchor verificate empiricamente CP0 + univoche), nessun drift sandbox CP2 (patcher verde first-try, lesson #6 audit residui PRE-write self-applied preventivamente), nessun drift CP3 esecuzione Mac-side (bit-perfect vs sandbox + lesson #5 abort-early self-applied), nessun drift commit-msg CP3+CP4 (pattern par.22.74/22.76 corretto applicato). Indicatore qualita session pattern par.22.55 split safety-first preventivo + lesson self-application sufficiente: 5 lesson cumulative par.22.76 ereditate hanno coperto tutti i risk vector noti, zero nuovi pattern emergenti.
+
+#### Finding NEW carry-forward Sessione consolidamento dogfooding
+
+**ZERO finding NEW emessi.** Findings registry cumulativo par.22.74 invariato (~17 + drift-doc-N27 cosmetic + UX-N28 elevato entry par.11.D-rev v3.1+v3.2). Nessun nuovo finding emerso durante sessione doc-only.
+
+#### Lesson learned Sessione consolidamento dogfooding
+
+**ZERO lesson learned NEW emesse.** Lesson cumulative cap par.22.76 = 6 confermata sufficiente per sessioni doc-only KB-mirror Changelog. Self-application empirica lesson #1 + #5 + #6 verde first-try in CP2+CP3 (zero citazioni letterali SENTINEL nei payload + abort-early bash dependency check + audit residui PRE-write empirico delimitato range target). Pattern par.22.55 split safety-first + delivery via `present_files` + sandbox dry-run bit-perfect cross-platform consolidate come baseline doc-only futuro.
+
+Conferma empirica disciplina lesson self-application: sessione lineare zero drift = lesson learned funzionano preventivamente, non emergono nuovi pattern emergenti finche risk vector noti sono coperti.
+
+#### Stato git post-Sessione consolidamento dogfooding (post-CP4)
+
+- branch `main` HEAD `<closing-commit-NEW>` (commit doc-only par.22.77 emit) **allineato origin/main** post-push #2
+- working tree **clean** (gitignore pattern `*.bak.*` par.22.74 attivo: backup `.bak.dogfooding` + `.bak.par2277` ignorati auto)
+- tag annotato `v3.1.0` sha tag-object `294c563` target `e10b971` invariato (propagato origin par.22.74)
+- tag latest invariati `v3.0.1-rc.4` ÷ `v3.0.0-alpha.1`
+- gh-pages SHA `0f93b63` invariato (no redeploy, doc-only KB-mirror)
+- package.json `3.1.0` invariato (AMB-11.B.7 rispettato)
+- src/components/config/ImpostazioniTab.jsx:484 runtime sync `PharmaTimer 3.1.0` invariato
+- **504/504** test invariati su 62 files
+- bundle PROD live `index-BUC2ky9Z.js` 437.76 kB / 135.83 kB gzipped invariato CDN
+- **2 commit emessi Sessione consolidamento dogfooding**: `097372b` (CP3 patcher Changelog par.11.D-rev v3.2 + SENTINEL v3.2 + Strategia rilascio graduale Q-DOG.1-3) + `<closing-commit-NEW>` (CP4 emit par.22.77 doc-only secondario, subject onesto scope chiusura)
+- **Spec v1.4 KB-only invariata** (Q-DOG.1-3 operational decisions non architectural, schema DB + endpoint API + naming convention non toccati)
+
+#### Pre-existing follow-up carry-forward par.22.74
+
+- ~17 findings registry cumulativo Fase 2 + drift-doc-N27 cosmetic carry-forward par.22.74 invariati
+- **UX-N28** entry par.11.D-rev v3.1/v3.2 sezione "Findings carry-forward F3-S4/S5 (v3.1.x -> v3.2.0)", triage (B) assorbito F3-S4 refactor PWA role-based UI multi-tenant + ApiRepository swap F3-S5 (testo aggiornato anonimato par.11.D-rev v3.1, invariato v3.2)
+- par.6.120 `actions.presa()` simulated_now DEV: invariato (workaround override esplicito documentato, DEV-only)
+- Sub-AMB-G `addFarmaco` payload undefined: carry-forward v3.1.x opportunistic invariato
+- ~20-28 drift-doc cumulativi carry-forward par.22.74: batch documentato senza retro-correzione, audit puntuale opportunistico v3.1.x post-rilascio
+
+#### Pre-existing follow-up NEW Sessione consolidamento dogfooding (1 totale, bloccante SOLO fasi B+C)
+
+- **Precondizione strategica esterna pazienti reali B+C** (non Claude-decidibile, **bloccante apertura fasi B+C esposizione pazienti reali post-fase A dogfooding verde, NON bloccante apertura F3-S0 esecutiva fase A dogfooding solo-owner**, riformulazione Q-DOG.1+2+3): 19-21 sessioni + Mini sempre acceso + caregiver write owner sui dati medici dei pazienti reali richiedono buy-in esplicito (5 punti documentati par.22.76 + Q-DOG.1 timing post-fase A verde). Da chiarire fuori-Claude post-fase A dogfooding verde, prima di onboarding paziente A reale (fase B) e paziente B reale (fase C). Stato esterno non riflesso in Changelog ne in git, gestione manuale owner caregiver-side.
+
+#### Riferimenti par.22.77
+
+- **par.11.D-rev v3.2** (consolidata + anonimato + N-utenti + **strategia dogfooding**): target sessione consolidamento + AMB-NAMING ratificato + Q-DOG.1-3 ratificati + scope Fase 3 multi-tenant + Web Push + Import/Export + dimensionamento target 6 utenti / 3 anni retention + 3 fasi sequenziali rilascio graduale
+- **Spec v1.4 multi-tenant N-utenti** (KB-only invariata): autoritativa schema DB + endpoint API + naming convention + dimensionamento + onboarding model (operational/strategic Q-DOG.1-3 non toccano)
+- **par.22.76**: closing sessione naming anonimo par.11.D-rev v3.1 + Spec v1.4 + lesson #6 NEW audit residui PRE-write self-applied empiricamente questa sessione (verde 0/0/0 first-try)
+- **par.22.75**: closing sessione consolidamento par.11.D-rev v3 + lesson #1 (citazione letterale SENTINEL) + lesson #5 (abort-early bash) entrambe self-applied empiricamente CP3+CP4 senza drift
+- **par.22.74**: closing milestone rilascio v3.1.0 + procedura deploy gh-pages orphan-init + gitignore `*.bak.*` esteso
+- **par.22.58 / par.22.67**: pattern patcher Python idempotente content-based + assertion `count == 1` pre/post replicato esatto
+- **par.22.55**: pattern split safety-first preventivo + convention asimmetrica Spec KB-only vs Changelog tracked git
+- **par.6.118**: pre-code scenario validation esteso a anchor-validation empirica CP0 audit + audit residui PRE-write empirico lesson #6
+- **par.6.71 / par.6.85**: deviazioni storiche immutabili + gap numerazione s.6.NN preservato (zero s.6.NN nuove emesse Sessione consolidamento dogfooding) + par.22.76 3 occorrenze precondizione bloccante legittime storiche immutabili (skip CP0)
+- **AMB-11.B.7**: no bump package.json + no tag git in sessioni doc-only / analisi-first (rispettato)
+- **par.22.42**: zero sub-AMB emergenti questa sessione (lesson self-application sufficiente, sessione lineare)
+
+#### Sessione successiva
+
+**F3-S0 esecutiva SBLOCCATA per fase A dogfooding solo-owner.** `Esegui il prompt al par.11.D-rev del Changelog` apre F3-S0 senza precondizione esterna bloccante (Q-DOG.1+2+3 ratificati par.11.D-rev v3.2).
+
+Scope F3-S0 esecutiva (invariato par.11.D-rev v3 / v3.1 / v3.2 ereditato): 12 Q originali single-user + 5 Q ratificate multi-utente (Q13-Q17) + AMB-NAMING livelli 1+2+3 + dimensionamento target 6 utenti / 3 anni retention + Q-DOG.1-3 dogfooding strategy + 5 sub-AMB F3-S0.A÷E + 8 AMB-F3.A÷H riviste + Decisione 5 build multi-PWA TBD + calibrazione 19-21 sessioni Fase 3 esecutiva.
+
+Token attesi F3-S0: 25-40K analisi-first dedicata, wall-clock 2-3.5h, output AMB+Q ratificate + prompt par.11.D-S1 pre-frozen per F3-S1 esecutiva scaffolding Mini. Pattern par.22.55 split safety-first applicabile se CP0 rileva densita eccessiva (storico par.11.D-rev v3 sessioni cumulative 3 split par.22.75+22.76+22.77 = lesson empirica analisi-first dense richiedono split, F3-S0 potrebbe seguire stessa traiettoria).
+
+Aperture opportunistiche disponibili in alternativa (NON necessarie pre-F3-S0, F3-S0 ora sbloccata):
+- **Patch v3.1.x opportunistic** su single finding registry promosso da "polish" a "bloccante uso pratico" (pattern par.22.49 / par.22.60 branching-decisione registry-driven, ~17 findings carry-forward + N27 cosmetic + UX-N28 carry-forward F3-S4/S5)
+- **Audit drift-doc batch ~28-30 cumulativi**: sessione dedicata cleanup doc-only, optional opportunistic v3.1.x
+- **Riapertura Fase 4 estensioni single-user residue** (parametri vitali, grafici aderenza, Apple Health): sessione di analisi-first dedicata per singola voce, no prompt pre-frozen disponibile
+
+Decisione owner caregiver-side: aprire F3-S0 esecutiva fase A dogfooding **ora** (one-liner `Esegui il prompt al par.11.D-rev del Changelog`) oppure pausa strategica + aperture opportunistiche pre-F3-S0.
+
+---
+
+---
+
 ### 11.U Prompt Sessione N+2 esecutiva vista Log minima (s.6.215, Q-LOG.1-5 ratificati par.22.69)
 
 **One-liner apertura:** `Esegui il prompt al par.11.U del Changelog.`
