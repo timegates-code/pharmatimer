@@ -4742,6 +4742,7 @@ Esegui il prompt al §11.D del Changelog (Sessione Fase 3 Step 1 esecutiva — b
 ### 11.D-rev Prompt Sessione F3-S0 analisi-first revisione Fase 3 con setup Mini headless + SSH tunnel + Web Push (post-v3.1.0, scope esteso vs par.11.D originale)
 <!-- par.11.D-rev v3 consolidato -->
 <!-- par.11.D-rev v3.1 naming anonimo -->
+<!-- par.11.D-rev v3.2 dogfooding -->
 
 **Scope alto livello.** Sessione analisi-first dedicata di **revisione** par.11.C/par.11.D pre-frozen alla luce del setup operativo nuovo emerso post-rilascio v3.1.0 (par.22.74 milestone CHIUSA). Output: 12 Q ratificate + 5 sub-AMB F3-S0.A÷E + 8 AMB-F3.A÷H riviste con delta vs par.11.C + prompt par.11.D-S1 pre-frozen per F3-S1 esecutiva scaffolding backend Mini-side + calibrazione totale sessioni F3-S2÷F3-S9 con Web Push incluso. **Zero codice scritto** (regola critica #1).
 
@@ -4822,7 +4823,7 @@ Workflow Import/Export server-side sostituisce migration Dexie->MySQL (Decisione
 
 **Decisione TBD residua F3-S0 esecutiva**: Decisione 5 strategia build multi-PWA — (5.A) 3 build separate `VITE_USER_TOKEN` injection deploy 3 URL distinti / (5.B) 1 build unica + onboarding chiede token al primo avvio salvato IndexedDB / (5.C) path runtime `/pharmatimer/u/<utente>/?t=token`. Decisione attesa F3-S0 in funzione preferenza Roberto su gestione deploy multipli vs onboarding utente.
 
-**Precondizione strategica esterna** (non Claude-decidibile, bloccante F3-S0): verifica allineamento utenti paziente N-1 (familiari, conoscenti, persone di cura). 19-21 sessioni + Mini sempre acceso + caregiver write owner sui dati medici dei pazienti richiedono buy-in esplicito. Da chiarire fuori-Claude prima di lanciare F3-S0 esecutiva.
+**Precondizione strategica esterna pazienti reali** (non Claude-decidibile, **NON più bloccante apertura F3-S0 esecutiva fase A dogfooding** Q-DOG.1, bloccante solo fasi B+C esposizione pazienti reali post-fase A): verifica allineamento utenti paziente N-1 reali (familiari, conoscenti, persone di cura) per fasi B+C. 19-21 sessioni + Mini sempre acceso + caregiver write owner sui dati medici dei pazienti reali richiedono buy-in esplicito (5 punti documentati par.22.76). Da chiarire fuori-Claude post-fase A dogfooding verde, prima di onboarding paziente A reale (vedi sotto-sezione `Strategia rilascio graduale dogfooding`).
 
 #### AMB-NAMING ratificato 20/05/2026 (anonimato runtime + N-utenti generico)
 
@@ -4852,6 +4853,38 @@ Architettura ora supporta **N utenti** (target dimensionamento 6, no hard limit 
 - **No self-signup**: zero registration UI accessibile da rete Tailscale privata (semplifica auth, riflette modello familiare-private, esclude spam/abuse da rete pubblica)
 - **Revoca utente**: deferred F3-S4 esecutiva (endpoint admin-only `DELETE /api/utenti/{id}` con cascade FK su dati paziente, audit log permanente)
 
+#### Strategia rilascio graduale dogfooding (Q-DOG.1-3 ratificati 21/05/2026)
+
+Strategia rilascio multi-tenant **3 fasi sequenziali** ratificata conversazione 21/05/2026 post-par.22.76 chiusura. Riformulazione precondizione strategica esterna: NON più bloccante apertura F3-S0 esecutiva (fase A dogfooding solo-owner si apre subito), bloccante solo fasi B+C esposizione pazienti reali.
+
+**Fase A — Dogfooding solo-owner** (durata 2-4 settimane uso reale post-deploy v3.2.0)
+- Owner caregiver = chi configura + chi usa app stesso device + chi simula paziente A su secondo profilo
+- Scope dati paziente A simulato: **profilo vuoto + 1-2 vitamine mock** (Q-DOG.2 ratificato): zero rischio doppio log terapia reale + validate CRUD multi-tenant + UI Q17 dropdown + caregiver write/read + workflow Import/Export Q-IMPORT.1-4
+- Scope owner: terapia farmacologica reale invariata sotto profilo owner (continuità d'uso)
+- Obiettivi fase A: bug discovery uso reale cross-utente quotidiano, tuning UX operativo, validazione caregiver flow F3-S4 + dropdown switcher Q17 + dispatch push cross-utente Q16, audit retention 3 anni mysqldump + dimensionamento dimensioni DB empirico
+
+**Fase B — Esposizione paziente A reale** (post-fase A verde, **bloccante buy-in conversazione esterna**)
+- Buy-in esplicito 5 punti documentati par.22.76 (storage Mini, write caregiver default, 24/7 SPOF, time investment 4-6 mesi, Tailscale setup)
+- Reset profilo paziente A simulato + onboarding from-scratch paziente reale (Q-DOG.3 ratificato): zero contaminazione log mock + setup paziente reale con conversazione onboarding personalizzata + audit `import_log` limpido
+- Patch v3.2.x opportunistic se emergono bug specifici esposizione paziente reale vs simulazione owner
+
+**Fase C — Esposizione paziente B reale** (eventuale gradualizzazione, **bloccante buy-in conversazione esterna separata**)
+- Buy-in esplicito 5 punti separati paziente B (consenso individuale, non assunzione automatica da paziente A)
+- Pattern paziente A replicato (Q-DOG.3 reset + onboarding from-scratch)
+- N-1 generalizzabile pazienti C, D, E... fino a target dimensionamento 6 utenti (Spec v1.4 sez 11.6.3)
+
+#### Sub-AMB Q-DOG.1-3 ratificati blanket "decidi tu" Roberto
+
+| ID | Tema | Ratifica |
+|---|---|---|
+| **Q-DOG.1** | Durata fase A dogfooding | **2-4 settimane uso reale** post-deploy v3.2.0 (range tipico per emergere bug rari uso quotidiano cross-utente; scarto fuori-bound se decisione owner anticipata o estesa). Fase B apertura non vincolata a calendario rigido, dipende da bug discovery + buy-in pazienti reali |
+| **Q-DOG.2** | Scope dati paziente A simulato | **Profilo vuoto + 1-2 vitamine mock** (es. Vitamina D 1000UI mattino + Magnesio 200mg sera, terapie cronicamente non critiche): zero rischio doppio log terapia reale owner + sufficiente per validare CRUD multi-tenant + UI Q17 dropdown switcher + caregiver write/read scope + workflow Import/Export end-to-end + dispatch push cross-utente Q16 opt-in. Terapia reale owner continua invariata sotto profilo owner |
+| **Q-DOG.3** | Migrazione paziente A simulato -> reale | **Reset profilo paziente A simulato + onboarding from-scratch paziente reale**: zero contaminazione log mock vitamine in `log_assunzioni` paziente reale + setup paziente reale con sua conversazione onboarding personalizzata (nome scelto, terapia inserita insieme, dimostrazione UI con paziente presente) + audit `import_log` limpido senza tracce migration intermedia. Endpoint admin-only `DELETE /api/utenti/{paziente_A_simulato_id}` con cascade FK su dati paziente simulato eseguito pre-onboarding paziente reale (deferred F3-S4 esecutiva implementazione, gia documentata Spec v1.4 sez 11.6.4) |
+
+#### Riformulazione precondizione strategica esterna (post-Q-DOG.1)
+
+**Precondizione strategica esterna pazienti reali B+C** (non Claude-decidibile, **bloccante apertura fase B+C esposizione pazienti reali, NON bloccante apertura F3-S0 esecutiva fase A dogfooding**): 19-21 sessioni + Mini sempre acceso + caregiver write owner sui dati medici dei pazienti reali richiedono buy-in esplicito da parte loro (5 punti documentati par.22.76). Da chiarire fuori-Claude post-fase A dogfooding verde, prima di onboarding paziente A reale (fase B) e paziente B reale (fase C). Stato esterno non riflesso in Changelog ne in git, gestione manuale owner caregiver-side.
+
 #### Sub-AMB F3-S0.A÷E (workflow operativi nuovi non coperti par.11.C originale)
 
 | Sub-AMB | Tema | Risoluzione attesa |
@@ -4880,7 +4913,7 @@ Architettura ora supporta **N utenti** (target dimensionamento 6, no hard limit 
 | Sessione | Scope | Tipo | Note multi-tenant + Import/Export |
 |---|---|---|---|
 | **F3-S0** | Questa sessione: revisione AMB + Q13-Q17 + Decisione 5 build multi-PWA + prompt F3-S1 pre-frozen | Analisi-first | Già allocata par.11.D-rev v3 |
-| **F3-S1** | Scaffolding Mini (project layout + schema MySQL multi-tenant `utenti`+`permessi`+`push_subscriptions` + seed 1 utente owner caregiver + onboarding runtime caregiver-invite per N-1 pazienti (no hardcode utenti F3-S1, scope dimensionamento target 6 vedi sez. 11.6 Spec v1.4) + 2 endpoint smoke + middleware `get_current_user` + pytest setup + SSH tunnel doc + CP0 audit MySQL version Mini) | Esecutiva | +schema 3 tabelle nuove + middleware auth header X-User-Token |
+| **F3-S1** | Scaffolding Mini (project layout + schema MySQL multi-tenant `utenti`+`permessi`+`push_subscriptions` + seed 1 utente owner caregiver + onboarding runtime caregiver-invite per N-1 pazienti (no hardcode utenti F3-S1, scope dimensionamento target 6 vedi sez. 11.6 Spec v1.4) + setup paziente A simulato dogfooding Q-DOG.2 (1-2 vitamine mock) deferred F3-S4 esecutiva post-CRUD multi-tenant + 2 endpoint smoke + middleware `get_current_user` + pytest setup + SSH tunnel doc + CP0 audit MySQL version Mini) | Esecutiva | +schema 3 tabelle nuove + middleware auth header X-User-Token + dogfooding fase A |
 | **F3-S2** | CRUD farmaci + orari + profili scoped `utente_id` (10-12 endpoint, Pydantic models con `utente_id` mandatory, repository SQL diretto con WHERE clause filter, permesso `read`/`write` validato caregiver) | Esecutiva ×2-3 | +permission check ogni endpoint |
 | **F3-S3-pre** | Analisi-first intermedia: AMB transazioni atomiche `setProfiloAttivoConCleanup` scoped utente + edge case recalc lato server multi-utente | Analisi-first | Pattern par.22.42 split safety-first preventivo |
 | **F3-S3** | Endpoint `GET /api/oggi` + `POST /api/assunzione` scoped utente + porting `planBuilder.js` + `recalc.js` JS -> Python con `utente_id` param | Esecutiva ×2 | +scoping algoritmi lato server |
