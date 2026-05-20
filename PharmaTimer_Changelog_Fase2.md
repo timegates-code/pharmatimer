@@ -15770,6 +15770,121 @@ Post-buy-in sorella + cognato risolto fuori-Claude: `Esegui il prompt al par.11.
 
 ---
 
+### 22.76 Stato post-Sessione naming anonimo par.11.D-rev v3.1 + Spec v1.4 multi-tenant N-utenti (CP0÷CP4 doc-only dual delivery: Changelog tracked git + Spec KB-only, 13 op Changelog anchor-based + 11 modifiche Spec + 32 assertions cumulative + drift recovery CP0 Op14 inventario incompleto + drift recovery CP2 Spec residuo meta)
+<!-- par.22.76 emit closing -->
+
+**Data:** 20 maggio 2026.
+
+**Modalita:** Sessione doc-only KB-mirror + KB-only naming anonimo retroattivo par.11.D-rev v3 -> v3.1 + Spec v1.3 -> v1.4 multi-tenant N-utenti. 4 CP esecutivi (CP0 baseline empirico inventario doppio target + CP1 disegno replacement payloads doppio target + CP2 patcher Changelog + generator Spec sandbox dual + CP3 esecuzione Mac-side Changelog) + CP4 closing (questa sezione). Pattern par.22.74 / par.22.75 / par.22.58 / par.22.67 replicato esatto. Token spesi ~28K (dentro preventivo 20-30K, +5K per drift recovery CP0+CP2). Wall-clock ~95 min.
+
+**Esito:** OK 4/4 CP verdi + dry-run sandbox bit-perfect vs Mac-side exec (SHA-256 input/output identici Changelog, line count delta +29 identico, bytes delta +3473 identici). **par.11.D-rev v3.1 ANONIMATO retroattivo + N-utenti generico PROPAGATA origin** via commit `4e0d573`: 13 righe etichette familiari (sorella/cognato) sostituite con placeholder semantici (owner caregiver, paziente A/B/N-1, `{nome_visualizzato}` runtime interpolation) + sotto-sezione NEW `AMB-NAMING ratificato 20/05/2026 (anonimato runtime + N-utenti generico)` con livelli 1+2+3 + scope N-utenti + dimensionamento target 6 utenti / 3 anni retention / ~1,6 GB storage Mini SSD + onboarding invite-only caregiver admin. **Spec v1.4 multi-tenant N-utenti CONSEGNATA KB-only** (Roberto drag-drop in KB Claude.ai post-CP4): 11 modifiche atomiche (header v1.3 -> v1.4 + Changelog v1.4 entry, sez 3.1/3.4/3.5/3.6 utente_id FK aggiunta su 4 tabelle esistenti, sez 3.9/3.10/3.11 NEW 3 tabelle utenti/permessi/push_subscriptions, sez 9 nota X-User-Token header mandatory + 7 endpoint NEW caregiver+import/export, sez 11 Fase 4 rifrasi 2 righe anonimato, sez 11.6 NEW Architettura multi-tenant Fase 3 con 5 sub-sezioni).
+
+#### Scope consegnato Sessione naming anonimo
+
+**CP0 baseline empirico verde inventario doppio target:** branch `main` HEAD `a717dbe` allineato origin/main post-CP4-bis sessione precedente par.22.75, working tree clean, file Changelog 16029 righe (post-`a717dbe`) + Spec v1.3 535 righe. Mappatura empirica 12 righe target par.11.D-rev v3 + 4 righe immutable par.22.75 (skip par.6.71/85) + 2 righe Spec target. Estensione grep word-boundary altre etichette familiari (fratello/madre/padre/figlio/figlia/nipote/nonno/nonna/zio/zia/genitore/coniuge/moglie/marito): 4 false positive solo "commit figlio di X" senso git, **zero etichette familiari residue** oltre sorella+cognato. Spec struttura sez 3 + sez 9 + sez 11 mappata baseline. 3 sub-decisioni CP0 emergenti ratificate blanket "decidi tu" Roberto (R1=α extension minimal-invasive Spec, R2=α signature only endpoint, R3=α nuova sez 11.6 dedicata).
+
+**CP1 disegno replacement payloads doppio target:** A) 13 op Changelog (12 single-line REPLACE Op1-Op12 + 1 INSERT Op13 sotto-sezione AMB-NAMING) + SENTINEL v3.1 idempotenza HTML invisible markdown rendering. B) 11 modifiche Spec (B1 header bump + Changelog v1.4 entry + B2-B5 utente_id FK 4 tabelle esistenti + B6-B8 3 tabelle NEW + B9 sez 9 nota auth + 7 endpoint NEW + B10 rifrasi 2 righe Fase 4 + B11 sez 11.6 NEW 5 sub-sezioni). Strategia delivery cambiata vs CP plan originale: Spec KB-only consegnata file completo via `present_files` (NO patcher Mac-side, NO git tracking), solo Changelog via patcher Python tracked git.
+
+**CP2 patcher Python idempotenti content-based dual + sandbox dry-run + drift recovery:** A) Patcher Changelog v3 finale (post-3 fix in-session): 15 pre-flight anchor `count == 1` + 17 post-conditions + audit residui empirico in par.11.D-rev v3.1 range (target 0 sorella + 0 cognato) + backup `.bak.naming` auto-ignored gitignore `*.bak.*`. B) Generator Spec v1.4 sandbox: 12 pre-flight anchor + 8 post-conditions specifiche verb-based + audit residui Spec totale (target 0). **Drift recovery CP0 Op14:** sandbox dry-run rilevato 2 residui non previsti CP0 (riga 4833 self-introdotta livello 1 citazione meta sorella/cognato/nipote/madre + riga 4888 mancata in inventario CP0 tabella Calibrazione F3-S4-bis "Esporta/Importa per: Sorella/Cognato"). Risolto in-session pattern par.22.75 sub-AMB-CONS.A drift recovery: Op14 NEW REPLACE riga 4888 + rifrasi REPL_OP13 livello 1 senza citazione letterale. **Drift recovery CP2 Spec residuo meta:** Changelog v1.4 entry "rimossa etichetta familiare 'sorella' come esempio multi-utente" risolto rifrasi anonimo "etichetta familiare specifica". Lesson par.22.75 lesson #1 confermata empiricamente per la seconda volta: zero citazioni letterali stringhe-target nei payload anche meta-istruzionali.
+
+**CP3 esecuzione Mac-side verde bit-perfect vs sandbox:** SHA-256 input/output identici sandbox dry-run, line count delta +29 identico, bytes delta +3473 identici, 15 pre-flight + 17 post-conditions PASS first-try, backup `.bak.naming` ignorato gitignore `*.bak.*`, audit residui empirico in par.11.D-rev v3.1 range = 0/0 verde, 5 grep verifica chirurgica post-patch tutti verdi (SENTINEL v3.1=1, SENTINEL v3 preservato=1, AMB-NAMING header=1, sorella/cognato Changelog totale 4/4 confinati par.22.75 immutable par.6.71/85). git status post-patch: `M PharmaTimer_Changelog_Fase2.md` + `?? patcher_naming_anonimo_d_rev_v3_1.py` (no backup tracked grazie gitignore). Commit `4e0d573` push origin main fast-forward `a717dbe..4e0d573` propagato origin.
+
+**CP4-bis emit par.22.76 (questo commit):** patcher Python mini idempotente content-based `patcher_par22_76_closing.py` INSERT par.22.76 PRIMA di anchor `### 11.U Prompt Sessione N+2 esecutiva vista Log minima` con SENTINEL HTML invisible idempotenza early-exit. Bash CP4 zsh-safe con abort-early `[ -f <file> ] || exit 1` (lesson #5 par.22.75 self-applied). Commit doc-only secondario subject onesto `par.22.76 closing sessione naming anonimo par.11.D-rev v3.1 + Spec v1.4 multi-tenant N-utenti`. Push fast-forward origin main `4e0d573..<closing-commit-NEW>`. KB upload manuale doppio post-push (Changelog aggiornato + Spec v1.4).
+
+#### Test
+
+504/504 invariati su 62 files (zero delta vs baseline par.22.74). Nessun test NEW emesso (doc-only KB-mirror Changelog modificato + Spec KB-only modificata, no codice runtime modificato). Allineato pattern par.22.74 / par.22.65 / par.22.63 / par.22.59 delta zero in sessioni doc-only / deploy follow-up.
+
+#### Tag git e push
+
+- **Tag git: NO** (AMB-11.B.7 rispettato: doc-only KB-mirror + KB-only, no milestone tecnico). Tag `v3.1.0` propagato origin par.22.74 ultimo emesso, invariato.
+- **Bump package.json: NO** (AMB-11.B.7 rispettato: doc-only, no nuovo codice runtime, package `3.1.0` invariato).
+- **Push origin main:** **2 commit fast-forward sequenziali** (pattern par.22.74/22.75 corretto vs drift par.22.75):
+  - Push #1 `a717dbe..4e0d573`: CP3 patcher Changelog par.11.D-rev v3.1 anonimato + AMB-NAMING (commit-msg onesto scope tecnico)
+  - Push #2 `4e0d573..<closing-commit-NEW>`: CP4 emit par.22.76 closing doc-only secondario (subject onesto scope chiusura)
+
+#### Deviazioni s.6.NN emesse Sessione naming anonimo
+
+**ZERO deviazioni s.6.NN emesse.** Sessione doc-only KB-mirror Changelog modificato esclusivamente (Op1-Op14 + SENTINEL v3.1 + emit par.22.76) + Spec KB-only modificata (B1-B11): nessuna modifica a file source / test / config / README / `guide.html` / `package.json`. Allineato pattern par.22.74 / par.22.65 / par.22.59 / par.22.75 zero deviazioni in sessioni doc-only. Gap numerazione s.6.NN preservato principio par.6.71 / par.6.85 (ultimo emesso s.6.220 cumulativa par.22.74).
+
+#### Sub-AMB Sessione naming anonimo (2 totali drift recovery)
+
+| ID | Tema | Chiusura |
+|---|---|---|
+| Sub-AMB-NAMING.A | Drift inventario CP0 incompleto: 2 righe Changelog mancate (4833 self-introdotta nel payload Op13 + 4888 tabella Calibrazione F3-S4-bis "Esporta/Importa per: Sorella/Cognato" non inventoriata CP0) emergenti CP2 sandbox dry-run audit residui | Risolto CP2 in-session pattern par.22.75 sub-AMB-CONS.A drift recovery: Op14 NEW REPLACE riga 4888 aggiunta al patcher + rifrasi REPL_OP13 livello 1 senza citazione letterale (livello 1 ora "ruoli familiari / gradi di parentela" astratto invece "sorella/cognato/nipote/madre/etc" letterale). Patcher v3 finale verde 0 residui par.11.D-rev v3.1. Lesson #6 NEW abort-early audit residui PRE-write empirico patcher: ogni patcher anonimizzazione/rifrasi DEVE includere audit empirico residui post-apply nel range target prima del write su disk (vs solo assertion sostituzione anchor). |
+| Sub-AMB-NAMING.B | Drift CP2 Spec residuo meta-istruzionale: Changelog v1.4 entry citava letteralmente "etichetta familiare 'sorella'" come esempio rimosso, contaminando l'anonimato Spec v1.4 stessa | Risolto CP2 in-session rifrasi anonimo "etichetta familiare specifica" senza citazione letterale. Pattern par.22.75 lesson #1 confermata empiricamente per la seconda volta: anche descrizioni meta-istruzionali ("rimossa X") non devono citare letteralmente le stringhe target, perche il file documento stesso resta artefatto consultabile post-rilascio e l'anonimato dovrebbe essere coerente end-to-end. |
+
+#### Finding NEW carry-forward Sessione naming anonimo
+
+**ZERO finding NEW emessi.** Findings registry cumulativo par.22.74 invariato (~17 + drift-doc-N27 cosmetic + UX-N28 elevato entry par.11.D-rev v3.1). Nessun nuovo finding emerso durante sessione doc-only.
+
+#### Lesson learned Sessione naming anonimo
+
+1. **Audit residui PRE-write empirico patcher (NEW lesson #6):** ogni patcher anonimizzazione/rifrasi DEVE includere audit empirico residui post-apply nel range target PRIMA del write su disk. Pattern raccomandato in patcher Python: dopo applicazione di tutte le operazioni REPLACE/INSERT/DELETE, eseguire conteggio empirico stringhe target nel range delimitato (boundary anchor inizio + fine) e fallire build se count > 0. Lesson empirica CP2 sandbox: anchor-based REPLACE assertion garantisce solo la sostituzione delle stringhe-anchor previste, NON garantisce assenza di residui in righe non inventoriate (es. drift CP0 inventario incompleto). Audit empirico è doppio check ortogonale ai post-conditions anchor.
+
+2. **Citazione letterale di stringhe-target nei payload (lesson #1 par.22.75 estesa, conferma empirica seconda):** mai citare letteralmente le stringhe target di anonimizzazione/sostituzione nei payload Changelog/Spec, **incluse descrizioni meta-istruzionali "rimossa stringa X"**. Lesson empirica CP2 Spec: Changelog v1.4 entry "rimossa etichetta familiare 'sorella'" produceva residuo 1 in Spec v1.4 nonostante intent meta-istruzionale corretto. Pattern raccomandato: anche le descrizioni delle modifiche eseguite vanno rifrasate in forma astratta non-letterale (es. "rimossa etichetta familiare specifica" invece di "rimossa 'sorella'"). Vale doppiamente per file documentali che diventano artefatti consultabili post-rilascio.
+
+3. **Delivery dual file: tracked git + KB-only (NEW pattern):** sessioni che modificano sia file tracked git (Changelog) sia file KB-only (Spec) richiedono strategia delivery dual: patcher Python applicato Mac-side + commit/push origin per il tracked file, file completo consegnato via `present_files` per il KB-only file. KB upload manuale Mac-side per il KB-only (drag-drop Claude.ai Project KB). Bash CP3 NON include cleanup del KB-only file (resta nelle outputs di Claude per drag-drop futuro). Bash CP4 cleanup include solo patcher tracked + backup `.bak.*`.
+
+4. **Word-boundary grep extension audit etichette familiari (NEW pattern CP0):** quando si esegue audit empirico etichette familiari oltre i casi noti, usare grep con `\b` word-boundary per evitare false positive (es. "padre" wildcard `.` matcha "padrone", "madre" matcha "compadre"). Estensione typical: `\b(fratello|madre|padre|figlio|figlia|nipote|nonno|nonna|zio|zia|genitore|coniuge|moglie|marito|parente)\b`. False positive comuni in dominio software: "commit figlio di X" senso git VCS, "branch padre" Mercurial/Git, "Apple Health" Apple come company name. Lesson CP0: 4 false positive recovered ("commit figlio di") confermano necessità word-boundary.
+
+5. **Drift bash scripting grep atteso vs reality post-patcher (lesson collaterale NEW cosmetic):** bash CP3 grep totali Changelog atteso da Claude "3 sorella + 3 cognato (solo par.22.75 immutable)" vs reality `4/4` per drift dello scripting Claude (count par.22.75 sbagliato originariamente 3, in realta 4 sia per sorella sia per cognato). Severita zero, drift cosmetic del bash atteso, non drift logica patcher (audit interno residui par.11.D-rev v3.1 = 0/0 verde, lesson #1 confermata). Pattern raccomandato bash CP verifica empirica: usare assertion empiriche delimitate (range start/end specifico) invece di assertion totali globali quando si verifica anonimato in target ristretto.
+
+#### Stato git post-Sessione naming anonimo (post-CP4)
+
+- branch `main` HEAD `<closing-commit-NEW>` (commit doc-only par.22.76 emit) **allineato origin/main** post-push #2
+- working tree **clean** (gitignore pattern `*.bak.*` par.22.74 attivo: backup `.bak.naming` + `.bak.par2276` ignorati auto)
+- tag annotato `v3.1.0` sha tag-object `294c563` target `e10b971` invariato (propagato origin par.22.74)
+- tag latest invariati `v3.0.1-rc.4` ÷ `v3.0.0-alpha.1`
+- gh-pages SHA `0f93b63` invariato (no redeploy, doc-only KB-mirror)
+- package.json `3.1.0` invariato (AMB-11.B.7 rispettato)
+- src/components/config/ImpostazioniTab.jsx:484 runtime sync `PharmaTimer 3.1.0` invariato
+- **504/504** test invariati su 62 files
+- bundle PROD live `index-BUC2ky9Z.js` 437.76 kB / 135.83 kB gzipped invariato CDN
+- **2 commit emessi Sessione naming anonimo**: `4e0d573` (CP3 patcher Changelog par.11.D-rev v3.1 + SENTINEL v3.1 + AMB-NAMING) + `<closing-commit-NEW>` (CP4 emit par.22.76 doc-only secondario, subject onesto scope chiusura)
+- **Spec v1.4 KB-only**: consegnata `present_files` post-CP2 sandbox verde, NON committed git (KB-only convention par.22.55), drag-drop manuale KB Claude.ai post-CP4
+
+#### Pre-existing follow-up carry-forward par.22.74
+
+- ~17 findings registry cumulativo Fase 2 + drift-doc-N27 cosmetic carry-forward par.22.74 invariati
+- **UX-N28** entry par.11.D-rev v3.1 sezione "Findings carry-forward F3-S4/S5 (v3.1.x -> v3.2.0)", triage (B) assorbito F3-S4 refactor PWA role-based UI multi-tenant + ApiRepository swap F3-S5 (testo aggiornato anonimato par.11.D-rev v3.1)
+- par.6.120 `actions.presa()` simulated_now DEV: invariato (workaround override esplicito documentato, DEV-only)
+- Sub-AMB-G `addFarmaco` payload undefined: carry-forward v3.1.x opportunistic invariato
+- ~20-28 drift-doc cumulativi carry-forward par.22.74: batch documentato senza retro-correzione, audit puntuale opportunistico v3.1.x post-rilascio
+
+#### Pre-existing follow-up NEW Sessione naming anonimo (1 totale bloccante F3-S0)
+
+- **Precondizione strategica esterna utenti paziente N-1 buy-in** (non Claude-decidibile, **BLOCCANTE apertura F3-S0 esecutiva**, anonimato applicato): 19-21 sessioni Claude + Mini sempre acceso + caregiver write owner sui dati medici dei pazienti richiedono buy-in esplicito da parte loro. Da chiarire fuori-Claude prima di lanciare F3-S0 esecutiva (one-liner `Esegui il prompt al par.11.D-rev del Changelog`). Stato esterno non riflesso in Changelog ne in git, gestione manuale owner caregiver-side. Anonimato testo applicato par.11.D-rev v3.1 Op9.
+
+#### Riferimenti par.22.76
+
+- **par.11.D-rev v3.1** (consolidata + anonimato + N-utenti): target sessione naming + AMB-NAMING ratificato + scope Fase 3 multi-tenant + Web Push + Import/Export + dimensionamento target 6 utenti / 3 anni retention
+- **Spec v1.4 multi-tenant N-utenti** (KB-only): autoritativa schema DB + endpoint API + naming convention + dimensionamento + onboarding model
+- **par.22.75**: closing sessione consolidamento par.11.D-rev v3 precedente + lesson #1 (citazione letterale SENTINEL) + lesson #5 (abort-early bash) entrambe self-applied empiricamente CP4
+- **par.22.74**: closing milestone rilascio v3.1.0 + procedura deploy gh-pages orphan-init + gitignore `*.bak.*` esteso
+- **par.22.58 / par.22.67**: pattern patcher Python idempotente content-based + assertion `count == 1` pre/post replicato esatto
+- **par.22.55**: pattern split safety-first preventivo (CP0+CP1+CP2 disegno safety-first / CP3+CP4 esecuzione) + convention asimmetrica Spec KB-only vs Changelog tracked git
+- **par.6.118**: pre-code scenario validation esteso a anchor-validation empirica CP0 audit + audit residui PRE-write empirico lesson #6 (NEW)
+- **par.6.71 / par.6.85**: deviazioni storiche immutabili + gap numerazione s.6.NN preservato (zero s.6.NN nuove emesse Sessione naming) + par.22.75 4 occorrenze sorella/cognato immutabili (skip CP0)
+- **AMB-11.B.7**: no bump package.json + no tag git in sessioni doc-only / analisi-first (rispettato)
+- **par.22.42**: sub-AMB emergenti CP0 (Sub-AMB-NAMING.A drift inventario + Sub-AMB-NAMING.B drift meta) + drift recovery in-session
+
+#### Sessione successiva
+
+**NESSUNA OBBLIGATORIA pre-frozen.** par.11.D-rev v3.1 consolidata + anonimato + N-utenti pronta per `Esegui il prompt al par.11.D-rev del Changelog` come apertura **F3-S0 esecutiva**, MA condizionata a **precondizione strategica esterna utenti paziente N-1 buy-in** (non Claude-decidibile, bloccante).
+
+Aperture opportunistiche disponibili pre-F3-S0:
+
+- **Patch v3.1.x opportunistic** su single finding registry promosso da "polish" a "bloccante uso pratico" (pattern par.22.49 / par.22.60 branching-decisione registry-driven, ~17 findings carry-forward + N27 cosmetic)
+- **Audit drift-doc batch ~28-30 cumulativi**: sessione dedicata cleanup doc-only, optional opportunistic v3.1.x
+- **Riapertura Fase 4 estensioni single-user residue** (parametri vitali, grafici aderenza, Apple Health): sessione di analisi-first dedicata per singola voce, no prompt pre-frozen disponibile (multi-utente full N-utenti gia assorbita Fase 3 v3.2.0 vedi Spec v1.4 sez 11.6 + par.11.D-rev v3.1)
+
+Post-buy-in utenti paziente N-1 risolto fuori-Claude: `Esegui il prompt al par.11.D-rev del Changelog` apre F3-S0 esecutiva (scope ratificato par.11.D-rev v3.1: 12 Q originali + 5 Q ratificate multi-utente + AMB-NAMING livelli 1+2+3 + dimensionamento target + 5 sub-AMB F3-S0.A÷E + 8 AMB-F3.A÷H riviste + Decisione 5 build multi-PWA TBD + calibrazione 19-21 sessioni).
+
+---
+
+---
+
 ### 11.U Prompt Sessione N+2 esecutiva vista Log minima (s.6.215, Q-LOG.1-5 ratificati par.22.69)
 
 **One-liner apertura:** `Esegui il prompt al par.11.U del Changelog.`
