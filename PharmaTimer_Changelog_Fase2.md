@@ -4740,6 +4740,7 @@ Esegui il prompt al §11.D del Changelog (Sessione Fase 3 Step 1 esecutiva — b
 **Pattern operativi confermati per Step 1 esecutiva.** Pattern §22.33-§22.35 (CP impl + commit unico finale + bash installer Mac-side + cleanup `.bak.*` + Changelog delivery con bump versione). Bash zsh-safe (echo single-quoted, no `#`, no apostrofi italiani).
 
 ### 11.D-rev Prompt Sessione F3-S0 analisi-first revisione Fase 3 con setup Mini headless + SSH tunnel + Web Push (post-v3.1.0, scope esteso vs par.11.D originale)
+<!-- par.11.D-rev v3 consolidato -->
 
 **Scope alto livello.** Sessione analisi-first dedicata di **revisione** par.11.C/par.11.D pre-frozen alla luce del setup operativo nuovo emerso post-rilascio v3.1.0 (par.22.74 milestone CHIUSA). Output: 12 Q ratificate + 5 sub-AMB F3-S0.A÷E + 8 AMB-F3.A÷H riviste con delta vs par.11.C + prompt par.11.D-S1 pre-frozen per F3-S1 esecutiva scaffolding backend Mini-side + calibrazione totale sessioni F3-S2÷F3-S9 con Web Push incluso. **Zero codice scritto** (regola critica #1).
 
@@ -4786,6 +4787,42 @@ Esegui il prompt al par.11.D-rev del Changelog.
 | **Q11** | Backup automation MySQL | (A) cron `mysqldump` Mini → local file + retention 7gg / (B) bind-mount external disk + script / (C) cloud backup S3/B2 | **(A)** minimal Mini-local, sufficiente single-user; (B/C) eventuale upgrade Fase 4 |
 | **Q12** | Migration Dexie → MySQL | (A) one-shot export JSON da PWA via vista Esporta + script Python import / (B) PWA boot Fase 3 invia stato corrente / (C) skip migration, parti DB vuoto Roberto rifa onboarding | **(C)** raccomandato: Roberto non ha ancora dati reali in DB Dexie v3.1.0 (PWA appena installata), partenza DB vuoto evita complessità migration zero-valore |
 
+#### Q13-Q17 ratificate multi-utente caregiver (conversazione 19/05/2026)
+
+Architettura **full multi-tenant 3-utenti** (Roberto + sorella + cognato): Roberto caregiver `write` su sorella + cognato; sorella + cognato `write` solo su `utente_id` proprio. Arch alternativa "Roberto admin + 2 consumer passivi" SCARTATA per preservare autonomia config sorella + cognato (10-12 sessioni saving non compensano sacrificio autonomia).
+
+| Q | Tema | Ratifica 19/05/2026 |
+|---|---|---|
+| **Q13** | Modello DB multi-tenant | **(A) singolo database con FK `utente_id`** su 4 tabelle esistenti (`farmaci`, `orari_base`, `log_assunzioni`, `profilo_utente`) + tabelle NEW `utenti` + `permessi` + `push_subscriptions`. Standard industry, scalabile N-utenti, FK enforce isolation. |
+| **Q14** | Schema permessi | **(A) tabella `permessi(caregiver_id, paziente_id, permesso ENUM('read','write','admin'))`** flessibile. Estendibile a futuri ruoli (medico famiglia, badante), normalizzata, query SQL pulite. |
+| **Q15** | Auth API multi-utente | **(A) shared-secret-per-device** con `VITE_USER_TOKEN` build-time injection. Header `X-User-Token: <uuid>` validato middleware FastAPI `Depends(get_current_user)`. Tailscale trust-mesh resta secondo strato sicurezza network. Upgrade JWT eventuale Fase 4 multi-utente esteso. |
+| **Q16** | Dispatch Web Push cross-utente | **(B) push-to-all-subscribed** con flag `permessi.notifiche_caregiver_attive BOOLEAN DEFAULT FALSE` (caregiver opt-in esplicito, privacy-first). Roberto attiva manualmente per ogni paziente: Impostazioni -> Notifiche caregiver -> toggle "Ricevi anche notifiche di sorella" / "di cognato". |
+| **Q17** | UI switcher utente attivo | **(A) dropdown selector** in header sotto logo PharmaTimer, visibile condizionalmente se utente corrente ha permessi su >1 utente. Su device sorella/cognato dropdown nascosto (1 sola opzione). |
+| **Q17-sub** | Persistenza utente attivo | **(b) owner-default**: PWA riparte SEMPRE dall'utente owner del device, non persiste ultima vista. Ragioni: (1) sicurezza accidentale tap Presa su utente sbagliato, (2) coerenza pattern device->utente di Q15, (3) UX cognitiva mobile (apertura PWA = 80% "controllo mia dose oggi"). |
+
+#### Import/Export workflow server-side ratificato (Q-IMPORT.1-4 + Q-SAFETY.1 + Q-SYNC)
+
+Workflow Import/Export server-side sostituisce migration Dexie->MySQL (Decisione 6 ASSORBITA: utente migra dati v3.1.0 standalone Dexie esportando JSON da vista Esporta v3.1.0 + importa in v3.2.0 via UI con upgrade automatico schema).
+
+| Sub-Q | Tema | Ratifica |
+|---|---|---|
+| **Q-IMPORT.1** | Formato file | JSON snapshot primario per backup utente completo (1 file `.json`/utente, schema versionato `{"schema_version":"3.2.0","utente_id":N,"farmaci":[...],"orari_base":[...],"log_assunzioni":[...],"profilo_utente":[...],"impostazioni_app":{...}}`) + CSV per export selettivo farmaci/log compatibile Excel IT. |
+| **Q-IMPORT.2** | Modalità apply | **Merge** (upsert per ID, preserva esistente) + **Replace** (DELETE + INSERT totale per `utente_id` target) selezionabili UI. Modalità (C) confirm-per-record deferred v3.3.0. |
+| **Q-IMPORT.3** | Timing implementazione | Sessione dedicata **F3-S4-bis** post-CRUD multi-utente. Costo +1 sessione esecutiva backend + 0,5 sessione UI assorbibile in F3-S5. |
+| **Q-IMPORT.4** | Scope tabelle | **Incluse**: `farmaci + orari_base + log_assunzioni + profilo_utente + impostazioni_app`. **Escluse**: `push_subscriptions` (device-bound, non semantica utente) + `permessi` (relational state cross-utente, gestione separata caregiver endpoint dedicato). |
+| **Q-SAFETY.1** | Restore cross-utente safety | Preview obbligatoria + audit log persistente. Endpoint `POST /api/import/preview` dry-run obbligatorio prima di `POST /api/import/snapshot` apply. UI mostra diff "verranno cancellati X farmaci, ripristinati Y log, modalità Replace" + checkbox conferma. Tabella `import_log(utente_eseguente, utente_target, timestamp, modalita, righe_modificate)` consultabile da utente target (es. sorella vede storico restore fatti da Roberto su suo profilo da Impostazioni -> Storico operazioni). |
+| **Q-SYNC** | Sync cross-device | **Refresh on-open**. PWA fa nuova GET su switch vista, no polling periodico background, no WebSocket/SSE. Pattern adatto single-family low-frequency update. Eventuale upgrade polling 30-60s in patch v3.2.x se emerge esigenza. |
+
+**Scenari operativi ratificati**:
+- Sorella inserisce farmaco sulla sua PWA -> POST `/api/farmaci` auth token sorella -> MySQL Mini scrive `utente_id=2` -> Roberto on-open vista sorella -> vede farmaco.
+- Sorella backup proprio profilo -> GET `/api/export/snapshot?utente_id=2` auth sorella -> JSON download -> in caso corruzione UI accidentale, vista Importa, Replace, preview, conferma -> autonomia self-service recovery.
+- Roberto backup di sorella -> vista Esporta + dropdown "Esporta per: Sorella" -> permesso caregiver `read` verificato -> JSON salvato su Mac Studio.
+- Roberto restore su profilo sorella -> vista Importa + dropdown "Importa per: Sorella" + permesso `write` + preview obbligatoria + audit log -> sorella on-open vede stato post-restore senza azione.
+
+**Decisione TBD residua F3-S0 esecutiva**: Decisione 5 strategia build multi-PWA — (5.A) 3 build separate `VITE_USER_TOKEN` injection deploy 3 URL distinti / (5.B) 1 build unica + onboarding chiede token al primo avvio salvato IndexedDB / (5.C) path runtime `/pharmatimer/u/<utente>/?t=token`. Decisione attesa F3-S0 in funzione preferenza Roberto su gestione deploy multipli vs onboarding utente.
+
+**Precondizione strategica esterna** (non Claude-decidibile, bloccante F3-S0): verifica allineamento sorella + cognato. 19-21 sessioni + Mini sempre acceso + caregiver write Roberto sui loro dati medici richiedono buy-in esplicito. Da chiarire fuori-Claude prima di lanciare F3-S0 esecutiva.
+
 #### Sub-AMB F3-S0.A÷E (workflow operativi nuovi non coperti par.11.C originale)
 
 | Sub-AMB | Tema | Risoluzione attesa |
@@ -4807,28 +4844,30 @@ Esegui il prompt al par.11.D-rev del Changelog.
 | **F3.E** Networking | (A) Tailscale magic-DNS | **Invariato** ratificato Q5=(A) |
 | **F3.F** Deploy Mac Mini | (A) docker-compose | **Invariato** ratificato Q8=(A), Mini sostituisce Studio originale |
 | **F3.G** Sync conflict resolution | (C) server-authoritative no client offline writes | **Invariato** single-user, no conflict |
-| **F3.H** Vista Log + Vista Export scope Fase 3 | (B) split: Log Fase 3, Export Fase 4 | **Obsoleto**: Log + Export GIÀ implementati v3.1.0 Sessione N+2/N+3 (par.11.U/V), riassorbiti standalone Dexie. Out-of-scope Fase 3, mantenuti operativi su `LocalRepository` o portati su `ApiRepository` in F3-S5 senza nuovo lavoro UI |
+| **F3.H** Vista Log + Vista Export scope Fase 3 | (B) split: Log Fase 3, Export Fase 4 | **Obsoleto + esteso multi-tenant**: Log + Export base GIÀ implementati v3.1.0 (par.11.U/V) standalone Dexie, out-of-scope Fase 3 single-user. **Import/Export server-side multi-tenant** (Q-IMPORT.1÷4 + Q-SAFETY.1) sostituisce Export Fase 4 originale + sostituisce migration Dexie->MySQL (Q12=(C) ASSORBITA): sessione F3-S4-bis dedicata, scope JSON snapshot per utente + CSV export selettivo + Merge/Replace + preview obbligatoria + audit log. UI Log esistente portata su `ApiRepository` in F3-S5 con scoping `utente_id` |
 
-#### Calibrazione preliminare sessioni F3-S0÷F3-S9 (rivedibile in apertura F3-S0)
+#### Calibrazione sessioni rivista F3-S0÷F3-S9 multi-tenant + Import/Export (19-21 totali)
 
-| Sessione | Scope | Tipo | Note vs par.11.C/D originale |
+| Sessione | Scope | Tipo | Note multi-tenant + Import/Export |
 |---|---|---|---|
-| **F3-S0** | Questa sessione: revisione AMB + Q12 + prompt F3-S1 pre-frozen | Analisi-first | NEW |
-| **F3-S1** | Scaffolding Mini (project layout + schema MySQL + seed + 2 endpoint smoke + pytest setup + SSH tunnel doc + CP0 audit MySQL version Mini) | Esecutiva | invariato par.11.D, +adattamento MySQL intra-CP1 |
-| **F3-S2** | CRUD farmaci + orari + profili (10-12 endpoint, Pydantic models, repository SQL diretto) | Esecutiva ×2-3 | invariato |
-| **F3-S3-pre** | Analisi-first intermedia: AMB transazioni atomiche `setProfiloAttivoConCleanup` + edge case recalc lato server (8 sub-AMB candidate) | Analisi-first | NEW pattern par.22.42 split safety-first preventivo |
-| **F3-S3** | Endpoint `GET /api/oggi` + `POST /api/assunzione` + porting `planBuilder.js` + `recalc.js` JS → Python | Esecutiva ×2 | invariato |
-| **F3-S5-pre** | Analisi-first intermedia: ApiRepository swap strategy con SSH tunnel dev + feature-flag runtime + fallback strategy + error mapping vocabulary | Analisi-first | NEW |
-| **F3-S5** | `ApiRepository` classe parallela, feature-flag `VITE_USE_API_REPO`, dual-mode safety, integration test end-to-end | Esecutiva ×2 | invariato |
-| **F3-S6** | Deploy prod + networking: docker-compose Mini, Tailscale setup, CORS prod restrictive, healthcheck Mini, backup automation MySQL cron mysqldump | Esecutiva ×2 | +1 vs baseline per networking prod ripensato + Mini SPOF mitigation |
-| **F3-S7** | Closing v3.2.0: cutover feature-flag, build PWA + redeploy gh-pages, tag, Changelog Fase 3 closing, smoke production 5/5 end-to-end | Esecutiva | invariato |
-| **F3-S8-pre** | Analisi-first Web Push: VAPID keys, push subscription endpoint, SW push handler, delivery scheduler design, iOS 16.4+ vs Android compatibility | Analisi-first | NEW post-baseline par.11.D |
-| **F3-S8** | Web Push impl: backend (VAPID + subscription + scheduler APScheduler) + frontend (SW push handler + permission flow) | Esecutiva ×2 | NEW scope core push |
-| **F3-S9** | Web Push smoke + Closing v3.3.0: test iOS app chiusa + Android app chiusa + Mac app chiusa + tag finale + Changelog | Esecutiva | NEW smoke + closing |
+| **F3-S0** | Questa sessione: revisione AMB + Q13-Q17 + Decisione 5 build multi-PWA + prompt F3-S1 pre-frozen | Analisi-first | Già allocata par.11.D-rev v3 |
+| **F3-S1** | Scaffolding Mini (project layout + schema MySQL multi-tenant `utenti`+`permessi`+`push_subscriptions` + seed 3 utenti Roberto/sorella/cognato + 2 endpoint smoke + middleware `get_current_user` + pytest setup + SSH tunnel doc + CP0 audit MySQL version Mini) | Esecutiva | +schema 3 tabelle nuove + middleware auth header X-User-Token |
+| **F3-S2** | CRUD farmaci + orari + profili scoped `utente_id` (10-12 endpoint, Pydantic models con `utente_id` mandatory, repository SQL diretto con WHERE clause filter, permesso `read`/`write` validato caregiver) | Esecutiva ×2-3 | +permission check ogni endpoint |
+| **F3-S3-pre** | Analisi-first intermedia: AMB transazioni atomiche `setProfiloAttivoConCleanup` scoped utente + edge case recalc lato server multi-utente | Analisi-first | Pattern par.22.42 split safety-first preventivo |
+| **F3-S3** | Endpoint `GET /api/oggi` + `POST /api/assunzione` scoped utente + porting `planBuilder.js` + `recalc.js` JS -> Python con `utente_id` param | Esecutiva ×2 | +scoping algoritmi lato server |
+| **F3-S4** | Caregiver flow + role-based UI (endpoint `permessi` CRUD admin, dropdown switcher utente UI Q17=A, opt-in toggle notifiche caregiver Q16=B, fix UX-N28 card preview Sveglia+Sonno) | Esecutiva ×2 | NEW vs par.11.D originale (sostituisce F3-S4 single-user migration eliminato) |
+| **F3-S4-bis** | Import/Export workflow server-side (endpoint `POST /api/export/snapshot` + `POST /api/import/preview` + `POST /api/import/snapshot` Merge/Replace + tabella `import_log` audit + UI vista Importa con preview obbligatoria + dropdown Esporta/Importa per: Sorella/Cognato + permessi check) | Esecutiva | NEW Q-IMPORT.3 (Q12=(C) migration Dexie ASSORBITA da questo workflow) |
+| **F3-S5-pre** | Analisi-first intermedia: ApiRepository swap strategy multi-tenant con SSH tunnel dev + feature-flag runtime + fallback strategy + error mapping vocabulary + persistenza utente attivo client-side Q17-sub=b | Analisi-first | NEW |
+| **F3-S5** | `ApiRepository` classe parallela con `X-User-Token` header injection, feature-flag `VITE_USE_API_REPO`, dual-mode safety, integration test end-to-end + UI import client-side assorbita | Esecutiva ×2 | +integrazione UI Import lato client |
+| **F3-S6** | Deploy prod multi-PWA (Decisione 5 ratificata F3-S0): docker-compose Mini, Tailscale setup, CORS prod restrictive, healthcheck Mini, backup automation MySQL cron mysqldump + tabelle `permessi`+`utenti` | Esecutiva ×2 | +build multi-PWA strategy applicata |
+| **F3-S7** | Closing v3.2.0: cutover feature-flag, build PWA (1 o 3 a seconda Decisione 5), redeploy gh-pages, tag, Changelog Fase 3 closing, smoke production 5/5 end-to-end cross-utente | Esecutiva | +smoke cross-utente |
+| **F3-S8-pre** | Analisi-first Web Push: VAPID keys, push subscription endpoint scoped utente, SW push handler, delivery scheduler design caregiver-aware (Q16=B), iOS 16.4+ vs Android compatibility | Analisi-first | NEW post-baseline par.11.D |
+| **F3-S8** | Web Push impl: backend (VAPID + subscription scoped utente + scheduler APScheduler caregiver dispatch UNION query) + frontend (SW push handler + permission flow + toggle Impostazioni caregiver) | Esecutiva ×2 | NEW scope core push multi-tenant |
+| **F3-S9** | Web Push smoke + Closing v3.3.0: test iOS sorella app chiusa + Android cognato app chiusa + Mac Roberto app chiusa + dispatch caregiver verificato + tag finale + Changelog | Esecutiva | NEW smoke + closing cross-device |
 
-**Totale stima par.11.D-rev:** **15-16 sessioni** (11-12 esecutive + 4 analisi-first), wall-clock **25-45 ore** distribuibili **3-4 mesi** a 1-2 sessioni/settimana, token cumulativi **700K-1.1M**.
+**Totale stima par.11.D-rev v3:** **19-21 sessioni** (12-14 esecutive + 5 analisi-first), wall-clock **35-55 ore** distribuibili **4-6 mesi** a 1-2 sessioni/settimana, token cumulativi **850K-1.3M**.
 
-**Variabile riduttrice principale:** Q12=(C) skip migration elimina F3-S4 = **-1 sessione** vs par.11.C/D = **14-15 sessioni** effettive.
+**Sostituzione architetturale chiave:** F3-S4 single-user migration Dexie->MySQL (par.11.C/D originale) **ELIMINATA** (Q12=(C) ASSORBITA dal workflow Import/Export Q-IMPORT.3). F3-S4 sostituito da F3-S4 multi-tenant caregiver flow + F3-S4-bis Import/Export workflow dedicato (+2 sessioni nette vs baseline 15-16).
 
 #### Decisioni in-session candidate F3-S0
 
@@ -4863,65 +4902,11 @@ Esegui il prompt al par.11.D-S1 del Changelog.
 - **Spec sez. 8 + sez. 9** (stack + endpoint API attesi): autoritativo per scope CRUD F3-S2
 - **AMB-9.E par.22.20** (Wave B notifiche foreground-only): scope esteso Web Push backend-driven riapre la decisione originale
 
-#### Ratifiche conversazionali post-d8c44c9 (19 maggio 2026 sera) — da consolidare in sessione dedicata
+#### Findings carry-forward F3-S4/S5 (v3.1.x -> v3.2.0)
 
-**Contesto.** Conversazione strategica Roberto + Claude del 19 maggio 2026 sera, post-commit `d8c44c9` (par.11.D-rev v1 pre-frozen single-user + estensione multi-utente caregiver). Pattern par.22.55 split safety-first applicato: le ratifiche sottostanti **NON sono ancora state integrate** nelle Q1-Q12 + Q13-Q17 sopra. Consolidamento differito a sessione futura dedicata per qualità output + riduzione densità informativa singola sessione.
+- **UX-N28** tab Profili card preview lista mostra solo 3 orari sintesi (COLAZ/PRANZO/CENA), omette Sveglia + Sonno. Form drawer modifica corretto (5 campi tutti presenti: Sveglia/Colazione/Pranzo/Cena/Sonno + Nome profilo). Bug è solo nella card sintesi lista profili, non funzionale. **Triage ratificato (B)**: assorbito in F3-S4 refactor PWA per role-based UI multi-tenant + ApiRepository swap F3-S5. Zero sessioni dedicate pre-Fase 3. Sorella + cognato vedranno il bug per ~3-4 mesi sulla loro PWA v3.1.0 pre-cutover v3.2.0, accettabile dato che è cosmetic.
 
-**Architettura confermata.** Modello **full multi-tenant 3-utenti** (Roberto + sorella + cognato), Roberto caregiver `write` su sorella + cognato, sorella + cognato `write` solo su `utente_id` proprio. Arch C alternativa "Roberto admin + 2 consumer passivi" esplorata e SCARTATA per preservare autonomia config sorella + cognato (10-12 sessioni saving ma sacrificio autonomia non accettato). Calibrazione confermata 19-21 sessioni totali con Import/Export workflow incluso (era 18-19 multi-tenant base, +1-1,5 sessioni per F3-S4-bis import dedicata).
-
-**Q tecniche ratificate (Q13-Q15)** — ratifica fuori-Changelog conversazione 19/05/2026:
-- **Q13 = (A) singolo database con FK `utente_id`** su 4 tabelle esistenti (farmaci, orari_base, log_assunzioni, profilo_utente) + tabelle `utenti` + `permessi` + `push_subscriptions` NEW. Standard industry multi-tenant, scalabile N-utenti, FK enforce isolation.
-- **Q14 = (A) tabella `permessi(caregiver_id, paziente_id, permesso ENUM('read','write','admin'))` flessibile**. Estendibile a futuri ruoli (medico famiglia, badante), normalizzata, query SQL pulite.
-- **Q15 = (A) shared-secret-per-device** con `VITE_USER_TOKEN` build-time injection per device. Header `X-User-Token: <uuid>` validato middleware FastAPI `Depends(get_current_user)`. Tailscale trust-mesh resta secondo strato sicurezza network. Upgrade JWT eventualmente in Fase 4 multi-utente esteso.
-
-**Q UX ratificate**:
-- **Q16 = (B) push-to-all-subscribed** con flag `permessi.notifiche_caregiver_attive BOOLEAN DEFAULT FALSE` (caregiver opt-in esplicito, privacy-first). Roberto attiva manualmente per ogni paziente: Impostazioni → Notifiche caregiver → toggle "Ricevi anche notifiche di sorella" / "di cognato". Dispatcher push: `SELECT endpoint FROM push_subscriptions ps JOIN permessi pm ON ps.utente_id = pm.caregiver_id WHERE pm.paziente_id = :dose_utente_id AND pm.notifiche_caregiver_attive = TRUE UNION (subscription owner)`.
-- **Q17 = (A) dropdown selector utente attivo in header** sotto logo PharmaTimer, visibile condizionalmente se utente corrente ha permessi su >1 utente. Su device sorella/cognato dropdown nascosto (1 sola opzione disponibile).
-- **Q17-sub = (b) owner-default**: la PWA riparte SEMPRE dall'utente owner del device, non persiste ultima vista. Tre ragioni: (1) sicurezza accidentale tap Presa su utente sbagliato, (2) coerenza con pattern device → utente di Q15, (3) UX cognitiva mobile (apertura PWA = caso d'uso 80% "controllo mia dose oggi").
-
-**Scenari operativi ratificati**:
-- **Scenario sync cross-device** (Q-SYNC): refresh on-open. PWA fa nuova GET su switch vista, no polling periodico background, no WebSocket/SSE. Pattern adatto single-family low-frequency update. Eventuale upgrade polling 30-60s in patch v3.2.x se emerge esigenza.
-- **Sfumatura 2 restore cross-utente safety** (Q-SAFETY.1): preview obbligatoria + audit log persistente. Endpoint `POST /api/import/preview` dry-run obbligatorio prima di `POST /api/import/snapshot` apply. UI mostra diff "verranno cancellati X farmaci, ripristinati Y log, modalità Replace" + checkbox conferma. Tabella `import_log(utente_eseguente, utente_target, timestamp, modalita, righe_modificate)` per audit trail consultabile da utente target (sorella vede storico restore fatti da Roberto sul suo profilo da Impostazioni → Storico operazioni).
-
-**Import/Export workflow server-side ratificato** (sostituisce migration dati Decisione 6):
-- **Q-IMPORT.1 formato file**: JSON snapshot primario per backup utente completo (1 file `.json` per utente, schema versionato `{"schema_version": "3.2.0", "utente_id": N, "farmaci": [...], "orari_base": [...], "log_assunzioni": [...], "profilo_utente": [...], "impostazioni_app": {...}}`) + CSV per export selettivo farmaci/log compatibile Excel IT.
-- **Q-IMPORT.2 modalità apply**: Merge (upsert per ID, preserva esistente) + Replace (DELETE + INSERT totale per utente_id target) selezionabili UI. Modalità (C) confirm-per-record deferred v3.3.0.
-- **Q-IMPORT.3 timing implementazione**: sessione dedicata F3-S4-bis post-CRUD multi-utente. Costo +1 sessione esecutiva backend + 0,5 sessione UI assorbibile in F3-S5.
-- **Q-IMPORT.4 scope tabelle**: incluse `farmaci + orari_base + log_assunzioni + profilo_utente + impostazioni_app`. ESCLUSE `push_subscriptions` (device-bound, non semantica utente) + `permessi` (relational state cross-utente, gestione separata caregiver). Non importi/esporti permessi caregiver, restano gestiti via endpoint dedicato.
-- **Decisione 6 migration Dexie → MySQL**: ASSORBITA dal workflow import. Utente che vuole migrare dati v3.1.0 standalone Dexie esporta JSON da vista Esporta v3.1.0 (già esistente, formato compatibile schema_version 3.1.0) + importa in v3.2.0 backend via UI import con upgrade automatico schema. Skip migration script Python dedicato.
-
-**Modello operativo cross-utente** (sintesi conversazione 19/05/2026):
-- Sorella inserisce farmaco sulla sua PWA → POST `/api/farmaci` auth token sorella → MySQL Mini scrive `utente_id=2` → Roberto on-open vista sorella sulla sua PWA → vede farmaco
-- Sorella scarica backup proprio profilo → GET `/api/export/snapshot?utente_id=2` auth token sorella → JSON download → in caso corruzione UI accidentale, sorella va in vista Importa, seleziona backup, modalità Replace, conferma preview → autonomia self-service recovery
-- Roberto backup di sorella → vista Esporta + dropdown "Esporta per: Sorella" → permesso caregiver `read` verificato → scarica JSON salvato su Mac Studio
-- Roberto restore su profilo sorella → vista Importa + dropdown "Importa per: Sorella" + permesso `write` verificato + preview obbligatoria (Q-SAFETY.1) + audit log scritto → sorella on-open vede stato post-restore senza azione
-
-**Calibrazione sessioni rivista**: 15-16 single-user → 18-19 multi-tenant caregiver → **19-21 con Import/Export server-side**. Wall-clock 35-55h, calendario 4-6 mesi a 1-2 sessioni/settimana. Token cumulativi 850K-1.3M.
-
-**Decisioni TBD residue (da ratificare in F3-S0 esecutiva)**:
-- **Decisione 5 strategia build multi-PWA**: (5.A) 3 build separate `VITE_USER_TOKEN` injection deploy 3 URL distinti gh-pages / (5.B) 1 build unica + onboarding chiede token al primo avvio salvato IndexedDB / (5.C) path runtime `/pharmatimer/u/<utente>/?t=token` con link personali. Decisione attesa F3-S0 in funzione di preferenza Roberto su gestione deploy multipli vs onboarding utente.
-- **Precondizione strategica esterna** (non Claude-decidibile): verifica allineamento sorella + cognato con il progetto. 19-21 sessioni di Claude + Mini sempre acceso + caregiver write Roberto sui loro dati medici richiedono buy-in esplicito da parte loro. Da chiarire fuori-Claude prima di lanciare F3-S0 esecutiva.
-
-**Finding NEW carry-forward registry v3.1.x**:
-- **UX-N28** tab Profili card preview lista mostra solo 3 orari sintesi (COLAZ/PRANZO/CENA), omette Sveglia + Sonno. Form drawer modifica corretto (5 campi tutti presenti: Sveglia/Colazione/Pranzo/Cena/Sonno + Nome profilo). Bug è solo nella card sintesi lista profili, non funzionale. **Triage ratificato (B)**: assorbito in F3-S4/S5 refactor PWA per ApiRepository swap + role-based UI eventuali. Zero sessioni dedicate pre-Fase 3. Sorella + cognato vedranno il bug per ~3-4 mesi sulla loro PWA v3.1.0 pre-cutover v3.2.0, accettabile dato che è cosmetic.
-
-**Sessione consolidamento richiesta** (futura, dedicata, non urgente):
-
-Una sessione futura legge questa sezione "Ratifiche conversazionali" + par.11.D-rev v1+v2 sopra, e produce **par.11.D-rev v3 definitiva**:
-1. Riscrive Q13-Q17 nella tabella principale "Q1-Q12 candidate + Q13-Q17 multi-utente" sostituendo "default raccomandato da me" con "ratificata 19/05/2026 conversazione" + valore ratificato esplicito
-2. Aggiunge sezione strutturata "Q-IMPORT.1-4 + Q-SAFETY.1 + Q-SYNC" come blocco tematico Import/Export workflow
-3. Aggiorna sezione "Calibrazione sessioni rivista" con 19-21 finale (incluso F3-S4-bis import)
-4. Aggiorna "AMB-F3.H scope Log+Export" con nota Q-IMPORT che chiude completamente lo scope ex-Fase 3 originale
-5. Aggiunge UX-N28 alla lista findings registry carry-forward v3.1.x → F3-S4/S5
-6. Rimuove questa sezione "Ratifiche conversazionali post-d8c44c9" (transitoria, consumata)
-
-**One-liner sessione consolidamento futura**:
-
-```
-Consolida par.11.D-rev: integra ratifiche conversazionali documentate nella sezione "Ratifiche conversazionali post-d8c44c9 (19 maggio 2026 sera) — da consolidare in sessione dedicata". Riscrivi Q13-Q17 come ratificate, aggiungi blocco Q-IMPORT/SAFETY/SYNC strutturato, aggiorna calibrazione sessioni a 19-21 multi-tenant + Import/Export, registra UX-N28 in findings carry-forward. Rimuovi la sezione transitoria post-consolidamento. Pattern: patcher Python idempotente content-based + verifica chirurgica approfondita pattern par.22.74.
-```
-
-Token attesi: 10-15K. Wall-clock: 30-60 min. Output: par.11.D-rev v3 definitiva, KB upload finale, par.11.D-rev pronto per `Esegui il prompt al par.11.D-rev del Changelog` come apertura F3-S0 esecutiva.
+**Nota carry-forward esterni:** findings cumulativi v3.1.x non-Fase-3 (~17 + drift-doc-N27 cosmetic) restano gestiti dal registry par.22.74 con triage opportunistic. UX-N28 elevato a entry par.11.D-rev v3 perché ha home naturale in F3-S4 multi-tenant scope.
 
 ---
 
