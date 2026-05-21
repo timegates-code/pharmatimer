@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+.env.dev
+.env.prod
+!.env.example
+.pytest_cache/
+*.bak.*
+.coverage
+htmlcov/
