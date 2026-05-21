@@ -4972,34 +4972,42 @@ Esegui il prompt al par.11.D-S1 del Changelog.
 
 ---
 
-### 11.D-S1 Prompt Sessione F3-S1 esecutiva scaffolding Mini multi-tenant + schema MySQL + seed owner + 2 endpoint smoke (post-F3-S0 par.22.78 ratificato, output pre-frozen Decisione 5=B + 5.B.1)
-<!-- par.11.D-S1 emit pre-frozen -->
+### 11.D-S1 Prompt Sessione F3-S1 esecutiva scaffolding Studio multi-tenant + cleanup DB residui + schema MySQL + seed owner + 2 endpoint smoke (post-F3-S0-R1 par.22.78-bis ratificato, R1 Studio-all dev + Mini zero-touch fino F3-S6)
+<!-- par.11.D-S1 R1 emit -->
 
 **One-liner apertura:** `Esegui il prompt al par.11.D-S1 del Changelog.`
 
-**Modalita:** esecutiva ×1 mista (CP0 audit Mini via SSH + 5 CP impl + CP closing). Scope frozen par.11.D-rev v3.2 + par.22.78 ratifica F3-S0. Token attesi 50-80K. Wall-clock 2.5-4h. Pattern par.22.55 split safety-first applicabile se CP0 F3-S1 rivela densita >50K.
+**Modalita:** esecutiva ×1 mista (CP0 audit Studio-side + 5 CP impl + CP closing). Scope frozen par.11.D-rev v3.2 + par.22.78 + par.22.78-bis R1. Token attesi 50-80K. Wall-clock 2.5-4h. Pattern par.22.55 split safety-first applicabile se CP0 F3-S1 rivela densita >50K.
 
 #### Pre-letture obbligatorie
 
-1. **par.11.D-rev v3.2 integrale** (12 Q + 5 Q multi-utente Q13-Q17 + AMB-NAMING + Q-DOG + Q-IMPORT/SAFETY/SYNC + 5 sub-AMB F3-S0.A÷E + 8 AMB-F3.A÷H + Decisione 5=B + Decisione 5.B.1)
-2. **par.22.78 chiusura F3-S0** (ratifica blanket Q1-Q12 + Decisione 5=B + Decisione 5.B.1 + calibrazione 20-21 sessioni)
-3. **Spec v1.4 sez. 3.9/3.10/3.11** (schema tabelle NEW `utenti`+`permessi`+`push_subscriptions`)
-4. **Spec v1.4 sez. 9** (endpoint REST con auth header X-User-Token + endpoint NEW caregiver/import-export)
-5. **Spec v1.4 sez. 11.5/11.6** (contesto multi-utente + dimensionamento + onboarding model + AMB-NAMING livelli 1+2+3)
-6. **par.22.36** (lesson MariaDB install Studio anomala MySQL 9.6, db residui pharmatimer_dev/test, cleanup CP0-alpha-bis approccio)
+1. **par.22.78-bis R1 ratifica** (architettura dev Studio-all + Mini zero-touch + sub-decisioni β.1-β.4 + 8 pre-condizioni empiriche)
+2. **par.11.D-rev v3.2 integrale** (12 Q + Q13-Q17 + AMB-NAMING + Q-DOG + Q-IMPORT/SAFETY/SYNC + 5 sub-AMB F3-S0.A÷E + 8 AMB-F3.A÷H + Decisione 5=B + 5.B.1)
+3. **par.22.78 chiusura F3-S0** (ratifica blanket Q1-Q12 + calibrazione 20-21 sessioni)
+4. **Spec v1.4 sez. 3.9/3.10/3.11** (schema tabelle NEW `utenti`+`permessi`+`push_subscriptions`)
+5. **Spec v1.4 sez. 9** (endpoint REST con auth header X-User-Token + endpoint NEW caregiver/import-export)
+6. **Spec v1.4 sez. 11.5/11.6** (contesto multi-utente + dimensionamento + onboarding model + AMB-NAMING livelli 1+2+3)
+7. **par.22.36** (lesson MariaDB install Studio anomala MySQL 9.6, db residui pharmatimer_dev/test cleanup inline CP1)
 
-#### Pre-condizioni F3-S1 (Roberto fornisce pre-apertura)
+#### Pre-condizioni F3-S1 R1 (gia verificate empiriche 21/05/2026 par.22.78-bis)
 
-1. **Hostname/alias SSH reale Mini** (sostituisce placeholder `<mini-alias-reale>` ovunque in CP0 + script)
-2. **SSH key-based auth Studio->Mini funzionante** (no password prompt interattivo)
-3. **Docker Desktop running su Mini** (verificabile CP0 via SSH)
-4. **Port 3306 occupata da MySQL Mini esistente** (verificabile CP0)
-5. **Port 8000 libera su Mini** (verificabile CP0)
+8/8 verde:
 
-#### CP0 baseline obbligatorio Mac-side (Studio Ultra + SSH Mini)
+1. ✅ MySQL Studio 9.6.0 macos15 arm64 Community GPL
+2. ✅ MySQL Studio accessibile root no-password locale + 2 DB residui empty cleanable
+3. ✅ Python 3.13.12 Homebrew `/opt/homebrew/opt/python@3.13/libexec/bin/python3`
+4. ✅ Port 8000 Studio libera (uvicorn)
+5. ✅ Port 5173 Studio libera (Vite dev)
+6. ✅ Working tree `~/Sviluppo/pharmatimer/` esiste + clean
+7. ✅ Branch `fase-3-backend` non esistente (sara' creato CP1)
+8. ✅ MySQL Workbench Studio installato (gia in uso per Mini StockFusion)
+
+Mini zero-touch in F3-S1 R1: nessun comando SSH verso Mini necessario, nessuna installazione, nessuna verifica Mini-side. Mini stato verificato a F3-S6 deploy esecutiva.
+
+#### CP0 baseline obbligatorio Mac-side (Studio Ultra only)
 
 ```bash
-echo '=== CP0 F3-S1 baseline ==='
+echo '=== CP0 F3-S1 R1 baseline Studio-side ==='
 cd ~/Sviluppo/pharmatimer
 echo '--- Branch e top commit Studio ---'
 git branch --show-current
@@ -5012,57 +5020,60 @@ echo '--- Test count baseline ---'
 npm test -- --run 2>&1 | grep -E 'Test Files|Tests' | tail -3
 echo '--- Working tree Studio ---'
 git status --short
-echo '--- Mini reachability via SSH ---'
-ssh <mini-alias-reale> 'echo SSH OK && uname -a'
-echo '--- MySQL version Mini (Q2 risoluzione) ---'
-ssh <mini-alias-reale> 'mysql --version'
-echo '--- Docker Mini ---'
-ssh <mini-alias-reale> 'docker --version && docker info 2>/dev/null | grep "Server Version"'
-echo '--- Port 3306 Mini (atteso: MySQL occupato) ---'
-ssh <mini-alias-reale> 'lsof -i :3306 2>/dev/null | head -3 || echo lsof unavailable'
-echo '--- Port 8000 Mini (atteso: libero) ---'
-ssh <mini-alias-reale> 'lsof -i :8000 2>/dev/null | head -3 || echo port 8000 libera'
-echo '--- DB residui Mini par.22.36 lesson ---'
-ssh <mini-alias-reale> 'mysql -e "SHOW DATABASES LIKE \"pharmatimer%\";" 2>/dev/null || echo no auth interactive (OK rivedere CP1)'
-echo '=== CP0 completato ==='
+echo '--- MySQL Studio re-verifica ---'
+mysql --version
+echo '--- Python re-verifica ---'
+python3 --version
+which python3
+echo '--- Port 8000 Studio (uvicorn target) ---'
+lsof -nP -iTCP:8000 -sTCP:LISTEN 2>/dev/null | head -5 || echo 'port 8000 libera'
+echo '--- Port 5173 Studio (Vite dev target) ---'
+lsof -nP -iTCP:5173 -sTCP:LISTEN 2>/dev/null | head -5 || echo 'port 5173 libera'
+echo '--- DB residui pharmatimer Studio (cleanup target CP1) ---'
+mysql -u root -e 'SHOW DATABASES LIKE "pharmatimer%";' 2>&1
+echo '--- Branch fase-3-backend (atteso: non esiste) ---'
+git branch --list 'fase-3-backend' 2>&1
+echo '=== CP0 R1 completato ==='
 ```
 
-Atteso baseline F3-S1:
-- branch `main`, HEAD post-par.22.78 commit doc-only emit
+Atteso baseline F3-S1 R1:
+- branch `main`, HEAD post-par.22.78-bis commit doc-only emit
 - tag `v3.1.0` invariato, package 3.1.0
 - 504/504 test su 62 files baseline
-- working tree clean post-push par.22.78
-- Mini reachable + MySQL X.Y.Z + Docker installed + port 3306 occupata + port 8000 libera
-- DB residui `pharmatimer_dev`/`pharmatimer_test` (par.22.36 lesson) o assenti
+- working tree clean post-push par.22.78-bis
+- MySQL 9.6.0 + Python 3.13.12 + porte 8000/5173 libere
+- DB residui `pharmatimer_dev`/`pharmatimer_test` empty (verranno cleanati CP1)
+- Branch `fase-3-backend` non esiste (verra' creato CP1)
 
-#### Sub-AMB F3-S1.A÷H ratifica apertura blanket "decidi tu" attesa
+#### Sub-AMB F3-S1.A÷H ratifica apertura blanket "decidi tu" attesa (rivisitate R1)
 
-| Sub-AMB | Tema | Default raccomandato |
+| Sub-AMB | Tema | Default raccomandato R1 |
 |---|---|---|
-| F3-S1.A | Project layout esatto `pharmatimer_api/{routers,services,repository,db,models}/` con `app.py` entry-point | Conferma Q2=B par.11.C |
+| F3-S1.A | Project layout esatto `backend/pharmatimer_api/{routers,services,repository,db,models}/` con `app.py` entry-point | Conferma Q2=B par.11.C, sub-folder monorepo Studio-side |
 | F3-S1.B | Pydantic models inline routers vs `models/` separato | `models/` separato (futureproof testing + reuse cross-router) |
 | F3-S1.C | Connection pool mysql-connector-python (`pooling.MySQLConnectionPool` size 5-10) | Pool size 5 single-family load |
 | F3-S1.D | Error mapping vocabulary `RepositoryError` Python parallel a JS Spec v1.4 sez. 6 | 1:1 parity con vocabulary JS (NotFound, Conflict, ValidationError, IntegrityError) |
 | F3-S1.E | Test fixtures `pytest-asyncio` per FastAPI TestClient + DB testdb scoped utente | testdb separato `pharmatimer_test`, cleanup truncate per-test (fast, deterministic) |
-| F3-S1.F | Seed owner endpoint vs script CLI | Script CLI `seed_owner.py` standalone (no auth required, first-run only, env var driven) |
+| F3-S1.F | Seed owner endpoint vs script CLI | Script CLI `seed_owner.py` standalone (no auth required, first-run only, env var `OWNER_NAME` + token generato `secrets.token_urlsafe(32)`) |
 | F3-S1.G | Migration tool: alembic vs raw SQL versionato `db/migrations/v01_init.sql` | Raw SQL versionato (no SQLAlchemy = no alembic, coerente spec sez. 0.2) |
-| F3-S1.H | Docker-compose volumes persistence MySQL data | Named volume `pharmatimer_mysql_data` + host bind backup directory `~/pharmatimer-backups/` su Mini |
+| F3-S1.H R1 | venv Python Studio location + dipendenze pip pinned | venv in `backend/venv/` (gitignored), `requirements.txt` o `pyproject.toml` decisione CP closing |
 
-#### Scope CP1-CP5 + CP closing F3-S1
+#### Scope CP1-CP5 + CP closing F3-S1 R1
 
-- **CP1** Project layout `backend/pharmatimer_api/{routers,services,repository,db,models}/` su sub-folder monorepo branch `fase-3-backend` (Q4=B) + `db/migrations/v01_init.sql` schema completo (4 tabelle esistenti `farmaci`+`orari_base`+`log_assunzioni`+`profilo_utente` scoped `utente_id FK` + 3 tabelle NEW `utenti`+`permessi`+`push_subscriptions` + indici composite Spec sez. 3.9/3.10/3.11)
-- **CP2** Script CLI `seed_owner.py` standalone (1 utente `ruolo='owner'`, `nome_visualizzato` configurabile via env var `OWNER_NAME`, token generato via `secrets.token_urlsafe(32)`, hash SHA-256 persistito in `utenti.token_hash`, output token chiaro su stdout una volta sola per copy-paste manuale verso Studio frontend `VITE_USER_TOKEN`)
-- **CP3** FastAPI app skeleton `app.py` + router `routers/health.py` + `routers/farmaci.py` + middleware `Depends(get_current_user)` validazione header `X-User-Token` SHA-256 hash vs `utenti.token_hash` + 2 endpoint smoke (`GET /api/health` no-auth public + `GET /api/farmaci` auth scoped `WHERE utente_id = current_user.id`)
-- **CP4** docker-compose v0.1 (`backend/docker-compose.yml` FastAPI container + MySQL container con volume `pharmatimer_mysql_data` + healthcheck) + pytest setup `tests/` + 10-15 test (smoke 2 endpoint + middleware auth happy/sad path + permission filter scoped + seed idempotenza + RepositoryError mapping)
-- **CP5** Closing: commit unico finale branch `fase-3-backend` + Changelog par.22.79 emit + SSH tunnel doc Studio<->Mini (port forward MySQL 3307->3306 + FastAPI 8000->8000) + decisione spin-off `PharmaTimer_Changelog_Fase3.md` vs continuazione `_Fase2.md` + tag `v3.2.0-alpha.1` locale annotato opzionale (AMB-11.B.7 valuta milestone tecnico)
+- **CP1 Studio-side** Project layout `backend/pharmatimer_api/{routers,services,repository,db,models}/` su sub-folder monorepo branch `fase-3-backend` (Q4=B) creato da `main@<HEAD-post-par.22.78-bis>` + `db/migrations/v01_init.sql` schema completo (DROP DATABASE IF EXISTS pharmatimer_dev + pharmatimer_test cleanup par.22.36 lesson + CREATE schema 4 tabelle esistenti `farmaci`+`orari_base`+`log_assunzioni`+`profilo_utente` scoped `utente_id FK` + 3 tabelle NEW `utenti`+`permessi`+`push_subscriptions` + indici composite Spec sez. 3.9/3.10/3.11 + CREATE USER `pharmatimer_app`@`localhost` IDENTIFIED BY ... + GRANT ALL ON pharmatimer_dev.* + pharmatimer_test.*) + venv setup `python3 -m venv backend/venv/ && source backend/venv/bin/activate && pip install fastapi mysql-connector-python pydantic uvicorn[standard] pytest pytest-asyncio httpx`
+- **CP2 Studio-side** Script CLI `backend/seed_owner.py` standalone (1 utente `ruolo='owner'`, `nome_visualizzato` configurabile via env var `OWNER_NAME`, token generato via `secrets.token_urlsafe(32)`, hash SHA-256 persistito in `utenti.token_hash`, output token chiaro su stdout una volta sola per copy-paste manuale verso PWA frontend `VITE_USER_TOKEN`)
+- **CP3 Studio-side** FastAPI app skeleton `backend/pharmatimer_api/app.py` + router `routers/health.py` + `routers/farmaci.py` + middleware `Depends(get_current_user)` validazione header `X-User-Token` SHA-256 hash vs `utenti.token_hash` + 2 endpoint smoke (`GET /api/health` no-auth public + `GET /api/farmaci` auth scoped `WHERE utente_id = current_user.id`)
+- **CP4 Studio-side** pytest setup `backend/tests/` + 10-15 test (smoke 2 endpoint + middleware auth happy/sad path + permission filter scoped + seed idempotenza + RepositoryError mapping) + smoke manuale uvicorn `uvicorn pharmatimer_api.app:app --reload --port 8000` Studio + curl validation
+- **CP5 closing** Commit unico finale branch `fase-3-backend` + Changelog par.22.79 emit + decisione spin-off `PharmaTimer_Changelog_Fase3.md` vs continuazione + decisione tag `v3.2.0-alpha.1` locale annotato opzionale (AMB-11.B.7 valuta milestone tecnico) + decisione `requirements.txt` vs `pyproject.toml` (raccomandato pyproject.toml separato `backend/pyproject.toml` 0.1.0)
 
-#### Decisioni in-session candidate F3-S1 (a CP5 closing)
+#### Decisioni in-session candidate F3-S1 R1 (a CP5 closing)
 
 1. **Spin-off `PharmaTimer_Changelog_Fase3.md`** vs continuazione `PharmaTimer_Changelog_Fase2.md`: raccomandato spin-off post-F3-S1 closing per separazione semantica Fase 2 PWA standalone vs Fase 3 multi-tenant backend
-2. **Backend versioning** `backend/pyproject.toml` 0.1.0 separato vs unificato `package.json` v3.2.0-alpha.1: raccomandato pyproject.toml separato (versionamento Python indipendente Mini-side)
-3. **Tag F3-S1**: skip vs `v3.2.0-alpha.1` vs altro: raccomandato `v3.2.0-alpha.1` annotato LOCALE (no push fino smoke F3-S7), pattern AMB-11.B.7-bis tag intermedi locali
+2. **Backend versioning** `backend/pyproject.toml` 0.1.0 separato vs `backend/requirements.txt` pinned only: raccomandato `pyproject.toml` (versionamento Python indipendente + tooling moderno + Poetry/uv compatibility futura)
+3. **Tag F3-S1 R1**: skip vs `v3.2.0-alpha.1` vs altro: raccomandato `v3.2.0-alpha.1` annotato LOCALE (no push fino smoke F3-S7), pattern AMB-11.B.7-bis tag intermedi locali
+4. **Persistenza credenziali MySQL `pharmatimer_app`**: env var `DATABASE_URL` + `.env.dev` (gitignored) vs secrets file: raccomandato `.env.dev` semplice per ora, upgrade Pydantic Settings + python-dotenv
 
-#### Pattern operativi confermati F3-S1
+#### Pattern operativi confermati F3-S1 R1
 
 - Pattern §22.33-§22.35 (CP impl + commit unico finale + cleanup `.bak.*` + Changelog delivery)
 - Bash zsh-safe (echo single-quoted, no `#`, no apostrofi italiani) invariato par.11.D
@@ -5070,11 +5081,25 @@ Atteso baseline F3-S1:
 - Pattern par.6.118 pre-code scenario validation 2-3 scenari su `Depends(get_current_user)` + permission filter
 - AMB-11.B.7 bump effettivo a CP5 closing F3-S1
 - Pattern par.22.55 split safety-first applicabile se CP0 F3-S1 densita >50K
-- TBD CP0 risoluzioni in-line: Q2 MySQL version (A o B compatibili), `<mini-alias-reale>` hostname sostituzione globale, port 3306/8000 stato
+- Pattern par.22.78-bis lesson #7 "upload diretto baseline a inizio sessione doc-only" applicato preventivamente F3-S1 R1 closing CP5
 
-#### Sessione successiva post-F3-S1
+#### Mini zero-touch invariante F3-S1÷F3-S5
 
-**F3-S2 esecutiva CRUD farmaci+orari+profili scoped `utente_id`** (×2-3 sub-split safety-first par.22.55 se densita >40K). Prompt par.11.D-S2 sara' pre-frozen output F3-S1 CP closing.
+Mini NON riceve in F3-S1÷F3-S5 (decisione architetturale R1 par.22.78-bis):
+- ❌ Codice Python backend
+- ❌ DB nuovi (`pharmatimer` prod o altri)
+- ❌ User MySQL nuovi
+- ❌ Pacchetti pip o brew
+- ❌ Config files
+- ❌ Docker/Colima/container
+- ❌ launchd plist
+- ❌ Tunnel SSH FastAPI (3306 LocalForward esistente per StockFusion preservato invariato)
+
+Mini riceve SOLO a F3-S6 esecutiva deploy (decisione AMB-F3.F α/β/γ con info da experience F3-S1÷F3-S5).
+
+#### Sessione successiva post-F3-S1 R1
+
+**F3-S2 esecutiva CRUD farmaci+orari+profili scoped `utente_id` R1 Studio-all** (×2-3 sub-split safety-first par.22.55 se densita >40K). Prompt par.11.D-S2 sara' pre-frozen output F3-S1 R1 CP closing.
 
 ## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3 + 8-pre + 8a + 8b + 8c-parz + 8c-2 + 9-A + 9-B + 9-D + 10-A + 10-B + 10-C + 10-C-fix + 11-A CP1a + 11-A CP1b + 11-B
 
@@ -16127,6 +16152,116 @@ Aperture opportunistiche disponibili in alternativa (NON necessarie pre-F3-S0, F
 - **Riapertura Fase 4 estensioni single-user residue** (parametri vitali, grafici aderenza, Apple Health): sessione di analisi-first dedicata per singola voce, no prompt pre-frozen disponibile
 
 Decisione owner caregiver-side: aprire F3-S0 esecutiva fase A dogfooding **ora** (one-liner `Esegui il prompt al par.11.D-rev del Changelog`) oppure pausa strategica + aperture opportunistiche pre-F3-S0.
+
+---
+
+---
+
+### 22.78-bis Nota append-only R1 ratifica (post-F3-S0 closing par.22.78): riapertura AMB-F3.F + ratifica R1 Studio-all dev F3-S1÷F3-S5 + Mini zero-touch + decisione Docker/Colima/nativo deferred F3-S6 deploy + nuovo par.11.D-S1 R1 emit pre-frozen
+<!-- par.22.78-bis R1 append-only -->
+
+**Data:** 21 maggio 2026 (post-F3-S0 closing par.22.78 stesso giorno).
+
+**Modalita:** Sessione doc-only KB-mirror Changelog append-only nota R1 ratifica + REPLACE par.11.D-S1 pre-frozen con versione R1. Pattern par.22.75 split secondario applicato: par.22.78 originale immutabile (par.6.71/85), par.22.78-bis NEW nota append-only documenta riapertura AMB-F3.F + ratifica R1 in-conversation post-closing. Token spesi ~10-15K (analisi-conversazionale post-closing). Wall-clock ~1h dialogato + 30 min delivery patcher.
+
+**Esito:** OK ratifica R1 + riscrittura par.11.D-S1 pre-frozen + chiusura definitiva F3-S0 con architettura dev finalmente coerente con realta infrastruttura (Studio MySQL 9.6 nativo + MySQL Workbench + Python 3.13 + StockFusion prod sul Mini intoccata).
+
+#### Riapertura AMB-F3.F (legittima post-CP0 empirico)
+
+AMB-F3.F era ratificata par.11.D-rev v3.2 + par.22.78 con default Q8=(A) docker-compose Mini. Post-CP0 baseline F3-S0 empirico + verifica precondizioni F3-S1 sono emerse 3 informazioni nuove non-documentate Mac/Mini-side:
+
+1. **Mini sempre acceso 24/7** ospita **StockFusion in produzione** con MySQL nativo + MySQL Workbench Studio-side per gestione DB Mini remoto. Pattern operativo consolidato "MySQL nativo + tunnel SSH + app nativa" gia in uso senza Docker.
+2. **Studio ha MySQL 9.6.0 nativo** + 2 DB residui `pharmatimer_dev`/`pharmatimer_test` empty (lesson par.22.36 reincontrata) + Python 3.13.12 Homebrew + porte 8000+5173 libere + working tree pharmatimer git-clean.
+3. **PWA caregiver client a regime gira sullo Studio** (Safari/Chrome) + iPhone owner: Studio e' device legittimo client PWA caregiver, NON solo macchina dev. Cross-conferma da Q13-Q17 + Q-DOG.1-3: switcher dropdown Q17=A + Decisione 5=B preservano coerenza architetturale on Studio.
+
+Pattern par.6.118 pre-code scenario validation esteso a "post-closing CP0 empirico rivela info bloccanti pre-allocazione": legittimo riaprire AMB con architettura proposta nuova, append-only senza retrocorrezione par.22.78 (par.6.71/85). Pattern AMB-11.B.7 estensione: ratifica architetturale ri-emendabile a CP0 empirico se dati nuovi cambiano trade-off.
+
+#### Ratifica R1 (Studio-all dev F3-S1÷F3-S5 + Mini zero-touch + deploy host deferred F3-S6)
+
+**Decisione architetturale R1**: durante F3-S1÷F3-S5 (scaffolding + CRUD + algoritmi + caregiver + Import/Export + ApiRepository swap) tutto il backend dev gira sullo Studio (MySQL nativo Studio + venv Python Studio + uvicorn Studio :8000 + working tree Studio). Mini riceve **zero touch**: no codice copiato, no DB nuovi creati, no pacchetti installati, no config drift fino al deploy F3-S6.
+
+Ragioni R1 ratificata:
+
+1. **Protezione StockFusion prod**: zero rischio kill mysqld accidentale, zero pollution disk Mini, zero CPU steal durante test pesanti, zero port conflict, zero config drift.
+2. **Riuso infrastruttura Studio gia esistente**: MySQL Studio 9.6.0 + Workbench + Python 3.13 + venv nativo. Zero nuovi tool da installare (no Docker Desktop GUI, no Colima, no VNC per first-run wizard headless Mini, no SSH tunnel FastAPI parallelo).
+3. **Ciclo dev rapido**: localhost:8000 API + localhost:5173 UI sullo stesso device, no latenza rete, HMR Vite + uvicorn reload istantanei. Confronto vs Mini headless via Remote-SSH: superiore in tutti i parametri (responsiveness, debugger, browser DevTools sulla stessa macchina).
+4. **Studio client PWA caregiver a regime**: testare backend Studio significa testare nel device target d'uso reale (Safari/Chrome desktop caregiver), non in simulazione. Cross-validation naturale UX.
+5. **F3-S6 deploy diventa "vero deploy"**: copia codice + setup DB schema + seed owner + scelta strategia host (Docker/Colima container vs nativo MySQL + venv + launchd). Decisione informata da experience F3-S1÷F3-S5 invece di anticipata.
+
+**Trade-off accettato**: F3-S2÷F3-S5 testano backend contro MySQL Studio (9.6.0) invece di MySQL Mini (TBD verificare F3-S6 CP0). Differenze ambiente attese **minime** (stessa major version MySQL likely, stesso macOS Apple Silicon arm64) + edge case prod-only emergono comunque a F3-S6 deploy smoke (inevitabile + accettabile).
+
+**Decisione AMB-F3.F deploy host: deferred F3-S6 esecutiva** con 3 opzioni candidate aperte:
+- (α) Docker Desktop Mini + first-run VNC + docker-compose: massimo isolamento StockFusion + reproducibility
+- (β) Colima Mini CLI-only + docker-compose: isolamento massimo + zero GUI (headless-friendly)
+- (γ) MySQL nativo Mini (riuso esistente) + DB+user dedicato `pharmatimer`+`pharmatimer_app` + venv Python nativo + opzionale launchd autostart: setup minimo + isolamento logico (non fisico) + zero dipendenze nuove sul Mini
+
+Decisione F3-S6 con info da experience F3-S1÷F3-S5 + rivalutazione rischio StockFusion + preferenza ops complexity.
+
+#### Sub-decisioni R1 ratificate (β.1.a' + β.2.a' + β.3.a' + β.4.a')
+
+| Sub-decisione | Ratifica R1 | Razionale |
+|---|---|---|
+| **β.1** DB+user MySQL Studio | β.1.a' `pharmatimer_dev` + `pharmatimer_test` + user `pharmatimer_app` con `GRANT ALL ON pharmatimer_dev.* TO 'pharmatimer_app'@'localhost'` + GRANT analogo `pharmatimer_test.*` | Naming semanticamente chiaro Studio=dev / Mini=prod, riusa DB residui par.22.36 cleanable empirico (entrambi vuoti zero tables, scenario S1 confermato), naming Mini prod a F3-S6 sara' `pharmatimer` senza suffisso |
+| **β.2** Host backend FastAPI dev | β.2.a' Studio venv `~/Sviluppo/pharmatimer/backend/venv/` + uvicorn :8000 | Coerente R1 Studio-all + zero touch Mini |
+| **β.3** Process manager dev | β.3.a' uvicorn manuale + tmux/screen Studio per sessione persistente, **autostart launchd Studio NON necessario** (chiudo manualmente a fine giornata dev) + autostart Mini-side scope F3-S6 deploy decisione | Riduzione complessita F3-S1 |
+| **β.4** Repository layout | β.4.a' working tree Studio `~/Sviluppo/pharmatimer/backend/` (sub-folder monorepo Q4=B preservato) + branch `fase-3-backend` da `main@<HEAD-post-par.22.78-bis>` + push origin GitHub | Q4=B preservato, Q1=A Remote-SSH Mini obsoleto (Studio nativo edit), Mini sync via origin git pull avviene SOLO a F3-S6 deploy |
+
+**Cleanup DB residui par.22.36 deferred a CP1 F3-S1**: DROP `pharmatimer_dev` + DROP `pharmatimer_test` + CREATE schema multi-tenant + CREATE USER + GRANT eseguito inline `db/migrations/v01_init.sql` come CP1 F3-S1 scope (β.1.a' + Q-CLEANUP-DBS ratificato).
+
+#### Pre-condizioni F3-S1 R1 (sostituiscono pre-condizioni Mini originali par.11.D-S1 pre-R1)
+
+| # | Pre-condizione R1 | Stato verifica empirica 21/05/2026 |
+|---|---|---|
+| 1 | MySQL Studio version compatibile (>=8.0 raccomandato) | ✅ 9.6.0 macos15 arm64 Community GPL |
+| 2 | MySQL Studio accessibile + DB residui auditati | ✅ root no-password locale, 2 DB residui empty cleanable |
+| 3 | Python Studio version (>=3.10 minimo, 3.12+ raccomandato) | ✅ 3.13.12 Homebrew `/opt/homebrew/opt/python@3.13/libexec/bin/python3` |
+| 4 | Port 8000 Studio libera (uvicorn) | ✅ libera |
+| 5 | Port 5173 Studio libera (Vite dev) | ✅ libera |
+| 6 | Working tree `~/Sviluppo/pharmatimer/` esiste + clean | ✅ clean |
+| 7 | Branch `fase-3-backend` non esistente (sara' creato F3-S1 CP1) | ✅ non esiste |
+| 8 | MySQL Workbench Studio installato per gestione visuale DB dev | ✅ presente (gia in uso per Mini StockFusion DB) |
+
+Tutte 8/8 pre-condizioni verde. F3-S1 R1 e' apribile immediatamente post-closing F3-S0-R1.
+
+#### Lesson learned par.22.78-bis (consolidate)
+
+1. **CP0 empirico post-closing rivela info bloccanti pre-allocazione**: Sessione F3-S0 chiusa par.22.78 ha ratificato architettura Mini-based + Docker docker-compose senza verifica empirica setup Mini reale (StockFusion prod 24/7, no Docker, MySQL nativo). Pattern par.6.118 esteso a "pre-condizioni-verification empirica DEVE precedere ratifica architetturale costose downstream". Lesson da applicare sistematicamente in CP0 sessioni strategiche future: verifica empirica setup HOST target prima di freezare scope deploy/dev.
+
+2. **Architettura dev != architettura prod**: confondere "dove gira a regime" con "dove sviluppare" porta a decisioni sub-ottimali. PharmaTimer prod = Mini, PharmaTimer dev = Studio (R1). Pattern utile: sempre chiedere "dove gira a regime?" + "dove sviluppi?" come 2 domande separate in CP0 sessioni strategiche future.
+
+3. **Cross-coerenza decisioni Q17 dropdown + Q-DOG.2 multi-account + Decisione 5=B**: 3 ratifiche apparentemente indipendenti vincolavano implicitamente l'architettura host client PWA. La pre-elaborazione blanket "decidi tu" su tutte e 3 ha nascosto questa cross-implication fino al CP0 empirico R1. Pattern: decisioni TBD residue post-ratifica blocchi correlati richiedono cross-coerenza esplicita prima del closing.
+
+4. **Anomalia mount stale /mnt/project/ vs KB live**: scoperto empiricamente in questa sessione che `/mnt/project/` nella sandbox Claude.ai puo' essere snapshot stale del KB live (visualizzato corretto in UI sidebar). Workaround applicato: upload diretto via `/mnt/user-data/uploads/` da Roberto. Lesson #7 da consolidare: per patcher idempotenti content-based, sempre richiedere upload diretto del file baseline a inizio sessione doc-only, non assumere `/mnt/project/` aggiornato.
+
+5. **Append-only vs retrocorrezione**: par.22.78 originale chiuso e immutabile (par.6.71/85). par.22.78-bis nuova sezione append-only documenta info successive senza alterare history. par.11.D-S1 invece pre-frozen forward-looking mai consumato = riscrittura legittima (no deviazione storica). Pattern utile: distinguere "fatto storico" vs "pre-allocazione forward-looking" per applicare correttamente principio par.6.71/85.
+
+#### Test
+
+504/504 invariati su 62 files (zero delta vs baseline par.22.74/22.75/22.76/22.77/22.78). Nessun test NEW emesso (doc-only KB-mirror Changelog modificato, no codice runtime modificato). Allineato pattern par.22.74÷22.78 delta zero in sessioni doc-only.
+
+#### Tag git e push
+
+- **Tag git: NO** (AMB-11.B.7 rispettato: doc-only, no milestone tecnico, no codice runtime modificato)
+- **package.json: invariato 3.1.0** (AMB-11.B.7: no bump in sessioni doc-only)
+- **Commit: 1** (CP delivery patcher Python idempotente content-based 2 op: INSERT par.22.78-bis + REPLACE par.11.D-S1, pattern par.22.78 replicato esatto)
+- **Spec: invariata KB-only** (R1 cambia solo strategia dev/deploy, schema DB multi-tenant + endpoint API + naming convention invariati)
+
+#### Stato git post-Sessione F3-S0-R1 (post-CP delivery)
+
+- branch `main` HEAD `<closing-commit-NEW>` (commit doc-only par.22.78-bis emit + par.11.D-S1 R1 REPLACE) **allineato origin/main** post-push #1
+- working tree **clean** (gitignore pattern `*.bak.*` par.22.74 attivo: backup `.bak.r1` ignorato auto)
+- tag annotato `v3.1.0` sha tag-object `294c563` target `e10b971` invariato
+- gh-pages SHA `0f93b63` invariato (no redeploy, doc-only KB-mirror Changelog)
+- package.json `3.1.0` invariato (AMB-11.B.7 rispettato)
+- 504/504 test invariati su 62 files
+- **1 commit emesso Sessione F3-S0-R1**: `<closing-commit-NEW>` (CP delivery patcher Python 2 op: INSERT par.22.78-bis + REPLACE par.11.D-S1 R1)
+- **Spec v1.4 KB-only invariata** (R1 cambia solo strategia dev/deploy)
+
+#### Sessione successiva post-F3-S0-R1
+
+**F3-S1 esecutiva R1 scaffolding Studio multi-tenant** + cleanup DB residui par.22.36 inline CP1 + Mini zero-touch. One-liner `Esegui il prompt al par.11.D-S1 del Changelog` apre F3-S1 con scope frozen par.11.D-S1 R1 + sub-AMB F3-S1.A÷H pre-allocate ratifica blanket apertura.
+
+8/8 pre-condizioni F3-S1 R1 verificate empiricamente 21/05/2026 (vedi tabella sopra). F3-S1 R1 apribile immediatamente, no precondizione esterna bloccante.
 
 ---
 
