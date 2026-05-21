@@ -4972,6 +4972,110 @@ Esegui il prompt al par.11.D-S1 del Changelog.
 
 ---
 
+### 11.D-S1 Prompt Sessione F3-S1 esecutiva scaffolding Mini multi-tenant + schema MySQL + seed owner + 2 endpoint smoke (post-F3-S0 par.22.78 ratificato, output pre-frozen Decisione 5=B + 5.B.1)
+<!-- par.11.D-S1 emit pre-frozen -->
+
+**One-liner apertura:** `Esegui il prompt al par.11.D-S1 del Changelog.`
+
+**Modalita:** esecutiva ×1 mista (CP0 audit Mini via SSH + 5 CP impl + CP closing). Scope frozen par.11.D-rev v3.2 + par.22.78 ratifica F3-S0. Token attesi 50-80K. Wall-clock 2.5-4h. Pattern par.22.55 split safety-first applicabile se CP0 F3-S1 rivela densita >50K.
+
+#### Pre-letture obbligatorie
+
+1. **par.11.D-rev v3.2 integrale** (12 Q + 5 Q multi-utente Q13-Q17 + AMB-NAMING + Q-DOG + Q-IMPORT/SAFETY/SYNC + 5 sub-AMB F3-S0.A÷E + 8 AMB-F3.A÷H + Decisione 5=B + Decisione 5.B.1)
+2. **par.22.78 chiusura F3-S0** (ratifica blanket Q1-Q12 + Decisione 5=B + Decisione 5.B.1 + calibrazione 20-21 sessioni)
+3. **Spec v1.4 sez. 3.9/3.10/3.11** (schema tabelle NEW `utenti`+`permessi`+`push_subscriptions`)
+4. **Spec v1.4 sez. 9** (endpoint REST con auth header X-User-Token + endpoint NEW caregiver/import-export)
+5. **Spec v1.4 sez. 11.5/11.6** (contesto multi-utente + dimensionamento + onboarding model + AMB-NAMING livelli 1+2+3)
+6. **par.22.36** (lesson MariaDB install Studio anomala MySQL 9.6, db residui pharmatimer_dev/test, cleanup CP0-alpha-bis approccio)
+
+#### Pre-condizioni F3-S1 (Roberto fornisce pre-apertura)
+
+1. **Hostname/alias SSH reale Mini** (sostituisce placeholder `<mini-alias-reale>` ovunque in CP0 + script)
+2. **SSH key-based auth Studio->Mini funzionante** (no password prompt interattivo)
+3. **Docker Desktop running su Mini** (verificabile CP0 via SSH)
+4. **Port 3306 occupata da MySQL Mini esistente** (verificabile CP0)
+5. **Port 8000 libera su Mini** (verificabile CP0)
+
+#### CP0 baseline obbligatorio Mac-side (Studio Ultra + SSH Mini)
+
+```bash
+echo '=== CP0 F3-S1 baseline ==='
+cd ~/Sviluppo/pharmatimer
+echo '--- Branch e top commit Studio ---'
+git branch --show-current
+git --no-pager log -1 --oneline
+echo '--- Tag latest ---'
+git describe --tags --abbrev=0
+echo '--- package.json version ---'
+node -p "require('./package.json').version"
+echo '--- Test count baseline ---'
+npm test -- --run 2>&1 | grep -E 'Test Files|Tests' | tail -3
+echo '--- Working tree Studio ---'
+git status --short
+echo '--- Mini reachability via SSH ---'
+ssh <mini-alias-reale> 'echo SSH OK && uname -a'
+echo '--- MySQL version Mini (Q2 risoluzione) ---'
+ssh <mini-alias-reale> 'mysql --version'
+echo '--- Docker Mini ---'
+ssh <mini-alias-reale> 'docker --version && docker info 2>/dev/null | grep "Server Version"'
+echo '--- Port 3306 Mini (atteso: MySQL occupato) ---'
+ssh <mini-alias-reale> 'lsof -i :3306 2>/dev/null | head -3 || echo lsof unavailable'
+echo '--- Port 8000 Mini (atteso: libero) ---'
+ssh <mini-alias-reale> 'lsof -i :8000 2>/dev/null | head -3 || echo port 8000 libera'
+echo '--- DB residui Mini par.22.36 lesson ---'
+ssh <mini-alias-reale> 'mysql -e "SHOW DATABASES LIKE \"pharmatimer%\";" 2>/dev/null || echo no auth interactive (OK rivedere CP1)'
+echo '=== CP0 completato ==='
+```
+
+Atteso baseline F3-S1:
+- branch `main`, HEAD post-par.22.78 commit doc-only emit
+- tag `v3.1.0` invariato, package 3.1.0
+- 504/504 test su 62 files baseline
+- working tree clean post-push par.22.78
+- Mini reachable + MySQL X.Y.Z + Docker installed + port 3306 occupata + port 8000 libera
+- DB residui `pharmatimer_dev`/`pharmatimer_test` (par.22.36 lesson) o assenti
+
+#### Sub-AMB F3-S1.A÷H ratifica apertura blanket "decidi tu" attesa
+
+| Sub-AMB | Tema | Default raccomandato |
+|---|---|---|
+| F3-S1.A | Project layout esatto `pharmatimer_api/{routers,services,repository,db,models}/` con `app.py` entry-point | Conferma Q2=B par.11.C |
+| F3-S1.B | Pydantic models inline routers vs `models/` separato | `models/` separato (futureproof testing + reuse cross-router) |
+| F3-S1.C | Connection pool mysql-connector-python (`pooling.MySQLConnectionPool` size 5-10) | Pool size 5 single-family load |
+| F3-S1.D | Error mapping vocabulary `RepositoryError` Python parallel a JS Spec v1.4 sez. 6 | 1:1 parity con vocabulary JS (NotFound, Conflict, ValidationError, IntegrityError) |
+| F3-S1.E | Test fixtures `pytest-asyncio` per FastAPI TestClient + DB testdb scoped utente | testdb separato `pharmatimer_test`, cleanup truncate per-test (fast, deterministic) |
+| F3-S1.F | Seed owner endpoint vs script CLI | Script CLI `seed_owner.py` standalone (no auth required, first-run only, env var driven) |
+| F3-S1.G | Migration tool: alembic vs raw SQL versionato `db/migrations/v01_init.sql` | Raw SQL versionato (no SQLAlchemy = no alembic, coerente spec sez. 0.2) |
+| F3-S1.H | Docker-compose volumes persistence MySQL data | Named volume `pharmatimer_mysql_data` + host bind backup directory `~/pharmatimer-backups/` su Mini |
+
+#### Scope CP1-CP5 + CP closing F3-S1
+
+- **CP1** Project layout `backend/pharmatimer_api/{routers,services,repository,db,models}/` su sub-folder monorepo branch `fase-3-backend` (Q4=B) + `db/migrations/v01_init.sql` schema completo (4 tabelle esistenti `farmaci`+`orari_base`+`log_assunzioni`+`profilo_utente` scoped `utente_id FK` + 3 tabelle NEW `utenti`+`permessi`+`push_subscriptions` + indici composite Spec sez. 3.9/3.10/3.11)
+- **CP2** Script CLI `seed_owner.py` standalone (1 utente `ruolo='owner'`, `nome_visualizzato` configurabile via env var `OWNER_NAME`, token generato via `secrets.token_urlsafe(32)`, hash SHA-256 persistito in `utenti.token_hash`, output token chiaro su stdout una volta sola per copy-paste manuale verso Studio frontend `VITE_USER_TOKEN`)
+- **CP3** FastAPI app skeleton `app.py` + router `routers/health.py` + `routers/farmaci.py` + middleware `Depends(get_current_user)` validazione header `X-User-Token` SHA-256 hash vs `utenti.token_hash` + 2 endpoint smoke (`GET /api/health` no-auth public + `GET /api/farmaci` auth scoped `WHERE utente_id = current_user.id`)
+- **CP4** docker-compose v0.1 (`backend/docker-compose.yml` FastAPI container + MySQL container con volume `pharmatimer_mysql_data` + healthcheck) + pytest setup `tests/` + 10-15 test (smoke 2 endpoint + middleware auth happy/sad path + permission filter scoped + seed idempotenza + RepositoryError mapping)
+- **CP5** Closing: commit unico finale branch `fase-3-backend` + Changelog par.22.79 emit + SSH tunnel doc Studio<->Mini (port forward MySQL 3307->3306 + FastAPI 8000->8000) + decisione spin-off `PharmaTimer_Changelog_Fase3.md` vs continuazione `_Fase2.md` + tag `v3.2.0-alpha.1` locale annotato opzionale (AMB-11.B.7 valuta milestone tecnico)
+
+#### Decisioni in-session candidate F3-S1 (a CP5 closing)
+
+1. **Spin-off `PharmaTimer_Changelog_Fase3.md`** vs continuazione `PharmaTimer_Changelog_Fase2.md`: raccomandato spin-off post-F3-S1 closing per separazione semantica Fase 2 PWA standalone vs Fase 3 multi-tenant backend
+2. **Backend versioning** `backend/pyproject.toml` 0.1.0 separato vs unificato `package.json` v3.2.0-alpha.1: raccomandato pyproject.toml separato (versionamento Python indipendente Mini-side)
+3. **Tag F3-S1**: skip vs `v3.2.0-alpha.1` vs altro: raccomandato `v3.2.0-alpha.1` annotato LOCALE (no push fino smoke F3-S7), pattern AMB-11.B.7-bis tag intermedi locali
+
+#### Pattern operativi confermati F3-S1
+
+- Pattern §22.33-§22.35 (CP impl + commit unico finale + cleanup `.bak.*` + Changelog delivery)
+- Bash zsh-safe (echo single-quoted, no `#`, no apostrofi italiani) invariato par.11.D
+- Pattern par.22.58/par.22.67 patcher Python content-based idempotente per ogni file edit
+- Pattern par.6.118 pre-code scenario validation 2-3 scenari su `Depends(get_current_user)` + permission filter
+- AMB-11.B.7 bump effettivo a CP5 closing F3-S1
+- Pattern par.22.55 split safety-first applicabile se CP0 F3-S1 densita >50K
+- TBD CP0 risoluzioni in-line: Q2 MySQL version (A o B compatibili), `<mini-alias-reale>` hostname sostituzione globale, port 3306/8000 stato
+
+#### Sessione successiva post-F3-S1
+
+**F3-S2 esecutiva CRUD farmaci+orari+profili scoped `utente_id`** (×2-3 sub-split safety-first par.22.55 se densita >40K). Prompt par.11.D-S2 sara' pre-frozen output F3-S1 CP closing.
+
 ## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3 + 8-pre + 8a + 8b + 8c-parz + 8c-2 + 9-A + 9-B + 9-D + 10-A + 10-B + 10-C + 10-C-fix + 11-A CP1a + 11-A CP1b + 11-B
 
 | File | Step | Note |
@@ -16023,6 +16127,173 @@ Aperture opportunistiche disponibili in alternativa (NON necessarie pre-F3-S0, F
 - **Riapertura Fase 4 estensioni single-user residue** (parametri vitali, grafici aderenza, Apple Health): sessione di analisi-first dedicata per singola voce, no prompt pre-frozen disponibile
 
 Decisione owner caregiver-side: aprire F3-S0 esecutiva fase A dogfooding **ora** (one-liner `Esegui il prompt al par.11.D-rev del Changelog`) oppure pausa strategica + aperture opportunistiche pre-F3-S0.
+
+---
+
+---
+
+### 22.78 Stato post-Sessione F3-S0 analisi-first revisione par.11.C/par.11.D + ratifica Q1-Q12 single-user + Decisione 5=B build PWA unica + Decisione 5.B.1 vista onboarding token IndexedDB + sub-AMB F3-S0.A÷E + 8 AMB-F3.A÷H riviste + calibrazione 20-21 sessioni F3-S0÷F3-S9 + prompt par.11.D-S1 pre-frozen (modalita C misto: blanket Q + dialogato Decisione 5, zero codice scritto)
+<!-- par.22.78 emit closing F3-S0 -->
+
+**Data:** 21 maggio 2026.
+
+**Modalita:** Sessione analisi-first F3-S0 dedicata revisione par.11.C/par.11.D pre-frozen alla luce setup operativo Mini headless + SSH tunnel + Web Push + dogfooding ratificato par.22.77. CP0 baseline empirico verde + Q&A modalita (C) misto: blanket Q1-Q12 single-user + sub-AMB F3-S0.A÷E + AMB-F3.A÷H deltas, dialogato Decisione 5 build multi-PWA con sub-domanda Decisione 5.B.1 paste token meccanismo. Token spesi ~15-20K. Wall-clock 1.5-2h. Zero codice scritto (regola critica #1).
+
+**Esito:** OK ratifica completa scope F3-S0 ereditato par.11.D-rev v3.2 + Q-DOG.1-3 par.22.77 + ratifica nuova Decisione 5=B + Decisione 5.B.1 + prompt par.11.D-S1 pre-frozen output completo per F3-S1 esecutiva scaffolding backend Mini multi-tenant.
+
+#### Scope ratificato Sessione F3-S0
+
+**CP0 baseline empirico verde 7/7:** branch `main` HEAD `5c8ba56` allineato origin/main post-push par.22.77, working tree clean, tag `v3.1.0` invariato, package.json `3.1.0`, 504/504 test su 62 files, SSH Mini hostname placeholder `mini-headless` non risolto (TBD CP0 F3-S1 hostname/alias reale Mini da fornire pre-apertura F3-S1).
+
+**Q1-Q12 originali single-user ratificate blanket "decidi tu" (12 default raccomandati par.11.D-rev v3 invariati):**
+
+| Q | AMB/Tema | Ratifica blanket |
+|---|---|---|
+| Q1 | Workflow dev edit Mini headless | (A) VS Code Remote-SSH |
+| Q2 | DB engine reale prod | TBD CP0 F3-S1 `mysql --version` Mini, A o B compatibili |
+| Q3 | Adattamento spec MariaDB->MySQL | (A) doc-only deviazione s.6.NN inline F3-S1, riversamento spec v1.5 differito F3-S7 |
+| Q4 | Repo layout backend | (B) sub-folder monorepo `backend/` + branch `fase-3-backend` da `main@5c8ba56` |
+| Q5 | Network prod smartphone->Mini | (A) Tailscale magic-DNS |
+| Q6 | CORS prod | (A) restrictive Tailscale FQDN + gh-pages origin |
+| Q7 | Auth API livello-1 | (A) Tailscale trust-mesh sovrapposto Q15=A shared-secret-per-device (defense-in-depth 2 livelli) |
+| Q8 | Container vs nativo Mini | (A) docker-compose |
+| Q9 | Web Push scheduler | (A) APScheduler intra-FastAPI |
+| Q10 | VAPID key generation | (A) pywebpush CLI gen-keys F3-S8 CP0 |
+| Q11 | Backup automation MySQL | (A) cron mysqldump retention 7gg + archivio gzip 3 anni |
+| Q12 | Migration Dexie->MySQL | (C) ASSORBITA da Q-IMPORT.3 workflow F3-S4-bis (F3-S4 single-user migration ELIMINATA dal count) |
+
+**Sub-AMB F3-S0.A÷E ratificate blanket:**
+
+| Sub-AMB | Tema | Ratifica |
+|---|---|---|
+| F3-S0.A | Workflow file edit dev Mini headless | (A) VS Code Remote-SSH (eredita Q1) |
+| F3-S0.B | Branch strategy Studio<->Mini SSoT | (B) sub-folder monorepo backend + branch fase-3-backend (eredita Q4) |
+| F3-S0.C | Smoke testing CP browser execution location | pytest su Mini via SSH (code SSoT) + CP browser frontend su Studio Chrome dev server (2 tunnel SSH paralleli Studio:3307->Mini:3306 MySQL + Studio:8000->Mini:8000 FastAPI) |
+| F3-S0.D | Backup automation MySQL invariante | (A) cron mysqldump retention 7gg + archivio gzip 3 anni (eredita Q11) |
+| F3-S0.E | Network prod path-decision con deferral F3-S6 | (A) Tailscale magic-DNS; setup effettivo F3-S6, dev F3-S1->F3-S5 SSH tunnel diretto |
+
+**AMB-F3.A÷H riviste delta vs par.11.C originale:**
+
+| AMB | Stato delta |
+|---|---|
+| F3.A Stack backend FastAPI layout | Invariato (B) modulare minimal |
+| F3.B Auth | Invariato (=Q7=A) + esteso Q15=A defense-in-depth 2 livelli |
+| F3.C Migration Dexie->MariaDB | SOSTITUITO Q12=(C) ASSORBITA da Q-IMPORT.3 |
+| F3.D ApiRepository swap strategy | Invariato (A) feature-flag runtime dual-mode |
+| F3.E Networking | Invariato (=Q5=A) Tailscale magic-DNS |
+| F3.F Deploy host | Mini SOSTITUISCE Studio (par.22.36 lesson MariaDB 9.6 anomala Studio risolta by-design Mini-based) |
+| F3.G Sync conflict resolution | Invariato (C) server-authoritative SSoT + Q-SYNC refresh on-open |
+| F3.H Vista Log + Vista Export | OBSOLETO + ESTESO multi-tenant (Log+Export base GIA v3.1.0 Dexie par.11.U/V, sostituiti Import/Export server-side Q-IMPORT.1-4 in F3-S4-bis dedicata) |
+
+**Decisione 5 build multi-PWA RATIFICATA: 5.B 1 build PWA unica + token IndexedDB device-bound.**
+
+3 ragioni decisione:
+1. Coerenza dogfooding fase A Q-DOG.2: owner caregiver simula paziente A su secondo profilo stesso device, 5.A richiede 2 PWA installate (impraticabile mobile), 5.B/5.C supportano multi-account in-app, 5.B vince su 5.C per sicurezza
+2. Coerenza Q17=A dropdown switcher: dropdown header richiede single PWA istanza con stato utente runtime, 5.A architetturalmente in conflitto (1 build = 1 token = 1 utente, dropdown inutile)
+3. Sicurezza > convenience vs 5.C: token in URL leak via screenshot/share-link/browser-history-sync/proxy-log; IndexedDB device-bound + Tailscale-only network = 2 strati protezione preservati
+
+**Mitigazione rischio 5.B IndexedDB token at-rest:** token cifrato WebCrypto subtle.encrypt AES-GCM + chiave derivata da device-fingerprint deferred F3-S5 opportunistic; per dogfooding fase A solo-owner accettabile in chiaro IndexedDB dato Tailscale network privato + device fisicamente owned by owner caregiver.
+
+**Decisione 5.B.1 sub-meccanismo onboarding token paste RATIFICATA: 5.B.1 vista onboarding guidata step iniziale.**
+
+Primo avvio PWA -> step dedicato vista onboarding -> `"Inserisci il token utente fornito dal caregiver"` -> paste in campo `<input type="password">` masked -> salvato IndexedDB + redirect home. Robusto, no traccia URL/history, copy-paste mobile-friendly, masked input.
+
+Sub-opt scartate:
+- 5.B.2 URL parametro `?init_token=<uuid>` cancellato via `history.replaceState`: race condition mobile, traccia eventuale browser sync, deep-link share risk
+- 5.B.3 QR code scan device-to-device: richiede co-presenza fisica, non funziona onboarding remoto (paziente in altra citta, Tailscale remoto)
+
+**AMB-NAMING livello 2 estensione:** vista onboarding token 5.B.1 introduce stringa NEW UI `"Inserisci il token utente fornito dal caregiver"` (livello 2 runtime), zero etichette familiari hardcoded (compliant). Documentata Spec v1.5 sez. 11.6.1 livello 2 estensione UI onboarding (riversamento differito F3-S5-pre o F3-S7 closing milestone).
+
+**Calibrazione 20-21 sessioni F3-S0÷F3-S9 ratificata:**
+
+F3-S0 analisi-first (chiusa) + F3-S1 esecutiva scaffolding + F3-S2 esecutiva ×2-3 CRUD scoped + F3-S3-pre analisi-first transazioni + F3-S3 esecutiva ×2 algoritmi server + F3-S4 esecutiva ×2 caregiver flow + F3-S4-bis esecutiva Import/Export server-side + F3-S5-pre analisi-first ApiRepository swap + onboarding token 5.B.1 + F3-S5 esecutiva ×2 ApiRepository + UI onboarding token + F3-S6 esecutiva ×2 deploy single-PWA Mini + F3-S7 esecutiva closing v3.2.0 + dogfooding fase A apertura + F3-S8-pre analisi-first Web Push + F3-S8 esecutiva ×2 Web Push impl + F3-S9 esecutiva Web Push smoke cross-device + closing v3.3.0.
+
+Totale 20-21 sessioni (12-14 esecutive + 5 analisi-first + 4 sub-split potenziali ×2). Wall-clock 35-55h distribuibili 4-6 mesi a 1-2 sessioni/settimana. Token cumulativi 850K-1.3M. Coerente stima par.11.D-rev v3.2.
+
+**Prompt par.11.D-S1 pre-frozen emesso** (sezione separata `### 11.D-S1` post-par.11.D-rev) per F3-S1 esecutiva scaffolding Mini multi-tenant: schema MySQL 4 tabelle scoped + 3 NEW + middleware auth X-User-Token + 2 endpoint smoke + docker-compose v0.1 + pytest setup + SSH tunnel doc + sub-AMB F3-S1.A÷H pre-allocate.
+
+#### Test
+
+504/504 invariati su 62 files (zero delta vs baseline par.22.74/22.75/22.76/22.77). Nessun test NEW emesso (analisi-first pura, no codice runtime modificato). Allineato pattern par.22.74/22.75/22.76/22.77 delta zero in sessioni analisi-first/doc-only.
+
+#### Tag git e push
+
+- **Tag git: NO** (AMB-11.B.7 rispettato: analisi-first, no milestone tecnico, no codice runtime modificato)
+- **package.json: invariato 3.1.0** (AMB-11.B.7: no bump in sessioni analisi-first)
+- **Commit: 1** (CP delivery patcher Python idempotente content-based 2 op INSERT par.22.78 + par.11.D-S1, pattern par.22.75/76/77 replicato esatto)
+- **Spec: invariata KB-only** (AMB-NAMING livello 2 estensione vista onboarding token 5.B.1 documentata in par.22.78 + par.11.D-S1, riversamento Spec v1.5 differito F3-S5-pre o F3-S7 closing milestone)
+
+#### Lesson learned par.22.78 consolidate
+
+1. **Pattern modalita (C) misto blanket+dialogato funziona bene per decisioni a trade-off operativi misti:** Q1-Q12 single-user defaults par.11.D-rev v3 solidi pre-elaborati -> blanket "decidi tu" token-light ~5K; Decisione 5 build multi-PWA con trade-off operativi reali (sicurezza vs scaling vs dogfooding multi-account vs Q17 dropdown coherence) -> dialogato dedicato +sub-domanda 5.B.1 -> ratifica robusta in 1 turno con tabelle comparative pre-elaborate. Pattern replicabile per future sessioni miste con sotto-decisioni eterogenee.
+
+2. **Decisione 5=B + 5.B.1 cross-validation di Q17=A dropdown switcher + Q-DOG.2 multi-account stesso device:** 5.A 3 build separate sarebbe stata in conflitto architetturale con Q17 (dropdown utile solo con single PWA istanza) e Q-DOG.2 (multi-account stesso device richiede single PWA con switcher runtime). La pre-elaborazione Q-DOG.1-3 par.22.77 e Q13-Q17 par.11.D-rev v3.1 ha ridotto spazio decisione 5 a 5.B come unica scelta coerente. Lesson: decisioni TBD residue post-ratifica blocchi correlati vanno verificate per cross-coerenza prima di considerarle "aperte"; spesso il design space si e gia ristretto by-design dalle ratifiche precedenti.
+
+3. **TBD CP0 F3-S1 hostname/alias SSH reale Mini propagato come placeholder esplicito:** `<mini-alias-reale>` in par.11.D-S1 pre-frozen + CP0 baseline F3-S1 + Q2 mysql version verifica. Pattern par.22.55 split safety-first applicabile se CP0 F3-S1 rivela densita >50K o problemi hostname/SSH/Docker imprevisti. Roberto fornira hostname pre-apertura F3-S1 (no decisione Claude-side).
+
+#### Drift-doc-NEW segnalati NON corretti retroattivamente
+
+Zero drift-doc-NEW emersi questa sessione F3-S0 analisi-first. Cumulativo ~28-30 drift-doc carry-forward par.22.74 invariato.
+
+#### Riferimenti par.22.78
+
+- **par.11.D-rev v3.2 + Q-DOG.1-3** (target sessione, scope Fase 3 multi-tenant N-utenti + Web Push + Import/Export + dogfooding 3 fasi)
+- **par.11.D-S1 pre-frozen** (output F3-S0, prompt apertura F3-S1 esecutiva scaffolding Mini)
+- **par.22.77**: closing sessione consolidamento dogfooding par.11.D-rev v3.2 + Q-DOG.1-3 + lesson #6 audit residui PRE-write self-applied verde 0/0/0
+- **par.22.76**: closing sessione naming anonimo par.11.D-rev v3.1 + Spec v1.4 multi-tenant N-utenti
+- **par.22.75**: closing sessione consolidamento par.11.D-rev v3 + lesson #1 SENTINEL + lesson #5 abort-early bash
+- **par.22.74**: closing milestone rilascio v3.1.0 + procedura deploy gh-pages orphan-init + gitignore `*.bak.*` esteso
+- **par.22.58 / par.22.67**: pattern patcher Python idempotente content-based + assertion `count == 1` pre/post replicato esatto
+- **par.22.55**: pattern split safety-first preventivo applicabile se F3-S1 CP0 rivela densita >50K
+- **par.22.36**: lesson MariaDB install->MySQL 9.6 anomala Studio risolta by-design Mini-based F3.F
+- **par.6.118**: pre-code scenario validation esteso a anchor-validation empirica CP0 audit + audit residui PRE-write empirico lesson #6
+- **par.6.71 / par.6.85**: deviazioni storiche immutabili + gap numerazione s.6.NN preservato (zero s.6.NN nuove emesse Sessione F3-S0 analisi-first) + 3 occorrenze descrittive `### 11.U Prompt Sessione N+2...` in par.22.75/76/77 immutabili (riferimenti a pattern anchor passato, non duplicati sezione)
+- **AMB-11.B.7**: no bump package.json + no tag git in sessioni analisi-first (rispettato)
+- **par.22.42**: zero sub-AMB emergenti questa sessione (Decisione 5.B.1 sub-domanda pre-elaborata pre-prompt, non emergente in-session)
+
+#### Stato git post-Sessione F3-S0 (post-CP delivery)
+
+- branch `main` HEAD `<closing-commit-NEW>` (commit doc-only par.22.78 emit + par.11.D-S1 pre-frozen) **allineato origin/main** post-push #1
+- working tree **clean** (gitignore pattern `*.bak.*` par.22.74 attivo: backup `.bak.f3s0closing` ignorato auto)
+- tag annotato `v3.1.0` sha tag-object `294c563` target `e10b971` invariato
+- gh-pages SHA `0f93b63` invariato (no redeploy, doc-only KB-mirror Changelog)
+- package.json `3.1.0` invariato (AMB-11.B.7 rispettato)
+- 504/504 test invariati su 62 files
+- **1 commit emesso Sessione F3-S0**: `<closing-commit-NEW>` (CP delivery patcher Python 2 op INSERT par.22.78 + par.11.D-S1)
+- **Spec v1.4 KB-only invariata** (AMB-NAMING livello 2 estensione vista onboarding token 5.B.1 documentata par.22.78 + par.11.D-S1, riversamento Spec v1.5 differito F3-S5-pre o F3-S7)
+
+#### Pre-existing follow-up carry-forward par.22.77
+
+- ~17 findings registry cumulativo Fase 2 + drift-doc-N27 cosmetic + UX-N28 carry-forward F3-S4/S5 invariati
+- par.6.120 `actions.presa()` simulated_now DEV: invariato
+- Sub-AMB-G `addFarmaco` payload undefined: carry-forward v3.1.x opportunistic invariato
+- ~28-30 drift-doc cumulativi carry-forward par.22.74: invariato batch documentato senza retro-correzione
+
+#### Pre-existing follow-up Q-DOG.1+2+3 par.22.77 (invariato, NON bloccante F3-S1)
+
+- Fase A dogfooding solo-owner SBLOCCATA: apertura F3-S0/F3-S1/.../F3-S7 esecutiva sequenza naturale, fase A si apre post-F3-S7 closing v3.2.0
+- Fase B paziente A reale BLOCCANTE buy-in 5 punti par.22.76 (post-fase A verde, decisione fuori-Claude owner caregiver-side)
+- Fase C paziente B reale BLOCCANTE buy-in 5 punti separati (post-fase B verde, decisione fuori-Claude owner caregiver-side)
+
+#### Sessione successiva
+
+**F3-S1 esecutiva scaffolding Mini multi-tenant.** `Esegui il prompt al par.11.D-S1 del Changelog` apre F3-S1 con scope frozen par.11.D-S1 + sub-AMB F3-S1.A÷H pre-allocate ratifica blanket apertura.
+
+Pre-condizioni F3-S1:
+1. **Hostname/alias SSH reale Mini fornito da Roberto pre-apertura** (sostituisce placeholder `<mini-alias-reale>`)
+2. **SSH key-based auth Studio->Mini funzionante** (no password prompt interattivo)
+3. **Docker Desktop running su Mini** (verificabile CP0 F3-S1 via SSH `docker --version` + `docker info`)
+4. **Port 3306 occupata MySQL Mini esistente** (CP0 F3-S1 audit `lsof -i :3306` via SSH, OK se MySQL Mini, NOT OK se altro processo)
+5. **Port 8000 libera Mini** (CP0 F3-S1 audit `lsof -i :8000` via SSH, deve essere libera per FastAPI container deploy)
+
+Token attesi F3-S1: 50-80K esecutiva ×1 mista (CP0+5 CP impl+CP closing), wall-clock 2.5-4h. Pattern par.22.55 split safety-first applicabile se CP0 F3-S1 rivela densita >50K o problemi imprevisti.
+
+Aperture opportunistiche disponibili in alternativa (NON necessarie pre-F3-S1):
+- Patch v3.1.x opportunistic su single finding registry promosso da "polish" a "bloccante uso pratico"
+- Audit drift-doc batch ~28-30 cumulativi sessione doc-only dedicata
+- Riapertura Fase 4 estensioni single-user residue (parametri vitali, grafici aderenza, Apple Health)
+
+Decisione owner caregiver-side: aprire F3-S1 esecutiva **ora** post-hostname Mini fornito (one-liner `Esegui il prompt al par.11.D-S1 del Changelog`) oppure pausa strategica + aperture opportunistiche pre-F3-S1.
 
 ---
 
