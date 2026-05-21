@@ -7,3 +7,6 @@ dist/
 .backup_*/
 *.bak
 *.bak.*
+
+TREE.TXT
+*.bak
