@@ -5101,6 +5101,149 @@ Mini riceve SOLO a F3-S6 esecutiva deploy (decisione AMB-F3.F α/β/γ con info 
 
 **F3-S2 esecutiva CRUD farmaci+orari+profili scoped `utente_id` R1 Studio-all** (×2-3 sub-split safety-first par.22.55 se densita >40K). Prompt par.11.D-S2 sara' pre-frozen output F3-S1 R1 CP closing.
 
+## 11.D-S1.bis Prompt Sessione F3-S1-bis diagnosi MySQL Studio + remediation auth + CP1 DB apply + CP1 codice runtime Python + CP2 + CP3 + CP4 + CP5 originale (post-F3-S1 R1 par.22.79 chiusura safety-first)
+<!-- par.11.D-S1.bis R1-bis emit -->
+
+**One-liner apertura:** `Esegui il prompt al par.11.D-S1.bis del Changelog.`
+
+**Modalita:** esecutiva mista CP0-D diagnosi MySQL Studio (NEW vs F3-S1 R1) + CP1-fix DB schema apply + CP1-code FastAPI runtime + CP2-CP5 originali. Token attesi 60-90K. Wall-clock 3-5h. Pattern par.22.55 split safety-first applicabile se CP0-D rivela densita >50K imprevista.
+
+#### Pre-letture obbligatorie
+
+1. **par.22.79 integrale** (stato post-F3-S1 R1 parziale + 9 deviazioni s.6.222-s.6.230 + 4 lesson learned NEW + diagnosi auth MySQL 9.6 Studio + 5 cleanup par.22.36)
+2. **par.22.78-bis R1 ratifica** (architettura Studio-all dev + 8+1 pre-condizioni empiriche estese lesson #8)
+3. **par.11.D-S1 R1 integrale** (scope CP1-CP5 originale + sub-AMB F3-S1.A-H + decisioni in-session candidate CP5)
+4. **Spec v1.4 sez. 3.1/3.4/3.5/3.6/3.9/3.10/3.11** (schema 8 tabelle multi-tenant)
+5. **Spec v1.4 sez. 9** (endpoint REST con header `X-User-Token` mandatory)
+6. **Spec v1.4 sez. 11.6** (architettura multi-tenant + AMB-NAMING + dimensionamento + onboarding model)
+
+#### Pre-condizioni F3-S1-bis (verificare CP0 pre-diagnosi)
+
+| # | Pre-condizione | Atteso post-F3-S1 R1 par.22.79 |
+|---|---|---|
+| 1 | Branch `fase-3-backend` HEAD = closing-commit par.22.79 | 3 commit ahead origin/main |
+| 2 | Working tree clean | clean post-commit Changelog |
+| 3 | 11 file backend tracked (layout + .gitignore + requirements + bootstrap.sql + v01_init.sql) | tracked OK |
+| 4 | user `pharmatimer@localhost` creato + auth 1045 (stato bloccato in input) | bloccato, da risolvere CP0-D |
+| 5 | DB `pharmatimer_dev` + `pharmatimer_test` esistenti empty | empty pronti per migration |
+| 6 | venv `backend/venv/` ready + 8 pacchetti Python installati | OK fastapi + uvicorn + mysql-connector-python + pydantic + pytest |
+| 7 | Tag `v3.1.0` invariato + package.json `3.1.0` | invariato |
+| 8 | 504/504 test PWA invariati | invariato |
+| 9 | Audit user MySQL pharmatimer% (lesson #8): solo `pharmatimer@localhost` esistente | clean post-s.6.227 |
+
+#### Scope CP0-D diagnosi dedicata MySQL Studio (NEW, blocca CP1-fix)
+
+Decisione strategy remediation MySQL Studio quirk auth ratificata blanket apertura "decidi tu" (Roberto delega Claude su default raccomandato):
+
+| Strategy | Pro | Contro | Stima effort | s.6.231 raccomandato |
+|---|---|---|---|---|
+| **(a)** Reinstall MySQL 9.6 Studio Homebrew clean (rimozione Oracle DMG anomalo par.22.36 origine + brew install mysql clean) | Mantiene parity dev/prod MySQL 9.x (se Mini ha 9.x). Risolve quirk via reinstall clean. | Rischio quirk reproduce se causa e build-agnostic (es. macOS Tahoe specific). Tempo install ~30-45 min + reconfig nativo. | 1-1.5h | Possibile, ma rischio fallimento |
+| **(b)** Downgrade MySQL 8.4 LTS Studio (re-introduce `mysql_native_password` legacy disponibile) | Plugin auth stabile + ben documentato + fallback garantito. | Divergenza dev/prod se Mini ha MySQL 9.x (re-introduzione gap parity). Downgrade Studio costoso (export-reimport schema StockFusion fuori-Fase 3 NO TOCCARE). | 2-3h se StockFusion Mini va preservato | Sconsigliato (compromette Mini StockFusion via parity Mini) |
+| **(c) raccomandato** | **Docker MySQL container Studio-side**: docker-compose minimal con `mysql:9.6-debian` immagine ufficiale + volume mount `~/Sviluppo/pharmatimer/backend/db_data/` + port 3307 (no conflitto con MySQL nativo Studio 3306 + Mini SSH tunnel 3307 -> Mini 3306 - **VERIFICA pre-CP0-D port conflict**) | **Dual benefit**: risolve quirk auth nativo (container ha config pulita upstream) + esperienza Docker pre-AMB-F3.F F3-S6 (anticipazione decisione Mini Docker vs nativo) + isolation StockFusion completa + dev/prod parity preservata MySQL 9.x. **Bypass completo** del problema MySQL nativo Studio senza toccarlo. | Richiede Docker Desktop running Studio + Colima/OrbStack alternativa + ~500MB immagine MySQL + setup volume mount. Port 3307 verifica pre-impl (potenziale conflitto SSH tunnel Mini esistente). | 1-1.5h | **Raccomandato**: anticipa F3-S6 decisione + dual benefit + zero rischio MySQL nativo Studio |
+
+**Default raccomandato (c)**: emette `backend/docker-compose.dev.yml` con MySQL container + apply schema via `mysql` client da host verso container (port 3307 mappato), seed_owner.py + FastAPI app punteranno a `127.0.0.1:3307` invece di socket Unix nativo.
+
+**Sub-decisione pre-allocata SD.5 NEW** (a CP5 closing F3-S1-bis): `docker-compose.dev.yml` location finale - `backend/docker-compose.dev.yml` standalone vs unified con eventuale `backend/docker-compose.yml` futuro F3-S6 prod (raccomandato: stesso file `docker-compose.yml` con profiles `dev` + `prod` selectable via flag).
+
+#### Scope CP1-fix DB schema apply (post-CP0-D verde)
+
+- Applica `v01_init.sql` su `pharmatimer_dev` + `pharmatimer_test` via user `pharmatimer` working (8 tabelle ciascuno + 10 FK)
+- Smoke schema verification (`SHOW TABLES` + FK constraints + INSERT/SELECT minimal test funzionale)
+- Se strategy (c) Docker: connection string punta `127.0.0.1:3307` invece di socket Unix nativo
+
+#### Scope CP1-code FastAPI runtime Python (NEW vs F3-S1 R1)
+
+5 file Python runtime originalmente parte CP1 ma deferred F3-S1 R1:
+
+- `backend/pharmatimer_api/app.py` - FastAPI entry-point + lifespan (startup/shutdown DB pool) + CORS dev permissive (`localhost:5173`) + router registration health + farmaci
+- `backend/pharmatimer_api/db/connection.py` - mysql-connector-python `pooling.MySQLConnectionPool` pool_size=5 (F3-S1.C default) + connection string from Pydantic Settings env var `DATABASE_URL`
+- `backend/pharmatimer_api/db/dependencies.py` - middleware `Depends(get_current_user)` SHA-256 hash check vs `utenti.token_hash` + scope `utente_id` injection
+- `backend/pharmatimer_api/models/farmaco.py` - Pydantic `FarmacoResponse` + `FarmacoCreate` minimal schemas
+- `backend/pharmatimer_api/routers/health.py` - `GET /api/health` (no-auth public, return status + db_ping)
+
+#### Scope CP2 + CP3 + CP4 + CP5 originali F3-S1 R1 invariati
+
+- **CP2 originale**: `backend/seed_owner.py` standalone CLI (env var `OWNER_NAME` + `secrets.token_urlsafe(32)` generato + SHA-256 hash in `utenti.token_hash` + stdout token chiaro una volta, no auth required first-run only)
+- **CP3 originale**: `backend/pharmatimer_api/routers/farmaci.py` - `GET /api/farmaci` (auth scoped `WHERE utente_id = current_user.id` via middleware get_current_user) + smoke manuale uvicorn :8000 Studio + curl validation
+- **CP4 originale**: `backend/tests/{conftest.py,test_health.py,test_farmaci_read.py}` (10-15 test: smoke 2 endpoint + middleware auth happy/sad path + permission filter scoped utente + seed idempotenza + RepositoryError mapping vocabulary F3-S1.D)
+- **CP5 closing originale**: commit unico cumulativo final F3-S1-bis branch `fase-3-backend` + Changelog par.22.80 emit + decisioni in-session candidate (spin-off `PharmaTimer_Changelog_Fase3.md` raccomandato post-F3-S1-bis closing + backend versioning `backend/pyproject.toml` 0.1.0 raccomandato + tag `v3.2.0-alpha.1` LOCALE annotato raccomandato AMB-11.B.7-bis + `.env.dev` gitignored DATABASE_URL config raccomandato)
+
+#### CP0 baseline obbligatorio Mac-side (Studio Ultra only)
+
+```bash
+echo '=== CP0 F3-S1-bis baseline Studio-side ==='
+cd ~/Sviluppo/pharmatimer
+echo '--- Branch e top commit Studio ---'
+git branch --show-current
+git --no-pager log -1 --oneline
+echo '--- Working tree (atteso clean) ---'
+git status --short
+echo '--- Test count baseline ---'
+npm test -- --run 2>&1 | grep -E 'Test Files|Tests' | tail -3
+echo '--- MySQL Studio nativo state ---'
+mysql --version
+mysql -u root -e "SELECT user, host, plugin FROM mysql.user WHERE user LIKE 'pharmatimer%';"
+mysql -u root -e 'SHOW DATABASES LIKE "pharmatimer%";'
+echo '--- Port 3307 Studio (target Docker container se strategy c) ---'
+lsof -nP -iTCP:3307 -sTCP:LISTEN 2>/dev/null | head -5 || echo 'port 3307 libera'
+echo '--- Docker Desktop Studio running? (se strategy c) ---'
+docker --version 2>&1
+docker info --format '{{.OperatingSystem}}' 2>&1 | head -3
+echo '--- venv backend integrity ---'
+backend/venv/bin/python -c "import fastapi, mysql.connector, pydantic, pytest; print('OK 4 pkg import')"
+echo '=== CP0 F3-S1-bis completato ==='
+```
+
+#### Decisioni in-session candidate F3-S1-bis (a CP5 closing par.22.80)
+
+1. **Strategy CP0-D ratificata applicata** (a/b/c): documenta scelta + esiti empirici diagnosi MySQL Studio + applicazione fix
+2. **Spin-off `PharmaTimer_Changelog_Fase3.md`** vs continuazione `Fase2.md`: raccomandato spin-off post-F3-S1-bis closing per separazione semantica Fase 2 PWA standalone vs Fase 3 multi-tenant backend
+3. **Backend versioning** `backend/pyproject.toml` 0.1.0 separato vs `backend/requirements.txt` pinned only (raccomandato pyproject.toml)
+4. **Tag F3-S1-bis**: skip vs `v3.2.0-alpha.1` LOCALE annotato (raccomandato annotato LOCALE, no push fino F3-S7 smoke)
+5. **Persistenza credenziali**: `.env.dev` gitignored + Pydantic Settings + python-dotenv (raccomandato semplice)
+6. **Sub-decisione SD.5** docker-compose.dev.yml location se strategy (c) ratificata
+
+#### Pattern operativi confermati F3-S1-bis
+
+- Lesson #8 audit user MySQL residui CP0 extended (applicato CP0 baseline sopra)
+- Lesson #9 subshell wrapper safe bash `( set -e; ... ) || echo abortito` MANDATORY ogni blocco delivery
+- Lesson #10 MySQL 9.6 macOS Tahoe non-standard auth pattern documentato
+- Lesson #11 mysql_native_password REMOVED 9.x (fallback non disponibile)
+- Lesson #12 audit grep s.6.NN cumulative pre-emit MANDATORY
+- Pattern par.22.55 split safety-first applicabile se CP0-D rivela densita >50K
+- Pattern par.22.58/par.22.67/par.22.78/par.22.79 patcher Python content-based idempotente con assertion uniqueness pre/post
+- Bash zsh-safe (echo single-quoted, no `#`, no apostrofi italiani) invariato
+
+#### Pre-condizioni esterne F3-S1-bis
+
+- **Docker Desktop Studio o Colima/OrbStack installato + running** se strategy (c) ratificata - verifica CP0 obbligatorio
+- **Port 3307 Studio libera** se strategy (c) - verifica CP0 obbligatorio (potenziale conflitto SSH tunnel Mini esistente!)
+- **MySQL Workbench Studio** invariato (gia in uso F3-S1 R1)
+- **Nessuna pre-condizione bloccante esterna** se strategy (a) o (b) ratificate (operazioni 100% Studio-side)
+
+#### Riferimenti par.11.D-S1.bis
+
+- **par.22.79** (stato post-F3-S1 R1 parziale): scope ereditato, 9 deviazioni s.6.222-230 + 4 lesson #8-#11 NEW + cleanup par.22.36 chiuso
+- **par.22.78-bis R1**: architettura Studio-all + 9 pre-condizioni (lesson #8 estensione)
+- **par.11.D-S1 R1**: scope CP1-CP5 originale + sub-AMB F3-S1.A-H + decisioni in-session candidate
+- **Spec v1.4 sez. 3.1-3.11 + sez. 9 + sez. 11.6**: schema 8 tabelle multi-tenant + endpoint API + architettura
+- **par.22.36**: lesson MariaDB install Studio anomalo + cleanup completo definitivo F3-S1 R1
+- **par.22.55**: pattern split safety-first preventivo applicabile
+- **par.22.58 / par.22.67 / par.22.78 / par.22.79**: pattern patcher Python idempotente content-based replicato esatto
+- **AMB-F3.F**: anticipa decisione Mini Docker vs nativo F3-S6 se strategy (c) ratificata F3-S1-bis (lesson cross-fase)
+- **AMB-11.B.7 / AMB-11.B.7-bis**: bump + tag a CP5 closing F3-S1-bis (milestone tecnico funzionante 2 endpoint smoke verdi)
+
+#### Sub-decisione SD.6 NEW pre-allocata (a CP0-D ratifica)
+
+**SD.6**: Cleanup `pharmatimer@localhost` user nativo MySQL Studio post-strategy (c) Docker container ratificata?
+- (i) raccomandato: DROP USER `pharmatimer@localhost` nativo + cleanup completo MySQL Studio nativo da residui pharmatimer (era target F3-S1 R1 ma quirk auth ha reso il path infruttuoso)
+- (ii) preserve: lascia user + DBs nativi come fallback se strategy (c) Docker fallisce a CP0-D
+- (iii) deferred: decisione a fine F3-S1-bis post-smoke 2 endpoint verde
+
+Default raccomandato (i) - pulizia completa MySQL Studio nativo post-pivot Docker, evita drift cross-strategy. Eventuale recovery da nativo richiede solo re-running `backend/db/bootstrap.sql` (idempotente by-design s.6.222).
+
+
+
 ## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3 + 8-pre + 8a + 8b + 8c-parz + 8c-2 + 9-A + 9-B + 9-D + 10-A + 10-B + 10-C + 10-C-fix + 11-A CP1a + 11-A CP1b + 11-B
 
 | File | Step | Note |
@@ -16262,6 +16405,159 @@ Tutte 8/8 pre-condizioni verde. F3-S1 R1 e' apribile immediatamente post-closing
 **F3-S1 esecutiva R1 scaffolding Studio multi-tenant** + cleanup DB residui par.22.36 inline CP1 + Mini zero-touch. One-liner `Esegui il prompt al par.11.D-S1 del Changelog` apre F3-S1 con scope frozen par.11.D-S1 R1 + sub-AMB F3-S1.A÷H pre-allocate ratifica blanket apertura.
 
 8/8 pre-condizioni F3-S1 R1 verificate empiricamente 21/05/2026 (vedi tabella sopra). F3-S1 R1 apribile immediatamente, no precondizione esterna bloccante.
+
+---
+
+---
+
+### 22.79 Stato post-Sessione F3-S1 R1 esecutiva CP1 parziale chiusura safety-first par.22.55 (scaffolding backend layout + venv + requirements + bootstrap.sql + v01_init.sql 8 tabelle multi-tenant + cleanup user/DB/.bak residui par.22.36 chiusi + CP1 DB schema apply BLOCCATO quirk auth MySQL 9.6 Studio + CP2-CP5 deferred par.11.D-S1.bis + 3 commit fase-3-backend + lesson #8-#11 NEW + 9 deviazioni s.6.222-s.6.230)
+<!-- par.22.79 emit closing F3-S1 R1 parziale -->
+
+**Data:** 21 maggio 2026 (sera, post-par.22.78-bis stesso giorno).
+
+**Modalita:** Sessione esecutiva F3-S1 R1 con chiusura safety-first par.22.55 anticipata a CP1 parziale post-discovery quirk auth MySQL 9.6 Studio non risolvibile in-sessione (regola critica #5 self-applied). Token spesi ~50-60K. Wall-clock ~2.5h.
+
+**Esito:** CP1 layout + scaffolding consegnato OK + 5 cleanup lesson par.22.36 chiusi definitivamente (DB residui + user residuo + naming refinement + cleanup .bak orfani Studio + gitignore extension). CP1 DB schema apply + CP1 codice runtime Python (app.py + connection.py + dependencies + routers) + CP2 seed_owner.py + CP3 endpoint smoke + CP4 pytest + CP5 closing deferred F3-S1-bis dedicata diagnosi MySQL Studio + remediation.
+
+#### Scope EFFETTIVAMENTE consegnato CP1 parziale
+
+Realta filesystem empirica post-Sessione (6 punti effettivi):
+
+1. **Branch fase-3-backend creato** da `main@4bcb469` (par.22.78-bis HEAD) + push origin set upstream tracking
+2. **Layout directory** `backend/{pharmatimer_api/{routers,services,repository,db,models},db/migrations,tests}/` con **7 file `__init__.py` vuoti** (Python package markers)
+3. **Config files** `backend/.gitignore` (12 righe: venv, pycache, env, bak, coverage) + `backend/requirements.txt` (8 pacchetti non-pinned: fastapi, uvicorn[standard], mysql-connector-python, pydantic, pydantic-settings, pytest, pytest-asyncio, httpx)
+4. **SQL files** `backend/db/bootstrap.sql` (28 righe: DROP+CREATE 2 DBs + DROP+CREATE user `pharmatimer` con caching_sha2_password + GRANT) + `backend/db/migrations/v01_init.sql` (151 righe: 8 tabelle multi-tenant utf8mb4 InnoDB con FK + indici composite Spec sez. 3.9/3.10/3.11 + Changelog Fase 2 sez. 6.1 impostazioni_app scoped s.6.224)
+5. **venv backend** creato in `backend/venv/` (gitignored) + `pip install -r requirements.txt` completato: fastapi 0.136 + uvicorn + mysql-connector-python 9.7 + pydantic 2.13 + pytest 9.0 + httpx + pydantic-settings + pytest-asyncio + transitive dependencies
+6. **5 cleanup lesson par.22.36** chiusi definitivamente: DB residui `pharmatimer_dev` + `pharmatimer_test` DROPped+recreated empty utf8mb4 / user residuo `pharmatimer@localhost` (residuo 5 mesi mai documentato) cleaned via heredoc CLI / naming refinement `pharmatimer_app` -> `pharmatimer` no suffisso (s.6.226 beta.1.a-second override beta.1.a-first par.22.78-bis) / 2 file .bak orfani Studio-side rm'd (`PharmaTimer_Changelog_Fase2.md.v25.bak` + `README.md.v280.bak`, cleanup-N3 closure) / `.gitignore` root extended (`TREE.TXT` + `*.bak` generico complementa `*.bak.*` pre-esistente)
+
+#### Scope DEFERRED F3-S1-bis (non-consegnato)
+
+Tutto il codice Python runtime CP1 originale + CP2 + CP3 + CP4 + CP5 closing originale rinviato a Sessione F3-S1-bis (par.11.D-S1.bis pre-frozen post questa sezione):
+
+| Item | Originale CP | Stato post-F3-S1 R1 |
+|---|---|---|
+| `app.py` FastAPI entry-point + lifespan + CORS dev | CP1 (codice runtime) | DEFERRED F3-S1-bis CP3 |
+| `db/connection.py` mysql-connector pool size 5 (sub-AMB F3-S1.C) | CP1 (codice runtime) | DEFERRED F3-S1-bis CP3 |
+| `models/farmaco.py` Pydantic FarmacoResponse (sub-AMB F3-S1.B) | CP1 (codice runtime) | DEFERRED F3-S1-bis CP3 |
+| `dependencies.py` middleware `get_current_user` SHA-256 hash vs `utenti.token_hash` | CP3 originale | DEFERRED F3-S1-bis CP3 |
+| `routers/health.py` GET /api/health (no-auth public) | CP3 originale | DEFERRED F3-S1-bis CP3 |
+| `routers/farmaci.py` GET /api/farmaci (auth scoped utente_id) | CP3 originale | DEFERRED F3-S1-bis CP3 |
+| CP1 DB schema apply v01_init.sql su pharmatimer_dev + pharmatimer_test | CP1 (DB) | DEFERRED F3-S1-bis CP1-fix (post-diagnosi auth) |
+| `seed_owner.py` CLI standalone (OWNER_NAME env + secrets.token_urlsafe(32) + SHA-256) | CP2 originale | DEFERRED F3-S1-bis CP2 |
+| `tests/conftest.py` + `tests/test_health.py` + `tests/test_farmaci_read.py` (10-15 test pytest) | CP4 originale | DEFERRED F3-S1-bis CP4 |
+| Commit cumulativo finale + bump backend versioning + tag v3.2.0-alpha.1 LOCALE | CP5 originale | DEFERRED F3-S1-bis CP5 |
+
+#### CP1 DB schema apply BLOCCATO - diagnosi auth MySQL Studio
+
+Stato MySQL Studio post-Sessione F3-S1 R1:
+- user `pharmatimer@localhost` creato OK con `caching_sha2_password` (re-altered a fine diagnosi)
+- `pwd_hash_len=70`, `account_locked=N`, GRANT corretti su `pharmatimer_dev.*` + `pharmatimer_test.*`
+- 8 tabelle multi-tenant: SCHEMA NON APPLICATO (auth 1045 blocca migration)
+- `pharmatimer_dev` + `pharmatimer_test` esistenti ma empty (no tables)
+
+Diagnosi auth MySQL 9.6 Studio (15+ test cumulativi cross-modalita):
+- `caching_sha2_password` + `sha256_password` entrambi falliscono 1045 per pharmatimer user con qualsiasi metodo client
+- Metodi client testati senza successo: `MYSQL_PWD` env var / `-p` prompt interattivo / `--get-server-public-key` / `--ssl-mode=REQUIRED` / `--protocol=TCP`
+- `root@localhost` funziona senza password (probabile socket peer auth implicito Homebrew/Oracle DMG macOS Tahoe)
+- Plugin auth disponibili Studio: `caching_sha2_password` + `sha256_password` (entrambi ACTIVE). `mysql_native_password` plugin REMOVED MySQL 9.x (lesson #11 NEW)
+- SSL configurato OK (ssl_ca, ssl_cert, ssl_key presenti) + RSA public key auto-generated disponibile + `validate_password` policy NON attiva
+- Root cause unknown, ipotesi possibili: quirk build MySQL 9.6 macOS Tahoe Homebrew Studio (par.22.36 install anomalo origine), config corrotto non-visibile via SHOW VARIABLES, possibile reinstall required, oppure migration a Docker container Studio-side
+
+#### Deviazioni s.6.NN emesse (9 entry, audit grep pre-emit OK)
+
+Audit grep cumulative pre-emit confermato: prima entry libera era `s.6.222` (s.6.218-219-220-221 occupate da par.22.71/22.73/22.74/22.62 lesson cluster precedente). Rinumerazione applicata correttamente.
+
+| # | Tema | Status applicazione |
+|---|---|---|
+| s.6.222 | Sub-decisione SD.1 credenziale dev-only hardcoded `pharmatimer_dev_2026` Studio-localhost (NON propagare F3-S6 Mini prod) | Applicata bootstrap.sql |
+| s.6.223 | Sub-decisione SD.2 requirements.txt non-pinned a CP1 (decisione formato `pyproject.toml` 0.1.0 vs requirements.txt pinned deferred CP5 F3-S1-bis) | Applicata |
+| s.6.224 | F3-S1.I=(a) `impostazioni_app` scoped multi-tenant 8 tabelle vs scope letterale prompt 7 (estensione schema by-design Q-IMPORT.4 coherence + runtime v3.1.0 nome_utente/tema per-utente). Spec v1.4 sez. 11.6.5 gap riversamento differito Spec v1.5 a F3-S5-pre o F3-S7 milestone | Applicata v01_init.sql |
+| s.6.225 | Lesson bash `set -e` insufficient per mysql errori stderr (server emette ERROR ma exit code 0). Serve `&& echo OK || exit N` esplicito per ogni mysql invocation (lesson #9 cumulative bash safety) | Lesson applicabile sessioni future |
+| s.6.226 | Sub-decisione NEW beta.1.a-second rename user `pharmatimer_app` -> `pharmatimer` (no suffisso) override beta.1.a-first par.22.78-bis. Coerente Mini prod F3-S6 senza suffisso (anticipazione naming pattern par.22.78-bis lesson alignment) | Applicata bootstrap.sql riscritto |
+| s.6.227 | Cleanup user residuo `pharmatimer@localhost` par.22.36 + DROP + recreate via heredoc CLI interattiva. Chiude lesson par.22.36 dopo 5 mesi (DB residui gia cleanati inline, user residuo non era stato auditato in CP0 baseline F3-S1 R1 originale - lesson #8 audit user MySQL residui extension) | Applicata |
+| s.6.228 | Quirk auth MySQL 9.6 Studio caching_sha2_password + sha256_password entrambi 1045 unknown root cause per pharmatimer user (root@localhost funziona via socket peer auth implicito). mysql_native_password fallback NON disponibile (plugin REMOVED 9.x lesson #11). Remediation deferred F3-S1-bis CP0-D diagnosi dedicata | Lesson critica documentata, remediation deferred |
+| s.6.229 | Lesson #10 NEW MySQL 9.6 macOS Tahoe (Studio nativo Homebrew/Oracle DMG par.22.36 install anomalo) presenta auth pattern non-standard: root@localhost via socket peer auth, non-root user con caching_sha2_password/sha256_password fallisce 1045 systematic regardless di SSL/RSA/protocol/get-server-public-key. Bug build-specific non risolvibile in-sessione standard. Fuori-scope CP0 baseline F3-S1 R1 originale | Lesson registrata |
+| s.6.230 | gitignore root extension: aggiunte righe `TREE.TXT` + `*.bak` generico (complementa `*.bak.*` pre-esistente coprendo .bak senza suffisso) + cleanup-N3 closure (rm 2 file orfani `PharmaTimer_Changelog_Fase2.md.v25.bak` + `README.md.v280.bak` Studio-side rimossi fisicamente). Completa cleanup lesson par.22.36 dopo 5 mesi | Applicata |
+
+#### Lesson learned consolidate (4 NEW)
+
+1. **Lesson #8 NEW**: pre-condizioni F3-S1 R1 par.22.78-bis estese da 8 a 9 punti, aggiungere **audit MySQL user residui** `SELECT user, host FROM mysql.user WHERE user LIKE 'pharmatimer%'` (oltre ai DB residui). CP0 baseline originale lasciava blind spot user residui che ha contribuito a confondere diagnosi auth iniziale.
+2. **Lesson #9 NEW**: subshell wrapper `( set -e; ... ) || echo abortito` MANDATORY per script bash interattivi multi-step, vs `exit N` diretto che killa shell zsh interattiva al primo errore (esperienza empirica F3-S1 R1 Step 3 fallback mysql_native_password ha killato la shell utente costringendo riapertura). Pattern obbligatorio per ogni blocco delivery futuro F3-S1-bis e oltre.
+3. **Lesson #10 NEW**: MySQL 9.6 macOS Tahoe (Studio nativo Homebrew/Oracle DMG) presenta auth pattern non-standard documentato sopra. Remediation richiede uno di: reinstall MySQL Studio Homebrew clean / downgrade MySQL 8.4 LTS / migration Docker MySQL container Studio-side / diagnosi MySQL error log + strace deep dive.
+4. **Lesson #11 NEW**: `mysql_native_password` plugin RIMOSSO da MySQL 9.x (deprecato 8.4, removed 9.0+). Fallback auth tradizionale non disponibile. Stack auth MySQL 9.x: `caching_sha2_password` (default) + `sha256_password` (legacy, ACTIVE). Pattern applicabile a F3-S6 Mini se Mini ha MySQL 9.x: verificare plugin auth disponibili pre-decisione tipo password storage.
+5. **Lesson #12 NEW (meta)**: audit grep cumulative `s.6.NN` MANDATORY pre-emit di qualsiasi sezione closing che introduce nuove deviazioni. Pattern par.6.71/85 + par.22.78-bis confermato: emissione bozza preliminare s.6.218-225 era drift da audit empirico cumulative reale (s.6.218 = par.22.73 closing v3.1.0 finale gia occupato 19 occorrenze). Bozza correggibile pre-write (no fatto storico), prima entry libera `s.6.222` rinumerata correttamente. Drift-doc-N29 NEW: commit subjects `d4678ea` + `0d7a5bd` citano s.6.218-226 errati per pre-emit audit mancato - non-correggibile retroattivamente git history, carry-forward opportunistic.
+
+#### Drift commit-msg pushati documentati (pattern par.22.75 Sub-AMB-CONS.B)
+
+Drift cosmetic-only documentato canonical (no impatto funzionale, no rebase force-push origin per par.6.71/85 immutabilita + AMB-11.B.7-bis no-force-push). Sub-AMB-CONS.B par.22.75 ratifica la pratica: drift commit-msg vs content e accettabile se documentato in closing section successiva con mapping esplicito tabellare.
+
+| Commit pushato origin/fase-3-backend | Subject ERRATO (citato git) | Numerazione REALE applicata Changelog par.22.79 | Tipo drift |
+|---|---|---|---|
+| `d4678ea` (CP1 parziale codice backend 11 file) | `s.6.218-225` | `s.6.222-229` (8 deviazioni rinumerate) | Pre-emit audit grep s.6.NN mancato |
+| `0d7a5bd` (gitignore root extension + cleanup-N3 closure 1 file) | `s.6.226` | `s.6.230` (1 deviazione rinumerata) | Pre-emit audit grep s.6.NN mancato |
+
+**Nota immutabilita git history**: i 2 commit sono gia pushati `origin/fase-3-backend` ad apertura par.22.79. Rebase + force-push per correggere subject violerebbe par.6.71/85 (deviazioni storiche immutabili) + AMB-11.B.7-bis no-force-push convention. Drift cosmetic accettato by-design, documentato qui canonical.
+
+**Mapping operativo per lettori futuri Changelog**: quando trovate s.6.218-225 / s.6.226 in commit subjects `d4678ea`/`0d7a5bd`, il riferimento REALE alle deviazioni e in par.22.79 sez. "Deviazioni s.6.NN emesse" come `s.6.222-230`. Non cercate `s.6.218-225` come deviazioni F3-S1 R1: quelle sono entry storiche occupate (par.22.71/22.73/22.74 + cluster par.22.62 lesson 2).
+
+**Lesson learned applicabile sessioni future** (estensione lesson #12): se patcher Python idempotente content-based deve eseguire AFTER commit gia pushati con subjects che referenziano deviazioni s.6.NN, audit grep cumulative pre-emit del Changelog tracked git e MANDATORY anche se commit subjects sono gia immutabili. La bozza payload patcher e editabile, i subject commit no. Patcher emit corregge la realta Changelog senza poter correggere git history -> drift accettato + documentato canonical pattern par.22.75 Sub-AMB-CONS.B.
+
+#### Pre-existing follow-up carry-forward par.22.78-bis
+
+- ~17 findings registry cumulativo Fase 2 + drift-doc-N27 cosmetic + UX-N28 carry-forward F3-S4/S5 invariati
+- par.6.120 `actions.presa()` simulated_now DEV: invariato
+- Sub-AMB-G `addFarmaco` payload undefined: carry-forward v3.1.x opportunistic invariato
+- ~28-30 drift-doc cumulativi carry-forward par.22.74: invariato + **drift-doc-N28 NEW** (gitignore root `*.bak` duplicato cosmetic) + **drift-doc-N29 NEW** (commit subjects d4678ea + 0d7a5bd s.6.NN errati pre-emit audit mancato)
+- Q-DOG.1+2+3 dogfooding 3-fasi: invariato (fase A sblocco post-F3-S7 v3.2.0)
+- F3-S5-pre / F3-S7 closing: riversamento Spec v1.5 (gap sez. 11.6.5 enumera 4 tabelle vs 5 effettive con `impostazioni_app`, riversamento differito invariato)
+
+#### Sub-Q F3-S1.I.1 deferred F3-S5-pre
+
+`impostazioni_app.nome_utente` ridondante con `utenti.nome_visualizzato` post-multi-tenant: decisione "remove vs alias caching" deferred F3-S5-pre quando ApiRepository swap definisce dove PWA legge la stringa utente runtime.
+
+#### Test
+
+504/504 invariati su 62 files (zero delta vs baseline par.22.78-bis). Zero test backend Python emessi (CP4 deferred F3-S1-bis).
+
+#### Tag git e push
+
+- **Tag git: NO** (AMB-11.B.7 + AMB-11.B.7-bis: F3-S1 R1 parziale NON e milestone, no tag locale ne push)
+- **package.json: invariato 3.1.0** (AMB-11.B.7: no bump senza milestone)
+- **3 commit emessi Sessione F3-S1 R1** (2 codice + 1 doc-only Changelog questa sezione):
+  - `d4678ea` CP1 parziale codice backend (11 file: layout + .gitignore + requirements + bootstrap.sql + v01_init.sql)
+  - `0d7a5bd` doc-only gitignore root extension + cleanup-N3 closure (1 file)
+  - `<commit-NEW-par.22.79+par.11.D-S1.bis>` doc-only Changelog questa sezione + prompt successiva (1 file)
+- **Spec v1.4 KB-only invariata** (gap sez. 11.6.5 documentato, riversamento Spec v1.5 differito F3-S5-pre o F3-S7)
+- **Branch fase-3-backend pushed origin** (3 commit ahead origin/main, merge atomico F3-S1-bis closing futura)
+
+#### Stato git post-Sessione F3-S1 R1 (post-CP delivery)
+
+- branch `fase-3-backend` HEAD `<closing-commit-NEW>` 3 commit ahead origin/main (d4678ea + 0d7a5bd + closing-NEW)
+- working tree clean post-commit Changelog
+- tag annotato `v3.1.0` sha tag-object `294c563` target `e10b971` invariato
+- gh-pages SHA `0f93b63` invariato (no redeploy)
+- package.json `3.1.0` invariato
+- 504/504 test PWA invariati
+- 8 tabelle multi-tenant SQL SCRIPT pronte ma NON APPLICATE in DB (CP1 DB apply BLOCCATO auth 1045)
+- venv backend ready + 8 dipendenze Python installate
+
+#### Riferimenti par.22.79
+
+- **par.22.78-bis R1 ratifica** (architettura dev Studio-all + 8 pre-condizioni empiriche): scope ereditato, lesson #8 audit user residui complementa lesson #7
+- **par.22.78** chiusura F3-S0 (Decisione 5=B + 5.B.1 + calibrazione 20-21 sessioni F3-S0÷F3-S9)
+- **par.22.55**: pattern split safety-first preventivo self-applied a CP1 parziale (densita CP1 + diagnosi auth >40K token cumulativi)
+- **par.22.36**: lesson MariaDB install Studio anomala MySQL 9.6 (origine quirk auth probabile + user/DB residui 5 mesi); cleanup completo definitivo questa sessione (DB + user + .bak orfani)
+- **par.22.58 / par.22.67 / par.22.78**: pattern patcher Python idempotente content-based + assertion `count == 1` pre/post replicato esatto
+- **par.6.71 / par.6.85**: deviazioni storiche immutabili (commit subjects d4678ea + 0d7a5bd s.6.218-226 errati pre-emit non-correggibili retroattivamente = drift-doc-N29 carry-forward, mentre par.22.79 body editabile pre-write con rinumerazione corretta s.6.222-230)
+- **AMB-11.B.7 / AMB-11.B.7-bis**: no bump + no tag in sessioni parziali NON-milestone (rispettato)
+
+#### Sessione successiva post-F3-S1 R1 parziale
+
+**F3-S1-bis dedicata diagnosi MySQL Studio + remediation auth + CP1 DB apply + CP1 codice runtime Python + CP2 + CP3 + CP4 + CP5 closing originale F3-S1 R1.** Pre-frozen prompt sezione `### 11.D-S1.bis` post questa sezione.
+
+One-liner apertura: `Esegui il prompt al par.11.D-S1.bis del Changelog.`
+
+
 
 ---
 
