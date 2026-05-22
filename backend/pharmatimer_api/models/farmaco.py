@@ -11,7 +11,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 TipoFrequenza = Literal["intervallo", "fisso"]
@@ -38,9 +38,51 @@ class FarmacoBase(BaseModel):
     attivo: bool = True
     demo: bool = False
 
+    @model_validator(mode="after")
+    def _validate_frequenza_consistency(self) -> "FarmacoBase":
+        """Enforce tipo_frequenza vs intervallo_ore/intervallo_minimo_ore (F3-S2 CP1).
+
+        Rules (DDL v01_init.sql + Spec sez. 3.1 + F3-S2.D-bis ratified par.11.D-S2):
+        - tipo_frequenza='fisso': intervallo_ore AND intervallo_minimo_ore MUST be None.
+        - tipo_frequenza='intervallo': intervallo_ore MUST be set AND > 0.
+        - dosi_giornaliere is always required (DDL NOT NULL); ge=1 enforced in Field().
+        """
+        if self.tipo_frequenza == "fisso":
+            if self.intervallo_ore is not None:
+                raise ValueError(
+                    "intervallo_ore deve essere NULL per tipo_frequenza=fisso"
+                )
+            if self.intervallo_minimo_ore is not None:
+                raise ValueError(
+                    "intervallo_minimo_ore deve essere NULL per tipo_frequenza=fisso"
+                )
+        else:
+            if self.intervallo_ore is None or self.intervallo_ore <= 0:
+                raise ValueError(
+                    "intervallo_ore obbligatorio (>0) per tipo_frequenza=intervallo"
+                )
+        return self
+
+    @model_validator(mode="after")
+    def _validate_data_range(self) -> "FarmacoBase":
+        """Enforce data_fine >= data_inizio when data_fine is not None (F3-S2 CP1)."""
+        if self.data_fine is not None and self.data_fine < self.data_inizio:
+            raise ValueError("data_fine deve essere >= data_inizio")
+        return self
+
 
 class FarmacoCreate(FarmacoBase):
-    """POST payload (deferred F3-S2). utente_id injected server-side from token."""
+    """POST payload. utente_id injected server-side from token.
+
+    Inherits validators from FarmacoBase (F3-S2 CP1).
+    """
+
+
+class FarmacoUpdate(FarmacoBase):
+    """PUT payload (full replace, RFC 7231). utente_id injected server-side.
+
+    Inherits validators from FarmacoBase (F3-S2 CP1).
+    """
 
 
 class FarmacoResponse(FarmacoBase):
