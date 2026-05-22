@@ -12,7 +12,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from pharmatimer_api.config import settings
 from pharmatimer_api.db.connection import close_pool, init_pool
-from pharmatimer_api.routers import health
+from pharmatimer_api.exceptions import RepositoryError, repository_error_handler
+from pharmatimer_api.routers import farmaci, health
 
 
 @asynccontextmanager
@@ -38,4 +39,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# CP3 F3-S1-bis-delta: exception handler + farmaci router
+app.add_exception_handler(RepositoryError, repository_error_handler)
+
 app.include_router(health.router)
+app.include_router(farmaci.router)
