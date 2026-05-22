@@ -17792,3 +17792,148 @@ One-liner apertura: `Esegui il prompt al par.11.D-S1.bis-cont-2-parte-2 del Chan
 
 
 ---
+
+---
+
+## 22.80 Stato post-Sessione F3-S1-bis-delta parte 2/2 esecutiva (CP0 baseline 11/11 verde + CP4 pytest 13 test verdi + CP5 closing finale F3-S1-bis cumulativo + backend/pyproject.toml v0.1.0 emit + PharmaTimer_Changelog_Fase3.md spin-off NEW + cleanup .bak.cp3-delta + D7 docker cleanup + tag v3.2.0-alpha.1 extend annotation + commit cumulativo branch fase-3-backend + push origin atomico + 0 deviazioni s.6.NN nuove + drift-N31 userMemories cosmetic correction)
+<!-- par.22.80 emit closing finale F3-S1-bis-delta parte 2/2 -->
+
+**Data:** 22 maggio 2026 sera.
+
+**Modalita:** Sessione F3-S1-bis-delta parte 2/2 esecutiva mista CP0 baseline 11/11 + CP4 pytest 13 test + CP5 closing finale F3-S1-bis cumulativo + 8 decisioni in-session D1-D8 ratificate blanket "decidi tu" default raccomandati par.11.D-S1.bis-cont-2 R1. Token spesi ~50K (sforo limitato vs budget 25-40K par.11.D-S1.bis-cont-2-parte-2, accettabile per closing finale milestone). Wall-clock ~2.5h. CP5 conclude split safety-first par.22.55 ratificato apertura F3-S1-bis-delta parte 1/2 par.22.79-quater.
+
+**Esito:** OK milestone finale tecnico F3-S1-bis cumulativo verde verticale verde su nativo Studio: backend FastAPI 0.136 + MySQL 9.6 nativo Studio + schema 8 tabelle multi-tenant + 2 endpoint operativi (`/api/health` no-auth + `/api/farmaci` auth-scoped per `utente_id`) + middleware `get_current_user` SHA-256 hash + RepositoryError vocabulary par.22.34-aligned + 13/13 pytest backend verdi + 504/504 test PWA invariati = **517 test totali cumulativi**. Pronto F3-S2 esecutiva CRUD `farmaci` POST/PUT/DELETE scoped `utente_id` (continuazione Changelog Fase 3 spin-off NEW).
+
+#### Scope consegnato Sessione F3-S1-bis-delta parte 2/2
+
+**CP0 baseline 11/11 verde** (lesson #18 server_uuid match Python target vs CLI direct confermato 3a volta consecutiva):
+- Branch `fase-3-backend` HEAD `5a9e60b` closing par.22.79-quater, working tree clean, 6 commit ahead origin/main
+- 24 file backend tracked invariati da par.22.79-quater
+- mysqld PID 631 nativo Studio (`/usr/local/mysql/bin/mysqld`) running da Tue02PM
+- DB `pharmatimer_dev` + `pharmatimer_test` su nativo: 8 tabelle ciascuno (10 FK)
+- **Lesson #18 UUID match verde**: `8c7fac68-0b72-11f1-9c49-08cef252c2d9` su Robertos-Mac-Studio.local:3306 MySQL 9.6.0 (3a conferma consecutiva post-pivot s.6.237)
+- utenti id=2 Roberto owner attivo hash_len=64 + permessi self admin
+- venv backend 8 pkg + httpx 0.28.1 + pytest 9.0.3 + pytest-asyncio 1.3.0
+- Tag `v3.2.0-alpha.1` LOCALE pre-extend invariato + package.json `3.1.0` invariato
+- 504/504 test PWA su 62 files
+- Token Roberto Keychain `pharmatimer-owner-token` 44 char (43+newline)
+
+**CP4 pytest backend 13/13 verde** (target 10-15, conftest fixture design idoneo, 0.87s execution):
+
+`backend/tests/conftest.py` NEW (201 LOC, 6.7KB):
+- Fixture `db_test_pool` session-scope: `MySQLConnectionPool` puntato `DB_NAME_TEST` (`pharmatimer_test`), patcha `conn_module._pool` global così `db_ping()` + `get_connection()` resolvono al pool test (no lifespan via TestClient senza context manager evita re-init pool produzione)
+- Fixture `cleanup_test_data` function-scope autouse: TRUNCATE FK-safe order `log_assunzioni > orari_base > farmaci > impostazioni_app > push_subscriptions > profilo_utente > permessi > utenti` (sub-AMB F3-S1.H truncate per-test default ratificato)
+- Fixture `seed_owner_test`: inline idempotent owner + self-permission caregiver=paziente admin, returns `(token_plaintext, owner_id)` (NO subprocess seed_owner.py per fixture base; `test_seed_owner.py` testa CLI separatamente)
+- Fixture `insert_test_user` factory: helper per aggiungere user secondario (token + ruolo + attivo configurabili)
+- Fixture `insert_test_farmaco` factory: helper farmaco 14 campi `FarmacoBase` con defaults sensati + overrides
+- Fixture `client`: TestClient con `app.dependency_overrides[get_db]` puntato test pool, NO context manager (evita lifespan startup/shutdown che resetterebbe `_pool`)
+
+`backend/tests/test_health.py` NEW (32 LOC, 2 test): `test_health_no_auth_200` (200 + status:ok + db:reachable + version:0.1.0) + `test_health_cors_preflight` (OPTIONS Origin localhost:5173 + access-control-allow-origin header verde). Q-CP4.4=b skip optional `test_health_db_unreachable_handled` applicato.
+
+`backend/tests/test_auth_middleware.py` NEW (47 LOC, 5 test): `test_auth_happy_path` (200) + `test_auth_no_header` (422 Pydantic) + `test_auth_invalid_token` (401 + "Token non valido") + `test_auth_inactive_user` (401 attivo=FALSE no leak existence) + `test_auth_token_hash_sha256` (unit puro 64 hex deterministico).
+
+`backend/tests/test_farmaci_read.py` NEW (70 LOC, 4 test): `test_farmaci_empty_user` (200 + []) + `test_farmaci_scoped_utente` (user A token + 2 utenti + 2 farmaci -> ritorna solo farmaci A, no leak B) + `test_farmaci_inactive_excluded` (attivo=FALSE escluso) + `test_farmaci_ordered_by_nome` (Charlie/Alpha/Bravo -> Alpha/Bravo/Charlie).
+
+`backend/tests/test_seed_owner.py` NEW (89 LOC, 2 test): `test_seed_owner_idempotent` (subprocess + DB_NAME=pharmatimer_test env override + owner pre-esistente -> exit 1 stderr "Owner gia esistente") + `test_seed_owner_token_format` (subprocess + estrazione token stdout + 43 char base64url + SHA-256 hash match DB row).
+
+**SHA-256 integrity check verde** 5/5 file Mac-side post-install (sandbox Claude vs delivery Roberto byte-identical):
+- conftest.py: `9860df1ad3ab97b78ecfd7c41c99f81d670f7e2d2679dfbaff4034efb5ea1e52`
+- test_health.py: `d176053ddb03963ecb4fa209ef631090f9f448aae4759615194d934ba7f049fd`
+- test_auth_middleware.py: `56031ac73b6cf416eb8b515b8829a8e9a0ec4b3d9b83b56751ea3fd9b8c52420`
+- test_farmaci_read.py: `dcdd447bbd55886b56e15e0b155e7a548d91753f19853e313e89ef0e24be162d`
+- test_seed_owner.py: `5a00341fdd6de2d0b7502f9473b962d3666149519a162e05a53f8fad971acf65`
+
+**CP5 closing**: pyproject.toml v0.1.0 emit + Changelog Fase 3 spin-off + cleanup + Docker D7 + tag extend + commit cumulativo + push (dettagli sotto).
+
+#### 8 decisioni in-session D1-D8 ratificate blanket "decidi tu" default raccomandati
+
+| # | Decisione | Default raccomandato | Esito CP5 |
+|---|---|---|---|
+| D1 | Spin-off `PharmaTimer_Changelog_Fase3.md` NEW | si | Applicato — NEW file emesso, par.0 provenienza + par.11.D-S2 pre-frozen Fase 3 |
+| D2 | Backend versioning `backend/pyproject.toml` v0.1.0 | si | Applicato — emit NEW [build-system] + [project] + dependencies + [tool.pytest.ini_options] |
+| D3 | package.json bump 3.1.0 -> 3.2.0-alpha.1 frontend allineato | no (versionamento backend separato) | Applicato — package.json invariato 3.1.0 |
+| D4 | Tag F3-S1-bis cumulativo: preserve v3.2.0-alpha.1 + extend annotation OR bump v3.2.0-alpha.2 | preserve + extend annotation | Applicato — tag v3.2.0-alpha.1 re-tag con messaggio cumulativo F3-S1-bis (LOCALE invariato, no push tag pattern AMB-11.B.7-bis) |
+| D5 | Spec v1.5 KB-only emit (gap impostazioni_app + endpoint runtime + onboarding) | deferred F3-S5-pre | Applicato — Spec v1.4 invariata, gap riversamento differito |
+| D6 | SD.6 cleanup user `pharmatimer@localhost` nativo Studio | INVERTITA: preservare nativo target ufficiale | Applicato — `pharmatimer@localhost` preservato attivo, user residui audit deferred F3-S5+ |
+| D7 | Cleanup container Docker `pharmatimer-mysql` + volume + OrbStack | (i) `docker compose down -v` + `docker image rm mysql:9.6` + uninstall OrbStack opzionale | Applicato variante: container gia' rimosso integralmente drift-N30 par.22.79-quater, eseguito `docker image rm mysql:9.6` + OrbStack daemon preservato installato (audit fallback F3-S7 milestone basso costo storage) |
+| D8 | Cleanup `.bak.cp3-delta` + cleanup-N1 (IndexedDB test row localhost) + cleanup-N2 (`guide.html.bak.cp3` untracked) | rm tutti opportunistico cumulativo | Applicato — 2 file `.bak.cp3-delta` rimossi + cleanup-N2 verificato gia' rimosso par.22.74 cycle 4 closing v3.1.0 + cleanup-N1 IndexedDB row dev-only browser-side preservato (out-of-scope CP5 backend, sub-AMB carry-forward F3-S5+) |
+
+#### Deviazioni s.6.NN emesse parte 2/2
+
+**Zero deviazioni s.6.NN nuove**. Tutti i 5 file pytest CP4 + pyproject.toml + Changelog Fase 3 spin-off + Changelog Fase 2 append par.22.80 conformi a:
+- Spec v1.4 sez. 9 (endpoint REST X-User-Token mandatory + scope utente_id)
+- Spec v1.4 sez. 3.1/3.4 (schema multi-tenant invariato)
+- par.22.34 (RepositoryError vocabulary cross-PWA/backend simmetrico)
+- par.11.D-S1.bis-cont-2-parte-2 R1 scope CP4 originale + sub-AMB F3-S1.H truncate per-test
+- par.6.118 pre-code scenario validation 8+ scenari pytest validati pre-emit (db_test_pool patching strategy + lifespan avoidance + cleanup FK-safe order + seed idempotency + subprocess env override DB_NAME)
+- pattern par.22.58/22.79-quater patcher Python content-based con SENTINEL + assertion `count == 1` pre/post replicato esatto (patcher par.22.80 append-at-EOF idempotente)
+
+#### Drift-doc-NEW emersi parte 2/2
+
+**1 drift-doc-NEW + correzione 1 drift-doc carry-forward**:
+
+- **drift-N31 risolto (cosmetic)**: path `ImpostazioniTab.jsx` reale `src/components/config/ImpostazioniTab.jsx` (non `src/components/tabs/` come dichiarato par.11.Y.2 + userMemories storico). Correzione `userMemories` applicata via `memory_user_edits` post-closing CP5 (cosmetic, no impatto runtime).
+- **drift-N30 carry-forward**: container Docker `pharmatimer-mysql` rimosso integralmente pre-questa-sessione (osservato par.22.79-quater). D7 ratifica chiusura: nessun container da fermare, `docker image rm mysql:9.6` eseguito, OrbStack daemon preservato.
+- **drift-N32 carry-forward**: `mysql -e "...\\G"` zsh-incompatibile (lesson operativa, no impatto questa sessione).
+- **drift-N33 carry-forward**: `read -p` zsh coprocess vs bash prompt (lesson operativa).
+
+#### Pattern operativi confermati F3-S1-bis-delta parte 2/2
+
+- **Lesson #16 PRIORITY** (`mysql_cmd > /tmp/out.txt 2>/tmp/err.txt; cat`): applicata CP0 baseline (6 mysql redirect + cat) + CP4 Fase B pytest run (redirect /tmp/pytest.out + cat) ✅
+- **Lesson #17 PRIORITY** (Python heredoc, no `python -c` f-string): applicata CP0 Block UUID match (heredoc PYEOF) + 5 file pytest emessi via heredoc bash safe ✅
+- **Lesson #18 CRITICA** (`@@server_uuid` confronto multi-target): applicata CP0 baseline 3a conferma consecutiva post-pivot s.6.237 ✅
+- **Lesson #9** (subshell wrapper `( set -e; ... ) || echo abortito`): applicata blocchi delivery + syntax check pre-pytest run ✅
+- **Lesson #12** (audit grep s.6.NN cumulative pre-emit MANDATORY pre-closing): applicata pre-par.22.80 emit, ultima s.6.NN registrata = s.6.240, par.22.80 zero NEW ✅
+- **Pattern par.22.58/22.67/22.78/22.79/22.79-bis/22.79-ter/22.79-quater** patcher Python content-based idempotente con SENTINEL + assertion `count == 1` pre/post: replicato 1x questa sessione (patcher append par.22.80 a Changelog Fase 2) ✅
+- **Pattern par.6.118** pre-code scenario validation: 8+ scenari conftest validati pre-emit (db_test_pool pool patching + lifespan avoidance via no-context-manager TestClient + cleanup FK-safe order + seed idempotency + subprocess env override) ✅
+- **Bash zsh-safe** (echo single-quoted, no `#`, no apostrofi italiani) invariato ✅
+- **AMB-11.B.7 / AMB-11.B.7-bis**: bump effettivo (`backend/pyproject.toml` 0.1.0 emit NEW + `package.json` 3.1.0 invariato D3) + tag extend annotation (`v3.2.0-alpha.1` LOCALE re-tag con messaggio cumulativo F3-S1-bis-delta parte 2/2 milestone, NO push tag) ✅
+- **Convention `Spec` KB-only vs `Changelog` tracked**: invariata (Changelog Fase 3 NEW tracked git, Spec v1.4 KB-only deferred v1.5) ✅
+
+#### Lesson learned consolidate (1 NEW utility/operativa)
+
+1. **Lesson #19 NEW (utility)**: TestClient FastAPI con context manager (`with TestClient(app) as c:`) triggera lifespan startup/shutdown -> `init_pool()` re-inizializza `_pool` produzione overwrittando il pool test patchato. Mitigazione: TestClient SENZA context manager (`yield TestClient(app)`) evita lifespan. Pattern applicabile cross-progetto a FastAPI test fixture con pool/risorse globali patchati session-scope. Categoria utility/operativa (non priority #16-#18).
+
+#### Stato git post-Sessione F3-S1-bis-delta parte 2/2
+
+- branch `fase-3-backend` HEAD `<closing-commit-NEW>` 7 commit ahead origin/main pre-push, ALLINEATO origin/fase-3-backend post-push CP5
+- working tree clean post-commit cumulativo CP5
+- **5 file NEW tracked CP4**: `backend/tests/conftest.py` (201 LOC) + `backend/tests/test_health.py` (32) + `backend/tests/test_auth_middleware.py` (47) + `backend/tests/test_farmaci_read.py` (70) + `backend/tests/test_seed_owner.py` (89) = 439 LOC totali
+- **1 file NEW tracked CP5 D2**: `backend/pyproject.toml` v0.1.0 (50 LOC, [build-system] + [project] + dependencies + [tool.pytest.ini_options])
+- **1 file NEW tracked CP5 D1 spin-off**: `PharmaTimer_Changelog_Fase3.md` (par.0 provenienza + par.11.D-S2 pre-frozen Fase 3 + Riferimenti immutabili Fase 2 table)
+- **1 file MOD tracked CP5 closing**: `PharmaTimer_Changelog_Fase2.md` append par.22.80 via patcher Python idempotente content-based (SENTINEL + assertion + .bak.cp5 backup)
+- **2 file untracked rimossi CP5 D8**: `backend/pharmatimer_api/db/dependencies.py.bak.cp3-delta` + `backend/pharmatimer_api/app.py.bak.cp3-delta`
+- tag annotato `v3.2.0-alpha.1` LOCALE re-tag con messaggio cumulativo F3-S1-bis-delta parte 2/2 milestone (sha tag-object NEW target closing-commit-NEW). NO push tag pattern AMB-11.B.7-bis (tag intermedi LOCALE solo fino F3-S7 smoke finale)
+- tag annotato `v3.1.0` sha tag-object `294c563` target `e10b971` invariato
+- gh-pages SHA `0f93b63` invariato (no redeploy, backend pure scope)
+- package.json `3.1.0` invariato (D3 ratificata: AMB-11.B.7 backend versioning separato)
+- 504/504 test PWA invariati + 13/13 test backend = **517 test totali cumulativi**
+
+#### Findings cumulativi carry-forward F3-S2+
+
+- 17 findings registry Fase 2 polish invariati carry-forward par.22.60 (UX-N1/N3/N7/N8/N9 + iOS-N1/N2 + UX-N14/N15/N16 + drift-doc-N2/N4/N5/N12/N13 + discovery-N6/N7)
+- 12 residual UX findings v3.1.0 release carry-forward par.22.73 (post-deploy)
+- 4 drift-doc-NEW Sessione F3-S1-bis-delta (N30/N31/N32/N33) chiusi parte 2/2 (N30+N31 risolti, N32+N33 utility/operative)
+- sub-AMB carry-forward post-CP5: addFarmaco undefined fields literal persistence PWA-side (deferred) + cleanup-N1 IndexedDB test row dev-only browser-side
+- AMB-F3.G server-authoritative sync conflict (Fase 3 scope, F3-S5+) + AMB-F3.D CORS prod restrictive (F3-S6 deploy Mini) + AMB-F3.F Mini Docker vs nativo (F3-S6 deploy)
+
+#### Riferimenti par.22.80
+
+- **par.22.79-quater** (closing F3-S1-bis-delta parte 1/2): scope ereditato CP3 5 file backend + 5 smoke scenari verdi + lesson #18 UUID match nativo Studio prima conferma post-pivot
+- **par.22.79-ter**: pivot strategy nativo Studio ratificato T4-T7 (origine s.6.237)
+- **par.22.79-bis / par.22.79**: stati cumulativi ereditati F3-S1-bis-beta + F3-S1 R1
+- **par.11.D-S1.bis-cont-2-parte-2** R1 (pre-frozen consumata): scope CP4 pytest 10-15 test + CP5 closing finale + 8 decisioni D1-D8
+- **par.22.34**: vocabulary RepositoryError PWA + backend simmetrico cementato exceptions.py + handler globale
+- **par.22.55**: pattern split safety-first preventivo applicato 2x F3-S1-bis-delta (parte 1/2 + parte 2/2) chiuso completo
+- **par.22.58 / par.22.67 / par.22.78 / par.22.79 / par.22.79-bis / par.22.79-ter / par.22.79-quater**: pattern patcher Python content-based replicato chain-end finale parte 2/2
+- **par.6.118**: pre-code scenario validation 8+ scenari pytest validati pre-emit
+- **par.6.71/85**: history immutability + gap s.6.NN preservato (zero s.6.NN nuove parte 2/2)
+- **AMB-11.B.7 / AMB-11.B.7-bis**: bump effettivo + tag extend annotation a CP5 closing F3-S1-bis-delta parte 2/2 milestone finale F3-S1-bis cumulativo applicato
+
+#### Sessione successiva post-F3-S1-bis-delta parte 2/2
+
+**F3-S2 esecutiva CRUD farmaci POST/PUT/DELETE scoped `utente_id`** (continuazione Changelog Fase 3 spin-off). Pre-frozen prompt sezione `### 11.D-S2` in `PharmaTimer_Changelog_Fase3.md` (par.0 provenienza + par.11.D-S2 scope alto livello + 5 sub-AMB F3-S2.A-E candidate + pre-letture obbligatorie).
+
+One-liner apertura: `Esegui il prompt al par.11.D-S2 del Changelog Fase 3.`
+
+---
