@@ -5403,6 +5403,140 @@ Target test count F3-S1-bis-gamma: 10-15 test pytest NEW (504 PWA invariati + 10
 
 
 
+### 11.D-S1.bis-cont-2 Prompt Sessione F3-S1-bis-delta esecutiva CP3 middleware auth + router farmaci + CP4 pytest + CP5 finale closing originale F3-S1-bis cumulativo (post-F3-S1-bis-gamma par.22.79-ter pivot strategy nativo Studio ratificato)
+<!-- par.11.D-S1.bis-cont-2 R1 emit -->
+
+**One-liner apertura:** `Esegui il prompt al par.11.D-S1.bis-cont-2 del Changelog.`
+
+**Modalita:** esecutiva mista CP3 originale + CP4 originale + CP5 closing finale F3-S1-bis cumulativo. Continuazione split safety-first par.22.55 post-F3-S1-bis-gamma par.22.79-ter (pivot strategy (c) Docker -> (a) nativo Studio ratificato empirico T4-T7 + CP0+CP2 seed_owner consegnato nativo). Token attesi 30-50K. Wall-clock 1.5-3h. Pattern par.22.55 split ulteriore applicabile se CP3 middleware auth densita imprevista >30K.
+
+#### Pre-letture obbligatorie
+
+1. **par.22.79-ter integrale** (stato post-F3-S1-bis-gamma + 6 deviazioni s.6.235-240 + 4 lesson NEW + pivot strategy ratificato + decisioni D1-D8)
+2. **par.22.79-bis integrale** (stato post-F3-S1-bis-beta + 4 deviazioni s.6.231-234 + 2 lesson #13-#14)
+3. **par.22.79 integrale** (stato post-F3-S1 R1 parziale + 9 deviazioni s.6.222-230 + 4 lesson #8-#11)
+4. **par.11.D-S1.bis-cont** R1 (scope CP3-CP5 invariato target nativo Studio)
+5. **par.11.D-S1.bis** R1-bis (scope originale + sub-AMB F3-S1.A-H)
+6. **par.11.D-S1** R1 (scope CP1-CP5 originale ereditato pre-F3-S1-bis)
+7. **Spec v1.4 sez. 3.1/3.4/3.5/3.6/3.9/3.10/3.11** (schema 8 tabelle multi-tenant)
+8. **Spec v1.4 sez. 9** (endpoint REST X-User-Token header mandatory; rilevante CP3 middleware get_current_user)
+9. **Spec v1.4 sez. 11.6** (architettura multi-tenant + AMB-NAMING + onboarding model)
+
+#### Pre-condizioni F3-S1-bis-delta (verificare CP0 baseline)
+
+| # | Pre-condizione | Atteso post-F3-S1-bis-gamma par.22.79-ter |
+|---|---|---|
+| 1 | Branch `fase-3-backend` HEAD = closing-commit par.22.79-ter | 5 commit ahead origin/main pre-push, allineato post-push |
+| 2 | Working tree clean | clean post-commit cumulativo |
+| 3 | 21 file backend tracked (20 par.22.79-bis + 1 NEW `seed_owner.py`) | tracked OK, `.env.dev` gitignored invisibile |
+| 4 | MySQL nativo Studio listening 127.0.0.1:3306 healthy | running, `/usr/local/mysql/bin/mysqld` process up |
+| 5 | DB pharmatimer_dev + pharmatimer_test su nativo Studio con 8 tabelle 10 FK ciascuno | applied OK |
+| 6 | User `pharmatimer@localhost` nativo Studio auth working via TCP | smoke verde via lesson #16 pattern |
+| 7 | utenti id=2 Roberto owner attivo + permessi self caregiver=paziente=2 admin notifiche=0 | seed CP2 F3-S1-bis-gamma preservato |
+| 8 | Container Docker `pharmatimer-mysql` Stopped, volume `pharmatimer_db_data` preservato | post-`docker compose down` D1 ratificata |
+| 9 | venv `backend/venv/` ready + 8 pacchetti + 6 file Python runtime + seed_owner.py | OK |
+| 10 | Tag `v3.2.0-alpha.1` LOCALE invariato + package.json 3.1.0 invariato | OK no push tag |
+| 11 | 504/504 test PWA invariati | OK |
+| 12 | `/api/health` endpoint smoke verde su nativo Studio (uvicorn manuale start) | verticale verde nativo target |
+| 13 | **NEW lesson #18**: `@@server_uuid` confronto Python target vs nativo Studio direct -> stesso UUID `8c7fac68-...` | match obbligatorio, baseline pattern |
+
+#### Scope CP3 originale middleware auth + router farmaci (invariato da par.11.D-S1.bis-cont, target nativo Studio)
+
+`backend/pharmatimer_api/db/dependencies.py` esteso:
+- `get_current_user(x_user_token: str = Header(...))` Depends function
+- Hash SHA-256 input header `X-User-Token` -> match vs `utenti.token_hash` query DB
+- Return Pydantic `CurrentUser(id, nome_visualizzato, ruolo)` se match + `attivo=TRUE`
+- Raise `HTTPException 401 Unauthorized` se no match o user inattivo
+
+`backend/pharmatimer_api/models/farmaco.py` NEW (s.6.232 chiusura):
+- `FarmacoBase` Pydantic base shared fields (DRY)
+- `FarmacoResponse(FarmacoBase)` GET response model con id + utente_id + created_at + updated_at
+- `FarmacoCreate(FarmacoBase)` POST request model senza id/timestamps (deferred F3-S2 CRUD POST)
+
+`backend/pharmatimer_api/routers/farmaci.py` NEW:
+- APIRouter prefix `/api` tags `farmaci`
+- `GET /api/farmaci` Depends(get_current_user) -> Depends(get_db)
+- Query `SELECT * FROM farmaci WHERE utente_id = current_user.id AND attivo = TRUE ORDER BY nome`
+- Return `list[FarmacoResponse]`
+
+`backend/pharmatimer_api/app.py` modifica: `app.include_router(farmaci.router)` + exception handler globale `RepositoryError` mapping vocabulary -> HTTPException (sub-AMB F3-S1.D)
+
+Smoke manuale CP3 (Roberto token gia disponibile da CP2 F3-S1-bis-gamma):
+- `uvicorn pharmatimer_api.app:app --host 127.0.0.1 --port 8000` background
+- `curl -H "X-User-Token: $ROBERTO_TOKEN" http://127.0.0.1:8000/api/farmaci` -> 200 + `[]` (no farmaci ancora)
+- `curl http://127.0.0.1:8000/api/farmaci` -> 422 o 401 (no header)
+- `curl -H "X-User-Token: WRONG" http://127.0.0.1:8000/api/farmaci` -> 401 Unauthorized
+- INSERT smoke farmaco diretto MySQL nativo `INSERT INTO farmaci (utente_id, nome, tipo_frequenza, dosi_giornaliere, relazione_pasto, data_inizio) VALUES (2, 'TestFarmaco', 'fisso', 2, 'indifferente', CURDATE());` poi re-curl -> 200 + 1 item
+
+#### Scope CP4 originale pytest setup + 10-15 test (invariato target nativo Studio test DB)
+
+`backend/tests/conftest.py` NEW:
+- Fixture `db_test_connection`: connection pool puntato `pharmatimer_test` (DB_NAME_TEST env var) nativo Studio
+- Fixture `cleanup_test_data`: truncate tabelle in ordine FK-safe (log_assunzioni -> orari_base -> farmaci -> impostazioni_app -> push_subscriptions -> profilo_utente -> permessi -> utenti) per ogni test (sub-AMB F3-S1.H truncate per-test default raccomandato)
+- Fixture `seed_owner_test`: idempotent seed utente owner + self-permission per setup test
+- Fixture `client`: FastAPI TestClient con override get_db pointing test DB
+
+`backend/tests/test_health.py` NEW (2-3 test): test_health_no_auth_200 + test_health_cors_preflight + test_health_db_unreachable_handled (skip optional)
+`backend/tests/test_auth_middleware.py` NEW (4-5 test): happy_path + no_header + invalid_token + inactive_user + token_hash_sha256
+`backend/tests/test_farmaci_read.py` NEW (3-4 test): empty_user + scoped_utente + inactive_excluded + ordered_by_nome
+`backend/tests/test_seed_owner.py` NEW (2 test): idempotent + token_format
+
+Target test count F3-S1-bis-delta: 10-15 test pytest NEW (504 PWA invariati + 10-15 backend = 514-519 total cumulativo). Smoke pytest CP4: `cd backend && venv/bin/pytest tests/ -v` all green.
+
+#### Scope CP5 finale closing F3-S1-bis cumulativo (decisioni in-session candidate)
+
+1. **Spin-off `PharmaTimer_Changelog_Fase3.md`**: raccomandato default si. Emit NEW file separato per Fase 3 multi-tenant backend, preserva `PharmaTimer_Changelog_Fase2.md` chiuso milestone v3.1.0. Single commit doc-only spin-off.
+2. **Backend versioning `backend/pyproject.toml` v0.1.0**: raccomandato default si. Tool `[tool.pytest.ini_options]` + `[project]` + dependencies. requirements.txt preservato backward-compat CI.
+3. **Tag F3-S1-bis cumulativo finale**: `v3.2.0-alpha.1` LOCALE annotato + estendere annotation messaggio post-CP5 finale OPPURE bump `v3.2.0-alpha.2`. Default raccomandato preservare `v3.2.0-alpha.1` + estendere annotation (AMB-11.B.7-bis pattern intermedi).
+4. **Cleanup container Docker `pharmatimer-mysql` + volume `pharmatimer_db_data` + OrbStack daemon**: post-pivot strategy nativo Studio decisione finale. Opzioni: (i) `docker compose down -v` rimuove container+volume + `docker image rm mysql:9.6` + uninstall OrbStack; (ii) preserve container Stopped + volume per audit retro/fallback; (iii) intermedio: `docker compose down -v` + `docker image rm` ma preserve OrbStack daemon installato. Default raccomandato (ii) preserve full per audit (basso costo storage ~250 MB image + volume vuoto), revisita F3-S7 milestone.
+5. **package.json bump**: invariato 3.1.0 (AMB-11.B.7 milestone tecnico funzionante 2 endpoint smoke verdi + middleware auth + pytest verde raggiunto a CP5 F3-S1-bis-delta).
+6. **Spec v1.5 KB-only emit**: raccomandato sezione gap impostazioni_app par.22.79 lesson + endpoint runtime confermati + onboarding token model documentato + pivot strategy nativo Studio ratificato s.6.237. Differibile F3-S5-pre se densita closing alta.
+7. **SD.6 cleanup user nativo Studio**: INVERTITA da par.11.D-S1.bis-cont originale -> preservare `pharmatimer@localhost` nativo (target ufficiale), eventuale audit user residui `pharmatimer%` diversi opportunistico F3-S5+.
+8. **Commit cumulativo finale unico**: branch `fase-3-backend` con tutti i file CP3+CP4 + Changelog Fase3 spin-off + pyproject.toml emit. Push origin atomico.
+
+#### Pattern operativi confermati F3-S1-bis-delta
+
+- Lesson #8-#14 cumulative applicate + **lesson #15 declassata + #16/#17/#18 NEW MANDATORY** (vedi par.22.79-ter)
+- **Lesson #16 PRIORITY**: `mysql_cmd > /tmp/out.txt 2>/tmp/err.txt; cat` per OGNI script (diagnostico + baseline + delivery), no pipe `| grep`, no `2>/dev/null` salvo warning espliciti documentati
+- **Lesson #17 PRIORITY**: Python multi-line heredoc o file dedicato, NO `python -c "..."` con f-string virgolette nidificate
+- **Lesson #18 CRITICA**: CP0 baseline include `@@server_uuid` confronto target dichiarato vs reale runtime
+- Lesson #12 audit grep s.6.NN cumulative pre-emit MANDATORY pre-closing par.22.80
+- Pattern par.22.55 split safety-first ulteriore applicabile se CP3 middleware auth densita >30K
+- Pattern par.22.58/22.67/22.78/22.79/22.79-bis/22.79-ter patcher Python content-based idempotente con assertion uniqueness pre/post replicato esatto
+- Bash zsh-safe (echo single-quoted, no `#`, no apostrofi italiani) invariato + subshell wrapper `( set -e; ... ) || echo abortito` lesson #9 MANDATORY
+- Pattern par.6.118 pre-code scenario validation 2-3 scenari su `Depends(get_current_user)` + permission filter scoped utente
+- AMB-11.B.7 / AMB-11.B.7-bis: bump effettivo + tag annotato a CP5 closing F3-S1-bis-delta milestone
+
+#### Pre-condizioni esterne F3-S1-bis-delta
+
+- **MySQL nativo Studio running**: verifica CP0 obbligatorio `ps -ef | grep mysqld` mostra `/usr/local/mysql/bin/mysqld` up
+- **No container Docker required runtime**: post-pivot nativo strategy (a) ratificata s.6.237
+- **Connessione Python TCP 127.0.0.1:3306 verde**: verifica CP0 obbligatorio via pattern lesson #16 + #18 (`@@server_uuid` match)
+- **Nessuna pre-condizione bloccante esterna**
+
+#### Riferimenti par.11.D-S1.bis-cont-2
+
+- **par.22.79-ter** (stato post-F3-S1-bis-gamma): scope ereditato, 6 deviazioni s.6.235-240 + 4 lesson NEW + pivot strategy nativo Studio ratificato T4-T7
+- **par.22.79-bis**: stato post-F3-S1-bis-beta (milestone /api/health verde ora ratificata su nativo non container)
+- **par.22.79**: stato post-F3-S1 R1 parziale (quirk auth nativo Studio falsificato retroattivamente s.6.238)
+- **par.11.D-S1.bis-cont** R1: scope CP3-CP5 originale invariato target nativo Studio
+- **par.11.D-S1.bis** R1-bis: scope ereditato originale
+- **par.11.D-S1** R1: scope CP1-CP5 originale ereditato pre-F3-S1-bis
+- **Spec v1.4 sez. 3.1-3.11 + sez. 9 + sez. 11.6**: schema 8 tabelle multi-tenant + endpoint API + architettura
+- **par.22.55**: pattern split safety-first preventivo applicabile
+- **par.22.58 / par.22.67 / par.22.78 / par.22.79 / par.22.79-bis / par.22.79-ter**: pattern patcher Python idempotente content-based replicato esatto
+- **AMB-11.B.7 / AMB-11.B.7-bis**: bump + tag a CP5 closing F3-S1-bis-delta milestone tecnico funzionante 2 endpoint smoke verdi + middleware auth + pytest verde
+
+#### Sessione successiva post-F3-S1-bis-delta
+
+**F3-S2 esecutiva CRUD farmaci+orari+profili scoped `utente_id` R1 Studio-all** (x2-3 sub-split safety-first par.22.55 se densita >40K). Prompt par.11.D-S2 sara' pre-frozen output F3-S1-bis-delta CP5 closing finale (par.22.80 emit).
+
+
+
+---
+
+---
+
 ## 12. File prodotti in Step 4a + 4b + 5a + 5b-1 + 5b-2 + 6 + 7a + 7b-1 + 7b-2 + 7c-1 + 7c-2 + 7d-1 + 7d-2p1 + 7d-2p2 + 7d-2p3 + 8-pre + 8a + 8b + 8c-parz + 8c-2 + 9-A + 9-B + 9-D + 10-A + 10-B + 10-C + 10-C-fix + 11-A CP1a + 11-A CP1b + 11-B
 
 | File | Step | Note |
@@ -16845,6 +16979,111 @@ Decisione blanket "decidi tu" Roberto opzione (C) split dopo CP1-code:
 **F3-S1-bis-gamma esecutiva CP2 seed_owner + CP3 middleware auth + router farmaci + CP4 pytest + CP5 finale closing originale F3-S1-bis.** Pre-frozen prompt sezione `### 11.D-S1.bis-cont` post questa sezione.
 
 One-liner apertura: `Esegui il prompt al par.11.D-S1.bis-cont del Changelog.`
+
+
+
+---
+
+---
+
+### 22.79-ter Stato post-Sessione F3-S1-bis-gamma esecutiva (CP0 baseline + CP2 seed_owner nativo Studio + PIVOT STRATEGY (c) Docker container -> (a) MySQL nativo Studio empirico T4-T7 + CP3+CP4+CP5 deferred F3-S1-bis-delta + 6 deviazioni s.6.235-240 + 4 lesson #15 declassata + #16 #17 #18 NEW)
+<!-- par.22.79-ter emit closing F3-S1-bis-gamma -->
+
+**Data:** 22 maggio 2026.
+
+**Modalita:** Sessione F3-S1-bis-gamma esecutiva mista CP0 baseline + CP2 seed_owner + diagnosi anomalia DB container vuoti CP0.5 + replay v01_init.sql A1-A2 + applicazione B docker-init copia + scoperta empirica pivot strategy via T4-T7 server identity confronto (Docker container vs Python runtime target) + chiusura intermedia split safety-first par.22.55 + 6 deviazioni s.6.235-240 + 4 lesson NEW. Token spesi ~40K (dentro budget 30-50K par.11.D-S1.bis-cont preventivo). Wall-clock ~2.5h. CP3 middleware auth + CP4 pytest + CP5 finale deferred F3-S1-bis-delta (par.11.D-S1.bis-cont-2 pre-frozen post questa sezione).
+
+**Esito:** OK milestone parziale CP0+CP2 con scoperta architetturale grossa: backend runtime sempre stato su MySQL nativo Studio, NON su container Docker `pharmatimer-mysql` come dichiarato par.22.79-bis (par.6.71/85 history immutability invariata, drift archeologico ratificato `s.6.237`). Seed owner Roberto id=2 creato su nativo + self-permission caregiver=paziente=2 admin notifiche=0 + token chiaro emesso stdout preservato Roberto-side.
+
+#### Scope consegnato Sessione F3-S1-bis-gamma
+
+**CP0 baseline empirico 10/10 con remediation A (replay v01_init.sql container) e B (copia docker-init/03_v01_init.sql)**: container `pharmatimer-mysql` Up healthy 2h da `CreatedAt 2026-05-22T10:05:35`, RestartCount=0, init scripts 01+02 eseguiti automaticamente al boot fresh, ma DB `pharmatimer_dev`+`pharmatimer_test` vuoti (0 tabelle, 0 FK). Causa esatta non ricostruibile da log container post-hoc (`v01_init.sql` non in `docker-init/`, applicato manualmente Step 3-diag F3-S1-bis-beta, log container mostra solo init scripts auto). Remediation A applicata: replay `v01_init.sql` su entrambi DB container -> 8 tabelle + 10 FK ciascuno verde. Remediation B applicata: copia `db/migrations/v01_init.sql` -> `db/docker-init/03_v01_init.sql` per idempotency fresh-volume futuri. Entrambe rese decorative dal pivot finale (vedi T4-T7 sotto).
+
+**CP2 seed_owner.py creato (74 righe Python) e applicato**:
+- `backend/seed_owner.py` NEW: CLI standalone con `mysql.connector` + `pharmatimer_api.config.settings` (riuso config DRY), `secrets.token_urlsafe(32)` + `hashlib.sha256(token.encode()).hexdigest()` + INSERT `utenti(nome_visualizzato, ruolo='owner', token_hash, attivo=TRUE)` + INSERT self-permission `permessi(caregiver_id=NEW.id, paziente_id=NEW.id, permesso='admin', notifiche_caregiver_attive=FALSE)` (Spec sez. 3.10), commit atomico. Idempotency check `SELECT COUNT(*) FROM utenti WHERE ruolo='owner'` > 0 -> exit 1 "Owner gia esistente, no-op".
+- Smoke scenario 1 first run: `OWNER_NAME=Roberto venv/bin/python seed_owner.py` -> exit 0, stdout `Owner creato: id=2 nome='Roberto'` + token chiaro 43-char URL-safe + prompt VITE_USER_TOKEN. Token preservato Roberto-side (1Password / nota), NON registrato Changelog (PII).
+- Smoke scenario 2 idempotency: re-run -> exit 1, stderr "Owner gia esistente, no-op", no double insert.
+- INSERT effettiva su nativo Studio (non container), come confermato T4-T7.
+
+**Diagnosi pivot strategy T4-T7 empirica (s.6.237)**: confronto `@@server_uuid` tra container Docker (`docker exec`) e Python runtime target (`mysql.connector` via `127.0.0.1:3306` con config.py default):
+- Container `@@server_uuid = 03499aa8-55b5-11f1-94b6-3abc57be6d96`, hostname `3e31aa700233` (Docker internal hostname)
+- Python runtime target `@@server_uuid = 8c7fac68-0b72-11f1-9c49-08cef252c2d9`, hostname `Robertos-Mac-Studio.local`
+- T5 nativo socket `mysql --protocol=SOCKET -upharmatimer` -> ritorna `utenti id=2 'Roberto' owner` identico a stato post-CP2
+- T6 process check: `/usr/local/mysql/bin/mysqld --user=_mysql --basedir=/usr/local/mysql --datadir=/usr/local/mysql/data` running da Tue02PM (Homebrew/Oracle DMG par.22.36 install nativo Studio storico)
+- T7.1 plugin: `pharmatimer@localhost` su nativo ha plugin `caching_sha2_password` (identico a quirk par.22.79 lesson #10 dichiarato sistematicamente fallente)
+- T7.2 auth: `mysql -h 127.0.0.1 -P 3306 -upharmatimer -ppharmatimer_dev_2026` -> verde, `CURRENT_USER() = pharmatimer@localhost`
+- T7.3 netstat: `127.0.0.1.3306` ESTABLISHED connessioni locali (LISTEN implicita)
+
+**Conclusione T4-T7**: port 3306 host occupata dal MySQL nativo Studio, NON dal container Docker (bind container `127.0.0.1:3306:3306` fallisce silenziosamente o bind solo internal docker network). Backend FastAPI runtime sempre stato connesso al nativo Studio dal boot F3-S1-bis-beta in poi. Container vivo orfano runtime, `/api/health` verde par.22.79-bis era vero ma su nativo, non container. Quirk par.22.79 lesson #10 `caching_sha2_password 1045 systematic` falsificato retroattivamente (s.6.238): TCP 127.0.0.1 con `pharmatimer@localhost` funziona empiricamente. Cause root storico originario quirk non ricostruibile (forse cleanup user s.6.227, forse update Homebrew silente, forse mismatch socket vs TCP non investigato F3-S1 R1).
+
+**Decisione architetturale pivot (Opzione 1 raccomandata + ratificata Roberto)**: pivot ufficiale strategy (a) MySQL nativo Studio come target backend. Container Docker `pharmatimer-mysql` `docker compose down` (volume preservato, OrbStack daemon resta installato). Strategy (c) Docker ratifica par.22.79-bis decorativa, mantenuta come deviation `s.6.231` immutabile par.6.71/85 + nuova deviation `s.6.237` ratifica pivot empirico contrastante.
+
+**Verifica empirica N1-N5 nativo Studio post-pivot**: pharmatimer_dev + pharmatimer_test entrambi con 8 tabelle + 10 FK ciascuno, utenti id=2 Roberto owner attivo + permessi self caregiver=paziente=2 admin notifiche=0, token_hash prefix `24eb8e16e48a32a4`. Anomalia archeologica residua: AUTO_INCREMENT counter partito da 2 (gap id=1, DELETE o TRUNCATE intermedio F3-S1 R1 / F3-S1-bis-beta non documentato), cosmetica non bloccante.
+
+#### Sub-decisioni in-session ratificate F3-S1-bis-gamma (blanket "decidi tu" + D1-D8 default raccomandati)
+
+| # | Tema | Ratifica |
+|---|---|---|
+| D1 | Container Docker `pharmatimer-mysql` | `docker compose down` (no `-v`, volume preservato per audit retro) |
+| D2 | `backend/db/docker-init/03_v01_init.sql` untracked | Rimosso `rm` (irrilevante post-pivot, evita confusione futura) |
+| D3 | `seed_owner.py` tracked git | Si (CLI standalone riusabile, no secret hardcoded, secret generato runtime) |
+| D4 | Token Roberto `OPwzGwPx...` registrazione | NON nel Changelog (PII/secret-like). Roberto annotato safely Roberto-side (1Password / nota locale) |
+| D5 | Spec v1.5 emit | Deferred F3-S5-pre (basso ROI vs token budget closing) |
+| D6 | `PharmaTimer_Changelog_Fase3.md` spin-off | Deferred F3-S1-bis-delta CP5 finale (milestone Fase 3 ancora aperta) |
+| D7 | Tag git | Invariato `v3.2.0-alpha.1` (AMB-11.B.7-bis pattern intermedi, milestone tecnica 2 endpoint smoke verdi non ancora raggiunta) |
+| D8 | package.json bump | Invariato 3.1.0 (AMB-11.B.7 milestone deferred F3-S1-bis-delta CP5) |
+
+#### Deviazioni s.6.NN emesse (6 entry, audit grep pre-emit lesson #12 OK)
+
+Audit grep cumulative pre-emit confermato: ultimo `s.6.234` (par.22.79-bis), prima entry libera `s.6.235`. Rinumerazione applicata correttamente.
+
+| # | Tema | Status applicazione |
+|---|---|---|
+| s.6.235 | CP0.5 baseline F3-S1-bis-gamma DB container vuoti vs par.22.79-bis dichiarazione `8 tabelle 10 FK applied verde smoke INSERT/SELECT/DELETE`. Causa esatta non ricostruibile (log container mostra solo init scripts 01+02 + boot fresh oggi 10:05, RestartCount=0 esclude reset intermedio). Remediation A applicata replay `v01_init.sql` + remediation B copia `db/docker-init/03_v01_init.sql`. Entrambe rese decorative post-pivot strategy s.6.237 | Applicata CP0 + decorativa post-pivot |
+| s.6.236 | Applicazione B copia `03_v01_init.sql` in docker-init: file rimosso `rm` post-pivot (untracked mai committato), evita confusione e residui filesystem. Pattern alternativo (init script auto fresh-volume) abbandonato per nativo target | Applicata + reverse |
+| s.6.237 | **PIVOT STRATEGY:** s.6.231 strategy (c) Docker container ratificata par.22.79-bis FALSIFICATA empiricamente T4-T7 server identity confronto. Backend FastAPI runtime sempre stato connesso a MySQL nativo Studio (`@@server_uuid 8c7fac68-...` vs container `03499aa8-...`), port 3306 host occupata dal nativo Studio (`/usr/local/mysql/bin/mysqld` Homebrew/Oracle DMG par.22.36). Strategy attiva diventa (a) nativo Studio. /api/health verde par.22.79-bis vero ma su nativo. Container orfano `docker compose down` post-closing, volume preservato per audit | Applicata + pivot |
+| s.6.238 | Falsificazione retroattiva par.22.79 lesson #10 quirk auth nativo Studio: `caching_sha2_password` per `pharmatimer@localhost` via TCP 127.0.0.1:3306 funziona empiricamente (T7.2 verde, T5 socket Unix verde). Cause root storico originario quirk F3-S1 R1 non ricostruibile (candidati: cleanup user s.6.227, update Homebrew silente, mismatch socket vs TCP non investigato F3-S1 R1). par.6.71/85 history immutability: par.22.79 lesson #10 invariato, s.6.238 ratifica empirico contrastante | Applicata |
+| s.6.239 | seed_owner.py Roberto id=2 token emesso preservato Roberto-side, NON in Changelog. AUTO_INCREMENT gap id=1 cosmetico (DELETE/TRUNCATE intermedio non documentato F3-S1 R1 / F3-S1-bis-beta), non bloccante. Token hash prefix `24eb8e16e48a32a4` documentato come fingerprint non-reversible | Applicata |
+| s.6.240 | SD.6 cleanup user `pharmatimer@localhost` nativo Studio INVERTITA: post-pivot strategy nativo target, preservare user + DBs nativi come runtime ufficiale. Eventuale audit user residui `pharmatimer%` diversi (s.6.227 carry-forward) opportunistico F3-S5+ | Applicata invertita |
+
+#### Lesson learned consolidate (4 NEW + 1 declassata)
+
+1. **Lesson #15 DECLASSATA**: "Schema iniziale in `db/docker-init/` con prefix `03_+` per fresh-volume idempotency" emessa CP0 remediation B -> irrilevante post-pivot nativo. Pattern resta applicabile cross-progetto per setup Docker MySQL/MariaDB puro, ma non per PharmaTimer post-pivot. Registrata come no-op per F3 corrente.
+2. **Lesson #16 NEW**: `mysql_cmd > /tmp/out.txt 2>/tmp/err.txt; cat` MANDATORY per OGNI script bash che osservi output MySQL (diagnostico, baseline, delivery), no pipe `| grep`, no `2>/dev/null` se non per warning espliciti documentati. Estende lesson #14 par.22.79-bis a tutti gli script (non solo delivery). Self-audit pre-emit obbligatorio. Drift mio reiterato CP0.5 originale + CP2.3 + CP2.5 + D7 prima versione: pattern emesso e simultaneamente disapplicato 3 volte consecutive. Causa: focus mio su contenuto scripts vs forma observability. Mitigation: pre-emit checklist "ogni `mysql/docker exec mysql` ha redirect file + cat? si/no abort".
+3. **Lesson #17 NEW**: blocchi Python multi-line via heredoc `python << 'PYEOF' ... PYEOF` o file script, MAI `python -c "..."` con f-string e virgolette nidificate. Pattern T2 originale (`python -c "from ... import settings; print(f'DB_HOST={settings.DB_HOST!r}')..."`) spezzato da shell di Roberto + comando residuo `rm` mescolato, SyntaxError invalid decimal literal. Heredoc o file dedicato evitano completamente la classe di problemi quoting + nesting.
+4. **Lesson #18 CRITICA NEW**: CP0 baseline empirico per setup multi-target (host + container, host + remote, etc.) DEVE includere **verifica server identity** via `@@server_uuid` confronto. Avrebbe scoperto il drift container vs nativo in CP0 invece che CP2 (3h perse + remediation A+B decorative + 2 rivoluzioni mentali). Pattern: per OGNI baseline che dichiara target DB specifico, eseguire `mysql_cmd via canale 1` + `mysql_cmd via canale 2` + `SELECT @@server_uuid, @@hostname, @@port` su entrambi -> se UUID match il target dichiarato e quello reale coincidono. Applicabile cross-progetto a stack con MySQL/MariaDB/PostgreSQL multi-host.
+
+#### Stato git post-Sessione F3-S1-bis-gamma
+
+- branch `fase-3-backend` HEAD `<closing-commit-NEW>` 5 commit ahead origin/main pre-push, ALLINEATO origin post-push (2049ab2 + closing-NEW = total 5 commit sopra origin/main)
+- working tree clean post-commit Changelog + seed_owner.py
+- tag annotato `v3.2.0-alpha.1` LOCALE sha tag-object invariato target 2049ab2 (D7 ratificata: no bump, no tag NEW)
+- tag annotato `v3.1.0` sha tag-object `294c563` target `e10b971` invariato
+- gh-pages SHA `0f93b63` invariato (no redeploy, backend pure scope)
+- package.json `3.1.0` invariato (D8 ratificata: AMB-11.B.7)
+- 504/504 test PWA invariati su 62 files (zero delta vs baseline par.22.79-bis, frontend non-toccato)
+- **1 file emesso tracked Sessione F3-S1-bis-gamma**: `backend/seed_owner.py` (74 righe Python CLI standalone)
+- **1 file emesso untracked + rimosso**: `backend/db/docker-init/03_v01_init.sql` (applicato remediation B, rimosso `rm` post-pivot D2 ratificata)
+- **DB stato nativo Studio (target ufficiale post-pivot)**: 2 DB `pharmatimer_dev` + `pharmatimer_test`, 8 tabelle + 10 FK ciascuno, `utenti id=2 Roberto owner attivo` + `permessi caregiver=2 paziente=2 admin notifiche=0`, AUTO_INCREMENT counter=3 (gap id=1 cosmetico)
+- **Container Docker `pharmatimer-mysql`**: Stopped via `docker compose down`, volume `pharmatimer_db_data` preservato (audit retro), OrbStack daemon resta installato
+- **venv backend invariato** + 8 pkg + 6 file Python runtime + `seed_owner.py` NEW
+
+#### Riferimenti par.22.79-ter
+
+- **par.22.79-bis** (stato post-F3-S1-bis-beta): scope ereditato, 4 deviazioni s.6.231-234 + 2 lesson #13-#14 NEW + milestone /api/health verde verticale (ora ratificata su nativo non container)
+- **par.22.79**: stato post-F3-S1 R1 parziale, quirk auth nativo Studio diagnosticato (ora falsificato retroattivamente s.6.238)
+- **par.11.D-S1.bis-cont** R1 (questa pre-frozen consumata parzialmente): scope CP0 + CP2 consegnato, CP3+CP4+CP5 originali deferred F3-S1-bis-delta
+- **par.22.55**: pattern split safety-first preventivo applicato a chiusura intermedia tecnica grossa (pivot architetturale scoperto vs continuazione monolitica), coerente lesson #18 critica + drift cumulativi 6 deviazioni grosse
+- **par.22.58 / par.22.67 / par.22.78 / par.22.79 / par.22.79-bis**: pattern patcher Python idempotente content-based con assertion uniqueness pre/post replicato esatto questa sessione doc-only emit
+- **AMB-F3.F**: decisione Mini Docker vs nativo F3-S6 ora informata da esperienza pratica pivot Studio (nativo Studio funziona Apple Silicon Tahoe 26.0.1 senza quirk via TCP, lesson cross-fase)
+- **AMB-11.B.7 / AMB-11.B.7-bis**: tag annotato `v3.2.0-alpha.1` LOCALE pre-allocato invariato (no push tag fino smoke F3-S7 finale, no bump intermedio)
+- **par.6.71/85 history immutability**: par.22.79 lesson #10 + par.22.79-bis s.6.231 strategy (c) preservati immutati, s.6.237/238 ratificano empirico contrastante senza retro-correzione
+
+#### Sessione successiva post-F3-S1-bis-gamma
+
+**F3-S1-bis-delta esecutiva CP3 middleware auth + router farmaci + CP4 pytest + CP5 finale closing originale F3-S1-bis cumulativo.** Target nativo Studio MySQL 9.6 ratificato. Pre-frozen prompt sezione `### 11.D-S1.bis-cont-2` post questa sezione.
+
+One-liner apertura: `Esegui il prompt al par.11.D-S1.bis-cont-2 del Changelog.`
 
 
 
