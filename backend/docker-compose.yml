@@ -1,0 +1,30 @@
+# PharmaTimer F3-S1-bis - Docker MySQL container dev environment
+# Strategy (c) ratificata par.11.D-S1.bis: bypass quirk auth MySQL 9.6 nativo Studio (par.22.79 lesson #10)
+# Port host 3306 (libera; 3307 occupata da tunnel SSH StockFusion preservato par.22.78-bis)
+# Volume named: persistenza dati cross-restart container, no bind mount path hardcoded
+# Profile dev attivo; profile prod placeholder per F3-S6 (Mini decision AMB-F3.F)
+
+services:
+  mysql:
+    image: mysql:9.6
+    container_name: pharmatimer-mysql
+    profiles: ["dev"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: docker_root_2026
+    volumes:
+      - pharmatimer_db_data:/var/lib/mysql
+      - ./db/docker-init:/docker-entrypoint-initdb.d:ro
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pdocker_root_2026"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  pharmatimer_db_data:
+    name: pharmatimer_db_data
