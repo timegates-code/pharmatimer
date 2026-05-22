@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pharmatimer_api.config import settings
 from pharmatimer_api.db.connection import close_pool, init_pool
 from pharmatimer_api.exceptions import RepositoryError, repository_error_handler
-from pharmatimer_api.routers import farmaci, health
+from pharmatimer_api.routers import farmaci, health, log_assunzioni, orari
 
 
 @asynccontextmanager
@@ -44,3 +44,5 @@ app.add_exception_handler(RepositoryError, repository_error_handler)
 
 app.include_router(health.router)
 app.include_router(farmaci.router)
+app.include_router(orari.router)
+app.include_router(log_assunzioni.router)
