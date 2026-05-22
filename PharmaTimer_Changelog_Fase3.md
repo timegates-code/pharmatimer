@@ -218,3 +218,159 @@ Questo file nasce come spin-off del Changelog Fase 2 al closing della Sessione *
 **F3-S3 esecutiva CRUD `orari_base` + `log_assunzioni` scoped `utente_id`**. Pre-frozen prompt sezione `### 11.D-S3` sopra.
 
 One-liner apertura: `Esegui il prompt al par.11.D-S3 del Changelog Fase 3.`
+
+
+### 22.83 (Fase 3, closing F3-S3-alpha-post finale) - Sessione esecutiva CP3 smoke 12/12 + CP4 cleanup-N6 + CP5 bump 0.3.0 + tag v3.2.0-alpha.3 LOCALE
+
+<!-- par.22.83 emit closing F3-S3-alpha-post -->
+
+**Data:** 22 maggio 2026 sera-notte.
+
+**Modalita:** esecutiva 3 CP unica sessione (CP3 smoke + CP4 cleanup-N6 + CP5 closing) + CP0 baseline empirico + CP0-ext 6 round popolamento payload-correctness pre-emit. Pattern par.22.55-Fase2 split safety-first NON applicato (densita CP3-CP4-CP5 contenuta, tutti scenari verdi al primo colpo). Token spesi ~50K. Wall-clock ~2h.
+
+**Esito:** OK 12/12 smoke verdi al primo colpo + 2 patcher Python rimossi + working tree clean post-cleanup-N3+cleanup-N6 + bump pyproject 0.2.0 -> 0.3.0 + tag annotato v3.2.0-alpha.3 LOCALE no push (AMB-11.B.7-bis quinta applicazione cumulativa Fase 3).
+
+#### Scope consegnato
+
+CP0 baseline empirico R1 (Lesson #21 R2 Python venv): 9/9 check verdi (HEAD `0a6dcd8`, 3 ahead, pytest 33/33, versioni 0.2.0+3.1.0, farmaci=1 cleanup-N3 carry-forward `id=2 SmokeF3S2_updated attivo=0`, orari_base=0, log_assunzioni=0).
+
+CP0-ext 6 round pre-emit (par.6.118 MANDATORY scenario validation):
+- ext.1-4: DDL `farmaci` 18 col + Pydantic `FarmacoBase` validators (`tipo_frequenza` consistency + `data_fine>=data_inizio`).
+- ext.5.1: Pydantic `OrarioCreate` schema 5 campi obbligatori - intercettato drift-N40 pre-emit.
+- ext.5.2: Pydantic `LogAssunzioneCreatePresa` + `RicalcoloDoseSuccessivaPayload` shape.
+- ext.5.3: errore mio query `SELECT nome FROM utenti` (schema reale `nome_visualizzato`) - intercettato drift-N42 pre-emit + Lesson #23 candidate auto-segnalata.
+- ext.5.4-6.3: full `routers/log_assunzioni.py` 195 righe range check `_MAX_RANGE_DAYS=31` raise `RepositoryError(CONSTRAINT_VIOLATION)` -> 409 - intercettato drift-N41 pre-emit.
+- ext.6.1-2: utenti populated (id=2 Roberto owner, AUTO_INCREMENT=3) + farmaci snapshot pre-S0 cleanup.
+
+CP3 smoke uvicorn nativo Studio porta 8001 (terminal 1 background + terminal 2 script fail-fast `set -euo pipefail` + trap EXIT defensive cleanup):
+- S0 setup: cleanup-N3 DELETE + INSERT utente `PazienteSmokeTemp` paziente + farmaco scoped (UID_PAZ=3, FID_PAZ=3).
+- S1 POST farmaco intervallo -> 201 + `id=4` (drift-N43 confermato AUTO_INCREMENT consumato pre-S1 da setup paziente).
+- S2 GET orari empty -> 200 `[]`.
+- S3 PUT bulk-replace 3 dosi payload completo (5 campi Pydantic) -> 200 + 3 items ordinati.
+- S4 GET orari popolato -> 200 dose_numero ASC.
+- S5 PUT non-sequenziale [1,3,4] -> 422 Pydantic `RootModel` validator.
+- S6 POST `/presa` dose 1 INSERT path -> 201.
+- S7 POST `/presa` dose 1 repeat -> 409 `CONSTRAINT_VIOLATION` state-machine block.
+- S8 POST `/presa` dose 2 + nested `ricalcolo_dose_successiva` dose 3 atomic -> 201 + UPSERT D+1.
+- S9 GET `/log` range 30gg -> 200 + 3 rows stati `[(1,presa),(2,presa),(3,ricalcolata)]` (drift-N39 timedelta->time coerce ratificato end-to-end).
+- S10 GET `/log` range 32gg -> 409 (drift-N41 ratificato empirico vs prompt 422).
+- S11 scope violation POST `/presa` su FID_PAZ con TOKEN Roberto -> 404 `NOT_FOUND` security-by-obscurity.
+- S12 trap EXIT defensive cleanup -> farmaci=0, orari_base=0, log_assunzioni=0, utenti=[Roberto only].
+
+CP4 cleanup-N6: rimossi `cp1_s3a_patch.py` (35780 bytes) + `cp2_fix_patch.py` (10017 bytes) repo root. Working tree clean su untracked.
+
+CP5 closing:
+- bump `backend/pyproject.toml` 0.2.0 -> 0.3.0 (AMB-11.B.7 milestone CRUD orari + log/presa state-machine funzionale).
+- Changelog Fase 3 append par.22.83 + par.11.F-S3 pre-frozen via patcher Python content-based con SENTINEL idempotency_marker (pattern par.22.58 + Lesson #20).
+- commit closing CP5 dedicato selective (cleanup-N6 + pyproject + Changelog cumulativi).
+- tag annotato `v3.2.0-alpha.3` LOCALE NO push (AMB-11.B.7-bis quinta applicazione).
+
+#### Deviazioni s.6.NN nuove (0 codice)
+
+Nessuna. Sessione CP3-CP4-CP5 zero modifiche source. Tutti i drift sono doc-only (vedi sotto).
+
+#### Drift-doc-NEW Fase 3 cumulativi (4 NEW: N40-N43)
+
+- **N40** (NEW-S3a-post, intercettato pre-emit CP0-ext.5.1, confermato empirico CP3 S3): prompt par.11.E-S3 S3/S5 payload simbolico `{dose:N, ora:HH:MM:SS}` INCOMPLETO vs Pydantic `OrarioCreate` reale (`dose_numero`+`offset_minuti`+`ancora_riferimento`+`ora_prevista`+`descrizione_momento?`). NO retro-correzione par.11.E-S3 (par.6.71/85).
+- **N41** (NEW-S3a-post, intercettato pre-emit CP0-ext.6.3, confermato empirico CP3 S10): prompt S10 atteso 422; reale 409 (`RepositoryError(CONSTRAINT_VIOLATION)` -> HTTP 409 mapping par.22.34-Fase2). NO retro-correzione.
+- **N42** (NEW-S3a-post CRITICO auto-segnalazione regola critica #2): mio errore CP0-ext.5.3 query `SELECT nome FROM utenti` su schema reale `nome_visualizzato`. Intercettato pre-emit (Python script crash con `ProgrammingError 1054 Unknown column nome`). Mitigazione: Lesson #23 MANDATORY schema-first introspection.
+- **N43** (NEW-S3a-post empirico CP3 S1): prompt par.11.E-S3 S1 atteso `id=2` per nuovo POST farmaco; reale `id=4` (AUTO_INCREMENT=3 pre-cleanup-N3 + consumato `id=3` da setup paziente S0). NO retro-correzione.
+
+#### Lesson cumulative Fase 3 NEW (1 NEW: #23)
+
+- **Lesson #23 MANDATORY**: schema-first DB introspection (`SHOW CREATE TABLE`) MANDATORY pre-SELECT con colonne specifiche su tabelle NON toccate in sessione corrente (anche se nome colonna sembra banale tipo `nome`). Pattern: ogni Python script CP0-ext che legge utenti/farmaci/orari/log fuori dal scope sessione corrente prima esegue `SHOW CREATE TABLE` o ispeziona schema via `information_schema.columns`. Auto-segnalazione errore CP0-ext.5.3 (regola critica #2). Applicabile a OGNI futura sessione che tocca tabelle Fase precedente.
+
+#### Mio errore zsh
+
+Nessuno questa sessione. Tutti i blocchi bash zsh-safe (echo single-quoted, no commenti, no apostrofi italiani, heredoc PYEOF per Python multi-line).
+
+#### Cleanup status
+
+- **cleanup-N1** (Fase 2 IndexedDB dev-only browser-side): invariato carry-forward.
+- **cleanup-N3** chiuso definitivamente (CP3 S0 DELETE `farmaci.id=2 attivo=0`).
+- **cleanup-N6** chiuso (CP4 rimozione 2 patcher Python repo root).
+- 1 `.bak.cp5` rimosso inline CP5.1.
+- Script smoke `~/tmp/cp3_smoke_s3a_post.sh` + log `~/tmp/cp3_smoke_s3a_post.log` + patcher `~/tmp/cp5_changelog_append.py` carry-forward Mac-side (cleanup opportunistico F3-S3-beta o manuale).
+
+#### Stato git post-F3-S3-alpha-post
+
+- branch `fase-3-backend` HEAD `<TBD-cp5-commit>` 4 ahead `origin/fase-3-backend`
+- tag annotato `v3.2.0-alpha.3` LOCALE NO push su HEAD CP5 closing
+- tag `v3.2.0-alpha.2` su `ab4e2d7` invariato
+- tag `v3.2.0-alpha.1` su `fe212ad` invariato
+- `backend/pyproject.toml` `0.3.0`
+- `package.json` `3.1.0` invariato (D3-Fase2 frontend versioning separato fino F3-S6)
+- 504/504 PWA + **33/33 backend** = **537 test totali** (invariati da F3-S3-alpha-pre, smoke uvicorn non aggiunge pytest)
+- working tree clean post-closing
+
+#### Findings cumulativi carry-forward F3-S3-beta
+
+- 17 findings registry Fase 2 polish invariati
+- 12 residual UX findings v3.1.0 invariati
+- 4 drift-doc Fase 3 N30-N33 chiusi par.22.79-quater-Fase2
+- 4 drift-doc Fase 3 N36-N39 chiusi par.22.82
+- 4 drift-doc Fase 3 N40-N43 NEW chiusi par.22.83
+- 4 lesson NEW #20-#23 MANDATORY cumulative
+- sub-AMB carry-forward invariati (addFarmaco undefined literal persistence PWA-side + IndexedDB test row dev-only)
+- F3-S3-beta scope: endpoint `/saltata`+`/sospesa`+`/undo`+`/recupero` + ALTER TABLE UNIQUE composito opzionale + Spec v1.5 update sez. 3.4 demo + 3.5 orari_base 8 col + 3.6 log_assunzioni 14 col (chiusura drift-N37/N38)
+
+#### Riferimenti par.22.83
+
+- **par.22.82-Fase3**: closing F3-S3-alpha-pre intermedio (origine baseline + 3 lesson #20-#22)
+- **par.22.81-Fase3**: closing F3-S2 CRUD farmaci (baseline architetturale)
+- **par.22.58-Fase2**: pattern patcher Python content-based SENTINEL applicato CP5 Changelog append (Lesson #20 idempotency_marker)
+- **par.22.34-Fase2**: RepositoryError vocabulary applicato CP3 S7+S10+S11
+- **par.6.118-Fase2**: pre-code scenario validation 6 round CP0-ext (intercettato 4 drift pre-emit)
+- **par.6.71/85-Fase2**: history immutability - par.11.E-S3 drift N40/N41/N43 NON retro-corretti
+- **AMB-11.B.7 / AMB-11.B.7-bis-Fase2**: bump effettivo + tag annotation applicato CP5 closing F3-S3-alpha milestone (quinta applicazione cumulativa Fase 3)
+
+#### Sessione successiva post-F3-S3-alpha-post
+
+**F3-S3-beta esecutiva endpoint transitions `/saltata`+`/sospesa`+`/undo`+`/recupero` + ALTER TABLE UNIQUE + Spec v1.5 update sez. 3.4/3.5/3.6**. Pre-frozen prompt sezione `### 11.F-S3` sotto.
+
+One-liner apertura: `Esegui il prompt al par.11.F-S3 del Changelog Fase 3.`
+
+---
+
+### 11.F-S3 (Fase 3, prompt pre-frozen F3-S3-beta)
+
+<!-- par.11.F-S3 R1 emit Fase 3 -->
+
+**One-liner apertura:** `Esegui il prompt al par.11.F-S3 del Changelog Fase 3.`
+
+**Scope alto livello.** Completamento state machine `log_assunzioni` con endpoint command-based aggiuntivi (`/saltata`, `/sospesa`, `/undo`, `/recupero`) scoped utente+farmaco. Vincolo DB opzionale: ALTER TABLE `log_assunzioni` ADD UNIQUE `(utente_id, farmaco_id, data, dose_numero)` per abilitare `ON DUPLICATE KEY UPDATE` semplifica `_post_presa` SELECT FOR UPDATE branch (CP1.A F3-S3-alpha-pre da rivalutare). Aggiornamento Spec v1.4 -> v1.5 sez. 3.4 (campo `demo BOOLEAN` farmaci, drift-N38) + sez. 3.5 (orari_base 8 col vs 9 dichiarate, drift-N37) + sez. 3.6 (log_assunzioni 14 col vs 13 dichiarate, drift-N37). Smoke pytest 12-18 test aggiuntivi (target 45-50 backend cumulativo). CP smoke uvicorn 8-12 scenari curl. Roadmap successiva F3-S4 caregiver permessi o F3-S5 ApiRepository PWA-side integration.
+
+**Modalita raccomandata.** Esecutiva mista con pattern split safety-first par.22.55-Fase2 applicabile (4 endpoint NEW + ALTER TABLE migration + Spec v1.5 update + smoke densita potenzialmente >60K). Suggerimento apertura: CP0 baseline empirico + analisi-first 4-6 Q (transitions matrix, ALTER TABLE skip vs apply, `/undo` semantica rollback vs new row, Spec v1.5 minor vs major version bump) prima di CP1.
+
+**Sub-AMB F3-S3-beta.A-F candidate** (definizione effettiva in apertura F3-S3-beta):
+- **F3-S3-beta.A**: transitions matrix completa (`/saltata`: prevista|ricalcolata -> saltata; `/sospesa`: scope dubbio prevista|ricalcolata|presa -> sospesa; `/undo`: presa|saltata|sospesa -> prevista|ricalcolata o DELETE row; `/recupero`: saltata -> presa con nota)
+- **F3-S3-beta.B**: ALTER TABLE UNIQUE `(utente_id, farmaco_id, data, dose_numero)` applicare in F3-S3-beta CP1 (riformula `_post_presa` con `ON DUPLICATE KEY UPDATE`) vs deferred F3-S4+
+- **F3-S3-beta.C**: `/undo` semantica - rollback idempotent (re-INSERT row in stato precedente con history audit) vs hard DELETE row vs nuovo stato `annullata` aggiunto ENUM
+- **F3-S3-beta.D**: Spec v1.5 version bump - minor `1.4 -> 1.5` (aggiunge campi + chiusura drift) vs patch `1.4 -> 1.4.1` vs documentato come D2 in-session decisione
+- **F3-S3-beta.E**: `/recupero` scope - solo riapertura `saltata -> presa con recupero_minuti` vs full ricalcolo gap downstream (algoritmo Spec sez. 4)
+- **F3-S3-beta.F**: split alpha-pre/alpha-post pattern replicato beta-pre/beta-post (se densita >50K) vs monolitico (default raccomandato monolitico, scope 4 endpoint omogenei)
+
+**Pre-letture obbligatorie F3-S3-beta:**
+1. `par.22.83-Fase3` integrale (closing F3-S3-alpha-post + 4 drift N40-N43 + Lesson #23)
+2. `par.22.82-Fase3` integrale (closing F3-S3-alpha-pre + Lesson #20-#22 + sub-AMB CP1.A-E)
+3. Questo Changelog Fase 3 § 0 + § 11.F-S3 scope
+4. Spec v1.4 sez. 3.5+3.6 + sez. 4 (algoritmo ricalcolo+recupero gap)
+5. `par.22.34-Fase2` (RepositoryError vocabulary)
+6. `par.6.118-Fase2` (pre-code scenario validation)
+7. `pharmatimer_oggi_v5.jsx` mockup (transitions UI side per riferimento semantica `/undo`+`/recupero`)
+
+**Pattern operativi confermati per F3-S3-beta:**
+- Lesson #8-#23 cumulative Fase 2+3 invariate (#23 schema-first DB introspection NEW)
+- Pattern par.22.58-Fase2 patcher Python content-based con SENTINEL + Lesson #20 idempotency_marker
+- Bash zsh-safe (echo single-quoted, no commenti, no apostrofi italiani, heredoc PYEOF Python multi-line)
+- AMB-11.B.7 / AMB-11.B.7-bis-Fase2: bump effettivo `pyproject.toml` 0.3.0 -> 0.4.0 + tag `v3.2.0-alpha.4` LOCALE NO push a CP5 closing F3-S3-beta milestone
+
+**Decisioni in-session candidate F3-S3-beta** (a CP5 closing):
+1. Bump backend `pyproject.toml` 0.3.0 -> 0.4.0 (raccomandato si, transitions = milestone completamento state machine)
+2. Tag `v3.2.0-alpha.4` LOCALE annotato (raccomandato si, AMB-11.B.7-bis pattern intermedi)
+3. Branch `fase-3-backend` continuazione (no merge `main` fino F3-S7 smoke)
+4. Spec v1.5 emit (KB-only per convention)
+5. Eventuale ALTER TABLE migration `v02_unique.sql` (sub-AMB F3-S3-beta.B)
+6. Eventuale Lesson #24 candidate emergente in sessione
+
+---
