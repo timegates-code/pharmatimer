@@ -601,3 +601,531 @@ One-liner apertura: `Esegui il prompt al par.11.H-S3 del Changelog Fase 3.`
 - TODO codice **F3-S3-gamma+**: `intervallo_minimo_ore` enforcement su `/recupero` (Q-RES-2 deferred N+5.C, marker docstring `post_recupero` esplicito). Decisione N+5.D apertura: rinviare ulteriormente a F3-S4-bis post-decision o aprire N+5.D-bis dedicata mini-sessione.
 
 ---
+
+
+### 22.85 (Fase 3, closing N+5.D analisi-first sola scope decision F3-S4 split alpha utenti / beta permessi)
+
+<!-- par.22.85 emit closing N+5.D -->
+
+**Data:** 23 maggio 2026 pomeriggio.
+
+**Modalita:** Sessione analisi-first sola doc-only (opzione A meta-decisione Q2 split safety-first par.22.55-Fase2 + par.22.84 pattern N+5.B replicato). N+5.D = CP0 baseline empirico ridotto + ratifica Q1-Q4 percorso + Q5-Q9 sub-AMB N+5.E-alpha + sub-AMB I (doppio INSERT auto-permesso self+owner) risolta pre-emit + design draft consolidato N+5.E-alpha + pre-frozen `par.11.I-S3` per N+5.E-alpha. Zero source change, zero commit, zero tag. Token spesi attesi ~12-15K. Wall-clock atteso ~30-45 min.
+
+**Esito:** OK. Scope N+5.E-alpha cementato (POST + DELETE utenti scoped owner-only) + scope N+5.E-beta pre-allocato (CRUD permessi). Sub-AMB I emersa pre-emit chiusa autonoma in-session (pattern par.6.118-Fase2 scenario validation + regola critica #2 stop+segnala). Cementazione finale (bump 0.4.0 -> 0.5.0 + tag `v3.2.0-alpha.5` LOCALE + Spec v1.6 KB-only) deferita a CP5 N+5.E-beta closing cumulativo F3-S4 milestone (Q8=B + Q9=B).
+
+#### CP0 baseline empirico N+5.D verde 5/5
+
+- HEAD `6860c4d` (post-CP5 N+5.C par.22.84) branch `fase-3-backend`
+- Tag `v3.2.0-alpha.4` LOCALE su `6860c4d` invariato
+- 6 ahead `origin/fase-3-backend` invariato
+- `backend/pyproject.toml` version `0.4.0` invariato
+- `package.json` version `3.1.0` invariato
+- 49 backend test + 504 PWA test = 553 totali invariati
+- Working tree clean (no modificati)
+
+#### Ratifica Q1-Q4 scope decision
+
+| Q | Tema | Decisione | Razionale |
+|---|---|---|---|
+| Q1 (N+5.D.A) | Scope decision A vs B | **A. F3-S4 caregiver permessi** | Sequenza coerente roadmap par.11.D-rev v3.2-Fase2; caregiver e ultimo pezzo backend mancante per feature-completeness pre-PWA; F3-S5 single-user owner sarebbe dogfooding parziale che non testerebbe scope `permessi` cross-utente. |
+| Q2 (N+5.D.B) | Split sessione N+5.D | **A. Analisi-first sola** | Pattern par.22.55-Fase2 + par.22.84 N+5.B (zero drift retroattivi in 4 applicazioni cumulative). Coerenza > velocita marginale. |
+| Q3 (N+5.D.C) | Scope F3-S4 split | **A. Split alpha utenti / beta permessi** | Densita F3-S3-beta 4 endpoint omogenei era gia >50K borderline; F3-S4 ha layer aggiuntivo permission cross-utente che aumenta complessita test. Split safety-first preserva margine rollback. |
+| Q4 (N+5.D.D) | Scope F3-S5 | n/a (Q1=A) | Carry-forward F3-S5-pre par.11.D-rev v3.2-Fase2 invariato. |
+
+#### Ratifica Q5-Q9 sub-AMB N+5.E-alpha pre-emit
+
+| Q | Tema | Decisione | Razionale |
+|---|---|---|---|
+| Q5 (N+5.E-alpha.A) | Auth POST /api/utenti | **A. Solo `ruolo='owner'`** -> 403 se non-owner | Strict, coerente vincolo Spec sez. 11.6 "1 owner per DB" + onboarding owner-driven. Caregiver con `permessi.admin` su un paziente NON puo creare nuovi utenti (evita escalation). Nuovo dependency `get_current_owner` estende `get_current_user` + assertion `current_user.ruolo == 'owner'`. |
+| Q6 (N+5.E-alpha.D) | DELETE cascade scope | **A. Solo `UPDATE utenti SET attivo=FALSE`** | Minimal, reversibile, audit completo. Zombie permessi gestiti runtime via JOIN `WHERE u.attivo=TRUE` in `/api/permessi` GET (F3-S4-beta). Soft cascade su `farmaci`/`profilo_utente` ridondante (scope `WHERE attivo=TRUE` gia applicato in tutti GET). Hard DELETE permessi cross-utente perderebbe audit + complicherebbe riattivazione. |
+| Q7 (N+5.E-alpha.E) | DELETE protezioni | **(a)=SI + (b)=SI + (c)=idempotent 200** | (a) vietato `ruolo='owner'` 409 "Owner non eliminabile" (vincolo Spec sez. 11.6.2). (b) vietato self-DELETE 409 "Auto-eliminazione non consentita" (evita lock-out accidentale). (c) DELETE su `attivo=FALSE` gia disattivato -> 200 no-op idempotent (semantica REST corretta). |
+| Q8 (N+5.E-alpha.G) | Spec v1.6 timing | **B. Emit cumulativo a fine N+5.E-beta** | Spec v1.5 invariato durante alpha. Pattern par.22.84 ha emesso Spec v1.5 cumulativo a fine F3-S3-beta unico (non frammentato alpha-pre/post). Riduce rumore KB-only + atomic milestone. |
+| Q9 (N+5.E-alpha.H) | Bump + tag intermedio | **B. NO bump intermedio in alpha** | Pattern F3-S3-alpha-pre/post = split tecnico interno senza bump intermedio. Bump unico `0.4.0 -> 0.5.0` + tag annotato `v3.2.0-alpha.5` LOCALE a fine N+5.E-beta milestone F3-S4 cumulativa. |
+
+#### Sub-AMB N+5.E-alpha ratificate dichiarate (default forti pre-emit, no Q dedicata)
+
+- **N+5.E-alpha.B (token return semantica):** `POST /api/utenti` risponde 201 con body contenente `{id, nome_visualizzato, ruolo, token_plain, created_at}`. Il `token_plain` (43 char base64url) e visibile UNA volta sola, mai persistito chiaro (solo `token_hash` SHA-256 in DB). Simmetrico con `seed_owner.py` (stdout chiaro one-shot par.22.79-quater-Fase2).
+- **N+5.E-alpha.C (auto-permesso self):** creazione utente esegue atomic transaction `INSERT utenti` + `INSERT permessi(caregiver_id=NEW.id, paziente_id=NEW.id, permesso='admin', notifiche_caregiver_attive=FALSE)`. Senza self-permesso l utente non accede ai propri dati. Pattern gia in `seed_owner.py`. **Estensione N+5.E-alpha.I sotto.**
+- **N+5.E-alpha.F (Pydantic POST payload):** required `nome_visualizzato` (str non-empty, min 1 max 100, strip whitespace) + optional `ruolo` ENUM Literal `'paziente'|'caregiver'`, default `'paziente'`. Pydantic Literal rifiuta `'owner'` a livello validation -> 422 (no business logic, vincolo Spec sez. 11.6 "1 owner per DB").
+
+#### Sub-AMB N+5.E-alpha.I NEW (emersa pre-emit par.6.118 scenario validation + regola critica #2 stop+segnala)
+
+**Scenario 1 validato mentalmente:** Owner crea Mario paziente con `POST /api/utenti {nome:"Mario", ruolo:"paziente"}`. Default N+5.E-alpha.C inserisce solo self-permesso `(Mario.id, Mario.id, 'admin')`. Mario puo accedere ai propri dati via self-permesso, ma **owner NON ha permessi automatici sui dati di Mario**. Contraddice Spec sez. 11.6 + Q14-ratifica par.11.D-rev v3.1: "owner caregiver `write`/`admin` su pazienti N-1". L auto-permesso self da solo non realizza questo invariante.
+
+**N+5.E-alpha.I (decisa autonoma in-session):** creazione utente esegue **doppio INSERT atomic** in transazione:
+1. self-permesso `(NEW.id, NEW.id, 'admin')` -- sempre (qualunque ruolo)
+2. owner-permesso `(OWNER.id, NEW.id, 'admin')` -- sempre (anche se ruolo='caregiver': owner mantiene admin sul caregiver creato)
+
+Caregiver creati partono senza permessi sui pazienti esistenti (assegnazione via `/api/permessi` CRUD F3-S4-beta). Owner-permesso su caregiver garantisce che owner possa successivamente disabilitare/revocare il caregiver via DELETE permessi (F3-S4-beta). Coerente con Spec sez. 11.6 + chiude scenario 1 + estendibile a F3-S4-beta senza retrofit.
+
+**NO deviazione s.6.NN** (sub-AMB I rispetta Spec sez. 11.6 chiudendo gap implementativo, non introduce divergenza). Documentata qui come ratifica pre-emit dichiarata, NON aperta come Q a N+5.E-alpha apertura.
+
+#### Design draft consolidato N+5.E-alpha (cementato a N+5.D, NO ri-validazione richiesta in N+5.E-alpha)
+
+**Architettura endpoint:**
+
+`POST /api/utenti` -- Auth `Depends(get_current_owner)` -> 403 se non-owner. Request Pydantic `UtenteCreate` (Q-alpha.F). Response 201 `UtenteCreatedResponse` con `token_plain` one-shot. Transaction SQL: BEGIN + INSERT utenti + SET @new_id = LAST_INSERT_ID() + INSERT permessi 2 rows (self + owner) + COMMIT.
+
+`DELETE /api/utenti/{id}` -- Auth `Depends(get_current_owner)` -> 403 se non-owner. Validation ordinata pre-update: (1) SELECT target -> 404 se non esiste, (2) `target.ruolo='owner'` -> 409, (3) `target.id == current_owner.id` -> 409, (4) `target.attivo=FALSE` gia -> 200 no-op idempotent, (5) else UPDATE attivo=FALSE -> 200.
+
+**File previsti N+5.E-alpha:**
+
+| File | Op | LOC stimati | Contenuto |
+|---|---|---|---|
+| `pharmatimer_api/models/utente.py` | NEW | ~50 | `UtenteCreate` + `UtenteResponse` + `UtenteCreatedResponse` con `token_plain` |
+| `pharmatimer_api/routers/utenti.py` | NEW | ~110 | APIRouter prefix `/api` tags `utenti` + POST + DELETE + helper `_generate_token` (`secrets.token_urlsafe(32)`) |
+| `pharmatimer_api/db/dependencies.py` | MOD | +15 | `get_current_owner(current_user: CurrentUser = Depends(get_current_user))` assertion + raise 403 |
+| `pharmatimer_api/app.py` | MOD | +1 | `app.include_router(utenti.router)` |
+| `tests/test_utenti_crud.py` | NEW | ~140 (~12 test) | happy POST paziente + happy POST caregiver + auth owner-only 403 + ruolo='owner' 422 + DELETE protezioni a/b 409 + idempotent c + auto-permesso self+owner verify + DELETE 404 |
+
+**Smoke uvicorn nativo Studio (9 scenari curl):**
+
+- S0 setup baseline (verify owner Roberto token + count utenti pre)
+- S1 POST paziente happy (owner token + body Mario paziente) -> 201 + `token_plain` + verify doppio INSERT permessi
+- S2 POST caregiver happy (owner token + body Luigi caregiver) -> 201 + `token_plain` + verify doppio INSERT permessi
+- S3 POST `ruolo='owner'` attempt -> 422 Pydantic Literal validation
+- S4 POST non-owner attempt (Mario paziente token) -> 403 "Operazione riservata a owner"
+- S5 DELETE owner attempt (id=1 Roberto) -> 409 "Owner non eliminabile"
+- S6 DELETE self attempt -> 409 (Q7a vince se owner = self, altrimenti Q7b vince)
+- S7 DELETE Mario happy -> 200 + verify `utenti.attivo=FALSE` + verify Mario `/api/farmaci` -> 401 inactive
+- S8 DELETE Mario re-attempt idempotent -> 200 no-op
+- S9 DELETE id inesistente -> 404 NOT_FOUND
+
+Target backend cumulativo: 49 + ~12 = **~61 test**.
+
+**Stima patcher monolitico:** ~30-38K bytes (sotto soglia 50K, monolitico raccomandato). Budget N+5.E-alpha esecutivo: ~40-50K token.
+
+#### Decisioni in-session N+5.D candidate (a CP5 closing alpha)
+
+1. NO bump pyproject invariato 0.4.0 (Q9=B)
+2. NO tag intermedio invariato `v3.2.0-alpha.4` (Q9=B)
+3. NO Spec v1.6 emit invariato Spec v1.5 (Q8=B)
+4. Branch `fase-3-backend` continuazione, no merge `main` fino F3-S7 smoke finale
+5. Eventuale Lesson #25 candidate emergente (nessuna prevista pre-emit alpha)
+6. Sub-AMB I documentata in par.11.I-S3 come ratifica pre-emit (NON sub-AMB aperta a N+5.E-alpha apertura)
+7. Pre-frozen `par.11.J-S3` N+5.E-beta CRUD permessi (emit a CP5 N+5.E-alpha closing)
+
+#### Drift-doc NEW N+5.D
+
+Nessuno. Sessione doc-only zero modifiche source. Scope ratificato senza discrepanze con Spec v1.5 + par.11.D-rev v3.1-Fase2.
+
+#### Lesson cumulative Fase 2+3
+
+Invariate #8-#24 MANDATORY. Nessuna Lesson #25 emersa in N+5.D.
+
+#### Mio errore zsh
+
+Nessuno questa sessione. Sessione testuale doc-only.
+
+#### Cleanup status
+
+Invariato post-N+5.C par.22.84. Carry-forward: cleanup-N1 (Fase 2 IndexedDB dev-only browser-side) + cleanup-N7 chiuso par.22.84.
+
+#### Stato git post-N+5.D
+
+- Branch `fase-3-backend` HEAD `6860c4d` invariato (no commit)
+- Tag annotato `v3.2.0-alpha.4` LOCALE invariato su `6860c4d`
+- 6 ahead `origin/fase-3-backend` invariato
+- `backend/pyproject.toml` `0.4.0` invariato
+- `package.json` `3.1.0` invariato
+- 49 backend test + 504 PWA = 553 totali invariati
+- Working tree clean
+
+#### Findings cumulativi carry-forward post-N+5.D
+
+- 17 findings registry Fase 2 polish invariati
+- 12 residual UX findings v3.1.0 invariati
+- 4 drift-doc Fase 3 N30-N33 chiusi par.22.79-quater-Fase2
+- 4 drift-doc Fase 3 N36-N39 chiusi par.22.82
+- 4 drift-doc Fase 3 N40-N43 chiusi par.22.83
+- 0 drift-doc N+5.C chiusi par.22.84
+- 0 drift-doc N+5.D NEW
+- 5 lesson NEW #20-#24 MANDATORY cumulative invariate
+- Sub-AMB carry-forward invariati (addFarmaco undefined literal persistence PWA-side + IndexedDB test row dev-only)
+- TODO codice F3-S3-gamma+: `intervallo_minimo_ore` enforcement su `/recupero` (Q-RES-2 deferred, marker esplicito in `post_recupero` docstring) -- rinviato post-F3-S4 (decisione N+5.D)
+
+#### Riferimenti par.22.85
+
+- **par.22.84-Fase3**: closing F3-S3-beta CP5 N+5.C state-machine completa (CP0 baseline + CP1-CP5 + Lesson #24)
+- **par.22.83-Fase3**: closing F3-S3-alpha-post (Lesson #23)
+- **par.22.82-Fase3**: closing F3-S3-alpha-pre intermedio (Lesson #20-#22)
+- **par.22.81-Fase3**: closing F3-S2 CRUD farmaci
+- **par.22.55-Fase2**: pattern split safety-first analisi-first sola applicato (terza applicazione cumulativa Fase 3 post-N+5.B)
+- **par.6.118-Fase2**: pre-code scenario validation MANDATORY -> intercetta gap Spec sez. 11.6 pre-emit -> sub-AMB I autonoma
+- **par.22.34-Fase2**: RepositoryError vocabulary cross-PWA/backend simmetrico per F3-S4 endpoint (403/404/409 mapping)
+- **par.11.D-rev v3.1-Fase2**: Q13-Q17 multi-tenant ratificate (Q14 schema permessi enforce sub-AMB I)
+- **par.6.71/85-Fase2**: history immutability -- sub-AMB I documentata pre-emit, NON drift-doc retroattivo
+- **Spec v1.5 sez. 3.9/3.10/3.11 + sez. 9 + sez. 11.6**: schema utenti/permessi + endpoint API + vincolo "1 owner per DB"
+
+#### Sessione successiva post-N+5.D
+
+**N+5.E-alpha esecutiva monolitica** scope `POST /api/utenti` + `DELETE /api/utenti/{id}` + middleware `get_current_owner` + ~12 test + ~9 smoke curl. Pre-frozen prompt sezione `### 11.I-S3` sotto.
+
+One-liner apertura: `Esegui il prompt al par.11.I-S3 del Changelog Fase 3.`
+
+---
+
+### 11.I-S3 (Fase 3, prompt pre-frozen N+5.E-alpha esecutiva monolitica F3-S4-alpha utenti)
+
+<!-- par.11.I-S3 R1 emit Fase 3 -->
+
+**One-liner apertura:** `Esegui il prompt al par.11.I-S3 del Changelog Fase 3.`
+
+**Origine.** Closing N+5.D par.22.85 (analisi-first sola, scope F3-S4 caregiver split alpha utenti / beta permessi ratificato + design draft consolidato N+5.E-alpha + sub-AMB I doppio INSERT auto-permesso self+owner risolta pre-emit).
+
+**Scope alto livello.** Emit CP1 patcher Python monolitico content-based con SENTINEL idempotency_marker (pattern par.22.58-Fase2 + Lesson #20) che implementa:
+
+1. **2 endpoint NEW** in `pharmatimer_api/routers/utenti.py` (NEW file): `POST /api/utenti` 201 owner-only + `DELETE /api/utenti/{id}` 200 owner-only con 3 protezioni Q7 (a vietato owner / b vietato self / c idempotent disattivato)
+2. **3 Pydantic models NEW** in `pharmatimer_api/models/utente.py` (NEW file): `UtenteCreate` (input POST con Literal ruolo `'paziente'|'caregiver'`) + `UtenteResponse` (output base) + `UtenteCreatedResponse` (output POST con `token_plain` one-shot)
+3. **Dependency NEW** `get_current_owner` in `pharmatimer_api/db/dependencies.py` (MOD): estende `get_current_user` + assertion `ruolo == 'owner'` else 403
+4. **Router registration** `pharmatimer_api/app.py` (MOD): `app.include_router(utenti.router)`
+5. **Doppio INSERT atomic** (sub-AMB I): transaction `START TRANSACTION` + `INSERT utenti` + `SET @new_id = LAST_INSERT_ID()` + `INSERT permessi` 2 rows (self `(NEW.id, NEW.id, 'admin')` + owner `(OWNER.id, NEW.id, 'admin')`) + `COMMIT`
+6. **Pytest test NEW** `tests/test_utenti_crud.py` (NEW): ~12 test (target backend cumulativo ~61: happy POST paziente + happy POST caregiver verify doppio INSERT permessi + auth owner-only 403 + ruolo='owner' Pydantic 422 + DELETE owner-attempt 409 + DELETE self-attempt 409 + DELETE happy 200 verify attivo=FALSE + DELETE idempotent 200 + DELETE 404 + token_plain one-shot 43 char base64url + permessi verify post-create)
+7. **9 smoke curl** uvicorn nativo Studio porta 8001 (S0 setup + S1-S9 dettagliati in design draft par.22.85)
+
+**Modalita.** Esecutiva monolitica (stima patcher ~30-38K bytes sotto soglia 50K, monolitico raccomandato). Pattern split safety-first par.22.55-Fase2 NON applicato a priori (scope contenuto: 2 endpoint omogenei + 0 ALTER TABLE + 0 state machine complessita). Se in CP1 design pre-emit emerge densita >40K -> split tecnico interno alpha-pre (Pydantic + dependency + POST + test POST) / alpha-post (DELETE + test DELETE + smoke).
+
+**Ratifiche cementate da N+5.D** (NO ri-validazione richiesta in N+5.E-alpha):
+
+| Sub-AMB | Decisione ratificata |
+|---|---|
+| Q5 N+5.E-alpha.A auth POST | Solo `ruolo='owner'` -> 403 se non-owner |
+| Q6 N+5.E-alpha.D DELETE cascade | Solo `UPDATE utenti SET attivo=FALSE`, no cascade tabelle owned, no DELETE permessi |
+| Q7 N+5.E-alpha.E protezioni DELETE | (a)=SI vietato owner 409 + (b)=SI vietato self 409 + (c)=idempotent 200 no-op su gia disattivato |
+| Q8 N+5.E-alpha.G Spec v1.6 | Deferred a CP5 N+5.E-beta cumulativo F3-S4 milestone |
+| Q9 N+5.E-alpha.H bump+tag | Deferred a CP5 N+5.E-beta cumulativo (bump 0.4.0 -> 0.5.0 + tag `v3.2.0-alpha.5` LOCALE) |
+| N+5.E-alpha.B token return | `token_plain` one-shot in response 201, mai persistito chiaro |
+| N+5.E-alpha.C auto-permesso self | Sempre INSERT self-permesso `(NEW.id, NEW.id, 'admin')` qualunque ruolo |
+| N+5.E-alpha.F Pydantic | Literal `'paziente'|'caregiver'`, rifiuta `'owner'` 422 |
+| N+5.E-alpha.I doppio INSERT | INSERT self + INSERT owner-permesso `(OWNER.id, NEW.id, 'admin')` qualunque ruolo, atomic transaction |
+
+**Pre-letture obbligatorie N+5.E-alpha:**
+
+1. Questo Changelog Fase 3 § 0 + § 11.I-S3 scope + § 22.85 (closing N+5.D analisi-first sola)
+2. `par.22.85-Fase3` integrale (CP0 + Q1-Q9 + sub-AMB B/C/F/I + design draft consolidato + 9 smoke + 12 test plan)
+3. `par.22.84-Fase3` integrale (closing N+5.C state-machine completa + Lesson #24 Settings UPPERCASE)
+4. `par.22.83-Fase3` + `par.22.82-Fase3` + `par.22.81-Fase3` (closing F3-S3-alpha-post + alpha-pre + F3-S2)
+5. Spec v1.5 sez. 3.9 utenti (`id`, `nome_visualizzato`, `ruolo` ENUM, `token_hash` SHA-256, `attivo`) + sez. 3.10 permessi (`caregiver_id`, `paziente_id`, `permesso` ENUM, `notifiche_caregiver_attive`) + sez. 9 (endpoint REST + X-User-Token header mandatory) + sez. 11.6 (vincolo "1 owner per DB")
+6. `par.11.D-rev v3.1-Fase2` (Q13-Q17 multi-tenant ratificate, in particolare Q14 schema permessi)
+7. `par.22.34-Fase2` (RepositoryError vocabulary cross-PWA/backend: 403 owner-only + 409 protezioni + 404 NOT_FOUND)
+8. `par.22.58-Fase2` (pattern patcher Python content-based SENTINEL + assertion count == 1)
+9. `par.6.118-Fase2` (pre-code scenario validation MANDATORY pre-emit -- ha gia catalizzato sub-AMB I in N+5.D)
+10. `pharmatimer_api/db/dependencies.py` esistente (CurrentUser pattern + `get_current_user` baseline -- estendere con `get_current_owner` Q5)
+11. `seed_owner.py` esistente (helper `_generate_token` riferimento + SHA-256 hashing pattern)
+
+**Pattern operativi confermati per N+5.E-alpha:**
+
+- Lesson #8-#24 cumulative Fase 2+3 MANDATORY (#23 schema-first introspect + #24 Settings UPPERCASE pre-introspect)
+- Pattern par.22.58-Fase2 patcher Python content-based con SENTINEL + Lesson #20 idempotency_marker + Lesson #21 R2 Python venv pre-DB-access
+- Pattern par.22.34-Fase2 RepositoryError vocabulary: 403 Forbidden mapping nuovo (per `get_current_owner`) -- ratificato a CP0-ext.0 N+5.E-alpha apertura come Sub-Q se NON gia coperto da `_HTTP_STATUS` map esistente; default raccomandato: aggiungere `RepositoryErrorCode.FORBIDDEN` -> 403 a `pharmatimer_api/exceptions.py` se non presente
+- Bash zsh-safe (echo single-quoted, no commenti `#`, no apostrofi italiani, heredoc PYEOF per Python multi-line, Settings attributi UPPERCASE pre-introspect Lesson #24)
+- CP0 ridotto N+5.E-alpha: gia coperto baseline empirico 5/5 in N+5.D, verifica solo git HEAD + ahead origin + pytest count 49 + working tree clean (no schema re-introspection necessaria, schema utenti+permessi gia mappato N+5.B + design draft N+5.D)
+
+**Schema empirico ratificato N+5.B (NO re-introspect in N+5.E-alpha):**
+
+- `utenti` schema: `id`, `nome_visualizzato` (NON `nome`), `ruolo` ENUM (`owner|paziente|caregiver`), `token_hash` SHA-256, `attivo`, `created_at`, `updated_at`
+- `permessi` schema: `id` PK auto, `caregiver_id`, `paziente_id`, `permesso` ENUM (`read|write|admin`), `notifiche_caregiver_attive` DEFAULT FALSE, `created_at`, UNIQUE `(caregiver_id, paziente_id)`
+- AUTO_INCREMENT post-N+5.C: utenti=? (verify CP0-ext.1 conta utenti correnti), permessi=? (verify CP0-ext.1 conta permessi correnti)
+
+**Decisioni in-session candidate N+5.E-alpha** (a CP5 closing):
+
+1. NO bump pyproject invariato 0.4.0 (Q9=B ratificata)
+2. NO tag intermedio invariato `v3.2.0-alpha.4` LOCALE (Q9=B ratificata)
+3. NO Spec v1.6 emit invariato Spec v1.5 (Q8=B ratificata)
+4. Branch `fase-3-backend` continuazione (no merge `main` fino F3-S7 smoke)
+5. Eventuale Lesson #25 candidate emergente in sessione
+6. Pre-frozen `par.11.J-S3` N+5.E-beta CRUD permessi (emit a CP5 N+5.E-alpha closing)
+
+**Sub-AMB residue carry-forward N+5.D -> N+5.E-alpha:**
+
+- TODO codice F3-S3-gamma+: `intervallo_minimo_ore` enforcement su `/recupero` (Q-RES-2 deferred, marker docstring `post_recupero` esplicito) -- rinviato post-F3-S4 milestone unica
+- Decisione integrazione `FORBIDDEN` -> 403 in `exceptions.py` `RepositoryErrorCode` enum + `_HTTP_STATUS` map (sub-AMB CP0-ext.0 N+5.E-alpha apertura se non gia presente nel sorgente attuale): default raccomandato aggiungere come complemento naturale vocabolario par.22.34-Fase2
+
+---
+
+### 22.86 (Fase 3, closing cumulativo N+5.E-alpha + N+5.E-alpha-bis F3-S4-alpha utenti POST + DELETE end-to-end + 3 fix cycle + smoke 10/10 + cleanup-N7 + Lesson #25 MANDATORY)
+
+<!-- par.22.86 emit closing N+5.E-alpha + N+5.E-alpha-bis cumulativo -->
+
+**Data:** 23 maggio 2026 sera.
+
+**Modalita:** Sessione cumulativa 2 splittate (N+5.E-alpha esecutiva CP1+CP2 3 fix cycle WIP commit intermedio `e8413b3` + N+5.E-alpha-bis esecutiva mista CP3 smoke + CP4 cleanup-N7 + CP5 closing finale). Pattern split safety-first par.22.55-Fase2 quinta applicazione cumulativa Fase 3 (post F3-S1-bis-delta parte 1/2-2/2 + F3-S3-alpha-pre/post + N+5.B + N+5.D). Token spesi ~65-80K cumulativi 2 sessioni. Wall-clock 2 sessioni 23 maggio 2026.
+
+**Esito:** OK milestone tecnico F3-S4-alpha verde end-to-end (2 endpoint `POST /api/utenti` + `DELETE /api/utenti/{id}` owner-only + doppio INSERT permessi atomic + 3 protezioni DELETE + token_plain one-shot + 60/60 backend test + smoke 10/10 al primo colpo) + Lesson #25 NEW MANDATORY cementata (autocommit pool transaction implicit). NO bump pyproject (Q9=B), NO tag intermedio (v3.2.0-alpha.4 LOCALE invariato), NO Spec v1.6 emit (Q8=B): tutti deferiti a CP5 N+5.E-beta cumulativo F3-S4 milestone (bump 0.5.0 + tag v3.2.0-alpha.5 + Spec v1.6 emit settima applicazione AMB-11.B.7).
+
+#### CP0 baseline empirico N+5.E-alpha-bis verde 7/7
+
+- HEAD `e8413b3` branch `fase-3-backend` (post-WIP commit N+5.E-alpha intermedio)
+- 7 ahead `origin/fase-3-backend`
+- Tag annotato `v3.2.0-alpha.4` LOCALE su `6860c4d` invariato (NO push, AMB-11.B.7-bis pattern preservato)
+- `backend/pyproject.toml` version `0.4.0` invariato (Q9=B)
+- `package.json` version `3.1.0` invariato
+- pytest backend 60 tests collected (49 baseline N+5.C + 11 NEW utenti CRUD)
+- Working tree dirty pattern: `M PharmaTimer_Changelog_Fase3.md` (N+5.D doc-only carry-forward assorbito qui) + 4 patcher repo root untracked (cleanup-N7 candidate)
+
+#### Scope CP1+CP2 consegnato N+5.E-alpha (WIP intermedio commit `e8413b3`)
+
+| File | Op | LOC | Contenuto |
+|---|---|---|---|
+| `pharmatimer_api/models/utente.py` | NEW | ~55 | `UtenteCreate` (Literal ruolo `'paziente'|'caregiver'`) + `UtenteResponse` + `UtenteCreatedResponse` (con `token_plain` one-shot) |
+| `pharmatimer_api/routers/utenti.py` | NEW | ~120 | `POST /api/utenti` 201 owner-only + `DELETE /api/utenti/{id}` 200 owner-only + helper `_generate_token` (`secrets.token_urlsafe(32)`) + doppio INSERT atomic |
+| `tests/test_utenti_crud.py` | NEW | ~180 | 11 test (happy POST paziente + caregiver verify doppio INSERT + auth 403 + Pydantic 422 + DELETE owner-attempt 409 + self-attempt 409 + happy 200 verify attivo=FALSE + idempotent 200 + NOT_FOUND 404 + token_plain 43 char + permessi verify post-create) |
+| `pharmatimer_api/db/dependencies.py` | MOD | +18 | `get_current_owner(current_user: CurrentUser = Depends(get_current_user))` assertion `ruolo == 'owner'` else `RepositoryError(FORBIDDEN)` |
+| `pharmatimer_api/app.py` | MOD | +1 | `app.include_router(utenti.router)` |
+| `pharmatimer_api/exceptions.py` | MOD | +2 | `RepositoryErrorCode.FORBIDDEN` enum value + `_HTTP_STATUS[FORBIDDEN] = 403` map entry |
+| `backend/db/migrations/v03_utenti_enum_caregiver.sql` | NEW | ~8 | `ALTER TABLE utenti MODIFY COLUMN ruolo ENUM('owner','paziente','caregiver')` idempotent |
+
+Target backend cumulativo raggiunto: **60/60 verde** (49 baseline + 11 NEW). 
+
+#### 3 fix cycle CP2 dettaglio
+
+**CP2-FIX (cp2-err-N1, Lesson #23 self-violated CP1 fixture):**
+- Sintomo: pytest fail su fixture `existing_paziente`/`existing_caregiver` non definite in `conftest.py`
+- Root cause: assumed fixture presence senza grep esplicito `conftest.py` pre-emit (self-violation Lesson #23 schema-first introspect, estesa qui da DB schema a test fixture inventory)
+- Fix: refactor opzione C -- helper inline `_create_test_user(role, db_conn)` session-scope dentro `test_utenti_crud.py` (no nuova fixture conftest, isolamento test self-contained)
+- Lesson #23 cementazione: pre-emit pytest richiede `grep -E "^def (test_|.*fixture)" conftest.py` per inventory fixture + verify fixture referenced existono
+
+**CP2-FIX2 (cp2-err-N2, Lesson #25 NEW autocommit pool transaction):**
+- Sintomo: `mysql.connector.errors.ProgrammingError: 1422 (HY000): Transaction already in progress`
+- Root cause: pool config `autocommit=False` in `pharmatimer_api/db/pool.py` -> transazione implicita alla prima query del connection -> `conn.start_transaction()` esplicito ridondante errore
+- Fix: rimosso `conn.start_transaction()` da `routers/utenti.py` POST handler, mantenuto pattern `cursor.execute(INSERT utenti)` + `cursor.execute(INSERT permessi)` + `conn.commit()` finale (transaction implicit-then-commit)
+- Lesson #25 NEW MANDATORY emergente -- pattern corretto cementato (vedi sezione Lesson #25)
+
+**CP2-FIX3 (cp2-err-N3, Lesson #23 self-violated CP1 ENUM caregiver + drift-doc-N46):**
+- Sintomo: pytest `DataError: 1265 (01000): Data truncated for column 'ruolo' at row 1` su INSERT con ruolo='caregiver'
+- Root cause: DDL effettivo migration v01 originale `ENUM('owner','paziente')` (2 valori), Spec v1.5 sez 3.9 dichiarava `ENUM('owner','paziente','caregiver')` (3 valori) -- drift-doc-N46 sorgente vs DB reale, MAI sincronizzato in F3-S0/F3-S1 single-user
+- Fix: migration `v03_utenti_enum_caregiver.sql` NEW idempotent `ALTER TABLE utenti MODIFY COLUMN ruolo ENUM('owner','paziente','caregiver')`, applied PROD + TEST (helper `apply_v03_utenti_enum_caregiver.py` con SHOW COLUMNS pre-check + idempotent re-apply safe)
+- 5 sub-AMB cp2-err-N3.A-E ratificate in-session:
+  - **N3.A** (scope migration): PROD vs TEST vs entrambi -> **entrambi** (idempotent applier check current ENUM su ciascun DB)
+  - **N3.B** (idempotency strategy): grep current ENUM vs ALTER unconditional -> **grep current ENUM** via `SHOW COLUMNS FROM utenti LIKE 'ruolo'` + skip se gia 3 valori
+  - **N3.C** (rollback): explicit reverse ALTER vs no rollback -> **no rollback explicit** (idempotent forward-only, semantica MySQL ALTER ENUM additive safe)
+  - **N3.D** (timing): pre-pytest vs post-merge -> **pre-pytest** (CP2-FIX3 immediato, sblocca cp2-err-N3 stesso)
+  - **N3.E** (numbering schema): v03 standalone vs v02-bis vs v02 patch -> **v03 standalone** (pattern par.22.58-Fase2 sequential numbering)
+- Lesson #23 cementazione: schema-first DB introspection MANDATORY pre-emit pytest con ENUM literal value (estesa qui da column name a column ENUM constraint)
+
+#### CP3 smoke S0-S9 esiti 10/10 verde (al primo colpo)
+
+| Scenario | Verifica | Status | Body shape | Note |
+|---|---|---|---|---|
+| S0 | setup baseline 1 active owner Roberto id=2 | OK | n/a | DB clean (utenti=1 attivo) |
+| S1 | POST paziente Mario happy | 201 OK | `{id, nome_visualizzato, ruolo, token_plain, created_at}` | token 43 char + DB doppio INSERT `(2,5,'admin')+(5,5,'admin')` |
+| S2 | POST caregiver Luigi happy | 201 OK | idem | token 43 char + DB doppio INSERT `(2,6,'admin')+(6,6,'admin')` |
+| S3 | POST `ruolo='owner'` attempt | 422 OK | Pydantic validation error | Literal rifiuta 'owner' a livello validation |
+| S4 | POST non-owner Mario token | 403 OK | `{error:{code:"FORBIDDEN", severity, message}}` | drift-N44 NON manifesta su business logic |
+| S5 | DELETE owner id=2 attempt | 409 OK | `{error:{code:"CONSTRAINT_VIOLATION", ...}}` | Q7a owner-vietato vince |
+| S6 | DELETE self attempt (owner on owner) | 409 OK | `{error:{code:"CONSTRAINT_VIOLATION", ...}}` | Q7a ordering wins quando owner=self |
+| S7 | DELETE Mario id=5 happy | 200 OK | n/a | DB Mario `attivo=FALSE` + Mario `/api/farmaci` -> 401 inactive |
+| S8 | DELETE Mario re-attempt idempotent | 200 OK | n/a | Q7c no-op su gia disattivato |
+| S9 | DELETE id=9999 inesistente | 404 OK | `{error:{code:"NOT_FOUND", ...}}` | RepositoryError NOT_FOUND |
+
+Trap EXIT defensive cleanup: 2 utenti + 4 permessi rimossi (cleanup pulito post-smoke).
+
+**Ratifica empirica drift-doc-N44 scope ristretto post-CP3 smoke:** body shape `{error:{code, severity, message}}` corretto su `FORBIDDEN` (S4) + `CONSTRAINT_VIOLATION` (S5) + `NOT_FOUND` (S9). Scope drift-N44 ristretto a auth-layer 401 (middleware `get_current_user` raise `HTTPException(401, ...)` plain) vs business logic 403/404/409 (`RepositoryError` handler aligned vocabulary). PWA-side ApiRepository consumer puo distinguere via status code 401 (auth retry token) vs 403/404/409 (RepositoryError body parse). Drift-N44 carry-forward come "auth-layer middleware 401 non emette RepositoryError body shape" non-bloccante, fix opzionale deferred F3-S5+.
+
+#### CP4 cleanup-N7
+
+4 patcher repo root rimossi (~65K totali):
+- `cp1_f3s4_alpha_patcher.py` (~35K, F3-S4-alpha CP1 emit 6 file)
+- `cp2_fix_patcher.py` (~15K, CP2-FIX fixture refactor opzione C)
+- `cp2_fix2_patcher.py` (~7K, CP2-FIX2 transaction implicit)
+- `apply_v03_utenti_enum_caregiver.py` (~8K, migration v03 applier idempotent)
+
+Cleanup-N8 candidate opportunistico (NO rimozione qui, deferred N+5.E-beta CP4 finale): 9 file `.bak.*` filesystem residui gitignored (pattern `*.bak.*` s.6.226-Fase2 attivo), di cui 2 storici notable cross-sessione:
+- `backend/pharmatimer_api/app.py.bak.cp1-s3a` (F3-S3-alpha precedente, mai pulito)
+- `PharmaTimer_Changelog_Fase2.md.bak.closing-parte-1` (F3-S1-bis-delta parte 1/2 precedente, mai pulito)
+
+#### CP5 closing operations
+
+- Changelog Fase 3 par.22.86 + par.11.J-S3 emit (questo patcher monolitico)
+- NO bump pyproject (Q9=B ratificata par.22.85)
+- NO tag intermedio (Q9=B, v3.2.0-alpha.4 LOCALE su 6860c4d invariato)
+- NO Spec v1.6 emit (Q8=B, deferred CP5 N+5.E-beta cumulativo F3-S4 milestone)
+- Commit closing selettivo: solo `PharmaTimer_Changelog_Fase3.md` (no `.bak.cp5-alpha-bis`, no patcher repo root chiusi CP4)
+- Subject commit: `F3-S4-alpha closing -- N+5.E-alpha + N+5.E-alpha-bis cumulativo CP1+CP2+CP3 smoke + CP4 cleanup-N7 + Lesson #25 MANDATORY`
+- Branch `fase-3-backend` 8 ahead `origin/fase-3-backend` post-CP5 (7 pre + 1 CP5 closing), NO push (atomic con N+5.E-beta closing F3-S4 milestone)
+
+#### 3 findings NEW N+5.E-alpha-bis cumulativi
+
+- **cp2-err-N1** (Lesson #23 self-violated CP1 fixture inesistenti) -> fixed CP2-FIX opzione C inline helper
+- **cp2-err-N2** (Lesson #25 NEW autocommit pool + start_transaction = ProgrammingError) -> fixed CP2-FIX2 transaction implicit-then-commit + Lesson #25 MANDATORY emit
+- **cp2-err-N3** (Lesson #23 self-violated CP1 ENUM caregiver vs DDL reale 2-value) -> fixed CP2-FIX3 migration v03 idempotent + drift-doc-N46 + sub-AMB N3.A-E
+
+#### 3 drift-doc NEW N+5.E-alpha-bis
+
+- **drift-doc-N44** (auth-layer misto HTTPException 401 vs RepositoryError 403/404/409): scope ristretto post-CP3 empirico a middleware `get_current_user` 401 only, business logic OK. Fix opzionale uniformare a `RepositoryError(UNAUTHORIZED)` deferred F3-S5+ scope ApiRepository PWA consumer.
+- **drift-doc-N45** (FastAPI version hardcoded "0.1.0" in `app.py` vs pyproject 0.4.0): drift sorgente, `/api/docs` mostra version obsoleta. Fix opzionale sync via `__version__` constant module deferred opportunistico N+5.E-beta CP1 atomic con bump 0.5.0.
+- **drift-doc-N46** (Spec v1.5 sez 3.9 ENUM `('owner','paziente','caregiver')` vs DDL reale 2-value): fix CP2-FIX3 migration v03 applied PROD+TEST + sub-AMB N3.A-E ratificate + cementazione schema empirico aligned Spec v1.5 post-N+5.E-alpha.
+
+#### Lesson #25 MANDATORY cementata
+
+> **Lesson #25 (Fase 3 origin -- autocommit pool transaction implicit):** `autocommit=False` pool config + explicit `conn.start_transaction()` = `ProgrammingError('Transaction already in progress')`. Con `mysql-connector-python` e pool `autocommit=False`, la transazione e implicita alla prima query del connection. `start_transaction()` esplicito e ridondante e errore. Pattern corretto: `cursor.execute(...)` sequenza + `conn.commit()` finale (transaction implicit-then-commit). Validazione mentale par.6.118-Fase2 deve includere `autocommit` pool setting check pre-emit di codice che usa transazioni esplicite.
+
+Applicabile a: ogni futura sessione Fase 3+ che emette codice con transazioni esplicite mysql-connector-python pool. Estensione naturale Lesson #21 (Python venv pre-DB-access) + Lesson #24 (Settings UPPERCASE) cementando triade "Settings UPPERCASE + venv + autocommit-aware" per qualunque codice DB-touching backend.
+
+Auto-segnalata da errore mio CP2 emit con `conn.start_transaction()` esplicito senza verifica autocommit pool config pre-emit (par.6.118 self-violation, regola critica #2 stop+segnala applicata retroattivamente con fix cycle CP2-FIX2).
+
+#### Mio errore zsh
+
+Nessuno questa sessione. Tutti blocchi bash zsh-safe (echo single-quoted, no `#` commenti, no apostrofi italiani, heredoc PYEOF Python multi-line, Settings attributi UPPERCASE Lesson #24).
+
+#### Cleanup status
+
+- **cleanup-N1** (Fase 2 IndexedDB dev-only browser-side): invariato carry-forward
+- **cleanup-N3 / cleanup-N6**: chiusi par.22.83 (invariati)
+- **cleanup-N7 NEW**: chiuso a CP4 N+5.E-alpha-bis (4 patcher repo root rimossi ~65K totali)
+- **cleanup-N8 NEW candidate**: opportunistico N+5.E-beta CP4 finale (~9 `.bak.*` filesystem residui gitignored, 2 storici notable: `app.py.bak.cp1-s3a` F3-S3-alpha + `Changelog_Fase2.md.bak.closing-parte-1` F3-S1-bis-delta)
+
+#### Stato git post-N+5.E-alpha-bis
+
+- Branch `fase-3-backend` HEAD `<TBD-CP5-commit>` 8 ahead `origin/fase-3-backend` (7 pre-CP5 + 1 CP5 closing N+5.E-alpha-bis)
+- Tag annotato `v3.2.0-alpha.4` LOCALE su `6860c4d` invariato (NO push, deferred N+5.E-beta F3-S4 milestone bump 0.5.0 + tag v3.2.0-alpha.5)
+- Tag `v3.2.0-alpha.3` su `59b3a93` invariato
+- Tag `v3.2.0-alpha.2` su `ab4e2d7` invariato
+- Tag `v3.2.0-alpha.1` su `fe212ad` invariato
+- `backend/pyproject.toml` `0.4.0` invariato (Q9=B)
+- `package.json` `3.1.0` invariato
+- 504/504 PWA + **60/60 backend** = **564 test totali cumulativi** (+11 NEW vs N+5.C 553)
+- Working tree clean post-closing
+
+#### Findings cumulativi carry-forward post-N+5.E-alpha-bis
+
+- 17 findings registry Fase 2 polish invariati
+- 12 residual UX findings v3.1.0 invariati
+- 4 drift-doc Fase 3 N30-N33 chiusi par.22.79-quater-Fase2
+- 4 drift-doc Fase 3 N36-N39 chiusi par.22.82
+- 4 drift-doc Fase 3 N40-N43 chiusi par.22.83
+- 0 drift-doc N+5.C chiusi par.22.84
+- 0 drift-doc N+5.D
+- **3 drift-doc Fase 3 N44-N46 NEW N+5.E-alpha-bis** (carry-forward N44/N45 deferred, N46 chiuso CP2-FIX3)
+- **3 findings cp2-err-N1/N2/N3 NEW N+5.E-alpha-bis** (tutti chiusi CP2-FIX cycle)
+- **6 lesson NEW #20-#25 MANDATORY cumulative** (#25 NEW autocommit pool transaction implicit)
+- Sub-AMB carry-forward invariati: `addFarmaco` undefined literal persistence PWA-side + IndexedDB test row dev-only + sub-AMB cp2-err-N3.A-E ratificate chiuse
+- TODO codice F3-S3-gamma+: `intervallo_minimo_ore` enforcement su `/recupero` (Q-RES-2 deferred, rinviato post-F3-S4 milestone)
+- Cleanup-N8 candidate opportunistico N+5.E-beta CP4 finale
+
+#### Riferimenti par.22.86
+
+- **par.22.85-Fase3** (closing N+5.D analisi-first sola): design draft consolidato + Q5-Q9 + sub-AMB B/C/F/I ratificate
+- **par.22.84-Fase3** (closing F3-S3-beta N+5.C state-machine completa): Lesson #24 Settings UPPERCASE
+- **par.22.83-Fase3** (closing F3-S3-alpha-post): Lesson #23 schema-first introspect
+- **par.22.82-Fase3** (closing F3-S3-alpha-pre intermedio): Lesson #20-#22 cumulative
+- **par.22.81-Fase3** (closing F3-S2 CRUD farmaci)
+- **par.22.58-Fase2**: pattern patcher Python content-based SENTINEL applicato (CP1 + CP2-FIX/FIX2/FIX3 + CP5 Changelog questo emit, replicato 5x in N+5.E-alpha-bis cumulativo)
+- **par.22.55-Fase2**: pattern split safety-first applicato **quinta applicazione cumulativa Fase 3** (N+5.E-alpha CP1+CP2 chiusura intermedia WIP `e8413b3` + N+5.E-alpha-bis CP3+CP4+CP5 finale, fresh context preserved)
+- **par.22.34-Fase2**: RepositoryError vocabulary applicato 2 endpoint NEW (FORBIDDEN/CONSTRAINT_VIOLATION/NOT_FOUND -> 403/409/404), drift-N44 ratifica empirica scope ristretto
+- **par.6.118-Fase2**: pre-code scenario validation MANDATORY -- ha catalizzato sub-AMB I in N+5.D, parzialmente self-violated CP1 emit catalizzando cp2-err-N1/N2/N3 fix cycle (Lesson #25 NEW emergente da par.6.118 estensione)
+- **par.6.71/85-Fase2**: history immutability -- 3 fix cycle CP2 documentati immutabili, nessuna retro-correzione
+- **AMB-11.B.7 / AMB-11.B.7-bis-Fase2**: bump effettivo deferred a CP5 N+5.E-beta cumulativo F3-S4 milestone (settima applicazione cumulativa attesa)
+- **Lesson #25 NEW MANDATORY** (questo emit): autocommit pool transaction implicit
+
+#### Sessione successiva post-N+5.E-alpha-bis
+
+**N+5.E-beta esecutiva monolitica CRUD permessi** F3-S4-beta + bump cumulativo F3-S4 milestone (pyproject 0.5.0 + tag v3.2.0-alpha.5 LOCALE + Spec v1.6 KB-only emit). Pre-frozen prompt sezione `### 11.J-S3` sotto.
+
+One-liner apertura: `Esegui il prompt al par.11.J-S3 del Changelog Fase 3.`
+
+---
+
+### 11.J-S3 (Fase 3, prompt pre-frozen N+5.E-beta esecutiva monolitica F3-S4-beta CRUD permessi + bump cumulativo F3-S4 milestone)
+
+<!-- par.11.J-S3 R1 emit Fase 3 -->
+
+**One-liner apertura:** `Esegui il prompt al par.11.J-S3 del Changelog Fase 3.`
+
+**Origine.** Closing N+5.E-alpha-bis par.22.86 (F3-S4-alpha milestone tecnico verde end-to-end + 3 fix cycle digeriti + smoke 10/10 + Lesson #25 NEW MANDATORY cementata).
+
+**Scope alto livello.** Emit CP1 patcher Python monolitico content-based con SENTINEL idempotency_marker (pattern par.22.58-Fase2 + Lesson #20 + Lesson #25 autocommit-aware) che implementa CRUD permessi caregiver scoped admin-only:
+
+1. **4 endpoint NEW** in `pharmatimer_api/routers/permessi.py` (NEW file):
+   - `GET /api/permessi` scoped lista permessi visibili al `current_user` (scope F3-S4-beta.A da ratificare)
+   - `POST /api/permessi` 201 admin-only grant nuovo permesso `(caregiver_id, paziente_id, permesso)`
+   - `PUT /api/permessi/{id}` 200 admin-only update permesso e/o `notifiche_caregiver_attive`
+   - `DELETE /api/permessi/{id}` 200 admin-only revoke (HARD DELETE row, scope F3-S4-beta.D da ratificare)
+
+2. **3 Pydantic models NEW** in `pharmatimer_api/models/permesso.py` (NEW file):
+   - `PermessoCreate` (`caregiver_id` + `paziente_id` + `permesso` Literal `'read'|'write'|'admin'` + optional `notifiche_caregiver_attive`)
+   - `PermessoUpdate` (optional `permesso` + optional `notifiche_caregiver_attive`)
+   - `PermessoResponse` (output base)
+
+3. **Dependency factory NEW** `get_admin_on_paziente(paziente_id: int)` in `pharmatimer_api/db/dependencies.py` (MOD): factory che verifica `current_user` ha permesso `admin` su `paziente_id` target (via JOIN `permessi WHERE caregiver_id=current AND paziente_id=target AND permesso='admin'`), else `RepositoryError(FORBIDDEN)`. Lesson #25 autocommit-aware (transazione implicita).
+
+4. **Router registration** `pharmatimer_api/app.py` (MOD): `app.include_router(permessi.router)`
+
+5. **Pytest test NEW** `tests/test_permessi_crud.py` (NEW): ~12-15 test (happy GET scoped + POST grant + PUT update + DELETE revoke + auth admin-only 403 + UNIQUE `(caregiver_id, paziente_id)` 409 + NOT_FOUND 404 + self-permission DELETE protection 409 + auto-permesso self+owner preservation)
+
+6. **10 smoke curl** uvicorn nativo Studio porta 8001 (S0 setup + S1-S9 dettagliati design CP1)
+
+7. **Bump cumulativo F3-S4 milestone** (a CP5 N+5.E-beta closing):
+   - `backend/pyproject.toml` `0.4.0 -> 0.5.0` (AMB-11.B.7 settima applicazione)
+   - Tag annotato `v3.2.0-alpha.5` LOCALE NO push (AMB-11.B.7-bis settima applicazione)
+   - Spec v1.6 KB-only emit (sez 3.10 permessi DDL aligned + sez 9 endpoint REST + ratifica Lesson #25 autocommit pool)
+
+**Modalita.** Esecutiva monolitica (stima patcher ~25-32K bytes sotto soglia 50K). Pattern split safety-first par.22.55-Fase2 NON applicato a priori (scope contenuto: 4 endpoint omogenei + 0 migration + 0 schema change). Se in CP1 design pre-emit emerge densita >40K -> split tecnico interno beta-pre (Pydantic + dependency + GET + POST + test parziale) / beta-post (PUT + DELETE + test residuo + smoke + bump cumulativo).
+
+**Ratifiche cementate da N+5.E-alpha-bis** (NO ri-validazione richiesta in N+5.E-beta):
+
+| Lesson / Sub-AMB | Decisione cementata |
+|---|---|
+| Lesson #25 autocommit pool | Pattern transaction implicit-then-commit MANDATORY per ogni transazione mysql-connector-python pool |
+| Sub-AMB I doppio INSERT | Cementato S1/S2 smoke verde (self + owner-permesso atomic transaction implicit) |
+| Schema `permessi` | `id PK auto`, `caregiver_id`, `paziente_id`, `permesso` ENUM(`read|write|admin`), `notifiche_caregiver_attive` DEFAULT FALSE, `created_at`, UNIQUE `(caregiver_id, paziente_id)` |
+| RepositoryError vocabulary | FORBIDDEN/CONSTRAINT_VIOLATION/NOT_FOUND gia mappati exceptions.py post-N+5.E-alpha |
+| drift-N44 scope | Auth-layer 401 only, business logic 403/404/409 RepositoryError corretto |
+
+**Sub-AMB candidate F3-S4-beta.A-F** (definizione effettiva in apertura N+5.E-beta):
+
+- **F3-S4-beta.A** (scope GET): 3 livelli candidate -- (i) TUTTI permessi where `caregiver_id=current OR paziente_id=current` (visibile bidirezionale); (ii) solo permessi where `caregiver_id=current` (visibile out-going); (iii) admin-only su pazienti where current ha permesso 'admin'. Default raccomandato (i) bidirezionale + filtro side-effect zero (audit completo current user).
+- **F3-S4-beta.B** (scope POST grant): owner-only vs admin-on-paziente. Default raccomandato admin-on-paziente (decentralizzato, owner non bottleneck).
+- **F3-S4-beta.C** (validation UNIQUE pre-INSERT): SELECT pre-check (race condition) vs DB UNIQUE 1062 catch (atomic). Default raccomandato DB UNIQUE catch + map a `RepositoryError(CONSTRAINT_VIOLATION)` 409 (Lesson #25 autocommit-aware: no transaction esplicita, INSERT diretto + commit, except IntegrityError catch).
+- **F3-S4-beta.D** (scope DELETE): HARD DELETE row vs soft delete `attivo=FALSE`. Default raccomandato HARD DELETE (audit semplicita + UNIQUE constraint freed per re-grant futuro, no zombie data nella tabella permessi differente da `utenti` soft delete).
+- **F3-S4-beta.E** (self-permission preservation): DELETE su self-permesso `(X, X, admin)` vietato 409 vs permesso. Default raccomandato vietato 409 (evita lock-out auto-permesso self, owner self-permission inalienabile durante vita utente).
+- **F3-S4-beta.F** (Spec v1.6 emit timing): CP5 closing N+5.E-beta cumulativo F3-S4 milestone (Q8=B settima applicazione cumulativa AMB-11.B.7).
+
+**Pre-letture obbligatorie N+5.E-beta:**
+
+1. Questo Changelog Fase 3 § 0 + § 22.86 (closing N+5.E-alpha-bis cumulativo + Lesson #25) + § 11.J-S3 scope
+2. `par.22.86-Fase3` integrale (CP0 + CP1+CP2 3 fix cycle + CP3 smoke 10/10 + 3 findings + 3 drift-doc + Lesson #25 MANDATORY cementata)
+3. `par.22.85-Fase3` integrale (closing N+5.D analisi-first + design draft consolidato N+5.E-alpha + Q5-Q9 + sub-AMB B/C/F/I)
+4. `par.22.84-Fase3` (closing N+5.C state-machine + Lesson #24 Settings UPPERCASE)
+5. `par.22.83-Fase3` + `par.22.82-Fase3` + `par.22.81-Fase3` (closing F3-S3-alpha-post + alpha-pre + F3-S2)
+6. Spec v1.5 sez 3.10 permessi (`caregiver_id`, `paziente_id`, `permesso` ENUM, `notifiche_caregiver_attive`) + sez 9 endpoint REST + sez 11.6 vincoli multi-tenant
+7. `par.11.D-rev v3.1-Fase2` (Q13-Q17 multi-tenant Q14 schema permessi)
+8. `par.22.34-Fase2` (RepositoryError vocabulary 403/404/409 gia mappato)
+9. `par.22.58-Fase2` (pattern patcher Python content-based SENTINEL + Lesson #20 idempotency_marker + Lesson #21 R2 Python venv pre-DB-access)
+10. `par.6.118-Fase2` (pre-code scenario validation MANDATORY -- esteso Lesson #25 autocommit-aware)
+11. `pharmatimer_api/routers/utenti.py` esistente (template POST/DELETE pattern Lesson #25 transaction implicit-then-commit)
+12. `pharmatimer_api/db/dependencies.py` esistente (`get_current_user` + `get_current_owner` baseline -- estendere `get_admin_on_paziente` factory)
+
+**Pattern operativi confermati per N+5.E-beta:**
+
+- Lesson #8-#25 cumulative Fase 2+3 MANDATORY (#25 NEW autocommit pool transaction implicit)
+- Pattern par.22.58-Fase2 patcher Python content-based con SENTINEL + Lesson #20 idempotency_marker
+- Lesson #21 R2 Python venv pre-DB-access via `pharmatimer_api.config.settings` UPPERCASE
+- Lesson #23 schema-first DB introspection MANDATORY pre-emit pytest con ENUM literal value (cementata N3.A-E)
+- Lesson #24 Settings UPPERCASE pre-introspect
+- Lesson #25 autocommit-aware transaction implicit-then-commit pattern
+- Bash zsh-safe (echo single-quoted, no `#`, no apostrofi italiani, heredoc PYEOF, Settings UPPERCASE)
+- CP0 ridotto N+5.E-beta: empirico 7 check (HEAD post-N+5.E-alpha-bis CP5 + 8 ahead origin + pytest 60 collected + working tree clean + pyproject 0.4.0 + package 3.1.0 + tag v3.2.0-alpha.4 LOCALE invariato pre-CP5 bump)
+
+**Schema empirico ratificato post-N+5.E-alpha-bis** (NO re-introspect in N+5.E-beta):
+
+- `permessi` schema completo gia mappato par.22.85 + verificato smoke S1/S2 N+5.E-alpha-bis verde (doppio INSERT atomic transaction implicit)
+- `utenti` schema post-migration v03: `ENUM('owner','paziente','caregiver')` aligned Spec v1.5
+
+**Decisioni in-session candidate N+5.E-beta** (a CP5 closing F3-S4 milestone cumulativo):
+
+1. **Bump `backend/pyproject.toml` 0.4.0 -> 0.5.0** (raccomandato si, F3-S4 milestone cumulativa caregiver + permessi feature-complete)
+2. **Tag `v3.2.0-alpha.5` LOCALE annotato NO push** (raccomandato si, AMB-11.B.7-bis settima applicazione cumulativa pattern)
+3. **Spec v1.6 KB-only emit** (raccomandato si, F3-S4 milestone, sez 3.10 permessi DDL aligned + sez 9 endpoint REST + ratifica Lesson #25 autocommit pool pattern + ratifica drift-N44 scope ristretto + ratifica migration v03 ENUM caregiver)
+4. **Branch `fase-3-backend` continuazione** (no merge `main` fino F3-S7 smoke finale)
+5. **Eventuale Lesson #26 candidate emergente** in sessione
+6. **Pre-frozen `par.11.K-S3` N+5.F** scope decision F3-S5 ApiRepository PWA-side integration vs F3-S6 deploy Mini (emit a CP5 N+5.E-beta closing)
+7. **Cleanup-N8** (`backend/pharmatimer_api/app.py.bak.cp1-s3a` + `PharmaTimer_Changelog_Fase2.md.bak.closing-parte-1`) chiuso opportunistico CP4 N+5.E-beta (estende cleanup-N7 pattern)
+
+**Sub-AMB residue carry-forward N+5.E-alpha-bis -> N+5.E-beta:**
+
+- TODO codice F3-S3-gamma+: `intervallo_minimo_ore` enforcement su `/recupero` -- rinviato post-F3-S4 milestone unica (Q-RES-2 deferred carry-forward)
+- **drift-doc-N44** auth-layer 401 misto: fix opzionale uniformare middleware `get_current_user` a `RepositoryError(UNAUTHORIZED)` -- default raccomandato deferred F3-S5+ scope ApiRepository PWA consumer (impact PWA-side, non backend isolato)
+- **drift-doc-N45** FastAPI version hardcoded "0.1.0" in `app.py` vs pyproject: fix opzionale sync da `__version__` constant module o `tomllib` parse pyproject -- default raccomandato sync atomic con bump 0.4.0 -> 0.5.0 CP5 N+5.E-beta closing (1 line MOD `app.py`)
+
+---
