@@ -1347,3 +1347,193 @@ One-liner apertura N+5.F: `Esegui il prompt al par.11.K-S3 del Changelog Fase 3.
 - **drift-doc-N45** FastAPI version hardcoded "0.1.0" in `app.py` vs pyproject: fix opzionale sync da `__version__` constant module o `tomllib` parse pyproject -- default raccomandato sync atomic con bump 0.4.0 -> 0.5.0 CP5 N+5.E-beta closing (1 line MOD `app.py`)
 
 ---
+
+### 22.88 (Fase 3, closing N+5.F analisi-first sola scope decision F3-S5 ApiRepository PWA vs F3-S6 deploy Mini)
+
+<!-- par.22.88 emit closing N+5.F -->
+
+**Data:** 23 maggio 2026 sera-tarda.
+
+**Modalita:** Sessione analisi-first sola doc-only (Q2=A ratificata, pattern par.22.55-Fase2 sesta applicazione cumulativa Fase 3). N+5.F = CP0 baseline empirico 5/6 verde + ratifica Q1-Q4 percorso A + chiarimento drift-N51 venv path + design draft consolidato sub-AMB E-J + pre-frozen `par.11.L-S3` per N+5.G esecutiva. Zero source change, zero commit codice, zero tag, zero bump. Token spesi ~12-15K. Wall-clock ~30-45 min.
+
+**Esito:** OK. Scope N+5.G cementato (F3-S5-alpha ApiRepository wrapper-only + unit test mock `vi.fn()` global fetch + 5 router coverage cumulativo). Drift-N51 venv path declassato a non-drift (path standard progetto `backend/venv/` non Python convention `backend/.venv/`, salvato memoria persistente Claude per CP0 future).
+
+#### CP0 baseline empirico N+5.F verde 5/6
+
+- HEAD `dc4f10c` tag `v3.2.0-alpha.5` LOCALE branch `fase-3-backend` (post-CP5 N+5.E-beta par.22.87)
+- 9 ahead `origin/fase-3-backend` invariato
+- Tag latest sequence `v3.2.0-alpha.5` -> `.4` -> `.3` -> `.2` -> `.1` cumulativi
+- `package.json` `3.1.0` + `backend/pyproject.toml` `0.5.0` invariati
+- 504/504 PWA verde (3.79s, 62 files)
+- pytest backend NON ri-eseguito (drift-N51 path venv prompt CP0.5, baseline 75/75 doc-based par.22.87 valido per analisi-first zero source change)
+- Working tree porcelain vuoto
+
+#### Ratifica Q1-Q4 scope decision
+
+| Q | Tema | Decisione | Razionale |
+|---|---|---|---|
+| Q1 (N+5.F.A) | Scope decision A vs B | **A. F3-S5 ApiRepository PWA prima** | Validare empiricamente PWA contro backend feature-complete prima di deployare infra; RepositoryError vocabulary par.22.34-Fase2 gia cementato cross-PWA/backend; permission scope multi-tenant testabile aprendo 2 browser session distinte localhost dev. F3-S6 prima di F3-S5 = infra-first senza fit empirico, rischio scoprire issues ApiRepository solo a infra produttiva attiva. |
+| Q2 (N+5.F.B) | Split N+5.F | **A. Analisi-first sola** | Pattern par.22.55-Fase2 sesta applicazione cumulativa Fase 3 (N+5.B + N+5.D + N+5.E-alpha-bis sub-split + N+5.E-beta CP5-A/B + N+5.F), zero drift retroattivi 5x precedenti. Coerenza > velocita marginale. |
+| Q3 (N+5.F.C) | Scope F3-S5 | **A. F3-S5-alpha wrapper-only + unit test mock** | Split safety-first preventivo: integration smoke + UI onboarding token 5.B.1 (par.11.D-rev v3.2-Fase2) deferred F3-S5-beta. Stima monolitico >50K (5 router x 5-10 metodi + apiClient helper + RepositoryError UNAUTHORIZED + token persistence + Lesson #26 static analysis pre-emit cumulative). |
+| Q4 (N+5.F.D) | Scope F3-S6 | N/A | Q1=A esclude branch B percorso F3-S6. |
+
+#### Drift-N51 chiarimento + memory persistence
+
+CP0.5 prompt par.11.K-S3 R1 usava `backend/.venv/bin/activate` (Python convention hidden dot). Path reale progetto `backend/venv/bin/activate` (no leading dot). Output Roberto Mac-side:
+
+```
+/Users/roberto/Sviluppo/pharmatimer/backend/venv/bin/activate
+/opt/homebrew/opt/python@3.13/libexec/bin/python3
+sys.prefix = /opt/homebrew/opt/python@3.13/Frameworks/Python.framework/Versions/3.13
+```
+
+**Declassato a non-drift:** path standard progetto, no fix richiesto, no deviazione formale. Salvato memoria persistente Claude `memory_user_edits #17` per eliminare drift ricorrenti CP0 future N+5.G+. Pattern simmetrico a memory persistence drift-N31 path reale `src/components/config/ImpostazioniTab.jsx` post-Sessione precedente.
+
+#### Sub-AMB N+5.F.E-J candidate F3-S5-alpha (ratifica formale CP0 N+5.G empirico)
+
+| ID | Tema | Default raccomandato | Rationale 1-riga |
+|---|---|---|---|
+| **N+5.F.E** | Feature flag mechanism | `localStorage` runtime flag `pharmatimer.useApiRepo` boolean | toggle senza rebuild = dogfooding rapido; vs `VITE_USE_API_REPO` build-time meno flessibile sviluppo |
+| **N+5.F.F** | Token persistence F3-S5-alpha | `localStorage` chiaro stub paste manuale console | UI onboarding token 5.B.1 deferred F3-S5-beta; IndexedDB Dexie + WebCrypto deferred F3-S6 deploy multi-PWA |
+| **N+5.F.G** | Endpoint coverage F3-S5-alpha | tutti 5 router (utenti + permessi + farmaci + orari + log_assunzioni) | wrapper parziale inutile (no toggle full repository); split alpha1/alpha2 CP0 empirico se densita >50K |
+| **N+5.F.H** | Base URL | `VITE_API_BASE_URL` env var default `http://localhost:8000` | env standard, no patch sorgente toggle dev/prod F3-S6 deploy |
+| **N+5.F.I** | HTTP client | fetch nativo + helper `src/repositories/apiClient.js` | zero deps NEW, helper centralizza X-User-Token header + JSON parsing + HTTP -> RepositoryError mapping |
+| **N+5.F.J** | Test framework mock | `vi.fn()` mock global fetch (no MSW) | zero deps NEW, MSW overkill per unit wrapper, riservato F3-S5-beta integration smoke |
+
+**Aggiunte cross-cutting cementate da ratifica Q3=A:**
+- Nuovo `RepositoryErrorCode.UNAUTHORIZED` enum value (401 mapping, solo ApiRepository - LocalRepository no auth concept). Chiude drift-doc-N44 carry-forward (mapping PWA-side, no fix backend).
+- Target test PWA NEW: 45-55 (~8-9 test x 5 router + 5 apiClient helper test). Bound conservativo 35 espansivo 65.
+- Lesson #26 MANDATORY applicata pre-emit: dump signature + Dexie schema `LocalRepository.js` PRIMA emit `ApiRepository.js` (zero assumption signature matching).
+
+#### Stato git post-N+5.F
+
+- Branch `fase-3-backend` HEAD `<TBD-closing-doc-only-commit>` 10 ahead `origin/fase-3-backend` (9 pre-N+5.F + 1 doc-only closing)
+- Tag annotato `v3.2.0-alpha.5` LOCALE su `dc4f10c` invariato (NO push)
+- `package.json` `3.1.0` invariato
+- `backend/pyproject.toml` `0.5.0` invariato
+- 504/504 PWA + 75/75 backend = 579 test invariati cumulativi
+- Working tree clean post-closing
+
+#### Findings cumulativi carry-forward post-N+5.F
+
+- 17 findings registry Fase 2 polish invariati
+- 12 residual UX findings v3.1.0 invariati
+- 4 drift-doc Fase 3 N30-N33 chiusi par.22.79-quater-Fase2
+- 4 drift-doc Fase 3 N36-N39 chiusi par.22.82
+- 4 drift-doc Fase 3 N40-N43 chiusi par.22.83
+- 3 drift-doc Fase 3 N44-N46 N+5.E-alpha-bis (N46 chiuso CP2-FIX3, N44 chiudibile N+5.G CP1 via UNAUTHORIZED enum NEW, N45 deferred F3-S5-beta)
+- 4 drift-doc Fase 3 N47-N50 N+5.E-beta chiusi par.22.87
+- **0 drift-doc N+5.F** (drift-N51 declassato non-drift, memoria persistente)
+- 7 lesson NEW #20-#26 MANDATORY cumulative invariate
+- Sub-AMB carry-forward invariati: `addFarmaco` undefined literal persistence PWA-side + IndexedDB test row dev-only
+- TODO codice F3-S3-gamma+: `intervallo_minimo_ore` enforcement `/recupero` deferred post-F3-S5/F3-S6
+- cleanup-N3-bis (2 utenti zombie dev + 6 permessi orfane) carry-forward F3-S5/F3-S6 opportunistico
+
+#### Lesson learned Sessione N+5.F
+
+1. **Path environment assumption drift pre-frozen prompt 1-2 sessioni indietro pattern simmetrico Lesson #16-#19**: par.11.K-S3 R1 emit (N+5.E-beta closing) ha assunto `backend/.venv/` standard Python convention `.venv/` hidden dot senza verificare empirico path reale progetto `backend/venv/`. Mitigazione future: CP0 baseline pre-frozen che richiede path manuali env-specific deve usare auto-discovery (`find . -name activate`) vs path hardcoded. Pattern simile Lesson #18 CP0 baseline `@@server_uuid` Python target vs CLI direct + Lesson #19 TestClient FastAPI lifespan re-init.
+
+2. **Memory persistence path environment progetto vs assumption Python/standard convention**: salvato memoria persistente Claude (`memory_user_edits #17`) path venv `backend/venv/` per eliminare drift ricorrente future sessioni N+5.G+. Pattern simmetrico a memory persistence drift-N31 path reale `src/components/config/ImpostazioniTab.jsx` (vs assunto `src/components/tabs/`).
+
+3. **Analisi-first sola sesta applicazione cumulativa Fase 3 zero drift retroattivi pattern par.22.55-Fase2 cementato empirico**: N+5.B (par.11.Y.2 setup deploy) + N+5.D (analisi F3-S4 split alpha/beta) + N+5.E-alpha-bis (split alpha pre/post) + N+5.E-beta (interno CP5-A/B Spec emit deferred) + N+5.F (questa sessione scope decision F3-S5 vs F3-S6). Sei applicazioni cumulative zero drift retroattivi = pattern operativo solido per analisi-first prima di esecutiva monolitica complessa. Estensione conferma Lesson #24+#25+#26 cementazione disciplinata.
+
+#### Mio errore zsh
+
+Nessuno questa sessione. Tutti blocchi bash zsh-safe (echo single-quoted, no commenti `#`, no apostrofi italiani, blocchi limitati a CP0 baseline + drift-N51 chiarimento opportunistico).
+
+#### Cleanup status
+
+- cleanup-N1 (Fase 2 IndexedDB dev-only browser-side): invariato carry-forward
+- cleanup-N3-bis (2 utenti zombie dev + 6 permessi orfane): invariato carry-forward F3-S5/F3-S6 opportunistico
+- cleanup-N6 / N7 / N8 chiusi precedenti par.22.83 / par.22.86 / par.22.87
+
+#### Riferimenti par.22.88
+
+- **par.22.87-Fase3** (closing N+5.E-beta F3-S4-beta CRUD permessi end-to-end milestone backend caregiver feature-complete)
+- **par.22.86-Fase3** + **par.22.85-Fase3** + **par.22.84-Fase3** (closing N+5.E-alpha-bis + N+5.D + N+5.C cumulative)
+- **par.11.K-S3** R1 (questo emit ratifica scope decision Q1-Q4 percorso A)
+- **par.22.55-Fase2**: pattern split safety-first **sesta applicazione cumulativa Fase 3** (N+5.F analisi-first sola doc-only)
+- **par.22.58-Fase2**: pattern patcher Python content-based SENTINEL applicato (questo emit closing + ipotetico N+5.G CP1 patcher source)
+- **par.22.34-Fase2**: RepositoryError vocabulary pre-requisito F3-S5 ApiRepository (esteso UNAUTHORIZED N+5.G CP1)
+- **par.6.118-Fase2**: pre-code scenario validation MANDATORY pre-emit F3-S5 (Lesson #26 estensione static analysis)
+- **AMB-11.B.7 / AMB-11.B.7-bis-Fase2**: bump effettivo `package.json` 3.1.0 -> 3.2.0-alpha.1 + tag annotato LOCALE `v3.2.0-alpha.6` a CP5 N+5.G milestone F3-S5-alpha (ottava applicazione cumulativa attesa)
+- **Lesson #26 MANDATORY**: pre-emit static analysis su file MOD applicata cementata N+5.F design draft
+- **memory_user_edits #17 NEW**: path venv backend `backend/venv/` persistente
+
+#### Sessione successiva post-N+5.F
+
+**N+5.G esecutiva monolitica F3-S5-alpha** ApiRepository wrapper-only + unit test mock `vi.fn()` global fetch + 5 router coverage cumulativo + bump opportunistico `package.json` 3.2.0-alpha.1 + tag `v3.2.0-alpha.6` LOCALE NO push. Pre-frozen prompt sezione `### 11.L-S3` sotto.
+
+One-liner apertura: `Esegui il prompt al par.11.L-S3 del Changelog Fase 3.`
+
+---
+
+### 11.L-S3 (Fase 3, prompt pre-frozen N+5.G esecutiva monolitica F3-S5-alpha ApiRepository wrapper-only + unit test mock vi.fn fetch)
+
+<!-- par.11.L-S3 R1 emit Fase 3 -->
+
+**One-liner apertura:** `Esegui il prompt al par.11.L-S3 del Changelog Fase 3.`
+
+**Origine.** Closing N+5.F par.22.88 analisi-first sola (Q1-Q4 ratificate A su tutte, scope decision percorso A F3-S5 ApiRepository PWA-side integration consolidato, sub-AMB N+5.F.E-J candidate cementate ratifica empirica CP0 N+5.G).
+
+**Scope alto livello.** Implementazione PWA-side `ApiRepository.js` wrapper simmetrico a `LocalRepository.js` esistente per consumare 5 router backend Fase 3 (`utenti` + `permessi` + `farmaci` + `orari` + `log_assunzioni`). Wrapper-only F3-S5-alpha senza integration smoke cross-PWA/backend (deferred F3-S5-beta). Stack file:
+
+1. **`src/repositories/apiClient.js` (NEW)**: helper fetch wrapper centralizzato. X-User-Token header injection automatica + JSON parsing + HTTP status -> RepositoryError mapping (401 UNAUTHORIZED / 403 FORBIDDEN / 404 NOT_FOUND / 409 CONSTRAINT_VIOLATION / 5xx INTERNAL).
+2. **`src/repositories/RepositoryError.js` (MOD)**: aggiungere `RepositoryErrorCode.UNAUTHORIZED` enum value. Chiude drift-doc-N44 PWA-side mapping.
+3. **`src/repositories/ApiRepository.js` (NEW)**: classe parallela a `LocalRepository.js` con stessi metodi pubblici (signature matching MANDATORY pre-emit Lesson #26 static analysis) ma implementazione fetch-based via apiClient.
+4. **`src/repositories/RepositoryFactory.js` (MOD)**: feature flag `localStorage.getItem('pharmatimer.useApiRepo') === 'true'` boolean toggle Dexie vs API.
+5. **`tests/repositories/ApiRepository.test.js` (NEW)**: unit test mock `vi.fn()` global fetch, ~8-9 test x 5 router = ~40-45 test NEW.
+6. **`tests/repositories/apiClient.test.js` (NEW)**: 5 helper test (X-User-Token header injection + HTTP error mapping 5 codici + JSON parsing edge case + token absence throw UNAUTHORIZED + retry-after header opzionale).
+
+**Pre-letture obbligatorie N+5.G:**
+
+1. Questo Changelog Fase 3 § 0 + § 22.88 (closing N+5.F + sub-AMB E-J + Q1-Q4) + § 11.L-S3 scope
+2. `par.22.88-Fase3` integrale (CP0 + Q1-Q4 ratificate + drift-N51 chiarito + sub-AMB E-J cementate)
+3. `par.22.87-Fase3` + `par.22.86-Fase3` (closing N+5.E-beta + alpha-bis F3-S4 milestone backend feature-complete)
+4. Spec v1.6 sez 9 endpoint REST + sez 11.6 multi-tenant + sez 11.6.6 convenzioni codice backend + sez 11.6.7 roadmap post-F3-S4
+5. `par.22.34-Fase2` (RepositoryError vocabulary cross-PWA/backend simmetrico - estensione UNAUTHORIZED N+5.G CP1)
+6. `par.6.118-Fase2` (pre-code scenario validation MANDATORY pre-emit)
+7. **Source files MANDATORY pre-emit (Lesson #26 static analysis cementata)**:
+   - PWA template: `src/repositories/LocalRepository.js` (signature matching) + `src/repositories/RepositoryFactory.js` (toggle pattern) + `src/repositories/RepositoryError.js` (enum estensione)
+   - Backend signature: `pharmatimer_api/routers/utenti.py` + `permessi.py` + `farmaci.py` + `orari.py` + `log_assunzioni.py`
+   - Backend error mapping: `pharmatimer_api/exceptions.py` (`RepositoryErrorCode` simmetrico)
+8. `pharmatimer_oggi_v5.jsx` mockup PWA (riferimento UI consumer pattern Repository)
+
+**Sub-AMB N+5.G.A-K candidate** (definizione effettiva in apertura, eredita E-J ratifica empirica + nuove A-K):
+
+- **N+5.G.A**: ratifica empirica E-J post-CP0 static analysis Lesson #26 (`localStorage` flag + token clear stub + 5 router coverage + `VITE_API_BASE_URL` + fetch nativo + `vi.fn()` mock)
+- **N+5.G.B**: `LocalRepository.js` signature matching - mantiene method names + return shapes esatti (es. `addFarmaco(payload) -> {id, ...}`) oppure adapter layer ApiRepository specifica
+- **N+5.G.C**: error mapping HTTP 5xx (server error) - aggiungere `RepositoryErrorCode.INTERNAL` NEW oppure riusare generic fallback senza enum dedicato
+- **N+5.G.D**: token absence behavior - apiClient throw UNAUTHORIZED immediato (no fetch call) vs fetch + 401 catch + UI redirect onboarding
+- **N+5.G.E**: split safety-first F3-S5-alpha vs alpha1/alpha2 - default monolitico (5 router omogenei, densita stimata ~30-40K); CP0 empirico ratifica vs split alpha1 (apiClient + RepositoryError + 2 router primi) / alpha2 (3 router residui + Factory + test residui)
+- **N+5.G.F**: Bump PWA `package.json` `3.1.0` -> `3.2.0-alpha.1` opportunistico F3-S5-alpha milestone tecnico (vs deferred F3-S5-beta integration smoke + onboarding 5.B.1 milestone semver "vera")
+- **N+5.G.G**: Tag annotato `v3.2.0-alpha.6` LOCALE NO push (AMB-11.B.7-bis ottava applicazione cumulativa)
+- **N+5.G.H**: Endpoint `/api/utenti` PWA-side scope - solo POST owner-only + DELETE owner-only vs include eventuale GET list (verifica empirico CP0 sez 9 Spec v1.6)
+- **N+5.G.I**: drift-N44 chiusura formale via UNAUTHORIZED enum NEW + retry logic deferred F3-S5-beta vs immediate throw + UI redirect onboarding token (F3-S5-beta scope)
+- **N+5.G.J**: Test setup fixture - shared mock fetch state vs per-test isolato (vi.clearAllMocks + vi.fn() reset beforeEach)
+- **N+5.G.K**: drift-N45 FastAPI version sync `app.py` - fix opzionale (1 line MOD) inglobabile CP1 N+5.G vs deferred F3-S5-beta (basso impact, no blocker F3-S5-alpha)
+
+**Pattern operativi confermati per N+5.G:**
+
+- Lesson #8-#26 cumulative Fase 2+3 MANDATORY (#26 NEW pre-emit static analysis su file MOD applicata)
+- Pattern par.22.58-Fase2 patcher Python content-based SENTINEL + Lesson #20 idempotency_marker
+- Bash zsh-safe (echo single-quoted, no `#`, no apostrofi italiani, heredoc PYEOF, Settings UPPERCASE Lesson #24)
+- Lesson #26 pre-emit static analysis MANDATORY (8 source files PWA + 5 source files backend dump signature)
+- CP0 ridotto N+5.G empirico 7 check + ratifica E-J + dump LocalRepository signature integrale
+- Path venv backend `backend/venv/` (memoria persistente Claude #17, no drift ricorrente)
+- AMB-11.B.7 / AMB-11.B.7-bis-Fase2: bump `package.json` 3.2.0-alpha.1 + tag `v3.2.0-alpha.6` LOCALE NO push a CP5 N+5.G milestone F3-S5-alpha (ottava applicazione cumulativa attesa)
+
+**Modalita raccomandata.** Esecutiva monolitica F3-S5-alpha (5 router omogenei wrapper-only + 6 file NEW/MOD + ~45-55 test NEW). Pattern split safety-first par.22.55-Fase2 applicabile se CP0 densita >50K -> split alpha1 (apiClient + RepositoryError + test infrastructure + 2 router primi) / alpha2 (3 router residui + Factory + test residui). Stima token 50-80K monolitico vs 30-40K x2 split. Wall-clock 2-3h monolitico vs 1.5h+1.5h split.
+
+**Decisioni in-session candidate N+5.G** (a CP5 closing F3-S5-alpha milestone):
+
+1. **Bump `package.json` `3.1.0` -> `3.2.0-alpha.1`** (raccomandato si, prima alpha PWA-side aligned a backend `v3.2.0-alpha.5`)
+2. **Sync runtime `src/components/config/ImpostazioniTab.jsx`** stringa versione (memoria #drift-N31 path corretto)
+3. **Tag `v3.2.0-alpha.6` LOCALE annotato NO push** (raccomandato si, AMB-11.B.7-bis ottava applicazione cumulativa)
+4. **Spec v1.7 emit deferred F3-S5-beta** (raccomandato no in alpha, ApiRepository architecture stabile solo a integration smoke beta verde end-to-end)
+5. **Branch `fase-3-backend` continuazione** (no merge `main` fino F3-S7 smoke finale)
+6. **Eventuale Lesson #27 candidate emergente** in sessione
+7. **Pre-frozen `par.11.M-S3` N+5.H F3-S5-beta** integration smoke + UI onboarding token 5.B.1 + persistence Dexie + WebCrypto (emit a CP5 N+5.G closing)
+8. **Cleanup-N9 candidate opportunistico** (eventuali `.bak.*` patcher residui post-N+5.G CP4)
+
+---
