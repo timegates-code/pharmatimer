@@ -94,3 +94,44 @@ def get_current_owner(
             message="Operazione riservata a owner",
         )
     return current_user
+
+
+# SENTINEL_N5E_BETA_CP1_DEPS_ASSERT_ADMIN_ON_PAZIENTE
+# F3-S4-beta N+5.E-beta CP1 -- helper assert_admin_on_paziente
+#
+# Pattern Lesson #25 autocommit-aware: SELECT-only, no commit needed.
+# Owner role bypasses check globally (admin access by definition).
+def assert_admin_on_paziente(
+    current_user: "CurrentUser",
+    paziente_id: int,
+    conn,
+) -> None:
+    """Assert current_user has 'admin' permesso on paziente_id (or is owner).
+
+    Raises:
+      RepositoryError(FORBIDDEN) if current_user lacks admin permesso
+      on the target paziente_id. Owner role is exempt (admin globally).
+    """
+    # SENTINEL_N5E_BETA_CP2_FIX2_DEPS_LOCAL_IMPORT -- CP2-FIX2: local import fix NameError cp2-err-N2
+    from pharmatimer_api.exceptions import RepositoryError, RepositoryErrorCode
+    if current_user.ruolo == "owner":
+        return
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            """
+            SELECT 1 FROM permessi
+            WHERE caregiver_id = %s
+              AND paziente_id = %s
+              AND permesso = 'admin'
+            LIMIT 1
+            """,
+            (current_user.id, paziente_id),
+        )
+        if cursor.fetchone() is None:
+            raise RepositoryError(
+                RepositoryErrorCode.FORBIDDEN,
+                f"Permesso admin richiesto su paziente_id={paziente_id}",
+            )
+    finally:
+        cursor.close()

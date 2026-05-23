@@ -47,3 +47,8 @@ app.include_router(farmaci.router)
 app.include_router(orari.router)
 app.include_router(log_assunzioni.router)
 app.include_router(utenti.router)
+
+# SENTINEL_N5E_BETA_CP1_APP_INCLUDE_PERMESSI
+# F3-S4-beta N+5.E-beta CP1 -- CRUD permessi caregiver
+from pharmatimer_api.routers import permessi as _permessi_module  # noqa: E402
+app.include_router(_permessi_module.router)

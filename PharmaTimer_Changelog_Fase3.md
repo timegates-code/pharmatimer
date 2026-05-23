@@ -1026,6 +1026,224 @@ One-liner apertura: `Esegui il prompt al par.11.J-S3 del Changelog Fase 3.`
 
 ---
 
+### 22.87 (Fase 3, closing cumulativo N+5.E-beta esecutiva monolitica F3-S4-beta CRUD permessi end-to-end + 2 fix cycle + smoke 10/10 + cleanup-N8 esteso + Lesson #26 MANDATORY)
+
+<!-- par.22.87 emit closing N+5.E-beta -->
+
+**Data:** 23 maggio 2026 sera.
+
+**Modalita:** Sessione esecutiva monolitica cumulativa CP1 + CP2-FIX1 + CP2-FIX2 + CP3 smoke + CP4 cleanup-N8 esteso + CP5-A closing. Pattern split safety-first par.22.55-Fase2 NON applicato (densita contenuta, smoke verde first-try). CP5-B Spec v1.6 emit deferred a sub-turno follow-up (file KB-only, no impact pipeline git). Token spesi ~75-90K. Wall-clock ~2h.
+
+**Esito:** OK milestone tecnico F3-S4-beta verde end-to-end (4 endpoint `/api/permessi` GET bidirezionale + POST admin-on-paziente + PUT + DELETE con self-protection + 3 Pydantic models + helper `assert_admin_on_paziente` + 15 pytest NEW 75/75 verde + smoke 10/10 first-try) + bump cumulativo F3-S4 milestone (pyproject 0.5.0 + tag v3.2.0-alpha.5 LOCALE NO push) + Lesson #26 NEW MANDATORY cementata (pre-emit static analysis su file MOD per import structure / fixture pattern / scope semantics).
+
+#### CP0 baseline empirico N+5.E-beta verde 7/7
+
+- HEAD `7427f40` branch `fase-3-backend` (post-CP5 N+5.E-alpha-bis par.22.86)
+- 8 ahead `origin/fase-3-backend`
+- Tag annotato `v3.2.0-alpha.4` LOCALE su `6860c4d` invariato
+- `backend/pyproject.toml` version `0.4.0`
+- `package.json` version `3.1.0`
+- pytest backend 60 tests collected (49 baseline N+5.C + 11 NEW utenti N+5.E-alpha-bis)
+- Working tree clean except `?? cp5_n5e_alpha_bis_closing_patcher.py` repo root (cleanup-N7 carry-forward absorbed in cleanup-N8 esteso CP4)
+
+#### Ratifica 6 sub-AMB F3-S4-beta.A-F + sub-AMB G NEW pre-emit
+
+| Sub-AMB | Decisione | Razionale |
+|---|---|---|
+| F3-S4-beta.A scope GET | (i) bidirezionale `caregiver_id=current OR paziente_id=current` | Audit completo current user + simmetria UX caregiver futura |
+| F3-S4-beta.B scope POST | admin-on-paziente decentralizzato | Owner non bottleneck + coerente doppio INSERT N+5.E-alpha-bis |
+| F3-S4-beta.C UNIQUE pre-INSERT | DB UNIQUE catch (errno 1062) -> 409 | Atomic + Lesson #25 autocommit-aware |
+| F3-S4-beta.D scope DELETE | HARD DELETE row | Audit semplicita + UNIQUE freed re-grant |
+| F3-S4-beta.E self-permission | DELETE self vietato 409 | Evita lock-out auto-permesso |
+| F3-S4-beta.F Spec v1.6 timing | CP5 closing cumulativo (split CP5-A commit + CP5-B Spec emit) | F3-S4 milestone naturale + Spec KB-only no-impact git pipeline |
+| **G NEW (deviazione par.11.J-S3)** | **A. Helper function `assert_admin_on_paziente`** vs factory `get_admin_on_paziente` letterale | Helper post-lookup evita doppio fetch su PUT/DELETE (paziente_id da DB row) + flusso lineare + zero impatto funzionale scope enforcement |
+
+#### Scope CP1 consegnato (5 file ops)
+
+| File | Op | LOC | Contenuto |
+|---|---|---|---|
+| `pharmatimer_api/models/permesso.py` | NEW | ~50 | `PermessoCreate` (Literal `'read'|'write'|'admin'`) + `PermessoUpdate` + `PermessoResponse` |
+| `pharmatimer_api/routers/permessi.py` | NEW | ~150 | 4 endpoint admin-on-paziente + helper `assert_admin_on_paziente` import |
+| `pharmatimer_api/db/dependencies.py` | MOD | +30 | Helper `assert_admin_on_paziente(current_user, paziente_id, conn)` SELECT-only + owner bypass |
+| `pharmatimer_api/app.py` | MOD | +5 | Local import `from pharmatimer_api.routers import permessi as _permessi_module` + `include_router` |
+| `tests/test_permessi_crud.py` | NEW | ~330 | 15 test (2 GET + 5 POST + 4 PUT + 4 DELETE) |
+
+Patcher monolitico CP1 `patcher_cp1_n5e_beta.py` 33115 bytes, sandbox round-trip 3/3 verde, Lesson #20 idempotency_marker self-check superato.
+
+#### Scope CP2-FIX1 + CP2-FIX2 cycle (3 finding chiusi)
+
+**3 findings cumulativi:**
+
+- **cp1-err-N1** (chiuso CP2-FIX1): fixture name mismatch `owner_token` (assunto) vs `seed_owner_test` Tuple[str, int] (reale conftest.py). Patcher `patcher_cp2_fix1_n5e_beta.py` 15692 bytes rigenera test file con SENTINEL_CP1 preservato + SENTINEL_FIX1 NEW.
+- **cp2-err-N2** (chiuso CP2-FIX2): `NameError: name 'RepositoryError' is not defined` in `dependencies.py:130` helper. Root cause: import esistente era LOCAL dentro `get_current_owner` (anti-circular), non disponibile top-level per helper appeso CP1. Fix: local import dentro helper body.
+- **cp2-err-N3** (chiuso CP2-FIX2): scope GET bidirezionale -- helper `_find_self_permesso_id` chiamato con `owner_token` ma scope owner NON include self-permessi altri utenti. Fix: usa `caregiver["token_plain"]` per GET dal punto di vista caregiver.
+
+Patcher monolitico CP2-FIX2 `patcher_cp2_fix2_n5e_beta.py` 7923 bytes, sandbox round-trip 3/3 verde.
+
+#### Scope CP3 smoke uvicorn nativo Studio 8001 verde 10/10 first-try
+
+S0 health + 2 utenti test setup -> S1 GET owner 200 row=3 -> S2 POST grant 201 -> S3 GET caregiver bidir 200 has_grant=True -> S4 duplicate 409 -> S5 FK violation 404 -> S6 PUT permesso=write 200 -> S7 PUT notifiche only 200 permesso invariato -> S8 DELETE self-permesso 409 -> S9 DELETE grant 200 verify PUT post-delete 404. Cleanup smoke utenti DELETE 200 (soft delete `attivo=FALSE`, zombie utenti carry-forward cleanup-N3-bis Fase 3).
+
+#### Scope CP4 cleanup-N8 esteso (15 file rm)
+
+**N8.A (4 patcher repo root):** patcher_cp1_n5e_beta.py + patcher_cp2_fix1_n5e_beta.py + patcher_cp2_fix2_n5e_beta.py + cp5_n5e_alpha_bis_closing_patcher.py (carry-forward N+5.E-alpha-bis).
+**N8.B (5 backup `.bak.cp1-n5e-beta`/`.cp2-fix1`/`.cp2-fix2`):** dependencies.py + app.py + test_permessi_crud.py x3.
+**N8.C (10 backup storici cumulativi):** Changelog Fase2 `.bak.closing-parte-1` + Changelog Fase3 `.bak.cp5-alpha-bis` + 8 backup Python (`.bak.cp1-alpha` F3-S1-bis + `.bak.cp1-s3a` F3-S3-alpha + `.bak.cp2-fix` F3-S3-beta + `.bak.cp2-fix2` N+5.E-alpha-bis).
+
+Working tree post-cleanup: zero `.bak.*` residui filesystem + 2 MOD + 3 NEW (5 file F3-S4-beta da commitare CP5).
+
+**N8.D zombie utenti DB dev** (`SmokeF3S4Beta_Caregiver` id=7 + `SmokeF3S4Beta_Paziente` id=8 + 6 permessi orfane): deferred carry-forward cleanup-N3-bis Fase 3 (zero interferenza runtime, GET filtra `attivo=TRUE`).
+
+#### 6 decisioni in-session D1-D6 ratificate
+
+| # | Decisione | Esito |
+|---|---|---|
+| D1 | Bump `backend/pyproject.toml` 0.4.0 -> 0.5.0 | Applicato CP5-A (Q9 deferred N+5.E-alpha cementato qui, settima applicazione AMB-11.B.7) |
+| D2 | Tag annotato `v3.2.0-alpha.5` LOCALE NO push | Applicato CP5-A (AMB-11.B.7-bis settima applicazione cumulativa pattern intermedi) |
+| D3 | Spec v1.6 KB-only emit | **Deferred sub-turno CP5-B** (file KB-only no-impact git pipeline; emit + KB upload manuale in follow-up turno) |
+| D4 | Branch `fase-3-backend` continuazione | Applicato (no merge `main` fino F3-S7 smoke finale) |
+| D5 | Lesson #26 candidate emergente | Applicato: cementata MANDATORY (pre-emit static analysis file MOD: import structure + fixture pattern + scope semantics) |
+| D6 | Pre-frozen `par.11.K-S3` N+5.F scope decision F3-S5 vs F3-S6 | Applicato CP5-A (sezione 11.K-S3 NEW sotto) |
+
+#### 4 drift-doc-NEW Fase 3 N47-N50
+
+- **N47** (CP1): helper function `assert_admin_on_paziente` vs FastAPI dependency factory letterale par.11.J-S3 sez 3 `get_admin_on_paziente(paziente_id)`. Sub-AMB G=A ratificata pre-emit, zero impatto funzionale scope enforcement. Documentato qui par.22.87, NO retro-correzione par.11.J-S3 (par.6.71/85).
+- **N48** (CP2-FIX1): test fixture pattern `seed_owner_test` Tuple[str, int] vs `owner_token` bare fixture assunto pre-emit CP1. Root cause violazione par.6.118 scenario validation pre-emit (fixture introspection conftest.py omessa).
+- **N49** (CP2-FIX2): local import `from pharmatimer_api.exceptions import RepositoryError, RepositoryErrorCode` dentro helper body invece di top-level convention. Motivato safety zero-risk vs file MOD ignoto + Lesson #25 autocommit-aware NON blocca local import dentro function body. Pattern N+5.E-alpha-bis ha simmetricamente local import in `get_current_owner` (anti-circular).
+- **N50** (CP2-FIX2): semantica scope GET bidirezionale non documentata pre-test design (omissione par.6.118 scenario validation). Test `delete_permesso_self_protection` ha usato token owner per chiamare helper di lookup, mentre scope owner non include self-permessi altri utenti.
+
+#### Lesson cumulative Fase 2+3 + Lesson #26 NEW MANDATORY
+
+Invariate #8-#25 MANDATORY (#25 autocommit pool transaction implicit + #24 Settings UPPERCASE + #23 schema-first introspect + #22 field_validator timedelta + #21 Python venv pre-DB + #20 idempotency_marker self-check).
+
+**Lesson #26 NEW MANDATORY (questo emit):** pre-emit static analysis su file MOD obbligatoria. Estensione Lesson #23 (schema-first DB introspect) al dominio file source pre-emit patcher. Include:
+1. **Import structure verification:** verificare `from X import Y` come riga top-level disponibile (non solo grep substring nel file -- pattern troppo permissivo, intercetta docstring/local-import/commento).
+2. **Fixture introspection conftest.py:** verificare nomi fixture esatti pre-emit test (`grep "@pytest.fixture" + def NAME`) per evitare assumption `owner_token` vs reale `seed_owner_test`.
+3. **Scope semantics validation:** verificare scope GET/list endpoint pre-design helper test (bidirezionale vs out-going vs admin-only) per evitare assumption errata.
+
+Lesson #26 emersa da catalisi 3 finding cumulativi (cp1-err-N1 + cp2-err-N2 + cp2-err-N3) tutti chiudibili in fix cycle ma evitabili con static analysis pre-emit. Pattern simmetrico Lesson #23 emersa da catalisi `cp2-err-N3.A-E` di N+5.E-alpha-bis (par.22.86).
+
+#### Stato git post-N+5.E-beta CP5-A
+
+- Branch `fase-3-backend` HEAD `<TBD-CP5-commit>` 9 ahead `origin/fase-3-backend` (8 pre-CP5 + 1 CP5-A closing N+5.E-beta)
+- Tag annotato `v3.2.0-alpha.5` LOCALE NEW su `<TBD-CP5-commit>` (NO push, AMB-11.B.7-bis settima applicazione)
+- Tag `v3.2.0-alpha.4` LOCALE su `6860c4d` invariato
+- Tag `v3.2.0-alpha.3` su `59b3a93` + `v3.2.0-alpha.2` su `ab4e2d7` + `v3.2.0-alpha.1` su `fe212ad` invariati
+- `backend/pyproject.toml` `0.5.0` (bump cumulativo F3-S4 milestone)
+- `package.json` `3.1.0` invariato (D3-Fase2 backend versioning separato)
+- 504/504 PWA + **75/75 backend** = **579 test totali cumulativi** (+15 NEW vs N+5.E-alpha-bis 564)
+- Working tree clean post-closing
+
+#### Findings cumulativi carry-forward post-N+5.E-beta CP5-A
+
+- 17 findings registry Fase 2 polish invariati
+- 12 residual UX findings v3.1.0 invariati
+- 4 drift-doc Fase 3 N30-N33 chiusi par.22.79-quater-Fase2
+- 4 drift-doc Fase 3 N36-N39 chiusi par.22.82
+- 4 drift-doc Fase 3 N40-N43 chiusi par.22.83
+- 0 drift-doc N+5.C chiusi par.22.84
+- 0 drift-doc N+5.D
+- 3 drift-doc Fase 3 N44-N46 N+5.E-alpha-bis (N46 chiuso CP2-FIX3, N44/N45 deferred)
+- **4 drift-doc Fase 3 N47-N50 NEW N+5.E-beta** (tutti documentati par.22.87, no retro-correzione)
+- 3 finding cp1-err-N1 + cp2-err-N2 + cp2-err-N3 chiusi CP2-FIX1+FIX2 cycle
+- **7 lesson NEW #20-#26 MANDATORY cumulative** (#26 NEW pre-emit static analysis MANDATORY)
+- Sub-AMB carry-forward invariati: `addFarmaco` undefined literal persistence PWA-side + IndexedDB test row dev-only
+- TODO codice F3-S3-gamma+: `intervallo_minimo_ore` enforcement `/recupero` deferred post-F3-S5/F3-S6
+- **cleanup-N3-bis Fase 3 NEW**: 2 utenti zombie dev (`SmokeF3S4Beta_Caregiver` id=7 + `_Paziente` id=8 + 6 permessi orfane) carry-forward F3-S5/F3-S6 opportunistico
+
+#### Mio errore zsh
+
+Nessuno questa sessione. Tutti blocchi bash zsh-safe (echo single-quoted, no commenti `#`, no apostrofi italiani, Settings UPPERCASE Lesson #24).
+
+#### Cleanup status
+
+- **cleanup-N1** (Fase 2 IndexedDB dev-only browser-side): invariato carry-forward
+- **cleanup-N3** (Fase 3 farmaci.id=2 attivo=FALSE F3-S2): invariato carry-forward
+- **cleanup-N3-bis NEW**: 2 utenti zombie + 6 permessi orfane (deferred N8.D opportunistico F3-S5/F3-S6)
+- **cleanup-N6 / N7**: chiusi par.22.83 / par.22.86 (invariati)
+- **cleanup-N8 esteso CHIUSO CP4**: 15 file totali rm (4 patcher + 5 backup recenti + 10 backup storici cumulativi)
+
+#### Riferimenti par.22.87
+
+- **par.22.86-Fase3** (closing N+5.E-alpha-bis): F3-S4-alpha milestone tecnico + Lesson #25 MANDATORY cementata
+- **par.22.85-Fase3** (closing N+5.D analisi-first sola): design draft consolidato + Q5-Q9 + sub-AMB B/C/F/I
+- **par.22.84-Fase3** (closing N+5.C state-machine completa): Lesson #24 + decisioni D1-D5
+- **par.22.83-Fase3** + **par.22.82-Fase3** + **par.22.81-Fase3** (closing F3-S3-alpha-post + alpha-pre + F3-S2)
+- **par.22.58-Fase2**: pattern patcher Python content-based SENTINEL applicato 5x (CP1 + CP2-FIX1 + CP2-FIX2 + CP5-A Changelog questo emit + ipotetico CP5-B Spec se non file completo)
+- **par.22.55-Fase2**: pattern split safety-first NON applicato a priori N+5.E-beta (densita contenuta + smoke verde first-try), MA applicato sub-turno CP5-A / CP5-B (Spec v1.6 emit deferred per dimensionamento sessione regola critica 5)
+- **par.22.34-Fase2**: RepositoryError vocabulary applicato (FORBIDDEN/CONSTRAINT_VIOLATION/NOT_FOUND mapping 403/409/404)
+- **par.6.118-Fase2**: pre-code scenario validation MANDATORY -- violata 3 volte pre-emit CP1 (fixture + import + scope), catalizzato Lesson #26 NEW MANDATORY
+- **par.6.71/85-Fase2**: history immutability -- 4 drift-doc N47-N50 documentati immutabili, no retro-correzione patcher CP1 / par.11.J-S3
+- **AMB-11.B.7 / AMB-11.B.7-bis-Fase2**: bump effettivo `pyproject.toml` 0.5.0 + tag annotato LOCALE `v3.2.0-alpha.5` settima applicazione cumulativa Fase 3
+- **Lesson #26 NEW MANDATORY** (questo emit): pre-emit static analysis su file MOD
+
+#### Sessione successiva post-N+5.E-beta
+
+**Sub-turno CP5-B immediato:** emit Spec v1.6 file completo via present_files + KB upload manuale (no commit, KB-only). Pattern AMB-11.B.7-bis emit sub-step deferred. NO bash mac-side richiesto (sola operazione manual KB upload).
+
+**N+5.F successivamente:** analisi-first sola scope decision F3-S5 ApiRepository PWA-side integration vs F3-S6 deploy Mini. Pre-frozen prompt sezione `### 11.K-S3` sotto.
+
+One-liner apertura N+5.F: `Esegui il prompt al par.11.K-S3 del Changelog Fase 3.`
+
+---
+
+### 11.K-S3 (Fase 3, prompt pre-frozen N+5.F analisi-first scope decision F3-S5 ApiRepository PWA vs F3-S6 deploy Mini)
+
+<!-- par.11.K-S3 R1 emit Fase 3 -->
+
+**One-liner apertura:** `Esegui il prompt al par.11.K-S3 del Changelog Fase 3.`
+
+**Origine.** Closing N+5.E-beta par.22.87 (F3-S4 milestone backend caregiver feature-complete cumulativo end-to-end: 4 endpoint utenti + 4 endpoint permessi + doppio INSERT auto-permesso + admin-on-paziente scope enforcement + 75/75 backend + Lesson #25 + #26 cementate).
+
+**Scope alto livello.** Analisi-first per scegliere prossimo step Fase 3 tra due percorsi alternativi:
+
+- **Percorso A (F3-S5) - ApiRepository PWA-side integration**: implementare wrapper PWA `ApiRepository` simmetrico a `LocalRepository` esistente (pattern par.22.34-Fase2 RepositoryError vocabulary cross-PWA/backend), feature flag toggle Dexie vs API, test integration cross-PWA/backend single-user (Roberto). Sblocca dogfooding reale browser-side su backend F3 deployato locale dev.
+- **Percorso B (F3-S6) - Deploy Mini**: docker-compose Mini (Decisione 5 ratificata F3-S0 par.22.36-Fase2) + Tailscale setup + CORS prod restrictive + healthcheck Mini + backup automation mysqldump cron. Sblocca PWA cross-device su Mini-hosted backend con permessi caregiver enforced.
+
+**Raccomandazione meta-decisione** (decidi tu in apertura N+5.F): **F3-S5 prioritario** se obiettivo strategico e validare empirico la PWA esistente contro backend completo prima di deployare. Single-user owner dogfooding pratico immediato + permission scope multi-utente testabile aprendo browser session distinte (owner + caregiver simulato). **F3-S6 prioritario** se obiettivo e infrastruttura cross-device (Mini accessibile da iPhone/Android PWA via Tailscale) immediata, accettando dogfooding single-user owner-only via dev backend localhost fino a F3-S5 successivo.
+
+**Modalita raccomandata.** Apertura analisi-first 2-4 Q + ratifica scope + scelta percorso A/B prima di emit CP1 esecutivo. Stima sessione N+5.F analisi-first sola ~10-20K token, poi N+5.G esecutiva su percorso scelto.
+
+**Sub-AMB N+5.F.A-D candidate** (definizione effettiva in apertura):
+
+- **N+5.F.A**: scope decision A (F3-S5) vs B (F3-S6)
+- **N+5.F.B**: split N+5.F analisi-first sola (raccomandato coerenza pattern par.22.55-Fase2) vs N+5.F analisi+esecutiva monolitica
+- **N+5.F.C** (se A): scope F3-S5 - solo wrapper ApiRepository PWA-side (no integration test cross-PWA/backend) vs include integration smoke 5-8 scenari + feature flag runtime
+- **N+5.F.D** (se B): scope F3-S6 - docker-compose Mini only vs include Tailscale + CORS restrictive + backup cron + healthcheck Mini
+
+**Pre-letture obbligatorie N+5.F:**
+
+1. Questo Changelog Fase 3 § 0 + § 22.87 (closing N+5.E-beta) + § 11.K-S3 scope
+2. `par.22.87-Fase3` integrale (CP1+CP2 fix cycle + CP3 smoke + CP4 cleanup-N8 + D1-D6 + Lesson #26 MANDATORY)
+3. `par.22.86-Fase3` + `par.22.85-Fase3` + `par.22.84-Fase3` (closing N+5.E-alpha-bis + N+5.D + N+5.C)
+4. Spec v1.6 (post-CP5-B emit, sez 3.10 permessi + sez 9 endpoint REST + sez 11.6 multi-tenant + sez 11.6.6 convenzioni codice backend Lesson #25 + #26)
+5. `par.11.D-rev v3.2-Fase2` (F3-S5-pre + F3-S6 deploy multi-PWA roadmap)
+6. `par.22.34-Fase2` (RepositoryError vocabulary cross-PWA/backend simmetrico, pre-requisito F3-S5)
+7. `par.22.36-Fase2` Decisione 5 (docker-compose Mini + Tailscale)
+8. `par.6.118-Fase2` (pre-code scenario validation MANDATORY pre-emit)
+9. **se A**: `pharmatimer_api/routers/utenti.py` + `pharmatimer_api/routers/permessi.py` + `pharmatimer_api/routers/log_assunzioni.py` + `pharmatimer_api/routers/orari.py` + `pharmatimer_api/routers/farmaci.py` (endpoint da consumare PWA-side) + `src/repositories/LocalRepository.js` + `src/repositories/RepositoryFactory.js` (template simmetrico PWA-side)
+10. **se B**: docker-compose existing eventuale + `~/Sviluppo/pharmatimer/backend/.env` patterns + Tailscale CLI/admin patterns
+
+**Pattern operativi confermati per N+5.F:**
+- Lesson #8-#26 cumulative Fase 2+3 MANDATORY (#26 NEW pre-emit static analysis su file MOD)
+- Pattern par.22.58-Fase2 patcher Python content-based con SENTINEL + Lesson #20 idempotency_marker + Lesson #21 R2 Python venv pre-DB-access
+- Bash zsh-safe (echo single-quoted, no commenti `#`, no apostrofi italiani, heredoc PYEOF Python multi-line, Settings UPPERCASE Lesson #24, Lesson #26 import structure + fixture pattern + scope semantics verify pre-emit)
+- AMB-11.B.7 / AMB-11.B.7-bis: bump effettivo + tag annotation a CP5 closing N+5.G milestone se esecuzione raggiunge milestone (ottava applicazione cumulativa Fase 3 prevista)
+
+**Decisioni in-session candidate N+5.F** (a CP5 closing se esecuzione raggiunge milestone):
+1. Bump backend `pyproject.toml` 0.5.0 -> 0.6.0 (raccomandato si se F3-S5 milestone integration) o 0.5.1 (raccomandato si se F3-S6 milestone deploy Mini)
+2. Tag `v3.2.0-alpha.6` LOCALE annotato NO push (raccomandato si, AMB-11.B.7-bis ottava applicazione)
+3. Spec v1.7 emit KB-only (raccomandato solo se F3-S5 documenta wrapper ApiRepository PWA-side simmetrico o F3-S6 documenta deploy infrastructure Mini)
+4. Branch `fase-3-backend` continuazione (no merge `main` fino F3-S7 smoke finale)
+5. Eventuale Lesson #27 candidate emergente
+
+**Sub-AMB residue carry-forward N+5.E-beta -> N+5.F:**
+- TODO codice F3-S3-gamma+: `intervallo_minimo_ore` enforcement su `/recupero` (Q-RES-2 deferred, marker docstring `post_recupero` esplicito) -- rinviato post-F3-S5/F3-S6
+- cleanup-N3-bis Fase 3: 2 utenti zombie dev smoke F3-S4-beta (deferred opportunistico)
+- Spec v1.6 emit CP5-B (atteso applicato pre-apertura N+5.F via sub-turno follow-up)
+
+---
+
 ### 11.J-S3 (Fase 3, prompt pre-frozen N+5.E-beta esecutiva monolitica F3-S4-beta CRUD permessi + bump cumulativo F3-S4 milestone)
 
 <!-- par.11.J-S3 R1 emit Fase 3 -->
