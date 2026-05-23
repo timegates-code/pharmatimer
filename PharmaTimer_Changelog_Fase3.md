@@ -438,3 +438,166 @@ One-liner apertura: `Esegui il prompt al par.11.F-S3 del Changelog Fase 3.`
 - **Q-RES residua sospesa stato sorgente `presa`**: Q-RES-3 ha ratificato laterali `saltata <-> sospesa` 409 ma resta da definire se `/sospesa` accetta `presa` come sorgente. Mockup `SospesaCorrectModal` non chiarisce esplicitamente. Raccomandazione: in CP1 emit accettare solo `prevista`+`ricalcolata` come stato sorgente per `/sospesa` (semantica "decisione intenzionale pre-assunzione"), bloccare `presa` con 409 richiedendo `/undo` -> `/sospesa` due step.
 
 ---
+
+### 22.84 (Fase 3, closing F3-S3-beta CP1-CP5 N+5.C esecutiva monolitica) - state-machine completa 49/49 backend + 34/34 smoke uvicorn nativo + Spec v1.5 emit + bump pyproject 0.4.0 + tag v3.2.0-alpha.4 LOCALE no push
+
+<!-- par.22.84 emit F3-S3-beta CP5 closing N+5.C -->
+
+**Data:** 23 maggio 2026 mattina-pomeriggio.
+
+#### Scope consegnato
+
+CP0 ridotto N+5.C 7/7 verdi (HEAD `961456b` N+5.B closing, 5 ahead origin/fase-3-backend, tag `v3.2.0-alpha.3` LOCALE su `59b3a93` invariato, pyproject 0.3.0, package.json 3.1.0, 33 backend test + 504 PWA = 537 totali, working tree clean, MySQL nativo Studio up). Path venv risolto empirico: `backend/venv/` (non `.venv`).
+
+CP0-ext 3 file resolution rounds (Lesson #24 self-applied):
+- F1-bis/F1-ter: `pharmatimer_api/config/` non e directory, `config.py` modulo singolo Pydantic BaseSettings con `case_sensitive=True`, attributi UPPERCASE `DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME/DB_NAME_TEST/DB_POOL_SIZE` ratificati empirico pre-emit `apply_v02_unique_log.py`.
+
+CP1 design draft 11 sezioni ratificate (Q1-Q6 + Q-RES-1/2/3 + Sub-Q-NEW.1=A + Sub-Q-NEW.2=A + Sub-Q-DRAFT-1=A + DRIFT-NEW.1=A path nested + DRIFT-NEW.2=A both DB + DRIFT-NEW.3=A direct gap_minuti). Patcher Python monolitico `cp1_f3s3_beta_patcher.py` emit (~53.7K bytes, sotto soglia 50K dichiarata + 3K marker, decisione monolitico mantenuta). Sandbox E2E 2-run idempotency verde first-try in container Linux con simulazione file reali (~15s test).
+
+CP1 esecuzione Mac-side verde bit-perfect vs sandbox: 8/8 file (2 modify + 6 NEW) processed first-try, delta bytes identici sandbox vs Mac (+1583 models, +31+128+14868 router 3 step, 4188+4299+6372+7064 test, 530 sql, 3786 wrapper), 7/7 syntax check Python ast.parse verde, working tree post-patch coerente (2M + 6??, .bak.cp1 mascherati gitignore `*.bak.*`).
+
+CP2 apply migration `v02_unique_log.sql` verde 3/3 step: `[pharmatimer_dev] applied OK` + `[pharmatimer_test] applied OK`, verifica empirica `information_schema.STATISTICS` 4/4 colonne per DB in ordine `(utente_id, farmaco_id, data, dose_numero)` `NON_UNIQUE=0`, idempotency re-run verde `[idempotent_skip]` su entrambi DB. Wrapper Python applica a entrambi default (DRIFT-NEW.2=A ratificata empirica).
+
+CP3 pytest backend verde first-try: **49/49 in 2.33s** (33 baseline + 16 NEW = test_log_transitions_saltata 4 + sospesa 4 + undo 4 + recupero 4). State machine 5-stato end-to-end inclusi Sub-Q-NEW.2 source `presa` refused + D+1 rollback intervallo + SUBTIME aritmetica + post-check no anticipation.
+
+CP4 smoke uvicorn nativo Studio porta 8001 12 scenari S0-S12 verde **34/34 assertion**: 1 paziente NEW + 3 farmaci scoped (F_INT intervallo dosi=3, F_FIX fisso dosi=2, F_PAZ paziente fisso dosi=1) via Python diretto DB (no router CRUD farmaci coinvolto), 11 transitions REST via curl + 1 trap EXIT defensive cleanup. Bonus S11-bis (paziente accede al suo farmaco con TOKEN paziente -> 201). Cleanup post-trap by-name pattern: log=5 + orari=0 + farmaci=3 + permessi=1 + utenti=1 DELETE, residui smoke 0/0/0. Lesson #16 (mysql redirect) NON applicabile, Lesson #21 R2 (Python venv) preferito per coerenza CP0.
+
+CP5 closing:
+- bump `backend/pyproject.toml` 0.3.0 -> 0.4.0 (AMB-11.B.7 sesta applicazione Fase 3, milestone state-machine completa transitions endpoint command-based)
+- Spec v1.5 emit KB-only via Python locale 5 diff content-based (header + sez 3.1 farmaci + sez 3.6 log + sez 4.7 NEW + sez 9 endpoint), 681 righe (+40 vs v1.4) / 48334 bytes (+4537 vs v1.4), upload manuale UI Claude.ai project knowledge
+- Changelog Fase 3 append par.22.84 + par.11.H-S3 pre-frozen via patcher Python content-based SENTINEL (pattern par.22.58 + Lesson #20)
+- commit closing CP5 dedicato selective (.bak.cp1 + .bak.cp5 esclusi gitignore, patcher Mac-side `~/tmp/cp1_*` + `~/tmp/cp4_*` cleanup post-commit)
+- tag annotato `v3.2.0-alpha.4` LOCALE NO push (AMB-11.B.7-bis sesta applicazione cumulativa Fase 3)
+
+#### Deviazioni s.6.NN nuove (0 codice)
+
+Nessuna. Sessione esecutiva CP1-CP5 zero deviazioni dalla Spec ratificate. Le 3 micro-decisioni emerse a CP1 design (DRIFT-NEW.1 path nested coerente con /presa esistente, DRIFT-NEW.2 wrapper both DB, DRIFT-NEW.3 direct gap_minuti) sono **chiarimenti del design draft** risolti pre-emit con ratifica empirica via file source attached, NON deviazioni dalla Spec v1.4 (path REST non era specificato in Spec v1.4 sez. 9 al livello di nesting, ora documentato in Spec v1.5 sez. 9 + sez. 4.7).
+
+#### Decisioni in-session ratificate (D1-D5)
+
+- **D1**: Path layout 4 endpoint NEW nested `/api/farmaci/{farmaco_id}/log/{saltata|sospesa|undo|recupero}` coerente `/presa` esistente
+- **D2**: Status code uniforme 409 CONSTRAINT_VIOLATION (no 422) per validation business -> coerente codebase
+- **D3**: Sub-Q-DRAFT-1 audit note overflow truncate content preservando suffix `[undo TS]`
+- **D4**: CP4 smoke target `pharmatimer_dev` (coerente smoke par.22.83), delivery script .sh standalone 2-terminal
+- **D5**: Meta-decisione session sizing post-CP4 = A procedi CP5 in N+5.C (no split N+5.D)
+
+#### Drift-doc-NEW Fase 3 cumulativi
+
+Zero NEW. Drift-N40/N41/N42/N43 par.22.83 invariati carry-forward (immutabili par.6.71/85).
+
+#### Lesson cumulative Fase 3 NEW
+
+- **Lesson #24 MANDATORY**: pre-Python-introspection Pydantic Settings UPPERCASE attributes via `view`/grep `config.py` PRIMA di scrivere codice che usa `settings.<ATTR>`. Pattern: ogni script Python che importa `from pharmatimer_api.config import settings` precede sempre lettura empirica della classe `Settings` per validare presenza + casing degli attributi. Auto-segnalazione N+5.B errore `settings.db_host` lowercase vs reale `DB_HOST` UPPERCASE (case_sensitive=True). Estende Lesson #23 (schema-first DB introspection) dal DB layer al config layer. Applicabile a OGNI futura sessione Fase 3 (caregiver F3-S4, ApiRepository F3-S5, deploy F3-S6, smoke F3-S7) e backend Fase 4+ con Pydantic Settings.
+
+Lesson cumulative Fase 2+3 invariate #8-#23 MANDATORY.
+
+#### Mio errore zsh
+
+Nessuno questa sessione. Tutti i blocchi bash zsh-safe (echo single-quoted, no commenti `#`, no apostrofi italiani, heredoc PYEOF per Python multi-line).
+
+#### Cleanup status
+
+- **cleanup-N1** (Fase 2 IndexedDB dev-only browser-side): invariato carry-forward
+- **cleanup-N3 / cleanup-N6**: chiusi par.22.83 (invariati)
+- **cleanup-N7 NEW**: chiuso a CP5 finale - rimossi `~/tmp/cp1_f3s3_beta_patcher.py` (~53.7K) + `~/tmp/cp4_smoke_f3s3_beta.sh` (~15K) + `~/tmp/cp4_smoke/*.json/*.txt` (artifact curl smoke) + `.bak.cp1` su `models/log_assunzione.py` + `routers/log_assunzioni.py` + `.bak.cp5` su `pyproject.toml`
+- Script smoke `~/tmp/cp3_smoke_s3a_post.sh/log` + patcher `~/tmp/cp5_changelog_append.py` carry-forward par.22.83 NON rimossi (out-of-scope F3-S3-beta cleanup, opportunistico futuro)
+
+#### Stato git post-N+5.C
+
+- branch `fase-3-backend` HEAD `<TBD-cp5-commit>` 6 ahead `origin/fase-3-backend` (5 pre-N+5.C + 1 CP5 closing N+5.C)
+- tag annotato `v3.2.0-alpha.4` LOCALE NO push su HEAD CP5 closing N+5.C
+- tag `v3.2.0-alpha.3` su `59b3a93` invariato
+- tag `v3.2.0-alpha.2` su `ab4e2d7` invariato
+- tag `v3.2.0-alpha.1` su `fe212ad` invariato
+- `backend/pyproject.toml` `0.4.0`
+- `package.json` `3.1.0` invariato (D3-Fase2 frontend versioning separato fino F3-S6)
+- 504/504 PWA + **49/49 backend** = **553 test totali** (+16 NEW transitions vs N+5.B 537)
+- working tree clean post-closing
+
+#### Findings cumulativi carry-forward post-F3-S3-beta
+
+- 17 findings registry Fase 2 polish invariati
+- 12 residual UX findings v3.1.0 invariati
+- 4 drift-doc Fase 3 N30-N33 chiusi par.22.79-quater-Fase2
+- 4 drift-doc Fase 3 N36-N39 chiusi par.22.82
+- 4 drift-doc Fase 3 N40-N43 chiusi par.22.83
+- 0 drift-doc NEW N+5.C (sessione pulita)
+- 5 lesson NEW #20-#24 MANDATORY cumulative (#24 NEW Settings UPPERCASE)
+- sub-AMB carry-forward invariati (addFarmaco undefined literal persistence PWA-side + IndexedDB test row dev-only)
+- TODO codice F3-S3-gamma+: `intervallo_minimo_ore` enforcement su `/recupero` (Q-RES-2 deferred, marker esplicito in `post_recupero` docstring)
+
+#### Riferimenti par.22.84
+
+- **par.22.83-Fase3**: closing F3-S3-alpha-post (baseline architetturale + 4 drift N40-N43 + Lesson #23)
+- **par.22.82-Fase3**: closing F3-S3-alpha-pre intermedio (Lesson #20-#22 cumulative)
+- **par.22.81-Fase3**: closing F3-S2 CRUD farmaci
+- **par.22.58-Fase2**: pattern patcher Python content-based SENTINEL applicato CP1 + CP5 Changelog
+- **par.22.34-Fase2**: RepositoryError vocabulary applicato 4 endpoint NEW (CONSTRAINT_VIOLATION/NOT_FOUND -> 409/404)
+- **par.6.118-Fase2**: pre-code scenario validation 5 scenari per endpoint pre-emit (4 endpoint x 5 scenari = 20 totali)
+- **par.6.71/85-Fase2**: history immutability - DRIFT-NEW.1/2/3 chiarimenti pre-emit NON drift-doc retroattivi
+- **AMB-11.B.7 / AMB-11.B.7-bis-Fase2**: bump effettivo + tag annotation applicato CP5 closing F3-S3-beta milestone (sesta applicazione cumulativa Fase 3)
+
+#### Sessione successiva post-N+5.C
+
+**N+5.D scope candidate**: F3-S4 caregiver permessi (multi-tenant Q13-Q17 par.11.D-rev v3.1) **vs** F3-S5 ApiRepository PWA-side integration. Decisione tra le due in apertura N+5.D (Q1 prima Q). Pre-frozen prompt sezione `### 11.H-S3` sotto.
+
+One-liner apertura: `Esegui il prompt al par.11.H-S3 del Changelog Fase 3.`
+
+---
+
+### 11.H-S3 (Fase 3, prompt pre-frozen N+5.D analisi-first scope decision F3-S4 vs F3-S5)
+
+<!-- par.11.H-S3 R1 emit Fase 3 -->
+
+**One-liner apertura:** `Esegui il prompt al par.11.H-S3 del Changelog Fase 3.`
+
+**Origine.** Closing N+5.C par.22.84 milestone state-machine completa (CP1-CP5 verde end-to-end, bump 0.4.0, tag v3.2.0-alpha.4 LOCALE).
+
+**Scope alto livello.** Analisi-first per scegliere prossimo step Fase 3 tra due percorsi alternativi:
+
+- **Percorso A (F3-S4) - caregiver permessi multi-tenant**: estensione 4 endpoint Q13-Q17 ratificate par.11.D-rev v3.1 (NUOVO in v1.4 sez. 3.10): `POST /api/utenti` (invite-only admin), `DELETE /api/utenti/{id}` (soft delete cascade), CRUD `/api/permessi/*` (admin-only). Stack scoped permission check su tabella `permessi` enforced cross-utente. Pre-requisito per F3-S5 ApiRepository PWA quando l user effettivo non e il proprietario unico.
+- **Percorso B (F3-S5) - ApiRepository PWA-side integration**: implementare wrapper PWA `ApiRepository` simmetrico a `LocalRepository` esistente (pattern par.22.34 RepositoryError vocabulary cross-PWA/backend), feature flag toggle Dexie vs API, test integration cross-PWA/backend. Sblocca dogfooding reale browser-side su backend Fase 3 deployato.
+
+**Raccomandazione meta-decisione** (decidi tu in apertura N+5.D): **F3-S4 prioritario** se l obiettivo strategico e completare il backend stand-alone con copertura multi-tenant completa prima di integrare la PWA; **F3-S5 prioritario** se invece l obiettivo e validare empirico la PWA esistente contro il backend gia state-machine completo (anche se single-user owner Roberto).
+
+**Modalita raccomandata.** Apertura analisi-first 2-4 Q + ratifica scope + scelta percorso A/B prima di emit CP1 patcher. Stima sessione N+5.D analisi-first sola ~10-20K token, poi N+5.E esecutiva su percorso scelto.
+
+**Sub-AMB N+5.D.A-D candidate** (definizione effettiva in apertura):
+- **N+5.D.A**: scope decision A (F3-S4) vs B (F3-S5)
+- **N+5.D.B**: split N+5.D analisi-first sola (raccomandato per coerenza pattern par.22.55-Fase2) vs N+5.D analisi+esecutiva monolitica
+- **N+5.D.C** (se A): scope F3-S4 - tutti 4 endpoint utenti+permessi in singola sessione vs split alpha (utenti)/beta (permessi)
+- **N+5.D.D** (se B): scope F3-S5 - solo wrapper ApiRepository PWA-side (no integration test cross-PWA/backend) vs include integration smoke
+
+**Pre-letture obbligatorie N+5.D:**
+1. Questo Changelog Fase 3 § 0 + § 11.H-S3 scope + § 22.84 (closing N+5.C state-machine completa)
+2. `par.22.84-Fase3` integrale (CP1-CP5 esiti + Lesson #24 + decisioni D1-D5)
+3. `par.22.83-Fase3` + `par.22.82-Fase3` + `par.22.81-Fase3` (closing F3-S3-alpha-post + alpha-pre + F3-S2)
+4. Spec v1.5 sez. 3.9 utenti + 3.10 permessi + 3.11 push_subscriptions + sez. 9 (endpoint REST CRUD utenti/permessi/export/import + nota X-User-Token mandatory) + sez. 11.6 (Architettura multi-tenant Fase 3)
+5. `par.11.D-rev v3.1`-Fase2 (Q13-Q17 multi-tenant ratificate)
+6. `par.22.34-Fase2` (RepositoryError vocabulary cross-PWA/backend simmetrico per F3-S5)
+7. `par.6.118-Fase2` (pre-code scenario validation MANDATORY pre-emit)
+8. **se A**: `pharmatimer_api/models/utente.py` + `pharmatimer_api/routers/auth.py` + `pharmatimer_api/db/dependencies.py` (CurrentUser pattern get_current_user middleware)
+9. **se B**: `pharmatimer_oggi_v5.jsx` + `src/repositories/LocalRepository.js` + `src/repositories/RepositoryFactory.js` (pattern simmetrico PWA-side)
+
+**Pattern operativi confermati per N+5.D:**
+- Lesson #8-#24 cumulative Fase 2+3 MANDATORY (#24 NEW Settings UPPERCASE pre-introspect)
+- Pattern par.22.58-Fase2 patcher Python content-based con SENTINEL + Lesson #20 idempotency_marker + Lesson #21 R2 Python venv pre-DB-access
+- Bash zsh-safe (echo single-quoted, no commenti `#`, no apostrofi italiani, heredoc PYEOF per Python multi-line, Settings attributi UPPERCASE pre-introspect)
+- AMB-11.B.7 / AMB-11.B.7-bis-Fase2: bump effettivo + tag annotation a CP5 closing N+5.E milestone (settima applicazione cumulativa Fase 3 prevista se esecuzione percorso A o B portata a milestone)
+
+**Schema empirico ratificato N+5.B (NO re-introspect in N+5.D):**
+- `utenti` schema: `id`, `nome_visualizzato` (NON `nome`), `ruolo` ENUM, `token_hash` SHA-256, `attivo` (Lesson #23 schema-first introspect MANDATORY pre-SELECT)
+- `permessi` schema: `caregiver_id`, `paziente_id`, `permesso` ENUM, `notifiche_caregiver_attive`
+- `log_assunzioni` schema: 14 col + UNIQUE `idx_log_slot_unique (utente_id, farmaco_id, data, dose_numero)` NEW post-CP2 N+5.C
+
+**Decisioni in-session candidate N+5.D** (a CP5 closing se esecuzione raggiunge milestone):
+1. Bump backend `pyproject.toml` 0.4.0 -> 0.5.0 (raccomandato si se F3-S4 milestone caregiver) o 0.4.1 (raccomandato si se F3-S5 milestone integration solo PWA-side)
+2. Tag `v3.2.0-alpha.5` LOCALE annotato NO push (raccomandato si, AMB-11.B.7-bis settima applicazione)
+3. Spec v1.6 emit KB-only (raccomandato solo se F3-S4, documenta endpoint utenti+permessi gia in Spec v1.4/v1.5)
+4. Branch `fase-3-backend` continuazione (no merge `main` fino F3-S7 smoke finale)
+5. Eventuale Lesson #25 candidate emergente in sessione
+
+**Sub-AMB residue carry-forward N+5.C -> N+5.D:**
+- TODO codice **F3-S3-gamma+**: `intervallo_minimo_ore` enforcement su `/recupero` (Q-RES-2 deferred N+5.C, marker docstring `post_recupero` esplicito). Decisione N+5.D apertura: rinviare ulteriormente a F3-S4-bis post-decision o aprire N+5.D-bis dedicata mini-sessione.
+
+---

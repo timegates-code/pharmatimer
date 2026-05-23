@@ -101,3 +101,51 @@ class LogAssunzioneResponse(BaseModel):
     _coerce_ora_ricalcolata = field_validator("ora_ricalcolata", mode="before")(
         _coerce_timedelta_to_time
     )
+
+
+# F3-S3-beta CP1 idempotency_marker v01
+# 5 NEW Pydantic models for state transitions endpoints under
+# /api/farmaci/{farmaco_id}/log/{saltata|sospesa|undo|recupero}.
+# farmaco_id comes from path (NOT payload), utente_id from Depends auth.
+
+class LogAssunzioneSlotPayload(BaseModel):
+    """Slot identifier: target dose (data, dose_numero) scoped utente+farmaco."""
+
+    data: date
+    dose_numero: int = Field(..., ge=1)
+
+
+class LogAssunzioneCreateSaltata(LogAssunzioneSlotPayload):
+    """POST /saltata payload. ora_prevista is NOT NULL in DDL."""
+
+    ora_prevista: time
+    note: Optional[str] = Field(default=None, max_length=200)
+
+
+class LogAssunzioneCreateSospesa(LogAssunzioneSlotPayload):
+    """POST /sospesa payload.
+
+    Sub-Q-NEW.2 = A: source state 'presa' is rejected at router level (409),
+    transitions allowed only from 'prevista' or 'ricalcolata'. To suspend a
+    dose already taken, the user must /undo first then /sospesa.
+    """
+
+    ora_prevista: time
+    note: Optional[str] = Field(default=None, max_length=200)
+
+
+class LogAssunzioneUndoPayload(LogAssunzioneSlotPayload):
+    """POST /undo payload. Audit suffix is server-generated, no client field."""
+
+    pass
+
+
+class LogAssunzioneRecuperoPayload(LogAssunzioneSlotPayload):
+    """POST /recupero payload.
+
+    Q-RES-2 = A (minimal): recupero_minuti must be <= row.gap_minuti and the
+    resulting ora_ricalcolata must remain >= ora_prevista (no anticipation
+    beyond base time). intervallo_minimo_ore constraint DEFERRED F3-S3-gamma+.
+    """
+
+    recupero_minuti: int = Field(..., gt=0, le=1440)
