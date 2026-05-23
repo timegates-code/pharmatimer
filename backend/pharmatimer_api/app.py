@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pharmatimer_api.config import settings
 from pharmatimer_api.db.connection import close_pool, init_pool
 from pharmatimer_api.exceptions import RepositoryError, repository_error_handler
-from pharmatimer_api.routers import farmaci, health, log_assunzioni, orari
+from pharmatimer_api.routers import farmaci, health, log_assunzioni, orari, utenti  # CP1 F3-S4-alpha N+5.E-alpha applied SENTINEL
 
 
 @asynccontextmanager
@@ -46,3 +46,4 @@ app.include_router(health.router)
 app.include_router(farmaci.router)
 app.include_router(orari.router)
 app.include_router(log_assunzioni.router)
+app.include_router(utenti.router)

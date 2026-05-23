@@ -23,6 +23,7 @@ class RepositoryErrorCode(str, Enum):
     DB_UNAVAILABLE = "DB_UNAVAILABLE"
     NOT_FOUND = "NOT_FOUND"
     CONSTRAINT_VIOLATION = "CONSTRAINT_VIOLATION"
+    FORBIDDEN = "FORBIDDEN"  # CP1 F3-S4-alpha N+5.E-alpha applied SENTINEL
     GENERIC = "GENERIC"
 
 
@@ -36,6 +37,7 @@ _DEFAULT_SEVERITY = {
     RepositoryErrorCode.DB_UNAVAILABLE: RepositoryErrorSeverity.CRITICAL,
     RepositoryErrorCode.NOT_FOUND: RepositoryErrorSeverity.WARNING,
     RepositoryErrorCode.CONSTRAINT_VIOLATION: RepositoryErrorSeverity.WARNING,
+    RepositoryErrorCode.FORBIDDEN: RepositoryErrorSeverity.WARNING,
     RepositoryErrorCode.GENERIC: RepositoryErrorSeverity.ERROR,
 }
 
@@ -43,6 +45,7 @@ _HTTP_STATUS = {
     RepositoryErrorCode.DB_UNAVAILABLE: 503,
     RepositoryErrorCode.NOT_FOUND: 404,
     RepositoryErrorCode.CONSTRAINT_VIOLATION: 409,
+    RepositoryErrorCode.FORBIDDEN: 403,
     RepositoryErrorCode.GENERIC: 500,
 }
 

@@ -65,3 +65,32 @@ def get_current_user(
         nome_visualizzato=row["nome_visualizzato"],
         ruolo=row["ruolo"],
     )
+
+
+
+def get_current_owner(
+    current_user: CurrentUser = Depends(get_current_user),
+) -> CurrentUser:
+    """Resolve current user and assert ruolo='owner'.
+
+    Sub-Q-NEW.4 = A (par.22.86): pragmatic conservative auth-layer pattern.
+    Uses RepositoryError(FORBIDDEN) -> 403 via global handler (par.22.34),
+    while get_current_user keeps legacy HTTPException(401). Asymmetry is
+    documented as drift-N44 doc-only, refactor deferred F3-S5+.
+
+    Raises 403 Forbidden (via RepositoryError) when authenticated user is
+    not the database owner. Spec sez. 11.6 enforces "1 owner per DB" via
+    Pydantic Literal at POST and via this guard at runtime.
+
+    CP1 F3-S4-alpha N+5.E-alpha applied SENTINEL
+    """
+    if current_user.ruolo != "owner":
+        from pharmatimer_api.exceptions import (
+            RepositoryError,
+            RepositoryErrorCode,
+        )
+        raise RepositoryError(
+            code=RepositoryErrorCode.FORBIDDEN,
+            message="Operazione riservata a owner",
+        )
+    return current_user
