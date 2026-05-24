@@ -1537,3 +1537,240 @@ One-liner apertura: `Esegui il prompt al par.11.L-S3 del Changelog Fase 3.`
 8. **Cleanup-N9 candidate opportunistico** (eventuali `.bak.*` patcher residui post-N+5.G CP4)
 
 ---
+
+---
+
+### 22.89 (Fase 3, closing N+5.G analisi-first sola scope architetturale ApiRepository ibrido + 7 drift cumulativi cementati + Lesson #27 NEW MANDATORY)
+
+<!-- par.22.89 R1 emit closing N+5.G -->
+
+**Data:** 24 maggio 2026 mattina-pomeriggio.
+
+**Modalita:** Sessione analisi-first sola doc-only (Q-RATIFICA-STRATEGICA-1=a + Q2=a + Q3=a ratificate, pattern par.22.55-Fase2 settima applicazione cumulativa Fase 3). N+5.G = CP0 baseline empirico 6/7 verde (CP0.7-CP0.10 falliti drift bloccante src/repositories/ inesistente filesystem) + CP0-ext investigazione empirica 12 check + static analysis Lesson #26 cementata empirico su 8 file (4 PWA: IRepository.js + LocalRepository.js + RepositoryError.js + index.js + 4 backend: 3 router farmaci/orari/log_assunzioni + exceptions.py) + 7 drift architetturali cumulativi rilevati + 3 Q-RATIFICA-STRATEGICA emesse + ratifica decidi tu globale (a) tutte. Zero source change, zero commit codice, zero tag, zero bump. Token spesi ~30-35K. Wall-clock ~90-120 min.
+
+**Esito:** OK milestone diagnostico. Scope par.11.L-S3 (esecutiva monolitica wrapper-only ~25-35K patcher + ~38 test) **DEFERRED** a tripla N+5.H (analisi-first profonda dedicata) + N+5.I (esecutiva monolitica scope blindato). Pattern N+5.D->N+5.E-alpha->N+5.E-beta replicato estensione triplet (analisi-grossa -> analisi-fine -> esecutiva). 4 finding s.6.222-225 cementati + Lesson #27 NEW MANDATORY (Static analysis Lesson #26 doc-only != applicata-empirico).
+
+#### CP0 baseline empirico N+5.G verde 6/7 + drift bloccante CP0.7-CP0.10
+
+- HEAD `806c313` branch `fase-3-backend` (post-CP5 N+5.F par.22.88)
+- 10 ahead `origin/fase-3-backend`
+- Tag annotato `v3.2.0-alpha.5` LOCALE su `dc4f10c` invariato
+- `backend/pyproject.toml` version `0.5.0`
+- `package.json` version `3.1.0`
+- pytest backend 75 tests collected (60 baseline + 15 permessi F3-S4-beta)
+- vitest PWA 504/504 su 62 files invariato post-N+5.F
+- Working tree clean (no `.bak.*` residui, cleanup-N8 esteso chiuso CP4 N+5.E-beta)
+- **CP0.7-CP0.10 falliti drift bloccante**: `src/repositories/` filesystem inesistente, file `LocalRepository.js`+`RepositoryFactory.js`+`RepositoryError.js` non trovati al path dichiarato par.11.L-S3 design draft.
+
+#### CP0-ext investigazione empirica 12 check + 4 drift compositi
+
+CP0-ext.1 inventory src tree level 2 -> trovato `src/data/repository/` singolare dentro `data/`. CP0-ext.3 find filename Repository pattern -> 6 file co-located (IRepository.js + LocalRepository.js + LocalRepository.test.js + LocalRepository.errors.test.js + RepositoryError.js + RepositoryError.test.js). CP0-ext.4 find Dexie pattern -> solo `src/data/db.js` (no Dexie wrapper Repository). CP0-ext.7 grep RepositoryError -> 6 file consumer. CP0-ext.8 grep LocalRepository -> 10 file consumer (inc. `src/state/actions.js` + `src/state/selectors.log.test.js` + `src/test/renderWithRealProvider.jsx` + componenti Oggi/Cronologia test). CP0-ext.9 grep RepositoryFactory -> zero occorrenze (mai esistito). CP0-ext.12 git log diff-filter=A su Repository file -> 3c2f514 commit Step 11-A Fase 2 (file esistono dal Fase 2, drift cumulativo path su design draft N+5.F par.11.K-S3 + N+5.G par.11.L-S3).
+
+#### Static analysis Lesson #26 cementata empirico 8 file (4 PWA + 4 backend)
+
+**PWA `src/data/repository/`:**
+- `IRepository.js` 151 righe JSDoc-only contract, **31 metodi** 6 cluster (Profili 7 + Farmaci 5 + Orari 6 + Log 9 + Impostazioni 3 + Transactions 1), vocabolario errori esteso + mapping HTTP->codice gia pre-autorizzato Fase 3 (HTTP 5xx->DB_UNAVAILABLE / 409->CONSTRAINT_VIOLATION / 404->NOT_FOUND / 4xx other->GENERIC / network->DB_UNAVAILABLE)
+- `LocalRepository.js` 445 righe Dexie impl, helper `_wrap` + `codeOverride='TRANSACTION_ABORT'` su transaction multi-store
+- `RepositoryError.js` 131 righe enum (DB_UNAVAILABLE | TRANSACTION_ABORT | CONSTRAINT_VIOLATION | NOT_FOUND | GENERIC), severity ('warning' | 'error' | 'critical'), helpers `wrapRepoError` + `classifyRawError` heuristic
+- `index.js` 27 righe **factory pattern gia esistente** (`getRepository()` singleton lazy `_instance`), pronto a ospitare runtime toggle
+
+**Backend `pharmatimer_api/`:**
+- `exceptions.py` enum (DB_UNAVAILABLE 503 | NOT_FOUND 404 | CONSTRAINT_VIOLATION 409 | FORBIDDEN 403 | GENERIC 500), mapping HTTP_STATUS + DEFAULT_SEVERITY, body shape `{error: {code, severity, message}}`
+- `routers/farmaci.py` 202 righe (GET list / POST create / PUT update / DELETE soft), shape FarmacoCreate/FarmacoUpdate/FarmacoResponse Pydantic
+- `routers/orari.py` 130 righe (GET nested / PUT bulk-replace atomic), shape OrariBulkPayload/OrarioResponse
+- `routers/log_assunzioni.py` 617 righe **state-machine command-based** 5 verbi (`/log/presa` + `/log/saltata` + `/log/sospesa` + `/log/undo` + `/log/recupero`) + GET range query per-farmaco con `data_from`+`data_to` MANDATORY max 31 giorni
+
+#### 7 drift architetturali cumulativi rilevati (causa radice unica: Lesson #26 doc-only mai applicata empirico N+5.F)
+
+1. **Path drift** `src/repositories/` (design draft errato) vs `src/data/repository/` (filesystem reale)
+2. **`RepositoryFactory.js` mai esistito** (file NEW citato par.11.L-S3 e errato: `index.js` esistente E gia la factory pattern)
+3. **`IRepository.js` interface contract mai documentato** in design draft N+5.D/E/F/G (151 righe JSDoc gia da Fase 2)
+4. **Vocabolario errori asimmetrico** PWA vs backend (UNAUTHORIZED mancante entrambi drift-N44 / FORBIDDEN mancante PWA-side drift-N44-bis NEW / TRANSACTION_ABORT mancante backend-side accettabile inherently-local)
+5. **Shape entita PWA vs backend mismatch** (Profilo PWA = orari personali settimanali != utenti backend identity multi-tenant; Setting PWA-only; utenti+permessi backend-only fuori IRepository contract)
+6. **3 metodi PWA inherently-local** non preservabili da REST stateless (`withTransaction` cross-store atomic / `setProfiloAttivoConCleanup` multi-store / `upsertLogsBatch` atomic batch)
+7. **State-machine dispatch + fan-out cross-router** (PWA `upsertLog` generico -> backend 5 verbi command-based dispatch su `patch.stato`; PWA `getLogByRange` cross-farmaci -> backend per-farmaco fan-out N chiamate + merge in memoria)
+
+#### 4 finding s.6.NN-NEW ratificati
+
+- **s.6.222-Fase3**: drift cumulativo path PWA Repository `src/repositories/` design draft errato vs `src/data/repository/` filesystem reale, propagato N+5.F par.11.K-S3 + N+5.G par.11.L-S3, rilevato CP0 N+5.G turno 1. Self-violation Lesson #26 PWA-side mai applicata empirico pre-emit. Zero source change retroattivo. Carry-forward N+5.H scope path correction.
+
+- **s.6.223-Fase3**: drift cumulativo vocabolario errori asimmetrico PWA `RepositoryError.js` vs backend `exceptions.py`. Mancanti PWA-side: `UNAUTHORIZED` (drift-N44 noto) + `FORBIDDEN` (drift-N44-bis NEW rilevato turno 2). Mancante backend-side: `TRANSACTION_ABORT` (accettabile, inherently-local Dexie). MOD `RepositoryError.js` mandatory in N+5.I CP1 estensione doppia enum + severity entrambi 'warning'.
+
+- **s.6.224-Fase3**: drift cumulativo shape entita PWA vs backend Fase 3. `Profilo` PWA (orari personali sveglia/colazione/pranzo/cena/sonno per planBuilder) != `utenti` backend (identity owner/paziente/caregiver multi-tenant). `Setting` PWA-only impostazioni_app key/value. `utenti`+`permessi` backend-only fuori `IRepository` contract Fase 2. Architettura `ApiRepository` ibrida (Strada B Q-RATIFICA-STRATEGICA-2=a ratificata): 21 metodi farmaci/orari/log -> fetch backend; 7 Profilo + 3 Setting -> delegate `LocalRepository` interno; 3 multi-store inherently-local -> orchestration client-side best-effort. Cementato design N+5.H scope architetturale.
+
+- **s.6.225-Fase3**: drift cumulativo state-machine dispatch + fan-out cross-router. PWA `upsertLog(farmacoId, data, doseNumero, patch)` generico -> backend 5 verbi command-based dispatch su `patch.stato` ('presa'->POST `/log/presa`, 'saltata'->POST `/log/saltata`, 'sospesa'->POST `/log/sospesa`, transizione rollback->POST `/log/undo`, recupero->POST `/log/recupero`). Gap semantico: `LocalRepository.upsertLog` non distingue rollback vs altre transition lateral, dispatch in `ApiRepository.upsertLog` richiede heuristic su patch shape o nuovo metodo dedicato. PWA `getLogByRange(dataDa, dataA)` cross-farmaci -> backend `GET /api/farmaci/{fid}/log?data_from=&data_to=` per-farmaco fan-out N chiamate + merge in memoria, atomic snapshot non garantito.
+
+#### Lesson #27 NEW MANDATORY
+
+**Lesson #27 (cementata N+5.G): Static analysis Lesson #26 doc-only != applicata-empirico.** Se una Lesson dichiara "MANDATORY pre-emit" e una sessione successiva la cita come "applicata cementata" senza eseguire empirico (`cat`/`grep`/`find`/`ls` su filesystem reale), la dichiarazione e propaganda autoreferenziale, non evidenza. CP0 di ogni sessione che cita Lesson #26 DEVE eseguire fisicamente il dump dei source files dichiarati, NON assumere la loro esistenza/path/contenuto da design draft precedenti. Estensione naturale Lesson #23 (schema-first DB introspection MANDATORY) applicata a file PWA-side.
+
+**Trigger di violazione propagato N+5.F:** par.22.88 closing dichiara "Lesson #26 MANDATORY pre-emit static analysis su file MOD applicata cementata N+5.F design draft" (frase doc-only). par.11.L-S3 (questo emit) cita sub-AMB E-J come "ratifica empirica CP0 N+5.G" presupponendo file PWA gia mappati. Mai stato vero. CP0 N+5.G turno 1 ha smascherato empirico drift cumulativo path.
+
+**Applicazione obbligatoria N+5.H+:** CP0 di N+5.H DEVE iniziare con dump fisico filesystem dei 4 file PWA + 4 file backend gia mappati N+5.G (no presupposizione da par.22.89). Differenze inattese -> STOP regola critica #2 + drift-N+1 ratifica formale.
+
+#### 16 sub-AMB N+5.G.A-P carry-forward N+5.H scope architetturale
+
+**Originali A-K design draft par.11.L-S3:**
+- A: ratifica E-J empirica post-CP0 static analysis (parzialmente self-violated, drift-corrected via finding s.6.222-225)
+- B: signature matching LocalRepository.js -> esteso IRepository.js interface contract 31 metodi 6 cluster
+- C: HTTP 5xx mapping -> `DB_UNAVAILABLE` esistente (NO `INTERNAL` enum NEW, allinea IRepository.js doc Fase 2)
+- D: token absence -> apiClient throw `UNAUTHORIZED` immediato pre-fetch
+- E: split alpha vs alpha1/alpha2 -> RIVISTO triplet N+5.G->N+5.H->N+5.I
+- F: bump 3.1.0 -> 3.2.0-alpha.1 -> SI a CP5 N+5.I (milestone F3-S5-alpha)
+- G: tag v3.2.0-alpha.6 LOCALE -> SI a CP5 N+5.I (AMB-11.B.7-bis nona applicazione cumulativa attesa)
+- H: `/api/utenti` PWA-side scope -> **FUORI SCOPE** (utenti/permessi management e UI caregiver, IRepository contract non li espone), deferred F3-S5-beta UI caregiver dedicata
+- I: drift-N44 chiusura UNAUTHORIZED enum NEW + immediate throw (drift-N44-bis FORBIDDEN co-MOD)
+- J: test fixture pattern `vi.clearAllMocks() + vi.fn() reset beforeEach` per-test isolato
+- K: drift-N45 FastAPI version sync `app.py` -> deferred F3-S5-beta (basso impact)
+
+**NEW L-P drift-correction + architettura emergenti N+5.G:**
+- L: `ApiRepository.js` reference `IRepository` via JSDoc `@implements` header comment
+- M: toggle injection via **modifica `index.js` esistente** (NO `RepositoryFactory.js` NEW)
+- N: path NEW files corretto `src/data/repository/` singolare + test co-located NO `tests/repositories/`
+- O: feature flag `localStorage.getItem('pharmatimer.useApiRepo')` runtime (no rebuild, no env-var build-time)
+- P (CRITICO Strada B ratificata Q-RATIFICA-STRATEGICA-2=a): wrapper ibrido API + delegate `LocalRepository` per Profilo/Setting/inherently-local
+
+#### Out-of-scope N+5.G (cementato closing)
+
+- Zero source change, zero test change, zero schema change
+- Zero commit codice (solo commit doc-only par.22.89 + par.11.M-S3)
+- Zero bump `package.json` (rimane 3.1.0)
+- Zero tag (`v3.2.0-alpha.5` LOCALE invariato su `dc4f10c`)
+- Zero merge `main` (branch `fase-3-backend` continuazione)
+- Patcher CP1 source emit -> DEFERRED N+5.I
+- Pytest CP2 + smoke CP3 -> DEFERRED N+5.I
+- Backend Pydantic models dump (`FarmacoCreate`/`OrariBulkPayload`/`LogAssunzioneCreatePresa` etc.) -> CP0 mandatory N+5.H static analysis profonda
+
+#### Cleanup status N+5.G
+
+- cleanup-N1 (Fase 2 IndexedDB dev-only browser-side): invariato carry-forward
+- cleanup-N3-bis (2 utenti zombie dev + 6 permessi orfane): invariato carry-forward F3-S5/F3-S6 opportunistico
+- cleanup-N9 NEW candidate (this session): backup `.bak.cp5-n5g` su Changelog Fase 3 post-patcher exec -> chiusura opportunistica CP4 stesso turno post-verifica
+
+#### Mio errore zsh
+
+Nessuno questa sessione. Tutti blocchi bash zsh-safe (echo single-quoted, no commenti `#`, no apostrofi italiani, blocchi limitati a CP0 baseline + CP0-ext investigazione empirica + CP0-ext-2 dump 4 file PWA + CP0-ext-3 dump 3 router backend + signature endpoint list).
+
+#### Riferimenti par.22.89
+
+- **par.22.88-Fase3** (closing N+5.F analisi-first sola scope decision F3-S5 ApiRepository PWA vs F3-S6 deploy Mini)
+- **par.22.87-Fase3** + **par.22.86-Fase3** (closing N+5.E-beta + N+5.E-alpha-bis cumulative F3-S4 milestone backend feature-complete)
+- **par.11.L-S3** R1 (questo emit declassa scope a "scoperta empirica" + carry-forward 16 sub-AMB N+5.H)
+- **par.22.55-Fase2**: pattern split safety-first **settima applicazione cumulativa Fase 3** (N+5.G analisi-first sola doc-only + estensione triplet N+5.H+N+5.I)
+- **par.22.34-Fase2**: RepositoryError vocabulary -- causa radice drift-N44/N44-bis era questa retrospettiva citata come fonte primaria invece di `IRepository.js` JSDoc fonte primaria mai letta
+- **par.6.118-Fase2**: pre-code scenario validation MANDATORY -- esteso Lesson #27 NEW (Lesson #26 doc-only != applicata-empirico)
+- **Lesson #20-#26 cumulative**: invariate, applicate
+- **Lesson #27 NEW MANDATORY** (questo emit): Static analysis Lesson #26 doc-only != applicata-empirico
+- **AMB-11.B.7-bis-Fase2**: bump `package.json` 3.2.0-alpha.1 + tag annotato LOCALE `v3.2.0-alpha.6` a CP5 N+5.I milestone F3-S5-alpha (nona applicazione cumulativa attesa)
+
+#### Sessione successiva post-N+5.G
+
+**N+5.H analisi-first profonda dedicata**: contract mapping IRepository <-> backend (31 metodi mapping table esplicita), state-machine dispatch rules `upsertLog` switch heuristic, fan-out strategy `getLogByRange`, delegate strategy Profilo+Setting+inherently-local, vocabolario errori finale (UNAUTHORIZED+FORBIDDEN PWA-side ratifica), scope test piano dettagliato, sub-AMB N+5.H.A-X completa. Pre-frozen prompt sezione `### 11.M-S3` sotto.
+
+One-liner apertura: `Esegui il prompt al par.11.M-S3 del Changelog Fase 3.`
+
+---
+
+### 11.M-S3 (Fase 3, prompt pre-frozen N+5.H analisi-first profonda dedicata architettura ApiRepository ibrido + contract mapping IRepository 31 metodi + state-machine dispatch + fan-out + delegate strategy + test piano)
+
+<!-- par.11.M-S3 R1 emit Fase 3 -->
+
+**One-liner apertura:** `Esegui il prompt al par.11.M-S3 del Changelog Fase 3.`
+
+**Origine.** Closing N+5.G par.22.89 analisi-first sola con scoperta empirica 7 drift architetturali cumulativi + 4 finding s.6.222-225 cementati + Lesson #27 NEW MANDATORY (Lesson #26 doc-only != applicata-empirico). Triplet pattern N+5.D->N+5.E-alpha->N+5.E-beta replicato esteso N+5.G->N+5.H->N+5.I (analisi-grossa scoperta -> analisi-fine consolidamento -> esecutiva monolitica blindata).
+
+**Scope alto livello.** Analisi-first profonda dedicata per cementare design draft architetturale ApiRepository ibrido (Strada B Q-RATIFICA-STRATEGICA-2=a ratificata) PRIMA di emit patcher CP1 N+5.I. Zero source change, zero commit codice, zero bump, zero tag. Output sessione: design draft consolidato + pre-frozen par.11.N-S3 per N+5.I esecutiva monolitica.
+
+**Stack design draft N+5.H da consolidare:**
+
+1. **CP0 mandatory dump verifica empirica filesystem (Lesson #27)**: re-dump 4 file PWA `src/data/repository/` (IRepository.js + LocalRepository.js + RepositoryError.js + index.js) + 4 file backend (exceptions.py + routers/farmaci.py + orari.py + log_assunzioni.py). NO presupposizione da par.22.89. Differenze inattese -> STOP regola critica #2 + drift-NEW ratifica formale.
+
+2. **CP0-ext mandatory dump Pydantic models backend**: `pharmatimer_api/models/farmaco.py` (FarmacoCreate / FarmacoUpdate / FarmacoResponse) + `models/orario.py` (OrariBulkPayload / OrarioResponse) + `models/log_assunzione.py` (LogAssunzioneCreatePresa / Saltata / Sospesa / Recupero / Undo / Response) + `db/dependencies.py` (`get_current_user` + `CurrentUser` shape + `X-User-Token` header contract). Senza questi shape esatti CP1 N+5.I impossibile.
+
+3. **Contract mapping table IRepository 31 metodi -> backend endpoint**: tabella esplicita riga-per-riga con 4 colonne: (a) signature PWA IRepository.js / (b) endpoint backend o "delegate LocalRepository" / (c) shape request/response mapping / (d) edge case handling. Cluster:
+   - **Profili 7 metodi** -> tutti **delegate LocalRepository** (no backend equivalent)
+   - **Farmaci 5 metodi** -> 5 endpoint backend `/api/farmaci` (GET list / POST / PUT / DELETE / getFarmaco singolo via `getFarmaci()` + filter client-side OR endpoint NEW GET singolo se necessario)
+   - **Orari base 6 metodi** -> 2 endpoint nested + 4 derivati client-side (getAllOrari fan-out per ogni farmaco / addOrario+updateOrario+deleteOrario via PUT bulk-replace re-emit / replaceOrariForFarmaco diretto)
+   - **Log assunzioni 9 metodi** -> 1 endpoint GET range per-farmaco + 5 verbi command-based + dispatch heuristic su patch.stato (upsertLog) + fan-out N chiamate cross-farmaci (getLogByRange / getLogByData)
+   - **Impostazioni 3 metodi** -> tutti **delegate LocalRepository** (no backend equivalent)
+   - **Transactions 1 metodo** (`withTransaction`) -> orchestration client-side best-effort multi-call, throw `TRANSACTION_ABORT` su prima failure (rollback reale impossibile)
+
+4. **Dispatch heuristic `upsertLog` -> 5 verbi backend**: regole esplicite switch su `patch.stato` + `patch.recupero_minuti` + presenza/assenza `ora_effettiva`. Edge case: chiamata `upsertLog` senza `patch.stato` (creazione stato 'prevista') -> nessun verbo backend equivalente, throw `NotSupportedError` o `CONSTRAINT_VIOLATION`. Edge case: transition rollback (stato 'presa' -> 'prevista') in PWA via `upsertLog({stato:'prevista'})` -> backend `POST /log/undo`. Decidi tu strategia: heuristic switch vs metodo dedicato `ApiRepository._dispatchLogVerb()` interno vs nuovo metodo IRepository.js NEW `transitionLog(verb, ...)` (estensione contract Fase 2 -> impatto LocalRepository.js implementation).
+
+5. **Fan-out strategy `getLogByRange` cross-farmaci**: backend per-farmaco richiede N chiamate parallele (1 per ogni farmaco attivo). Strategia: (i) pre-fetch `getFarmaci({soloAttivi:true})` (1 chiamata) -> ottiene lista farmaco_id; (ii) `Promise.all()` N chiamate parallele `GET /api/farmaci/{fid}/log?data_from=&data_to=`; (iii) flatten + merge results client-side; (iv) handling errore parziale: opzioni (a) fail-fast prima failure throw / (b) best-effort propagate errori partial in response. Decidi tu (a) raccomandato fail-fast coerente con LocalRepository transactional semantic.
+
+6. **Delegate strategy Profilo+Setting+inherently-local**: ApiRepository possiede istanza `LocalRepository` interna privata (composition over inheritance), 13 metodi (7 Profilo + 3 Setting + 3 inherently-local) chiamano direttamente `this._local.<metodo>(...)`. Implementazione triviale. Test mock: 13 test verificano delegate corretto via spy su `_local` instance.
+
+7. **Vocabolario errori finale**: MOD `RepositoryError.js` aggiunge `UNAUTHORIZED` + `FORBIDDEN` enum + severity `'warning'` entrambi. Chiude drift-N44 + drift-N44-bis simmetricamente. Test NEW: 2 test scenario PWA-side. Backend NO modifica (exceptions.py gia ha `FORBIDDEN`, manca `UNAUTHORIZED` ma drift-N44 carry-forward F3-S5-beta deferred).
+
+8. **Test piano dettagliato**: tabella con (file test, scenario, mock fetch shape, expected outcome). Stima ~60-80 test NEW totali (apiClient ~10 / ApiRepository Farmaci ~8 / Orari ~10 / Log ~18 inc. state-machine dispatch + fan-out + edge case / Profilo+Setting+inherently-local delegate ~13 / index.js toggle ~3 / RepositoryError MOD UNAUTHORIZED+FORBIDDEN ~2). Target finale post-CP2 N+5.I atteso ~564-584 (504 baseline + 60-80 NEW) su ~64-66 files.
+
+**Pre-letture obbligatorie N+5.H:**
+
+1. Questo Changelog Fase 3 par.22.89 (closing N+5.G + 7 drift + 4 finding + Lesson #27)
+2. par.22.88 + par.22.87 + par.22.86 (closing N+5.F + N+5.E-beta + N+5.E-alpha-bis cumulative)
+3. Spec v1.6 sez 9 endpoint REST + sez 11.6 multi-tenant + sez 11.6.6 convenzioni codice backend + sez 11.6.7 roadmap post-F3-S4
+4. `src/data/repository/IRepository.js` 151 righe **fonte primaria** contract (NON par.22.34-Fase2 retrospettiva)
+5. `src/data/repository/LocalRepository.js` 445 righe Dexie implementation reference
+6. `src/data/repository/RepositoryError.js` 131 righe enum + helpers
+7. `src/data/repository/index.js` 27 righe factory pattern esistente
+8. `backend/pharmatimer_api/exceptions.py` enum + handler simmetrico
+9. `backend/pharmatimer_api/routers/farmaci.py` + `orari.py` + `log_assunzioni.py` 949 righe cumulative shape endpoint REST
+10. `backend/pharmatimer_api/models/farmaco.py` + `orario.py` + `log_assunzione.py` (CP0-ext dump mandatory N+5.H)
+11. `backend/pharmatimer_api/db/dependencies.py` (`get_current_user` + `CurrentUser` shape + `X-User-Token` header contract)
+12. `par.6.118-Fase2` (pre-code scenario validation MANDATORY -- esteso Lesson #27)
+13. `par.22.34-Fase2` (RepositoryError vocabulary retrospettiva -- riferimento secondario, fonte primaria e IRepository.js)
+
+**Pattern operativi confermati per N+5.H:**
+
+- Lesson #8-#27 cumulative Fase 2+3 MANDATORY (#27 NEW Lesson #26 doc-only != applicata-empirico)
+- Bash zsh-safe (echo single-quoted, no `#`, no apostrofi italiani, heredoc PYEOF, Settings UPPERCASE Lesson #24)
+- CP0 mandatory dump empirico filesystem Lesson #27 (NO presupposizione da par.22.89)
+- CP0-ext mandatory dump Pydantic models + dependencies.py + utenti.py + permessi.py opzionale
+- Analisi-first sola pattern par.22.55-Fase2 ottava applicazione cumulativa attesa
+- Path corretto `src/data/repository/` singolare cementato finding s.6.222
+- Test co-located stesso path Fase 2 cementato finding s.6.222
+
+**Sub-AMB N+5.H.A-X candidate** (definizione effettiva in apertura, eredita 16 N+5.G.A-P carry-forward + nuove A-H N+5.H scope architetturale):
+
+- **N+5.H.A**: dispatch heuristic `upsertLog` strategia (a) switch su patch.stato dentro `ApiRepository.upsertLog` / (b) metodo dedicato `_dispatchLogVerb()` privato / (c) estendi IRepository.js NEW metodo `transitionLog(verb, payload)` -> impatto LocalRepository.js implementation MOD
+- **N+5.H.B**: fan-out `getLogByRange` strategia error handling (a) fail-fast raccomandato / (b) best-effort partial
+- **N+5.H.C**: `getLogByData(data)` PWA cross-farmaci -> backend stessa fan-out strategy `getLogByRange(data, data)` riuso oppure ottimizzazione dedicata
+- **N+5.H.D**: `getLogByFarmacoData(farmacoId, data)` PWA -> backend `getLogByRange(da, a)` per-farmaco con `da=data, a=data` riuso oppure endpoint backend NEW dedicato
+- **N+5.H.E**: `getLogByDataStato(data, stato)` PWA filter -> backend nessun endpoint query-by-stato, strategia fan-out + filter client-side
+- **N+5.H.F**: `getFarmaco(id)` singolo PWA -> backend `getFarmaci()` + filter client-side oppure endpoint NEW `GET /api/farmaci/{id}` dedicato (richiede backend MOD fuori scope N+5.I)
+- **N+5.H.G**: `addOrario` / `updateOrario` / `deleteOrario` PWA singoli -> backend solo `PUT bulk-replace`, strategia fetch lista + modifica array + re-emit PUT (3 chiamate per ogni singola operazione) oppure deferred F3-S5-beta scope ridotto
+- **N+5.H.H**: `withTransaction` orchestration client-side semantic: storeNames ignorato (no Dexie tables in API), fn eseguito come Promise chain con `TRANSACTION_ABORT` su primo throw -- chiarire policy explicit
+- **N+5.H.I-P**: carry-forward 16 sub-AMB N+5.G.A-P (gia ratificate, no re-discussion)
+- **N+5.H.Q-X**: emergenti durante design draft
+
+**Modalita raccomandata N+5.H.** Apertura analisi-first sola doc-only (Q2=A pattern par.22.55 ottava applicazione cumulativa Fase 3). CP0 mandatory dump + CP0-ext Pydantic dump + ratifica sub-AMB A-H batch decidi tu + design draft consolidato + pre-frozen par.11.N-S3 N+5.I. Stima token ~30-50K. Wall-clock 90-150 min. Zero source change, zero commit codice, zero bump, zero tag.
+
+**Out-of-scope N+5.H (esplicito):**
+
+- Patcher CP1 source emit -> DEFERRED N+5.I
+- Pytest CP2 + smoke CP3 -> DEFERRED N+5.I
+- Bump `package.json` 3.1.0 -> 3.2.0-alpha.1 -> DEFERRED CP5 N+5.I
+- Tag annotato `v3.2.0-alpha.6` LOCALE -> DEFERRED CP5 N+5.I
+- Backend MOD endpoint NEW (`GET /api/farmaci/{id}` singolo / `POST /api/farmaci/{fid}/orari` singolo) -> default raccomandato NO, scope ridotto N+5.I via strategie client-side; eventuale F3-S5-beta opportunistic
+- Drift-N44 chiusura backend-side UNAUTHORIZED `RepositoryErrorCode` + middleware `get_current_user` raise `RepositoryError(UNAUTHORIZED)` -> deferred F3-S5-beta scope auth-layer dedicato
+- Drift-N45 FastAPI version sync `app.py` -> deferred F3-S5-beta
+
+**Decisioni in-session candidate N+5.H** (a closing):
+
+1. Ratifica architettura ibrida finale (Strada B Q-RATIFICA-STRATEGICA-2=a gia ratificata N+5.G, conferma o eventuale rivalutazione su evidenza CP0-ext dump Pydantic)
+2. Dispatch heuristic `upsertLog` opzione (a/b/c) N+5.H.A
+3. Fan-out error handling (a/b) N+5.H.B
+4. Strategia 6 sub-AMB N+5.H.C-H endpoint mapping
+5. Test piano dettagliato cementato (tabella file/scenario/mock/outcome)
+6. Pre-frozen `par.11.N-S3` N+5.I esecutiva monolitica con scope architetturalmente blindato
+7. Branch `fase-3-backend` continuazione (no merge `main`, no push)
+8. Eventuale Lesson #28 candidate emergente
+
+**Sub-AMB residue carry-forward N+5.G -> N+5.H:**
+
+- 16 sub-AMB N+5.G.A-P (gia documentate par.22.89), no re-discussion: ratifica empirica + carry-forward in scope N+5.H
+- drift-N44 (backend-side UNAUTHORIZED): carry-forward F3-S5-beta opportunistic
+- drift-N45 (FastAPI version sync): carry-forward F3-S5-beta opportunistic
+- drift-N44-bis NEW (PWA-side FORBIDDEN): chiuso MOD `RepositoryError.js` CP1 N+5.I
+
