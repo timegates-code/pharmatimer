@@ -81,6 +81,18 @@ describe('SEVERITY_VALUES contract', () => {
   });
 });
 
+describe('SEVERITY_BY_CODE F3-S5-alpha enum extension (par.11.N-S3 N+5.I)', () => {
+  it('UNAUTHORIZED default severity is error (drift-doc-N54 Opzione A ratificata)', () => {
+    expect(new RepositoryError({ code: 'UNAUTHORIZED' }).severity).toBe('error');
+    expect(SEVERITY_BY_CODE.UNAUTHORIZED).toBe('error');
+  });
+
+  it('FORBIDDEN default severity is warning (par.22.90 sub-AMB L)', () => {
+    expect(new RepositoryError({ code: 'FORBIDDEN' }).severity).toBe('warning');
+    expect(SEVERITY_BY_CODE.FORBIDDEN).toBe('warning');
+  });
+});
+
 describe('wrapRepoError', () => {
   it('produces a RepositoryError from a raw Error', () => {
     const raw = new Error('IDB exploded');

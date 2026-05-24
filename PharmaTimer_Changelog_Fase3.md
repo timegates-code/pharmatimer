@@ -2239,3 +2239,228 @@ One-liner apertura: `Esegui il prompt al par.11.N-S3 del Changelog Fase 3.`
 **N+5.J analisi-first sola scope decision F3-S5-beta vs F3-S6 deploy Mini.** Default raccomandato F3-S5-beta UI caregiver + drift-N44/N45 backend closure prima del deploy Mini (pattern par.11.D-rev v3.2-Fase2 sequenza coerente backend-completeness pre-deploy). Pre-frozen `par.11.O-S3` emit a CP5 N+5.I closing.
 
 One-liner apertura: `Esegui il prompt al par.11.O-S3 del Changelog Fase 3.`
+
+
+---
+
+### 22.91-pre (Fase 3, closing PARZIALE N+5.I-pre F3-S5-alpha CP1.A source ops + CP2-soft vitest 504 invariato — split tecnico interno SAFETY-FIRST nona applicazione cumulativa par.22.55-Fase2)
+
+<!-- par.22.91-pre R1 emit closing parziale N+5.I-pre, CP5 finale par.22.91 atteso a N+5.I-post -->
+
+**Data:** 24 maggio 2026 mattina-prima sera.
+
+**Modalita:** Sessione esecutiva CP0+CP1.A+CP2-soft (split tecnico interno N+5.I-pre/N+5.I-post applicato a priori da Claude in apertura per dimensionamento token sessione regola critica #5). Pre-frozen prompt par.11.N-S3 prevedeva esecutiva monolitica CP0-CP5 ~35-42K patcher; stima realistica post-static-analysis Lesson #26 = ~57-65K totale source+test → split tecnico applicato. N+5.I-pre = CP0 mandatory dump 12 file Lesson #27 + diagnostica drift-doc-N52 + static analysis Lesson #26 self-applied 12 file + ratifica decisioni 4 Q-CP1.1..4=a blanket "decidi tu" + emit patcher Python `cp1_pre_n5i_patcher.py` content-based SENTINEL + esecuzione Mac-side + CP2-soft vitest 504/504 verde invariato + commit selettivo. Zero bump, zero tag, zero push (AMB-11.B.7-bis cementato CP5 finale N+5.I-post). Token spesi ~135K. Wall-clock ~2.5 h.
+
+**Esito:** OK milestone tecnico parziale F3-S5-alpha. ApiRepository ibrido code-complete untested + apiClient.js HTTP wrapper + RepositoryError.js MOD +UNAUTHORIZED+FORBIDDEN + index.js MOD toggle localStorage lazy + vite.config.js MOD server.proxy /api. **vitest 504/504 invariato verde** post-CP1.A (zero breaking, codice nuovo non importato hot path; index.js toggle default off `pharmatimer.useApiRepo !== '1'`). Sub-step CP1.B test + CP2 + CP3 + CP4 + CP5 deferred N+5.I-post.
+
+#### CP0 baseline empirico N+5.I-pre verde 7/7
+
+- HEAD `4b9f153` branch `fase-3-backend` (post-CP5 N+5.H par.22.90)
+- 12 ahead `origin/fase-3-backend`
+- Tag annotato `v3.2.0-alpha.5` LOCALE su `dc4f10c` invariato
+- `backend/pyproject.toml` version `0.5.0`
+- `package.json` version `3.1.0`
+- pytest backend 75 tests collected
+- vitest PWA 504/504 su 62 files invariato
+- Working tree clean
+
+#### CP0 mandatory dump 12 file Lesson #27 ratificato bit-perfect (re-verifica vs par.22.90)
+
+Sha256 prefix 12-char tutti **bit-perfect match** vs CP0 ratificato par.22.90 N+5.H. Zero drift filesystem (no Lesson #7-Fase2 stale anomaly). Lesson #27 self-applied verde su 12 file (4 PWA + 8 backend). Regola critica #2 NON triggerata.
+
+#### CP0 sub-AMB N+5.I.E ratifica empirica (path drift smascherato → drift-doc-N52 NEW)
+
+Prompt par.11.N-S3 CP0-grep MANDATORY istruzione su `grep upsertLog.*stato.*(ricalcolata|prevista) src/state/actions.js src/data/planBuilder.js`. Grep exec rc=2 (errore I/O), NON rc=1 (zero match), perche **`src/data/planBuilder.js` NON ESISTE** filesystem (path errato nel prompt pre-frozen par.11.N-S3 emit a closing N+5.H par.22.90).
+
+**drift-doc-N52 NEW** scoperto CP0 N+5.I-pre, scope doc-only, ratifica formale s.6.NN-Fase3 deferred CP5 N+5.I-post par.22.91 final:
+
+| Item | Prompt par.11.N-S3 | Filesystem reale |
+|---|---|---|
+| Consumer `upsertLog` candidate path | `src/data/planBuilder.js` | `src/domain/planBuilder.js` |
+
+Diag empirico: `grep -rnE "upsertLog.*stato.*(ricalcolata|prevista)" src` ricorsivo su `src/**` → **rc=1 zero match** end-to-end. Sub-AMB N+5.I.E **verde** (dispatch heuristic `_dispatchLogVerb` shape-based sub-AMB A par.22.90 confermato applicabile: nessun consumer di `upsertLog` singolo passa `stato:'ricalcolata'|'prevista'` esplicito). Strategia grep ricorsivo `src/**` rivelata empiricamente piu robusta del prompt originale `src/state/actions.js + src/data/planBuilder.js` puntuale.
+
+Discovery secondario Lesson #26 cementato (NO finding NEW, doc-only):
+- `upsertLog` singolo consumer reali: `src/data/devCheck.js` (smoke test dev-only) + test files
+- **`upsertLogsBatch` scrittura runtime batch** chiamata da `src/state/applyHelper.js:120` (path caldo PWA-side)
+- Pattern par.22.90 sub-AMB J atomic detect `[D presa, D+1 ricalcolata]` copre consumer caldo end-to-end
+
+**Pattern Lesson #27 estensione candidate NEW** (ratifica formale par.22.91 final): doc-only Lesson #27 self-applied su file MOD/source ratificati non equivale applicata-empirico **anche sui path indiretti citati negli istruzioni operative dei prompt pre-frozen**. Self-violation N+5.H par.22.90 emit prompt par.11.N-S3 con drift-doc-N52 path planBuilder.
+
+#### CP0 sub-AMB N+5.I.H ratifica empirica (vite.config.js proxy assente, MOD CP1.A in-turn)
+
+`grep -nE "proxy.*api|server\.proxy" vite.config.js` → ZERO match presenti. Sub-AMB N+5.I.H **confermata assente** (commento Fase 3 placeholder presente ma `server.proxy` NOT instantiated). MOD `vite.config.js` aggiunto al patcher CP1.A in-turn (+5 righe `server.proxy` block prima di `test:`).
+
+#### Static analysis Lesson #26 self-applied 12 file PWA + backend (pre-emit CP1.A)
+
+Roberto upload archivio `n5i_cp1_12files_tar.gz` (20199 byte, sha256 `7de73a8db9b08c2f`) → sandbox extract → sha256 16-char individuali tutti **bit-perfect match** prefisso 12-char par.22.90. Static analysis integrale 12 file (~95K byte totali):
+
+| File | Esito |
+|---|---|
+| `IRepository.js` (fonte primaria) | 31 metodi contract verified bit-perfect; HTTP mapping doc 5 codici, NO UNAUTHORIZED/FORBIDDEN (asimmetria drift-doc-N53 NEW post-MOD CP1.A) |
+| `LocalRepository.js` | 31 implementations Dexie verified signature matching; default ENUM stato 'prevista'; sortBy ora_effettiva ASC null-last documented |
+| `RepositoryError.js` | 5 codici SEVERITY_BY_CODE; PWA CONSTRAINT_VIOLATION=error (asimmetria EMP-16 NEW vs backend=warning) |
+| `index.js` | 27 LOC eager singleton `repo = getRepository()` (EMP-1 par.22.90 cementato; toggle MOD richiede lazy init + page reload) |
+| `exceptions.py` | RepositoryErrorCode enum 5 valori = DB_UNAVAILABLE/NOT_FOUND/CONSTRAINT_VIOLATION/FORBIDDEN/GENERIC; **NO UNAUTHORIZED** lato backend (drift-N44 cementato); body shape error `{"error": {code, severity, message}}` |
+| `dependencies.py` | CurrentUser shape `{id, nome_visualizzato, ruolo}`; X-User-Token SHA-256 hash; 401 raw HTTPException `{"detail": "..."}` (drift-N44, EMP-17 NEW shape detail) |
+| `models/farmaco.py` | FarmacoBase 14 col + FarmacoResponse +4 server-managed = 18 total; 2 model_validator (frequenza_consistency + data_range); PUT full-replace RFC 7231 (EMP-20 NEW) |
+| `models/orario.py` | OrarioBase 5 col + OrarioResponse +3 server = 8 total; OrariBulkPayload RootModel univocita+sequenzialita validator; timedelta→time coerce |
+| `models/log_assunzione.py` | LogAssunzioneSlotPayload shared; 5 payload verbi (Presa/Saltata/Sospesa/Undo/Recupero); LogAssunzioneCreatePresa.ora_effettiva=datetime (EMP-21 NEW vs PWA HH:MM) |
+| `routers/farmaci.py` | 5 endpoint: GET list (filtra attivo=TRUE, EMP-19 NEW), POST 201+Location, PUT full-replace, DELETE 204 soft |
+| `routers/orari.py` | 2 endpoint nested: GET list, PUT bulk-replace atomic DELETE+INSERT |
+| `routers/log_assunzioni.py` | 6 endpoint: GET range MAX 31gg (sub-AMB B par.22.90), POST /presa 201 con ricalcolo_dose_successiva atomic, POST /saltata 201, POST /sospesa 201, POST /undo **200** (EMP-18 NEW), POST /recupero **200** (EMP-18 NEW) |
+
+#### 6 EMP-16..21 NEW emersi static analysis (cementati design draft, carry-forward ratifica formale par.22.91 final)
+
+| ID | Tema | Risoluzione cementata in code CP1.A |
+|---|---|---|
+| EMP-16 | Disallineamento severity `CONSTRAINT_VIOLATION` PWA=`error` vs backend=`warning` | `apiClient._normalizeErrorBody` propaga `severity` esplicita dal body backend (preferenza valore ricevuto); fallback `SEVERITY_BY_CODE[code]` PWA solo se body NON include severity field |
+| EMP-17 | Backend `get_current_user` raise `HTTPException(401, detail="...")` body shape `{detail: "..."}` (NON vocabulary, drift-N44) | `apiClient._normalizeErrorBody` shape 2 handler dedicato: `body.detail` string → `RepositoryError(HTTP_STATUS_TO_CODE[401]=UNAUTHORIZED, message=detail)` |
+| EMP-18 | `/undo` e `/recupero` ritornano 200 (default), `/presa` `/saltata` `/sospesa` 201 | `apiClient._request` `2xx range check` (`>=200 && <300`) accetta entrambi |
+| EMP-19 | Backend `GET /api/farmaci` filtra `attivo=TRUE` server-side; `getFarmaco(id)` PWA → null su soft-deleted (asimmetria vs LocalRepository) | sub-AMB F par.22.90 cementata; `_opts.soloAttivi` IGNORATO `ApiRepository.getFarmaci` |
+| EMP-20 | PUT `/farmaci/{id}` richiede FarmacoUpdate completo (full-replace RFC 7231); patch parziale → 422 | sub-AMB I-bis par.22.90 cementata; `ApiRepository.updateFarmaco(id, patch)` 2-step fetch+merge+PUT (`_toApiFarmaco` strip server-managed fields) |
+| EMP-21 | `LogAssunzioneCreatePresa.ora_effettiva: datetime` ISO vs PWA typedef `HH:MM` | `ApiRepository._toApiPresaPayload` regex `/^\d{2}:\d{2}$/` detect HH:MM → combina `data + 'T' + ora_effettiva + ':00'`; passthrough se ISO completo gia |
+
+#### drift-doc-N53 NEW candidate (carry-forward F3-S5-beta opportunistic con drift-N44/N45)
+
+Asimmetria post-CP1.A: `IRepository.js` JSDoc riga 134-145 documenta 5 codici error mapping; `RepositoryError.js` MOD CP1.A estende a **7 codici** (+UNAUTHORIZED+FORBIDDEN). Contract doc vs impl divergente.
+
+**Decisione (Q-CP1.3=a blanket):** scope ridotto N+5.I, MOD JSDoc IRepository.js NON inclusa CP1.A; carry-forward F3-S5-beta opportunistic insieme drift-N44 backend-side (UNAUTHORIZED enum + middleware `get_current_user` raise RepositoryError) + drift-N45 FastAPI version sync `app.py`. Cluster auth-layer drift unico round F3-S5-beta.
+
+#### CP1.A esecuzione patcher Python `cp1_pre_n5i_patcher.py` (35080 byte, content-based SENTINEL idempotent)
+
+**Pattern cumulativi applicati (Lesson #20 + Lesson #26 + Lesson #27 + par.22.58-Fase2):**
+
+- SENTINEL `SENTINEL_N5I_CP1_PRE_APPLIED` in `apiClient.js` (idempotency_marker Lesson #20)
+- Sha256 pre-MOD verify bit-perfect vs CP0 par.22.90 prima di ogni str_replace (Lesson #27 self-applied empirico)
+- Content-based anchor + univocity assertion `exactly 1 match` (Lesson #26 self-applied empirico): 4 anchor su 3 file MOD (comment vocabulary + SEVERITY_BY_CODE + INDEX whole-file + VITE test-block-prepend)
+- Backup `.bak.cp1-n5i-pre` before write (3 backup creati: `RepositoryError.js.bak.cp1-n5i-pre` 4785 byte + `index.js.bak.cp1-n5i-pre` 863 byte + `vite.config.js.bak.cp1-n5i-pre` 2206 byte)
+- Pattern par.22.58-Fase2 patcher Python content-based applicato (nona-bis applicazione cumulativa Fase 3, prima diretta-source PWA-side)
+
+**Pre-test sandbox Claude (4 checks pre-emit):**
+
+| Check | Esito |
+|---|---|
+| AST parse Python | OK |
+| Module import + costanti well-formed | OK |
+| Integration test anchor count vs `/tmp/n5i_src/` extract | COMMENT anchor=1 + ENUM anchor=1 + INDEX anchor=1 exact-match (file completo univoco) |
+| Post-MOD invariants in-memory | UNAUTHORIZED+FORBIDDEN+ApiRepository import+useApiRepo flag detected |
+
+**Esecuzione Mac-side esito (Roberto turno 11:45 dopo turno 10:44 originale, idempotent re-exec verde):**
+
+| Step | Esito |
+|---|---|
+| Step 0 (idempotency SENTINEL check) | First run 10:44: SENTINEL absent → procedi. Re-run 11:45: SENTINEL present → early exit pulito Lesson #20 conferma empirica nona applicazione |
+| Step 1 (working dir) | OK `~/Sviluppo/pharmatimer` |
+| Step 2 (sha256 pre-MOD verify) | 3/3 OK (`802eedada9ac` + `ccce6d112f93` + `f3d3a6665c53`) |
+| Step 3 (NEW files pre-check absent) | 2/2 OK |
+| Step 4 (write NEW files) | apiClient.js 4722 byte + ApiRepository.js 16364 byte (LF/UTF-8) |
+| Step 5 (MOD RepositoryError.js +2 enum +comment) | Backup creato + 2 str_replace univocity assertion verde + 4966 byte post-MOD |
+| Step 6 (MOD index.js whole-file toggle lazy) | Backup creato + 1 str_replace exact-match univoco + 1288 byte post-MOD |
+| Step 7 (MOD vite.config.js +server.proxy) | Backup creato + 1 str_replace univocity verde + 2411 byte post-MOD |
+| Step 8 (post-MOD self-check 5 invariants) | All SENTINEL post-MOD checks OK |
+| Step 9 (summary + next-step indication) | OK exit 0 |
+
+**Sha256 16-char post-MOD ratificati N+5.I-pre (baseline N+5.I-post CP0):**
+
+| File | sha256 (16 char) post-MOD CP1.A |
+|---|---|
+| `src/data/repository/RepositoryError.js` | `dca542b9aa5c8413` |
+| `src/data/repository/index.js`            | `9fc7558ce90875d5` |
+| `vite.config.js`                          | `d51808336780a4b8` |
+| `src/data/repository/apiClient.js`        | (NEW, 4722 byte, contiene SENTINEL_N5I_CP1_PRE_APPLIED) |
+| `src/data/repository/ApiRepository.js`    | (NEW, 16364 byte, contiene SENTINEL_N5I_CP1_PRE_APPLIED + 31 metodi 11 delegate+17 API+1 orchestration+2 throw) |
+
+#### CP2-soft vitest 504/504 verde invariato post-CP1.A
+
+- 62 files passed (62)
+- 504 tests passed (504)
+- Duration 4.02s (turno 10:45) + 3.91s (turno 11:46 idempotent re-exec)
+- Zero breaking introdotto da CP1.A. Codice ApiRepository + apiClient aggiunto ma non importato hot path. `index.js` MOD toggle default off (`pharmatimer.useApiRepo !== '1'` → ramo `LocalRepository` invariato).
+
+#### CP1.A commit closing selettivo N+5.I-pre
+
+**Commit:** `ec06375` "s.N+5.I-pre F3-S5-alpha ApiRepository ibrido CP1.A source ops + CP2-soft 504 invariato"
+
+- 5 files changed: 623 insertions(+), 7 deletions(-)
+- `A src/data/repository/ApiRepository.js`
+- `A src/data/repository/apiClient.js`
+- `M src/data/repository/RepositoryError.js`
+- `M src/data/repository/index.js`
+- `M vite.config.js`
+
+Backup `.bak.cp1-n5i-pre` (3 file) NOT staged (gitignored via `*.bak.*` pattern verificato CP1.A closing). Rimozione opportunistic CP4 N+5.I-post post-CP2 575 verde (cleanup-N10 candidate NEW).
+
+#### Stato post-N+5.I-pre (baseline N+5.I-post)
+
+- branch `fase-3-backend` **13 ahead** `origin/fase-3-backend` (12 pre-N+5.I-pre + 1 commit N+5.I-pre)
+- HEAD `ec06375` (post-commit s.N+5.I-pre 24 maggio 2026 mattina-prima sera)
+- Tag annotato `v3.2.0-alpha.5` LOCALE su `dc4f10c` invariato (AMB-11.B.7-bis: bump+tag deferred CP5 N+5.I-post)
+- `package.json` `3.1.0` + `pyproject.toml` `0.5.0` invariati (AMB-11.B.7-bis)
+- vitest 504/504 invariato + pytest 75 invariato
+- Working tree clean eccetto 3 `.bak.cp1-n5i-pre` untracked (gitignored)
+- ApiRepository + apiClient code-complete **untested** (71 test NEW emit deferred CP1.B N+5.I-post)
+
+#### Out-of-scope N+5.I-pre (esplicito, deferred a N+5.I-post)
+
+- **CP1.B 8 test ops** (7 file NEW + 1 file MOD `RepositoryError.test.js`): patcher Python `cp1_post_n5i_patcher.py` ~38-45K
+- **CP2 vitest 575/575** (504 baseline + 71 NEW)
+- **CP3 smoke browser** 5-7 scenari runtime (DevTools `localStorage.setItem('pharmatimer.useApiRepo', '1')` + token + reload + scenari `upsertLog/presa/saltata/undo` + `getLogByRange` fan-out + Config add farmaco + Setting toggle delegate)
+- **CP4 cleanup** rimozione 3 `.bak.cp1-n5i-pre` + chiusura formale cleanup-N9 + emit cleanup-N10 NEW se altri backup orfani
+- **CP5 closing** cumulativo finale:
+  - Bump `package.json` 3.1.0 → 3.2.0-alpha.1
+  - Sync `src/components/config/ImpostazioniTab.jsx` runtime string version (par.6.200/205-Fase2 cementato, path drift-N31)
+  - Tag annotato `v3.2.0-alpha.6` LOCALE NO push (AMB-11.B.7-bis nona applicazione cumulativa Fase 3)
+  - Spec v1.7 KB-only emit (sub-AMB N+5.I.B=A): documenta ApiRepository contract + EMP-1..21 cementati + drift-N44 PWA-side closure + drift-doc-N52 ratifica formale s.6.NN-Fase3 + drift-doc-N53 carry-forward F3-S5-beta + Lesson #28 ratifica formale composition pattern + Lesson #27 estensione candidate path indiretti prompt
+  - Eventuale ratifica Lesson #28 formale post-CP2 575 verde
+  - Emit `par.22.91-Fase3` closing N+5.I cumulativo CP1.A+CP1.B+CP2+CP3+CP4+CP5 (questo par.22.91-pre va superseded → merge in par.22.91 finale a CP5 N+5.I-post)
+  - Pre-frozen `par.11.O-S3` N+5.J scope decision F3-S5-beta vs F3-S6
+
+#### Mio errore zsh
+
+Nessuno questa sessione (N+5.I-pre). Tutti blocchi bash zsh-safe (echo single-quoted, no commenti `#`, no apostrofi italiani, heredoc PYEOF se Python multi-line — non usato direttamente in bash, embedded nel patcher).
+
+#### Cleanup status N+5.I-pre
+
+- **cleanup-N1** (Fase 2 IndexedDB dev-only browser-side): invariato carry-forward
+- **cleanup-N3-bis** (2 utenti zombie dev + 6 permessi orfane): invariato carry-forward F3-S5-beta/F3-S6 opportunistico
+- **cleanup-N9** (backup `.bak.cp5-n5g` su Changelog Fase 3, gia chiuso N+5.H): invariato
+- **cleanup-N10 NEW candidate** (3 backup `.bak.cp1-n5i-pre` filesystem post-CP1.A: RepositoryError.js + index.js + vite.config.js): deferred CP4 N+5.I-post post-CP2 575 verde
+
+#### Riferimenti par.22.91-pre
+
+- **par.22.90-Fase3** (closing N+5.H analisi-first profonda dedicata 12 sub-AMB + 15 EMP + contract mapping 31 metodi + dispatch + fan-out + delegate + test piano + Lesson #28 candidate)
+- **par.22.89-Fase3** (closing N+5.G analisi-first scoperta empirica 7 drift + 4 finding s.6.222-225 + Lesson #27 MANDATORY)
+- **par.11.N-S3** R1 (questo prompt consumato CP1.A; CP1.B-CP5 deferred N+5.I-post sub-step)
+- **par.22.55-Fase2**: pattern split safety-first **nona applicazione cumulativa Fase 3** (N+5.I-pre/N+5.I-post split tecnico interno applicato a priori turno apertura, estensione triplet N+5.G→N+5.H→N+5.I-pre→N+5.I-post)
+- **par.22.58-Fase2**: pattern patcher Python content-based SENTINEL applicato **nona-bis** (`cp1_pre_n5i_patcher.py` 35080 byte, prima diretta-source PWA-side multi-file cumulativo 5 ops)
+- **par.22.34-Fase2**: RepositoryError vocabulary -- estensione UNAUTHORIZED+FORBIDDEN PWA-side cementata CP1.A
+- **par.6.118-Fase2**: pre-code scenario validation MANDATORY -- self-applied 15 EMP par.22.90 + 6 EMP NEW (EMP-16..21) pre-emit CP1.A
+- **par.6.200/205-Fase2**: sync `ImpostazioniTab.jsx` runtime string version su bump (DEFERRED CP5 N+5.I-post)
+- **Lesson #20-#27 cumulative**: invariate, applicate empirico verde
+- **Lesson #28 candidate** (par.22.90): composition over inheritance `ApiRepository._local = new LocalRepository()` -- implementato CP1.A, ratifica formale CP5 N+5.I-post post-CP2 575 verde
+- **Lesson #27 estensione candidate NEW** (questo emit): doc-only != applicata-empirico applicabile anche ai path indiretti citati negli istruzioni operative prompt pre-frozen -- ratifica formale CP5 N+5.I-post par.22.91 final
+- **AMB-11.B.7-bis-Fase2**: bump `package.json` 3.2.0-alpha.1 + tag annotato LOCALE `v3.2.0-alpha.6` DEFERRED CP5 N+5.I-post (nona applicazione cumulativa attesa)
+
+#### Sub-AMB residue carry-forward N+5.I-pre → N+5.I-post
+
+- Nessuna scope decisione architetturale (tutto blindato N+5.H par.22.90 + CP1.A code-complete N+5.I-pre)
+- N+5.I.E: ratificata empirica verde + drift-doc-N52 ratifica formale CP5 par.22.91 final
+- N+5.I.F (`updateFarmaco` race condition): documentato known limitation single-user; deferred F3-S6+ opportunistic
+- N+5.I.G (UI login/token entry): deferred F3-S5-beta; CP3 smoke DevTools manual N+5.I-post
+- N+5.I.H: ratificata MOD vite.config.js CP1.A done
+- drift-N44 backend-side: carry-forward F3-S5-beta opportunistic
+- drift-N45 FastAPI version sync: carry-forward F3-S5-beta opportunistic
+- **drift-doc-N53 NEW** (IRepository.js JSDoc 5 codici vs RepositoryError.js 7 codici post-MOD CP1.A): carry-forward F3-S5-beta cluster auth-layer drift unico round
+
+#### Sessione successiva post-N+5.I-pre
+
+**N+5.I-post sub-step esecutivo CP1.B + CP2 + CP3 + CP4 + CP5 closing cumulativo finale** scope architetturalmente blindato N+5.H par.22.90 + ratifiche CP1.A N+5.I-pre. Patcher Python `cp1_post_n5i_patcher.py` ~38-45K = 8 test ops (7 NEW + 1 MOD). Prompt par.11.N-S3 invariato (continuazione sub-step CP1.B, NO nuovo prompt). Pre-frozen `par.11.O-S3` emit a CP5 N+5.I-post closing.
+
+**One-liner apertura nuova sessione N+5.I-post:**
+
+```
+Esegui il prompt al par.11.N-S3 del Changelog Fase 3 sub-step CP1.B (continuazione post-commit s.N+5.I-pre ec06375).
+```
+
+---
