@@ -9,11 +9,13 @@
 //     payload { kind: 'repo', code, severity, message }.
 //   - severity ∈ {'warning', 'error', 'critical'} per AMB-11.A.2.
 //
-// Code vocabulary (AMB-11.A.1, D2):
+// Code vocabulary (AMB-11.A.1, D2 + N+5.I MOD F3-S5-alpha):
 //   DB_UNAVAILABLE       — IndexedDB closed/blocked/upgrade-needed → critical
 //   TRANSACTION_ABORT    — Dexie transaction aborted              → critical
 //   CONSTRAINT_VIOLATION — uniqueness / FK / schema violation     → error
 //   NOT_FOUND            — record not present                     → warning
+//   UNAUTHORIZED         — HTTP 401 missing/invalid token (ApiRepo) → error
+//   FORBIDDEN            — HTTP 403 owner-only or admin-only      → warning
 //   GENERIC              — fallback for unclassified errors       → error
 //
 // Future Fase 3 note: ApiRepository (FastAPI client) MUST honor the same
@@ -28,6 +30,8 @@ export const SEVERITY_BY_CODE = Object.freeze({
   TRANSACTION_ABORT: 'critical',
   CONSTRAINT_VIOLATION: 'error',
   NOT_FOUND: 'warning',
+  UNAUTHORIZED: 'error',
+  FORBIDDEN: 'warning',
   GENERIC: 'error',
 });
 

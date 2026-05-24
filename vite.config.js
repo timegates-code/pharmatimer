@@ -55,6 +55,13 @@ export default defineConfig({
       }
     })
   ],
+  server: {
+    proxy: {
+      // Fase 3 F3-S5-alpha N+5.I par.11.N-S3 sub-AMB N+5.I.H:
+      // Proxy /api calls to local FastAPI dev backend (uvicorn :8000).
+      "/api": "http://localhost:8000"
+    }
+  },
   test: {
     environment: "jsdom",
     globals: true,
