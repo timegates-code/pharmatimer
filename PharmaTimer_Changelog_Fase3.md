@@ -3220,3 +3220,242 @@ Esegui il prompt al par.11.Q-S3 del Changelog Fase 3.
 ```
 
 ---
+
+
+### 22.94 (Fase 3, closing N+5.L analisi-first sola doc-only deploy F3-S6 Mac Mini design draft + 9 ratifiche Q0+Q-N5L.A÷I + Lesson #29 candidate delivery file-based + undicesima applicazione cumulativa pattern par.22.55-Fase2)
+
+<!-- par.22.94 R1 emit Fase 3 SENTINEL_N5L_CP5_CLOSING_PAR_22_94 -->
+
+**Data:** 25 maggio 2026 sera.
+
+**Modalita:** Sessione analisi-first sola doc-only, pattern par.22.55-Fase2 **undicesima applicazione cumulativa Fase 3** (post F3-S1-bis-delta parte 1/2-2/2 + F3-S3-alpha-pre/post + N+5.B + N+5.D + N+5.F + N+5.G + N+5.H + N+5.I-pre + N+5.J + N+5.K analisi-incorporata). Token spesi ~25K. Wall-clock ~90 min. Zero source change, zero commit codice, zero bump, zero tag, zero push.
+
+**Esito:** OK ratifica blanket Q0=A + 9 default Q-N5L.A÷I `(i)(i)(ii)(ii)(iii)(i)(ii)(A)(B)`. Design draft consolidato 7 artefatti infrastrutturali (+ README + dockerignore = 9 file delivery via `present_files`). Pre-frozen `par.11.R-S3` N+5.M esecutiva con 7 CP step + 4 sub-AMB N+5.M.A-D candidate. Lesson #29 candidate NEW MANDATORY emersa empirica da incidente run-time (ENV Dockerfile -> /usr/bin/env exec -> leak ANTHROPIC_API_KEY in conversazione utente): delivery file-based mandatory per artefatti documentali su tooling shell-incollante.
+
+#### CP0 baseline empirico verde 7/7
+
+- HEAD `5026383` branch `fase-3-backend` (commit closing N+5.K par.22.93 + bump 0.6.0)
+- 0 ahead `origin/fase-3-backend` (push atomico applicato par.22.93 chiusura AMB-11.B.7-bis decima applicazione cumulativa Fase 3)
+- Tag `v3.2.0-alpha.7` LOCALE+REMOTO su `5026383` invariato
+- 7 tag totali `v3.2.0-alpha.1..v3.2.0-alpha.7` LOCALE+REMOTO simmetrici
+- `backend/pyproject.toml` `0.6.0` invariato
+- `package.json` `3.2.0-alpha.1` invariato
+- pytest 76/76 verde (3.0s) + vitest 575/575 su 69 file verde (4.26s) cumulativi
+- drift-N45 verificato empirico: `app.py` riga 30 `version="0.1.0"` ancora hardcoded (carry-forward N+5.M CP1 fix opportunistico Q-N5L.A=(i))
+
+#### Ratifica blanket 9 decisioni N+5.L
+
+| ID | Tema | Decisione | Razionale 1-riga |
+|---|---|---|---|
+| Q0 | Modalita ratifica sub-AMB | **A. Blanket "decidi tu"** | Pattern par.22.85/88/92 confermato, zero drift retroattivi cumulativi |
+| Q-N5L.A | drift-N45 fix scope | **(i) opportunistico CP0-ext stesso commit N+5.M** | 1 line MOD `app.py:30` sync `importlib.metadata.version` atomic con bump 0.7.0; zero overhead |
+| Q-N5L.B | docker-compose base image | **(i) `python:3.13-slim`** | debian glibc -> wheels `mysql-connector-python` compatibili, no build-deps musl |
+| Q-N5L.C | MariaDB persistenza | **(ii) bind mount `/var/lib/mysql_pharmatimer`** | accesso host diretto per `mariadb-dump` cron + restore FS-level fallback |
+| Q-N5L.D | Tailscale ACL | **(ii) restrittivo MagicDNS Studio+Mini + X-User-Token** | defense-in-depth L3/4 (ACL) + L7 (middleware token), simmetria Q7=A par.22.78 |
+| Q-N5L.E | Backup automation | **(iii) launchd plist `com.pharmatimer.backup`** | macOS-native (cron deprecato macOS 13+), persistente reboot, simmetria Q11 par.22.78 retention 7gg |
+| Q-N5L.F | CORS prod policy | **(i) FQDN whitelist Tailscale MagicDNS + gh-pages origin** | coerente Q6=A par.22.78 restrictive, scoped no wildcard |
+| Q-N5L.G | Smoke deploy checklist | **(ii) curl 401 vocabulary + 200 happy + 422 Pydantic** | validazione 3 shape critiche post-N+5.K cementate (vocabolario uniforme cross-PWA/backend) |
+| Q-N5L.H | Audit empirico Mini target | **(A) Differito a N+5.M CP0-ext** | analisi-first sola = design draft sufficiente; audit infrastruttura naturale a deploy esecutivo |
+| Q-N5L.I | Spec v1.9 emit timing | **(B) Cumulativo a fine N+5.M closing F3-S6 milestone** | pattern par.22.93 emit cumulativo a milestone tecnico verde |
+
+#### Sub-decisione 1.6 ratificata in-sessione
+
+| ID | Tema | Default applicato |
+|---|---|---|
+| 1.6 | `<TAILNET>` resolution | **Hardcoded post CP0-ext N+5.M** (1 line MOD compose); alternative envsubst template e wildcard `*.ts.net` scartate (perdita restrictive scope Q-N5L.F=(i)) |
+
+#### Design draft consegnato (9 file via `present_files`)
+
+| # | File | Destinazione finale N+5.M CP1 | Tipo |
+|---|---|---|---|
+| 0 | `00-README.md` | n/a (doc accompagnamento) | DOC |
+| 1 | `01-docker-compose.yml` | `deploy/docker-compose.yml` | NEW |
+| 2 | `02-Dockerfile` | `deploy/Dockerfile` | NEW |
+| 2b | `02b-dockerignore` | `backend/.dockerignore` | NEW |
+| 3 | `03-tailscale-acl.hujson` | `deploy/tailscale-acl.hujson` | NEW |
+| 4 | `04-com.pharmatimer.backup.plist` | `deploy/launchd/com.pharmatimer.backup.plist` | NEW |
+| 5 | `05-pharmatimer-backup.sh` | `deploy/scripts/pharmatimer-backup.sh` | NEW |
+| 6 | `06-cors-app-py-mod.py` | `backend/pharmatimer_api/app.py` (MOD anchor) | MOD |
+| 7 | `07-drift-n45-fix-app-py-mod.py` | `backend/pharmatimer_api/app.py` (MOD anchor) | MOD |
+
+#### Lesson #29 candidate NEW MANDATORY -- delivery file-based per artefatti documentali
+
+**Pattern:** ogni artefatto YAML/Dockerfile/plist/Python/hujson/SQL non-bash va consegnato via `present_files` come file scaricabile, MAI in code-fence inline dentro la conversazione.
+
+**Catalisi empirica N+5.L:**
+
+1. Primo incidente innocuo: docker-compose.yml inline -> zsh incolla -> `command not found: services:` ecc. (rumore, zero damage)
+2. Secondo incidente con damage: Dockerfile inline -> zsh interpreta `ENV` come `/usr/bin/env` (case-insensitive macOS filesystem) -> dump TUTTE le environment variables shell -> **leak `ANTHROPIC_API_KEY` in conversazione utente**
+
+**Mitigazione cementata:**
+
+- Artefatti documentali (YAML, Dockerfile, plist, Python source, hujson, SQL): MAI in code-fence inline, sempre via `present_files`
+- Blocchi `bash` zsh-safe (echo single-quoted + no commenti `#` + no apostrofi italiani): restano in code-fence (sono fatti per Terminale, regola bash zsh-safe gia codificata)
+- Tabelle / prosa / decisioni / snippet brevi inline (1-3 righe): restano inline (no rischio)
+
+**Estensione Lesson #16-#19 (cumulative MANDATORY pre-N+5.L):** Lesson #16-#19 erano focalizzate su syntax issue dentro tooling esistente. Lesson #29 estende a delivery channel scelta: la sicurezza non e' solo nel contenuto del blocco, ma anche nel mezzo di trasmissione. Token leak via shell-evaluation = classe nuova di rischio applicabile a ogni futura sessione esecutiva docker-compose / Dockerfile / shell-related artifacts.
+
+**Cementazione formale:** Lesson #29 MANDATORY su tutte sessioni future Fase 3+ (e Fase 2 patch). Aggiornamento Spec v1.9 sez. 11.6.12 nuova (convenzioni delivery artefatti) deferred N+5.M CP7 closing.
+
+#### Drift-doc status post-N+5.L
+
+| Drift | Stato pre-N+5.L | Stato post-N+5.L |
+|---|---|---|
+| drift-N45 (par.22.86) FastAPI version hardcoded | APERTO carry-forward N+5.L | **APERTO confermato carry-forward N+5.M CP1 fix opportunistico** (Q-N5L.A=(i) ratificata) |
+| drift-doc-N60 (par.22.93) path/funzione imprecisi par.11.P-S3 | APERTO note carry-forward | invariato APERTO note (micro-sessione futura) |
+
+#### Sub-AMB N+5.M.A÷D candidate (definizione effettiva apertura N+5.M)
+
+- **N+5.M.A**: Docker engine Mini -- Docker Desktop vs Colima vs OrbStack vs nativo (TBD CP0-ext empirico)
+- **N+5.M.B**: secrets gen strategy -- `openssl rand` one-shot vs 1Password CLI vs macOS Keychain
+- **N+5.M.C**: SSL/TLS layer 8000 -- Tailscale serve auto-TLS vs reverse proxy Caddy vs HTTP plain dentro tailnet
+- **N+5.M.D**: rollback strategy se CP3 healthcheck red -- revert containers + restore volume backup vs git revert deploy commit
+
+#### Pattern operativi confermati N+5.L
+
+- **Lesson #20-#28 cumulative MANDATORY** invariate + **Lesson #29 NEW candidate** cementata
+- **Pattern par.22.55-Fase2** split safety-first preventivo: **undicesima applicazione cumulativa Fase 3** applicata (analisi-first sola design draft)
+- **Pattern par.6.118-Fase2** pre-code scenario validation: N/A sessione doc-only (zero codice emesso); applicabile N+5.M CP1 patcher emit
+- **Pattern par.22.34-Fase2** RepositoryError vocabulary: invariato (cementato N+5.K par.22.93)
+- **AMB-11.B.7 / AMB-11.B.7-bis Fase2**: undicesima applicazione cumulativa Fase 3 attesa N+5.M CP7 (bump pyproject 0.7.0 + tag v3.2.0-alpha.8 + push atomico)
+- **Bash zsh-safe** invariato + **Lesson #29 estensione** delivery channel safety
+- **Convention KB-only Spec**: Spec v1.9 emit deferred N+5.M closing (Q-N5L.I=B)
+
+#### Cleanup status
+
+- **cleanup-N1** (Fase 2 IndexedDB dev-only browser-side): invariato carry-forward
+- **cleanup-N3** (Fase 3 farmaci.id=2 attivo=FALSE F3-S2): invariato carry-forward
+- **cleanup-N3-bis** (2 utenti zombie + 6 permessi orfane): invariato carry-forward
+- **cleanup-N+5.L**: nessuno (sessione doc-only zero file temporanei in repo; design draft sandbox Claude `/home/claude/n5l_design_draft/` non interseca repo Mac Studio)
+
+#### Stato git post-N+5.L
+
+- branch `fase-3-backend` HEAD `5026383` invariato (no commit)
+- Tag `v3.2.0-alpha.7` LOCALE+REMOTO invariato
+- 0 ahead `origin/fase-3-backend` invariato
+- `backend/pyproject.toml` `0.6.0` invariato
+- `package.json` `3.2.0-alpha.1` invariato
+- pytest 76/76 + vitest 575/575 invariati
+- Working tree clean post-closing (eventuale `M PharmaTimer_Changelog_Fase3.md` KB-sync pre-upload manuale)
+
+#### Findings cumulativi carry-forward post-N+5.L
+
+- 17 findings registry Fase 2 polish invariati
+- 12 residual UX findings v3.1.0 invariati
+- 4 drift-doc Fase 3 N30-N33 chiusi par.22.79-quater-Fase2
+- 4 drift-doc Fase 3 N36-N39 chiusi par.22.82
+- 4 drift-doc Fase 3 N40-N43 chiusi par.22.83
+- 4 drift-doc Fase 3 N47-N50 chiusi par.22.87
+- 5 drift-doc Fase 3 N56-N59+N-doc-N60-N61 cluster auth-layer (N56-N59 ratificati par.22.92, N60 carry-forward, N61 chiuso patcher emit N+5.K)
+- **0 drift-doc NEW N+5.L** (drift-N45 invariato carry-forward)
+- **9 lesson NEW #20-#28 MANDATORY** cumulative invariate + **Lesson #29 NEW candidate** cementata
+- Sub-AMB carry-forward invariati: `addFarmaco` undefined literal persistence PWA-side + IndexedDB test row dev-only
+- TODO codice F3-S3-gamma+: `intervallo_minimo_ore` enforcement `/recupero` deferred post-F3-S6/F3-S7
+
+#### Riferimenti par.22.94
+
+- **par.22.93-Fase3** (closing N+5.K) -- origine push atomico verde + tag `v3.2.0-alpha.7` baseline
+- **par.22.92-Fase3** (closing N+5.J scope decision F3-S5-beta vs F3-S6) -- ratifica scope F3-S6 deploy
+- **par.22.86-Fase3** (drift-N45 origine + scope FastAPI version hardcoded)
+- **par.22.55-Fase2** -- pattern split safety-first preventivo undicesima applicazione cumulativa Fase 3
+- **par.22.78-bis-Fase2** -- R1 ratifica Studio-all dev F3-S1÷F3-S5 + Mini zero-touch dev (riapertura AMB-F3.F al deploy F3-S6 atteso N+5.M)
+- **par.11.D-rev v3.2-Fase2** -- setup operativo Mac Mini headless + Tailscale + Web Push deferred (precondizione architetturale F3-S6)
+- **Spec v1.8 sez. 9 + 11.6.11** -- vocabolario errori cementato post-N+5.K (smoke checklist Q-N5L.G=(ii) verifica)
+- **Lesson #29 NEW candidate** -- delivery file-based artefatti documentali (MANDATORY future sessioni)
+
+#### Reminder critico utente post-sessione N+5.L
+
+**Rotation chiave API Anthropic obbligatoria.** Chiave `ANTHROPIC_API_KEY` esposta in conversazione N+5.L sera 25/05/2026 a causa di incidente Lesson #29 catalizzante (Dockerfile inline -> zsh -> `/usr/bin/env` dump environment). Azioni: revoca su `https://console.anthropic.com/settings/keys` + genera nuova chiave + aggiornamento `~/.zshrc`/`~/.zshenv` + verifica `history | grep ANTHROPIC` + eventuale cleanup `~/.zsh_history`.
+
+#### Sessione successiva post-N+5.L
+
+**N+5.M esecutiva docker-compose deploy F3-S6 Mac Mini** scope architetturalmente blindato N+5.L ratificato 9 decisioni. Token attesi ~50-80K. Wall-clock ~3-4h. Pre-frozen `par.11.R-S3` emit a CP5 N+5.L closing (questa sezione, sotto).
+
+**One-liner apertura nuova sessione N+5.M:**
+
+```
+Esegui il prompt al par.11.R-S3 del Changelog Fase 3.
+```
+
+---
+
+### par.11.R-S3 -- Prompt apertura N+5.M esecutiva docker-compose deploy F3-S6 Mac Mini infrastruttura
+
+<!-- par.11.R-S3 R1 emit Fase 3 post-N+5.L closing par.22.94 -->
+
+**One-liner apertura:** `Esegui il prompt al par.11.R-S3 del Changelog Fase 3.`
+
+#### Scope alto livello
+
+Sessione esecutiva monolitica deploy F3-S6 infrastruttura Mac Mini headless: scrittura 7 artefatti NEW `deploy/` + 1 MOD `backend/pharmatimer_api/app.py` (CORS env-driven + drift-N45 fix opportunistico Q-N5L.A=(i) atomic) tramite patcher Python `cp_n5m_deploy_patcher.py` content-based SENTINEL idempotente (pattern par.22.58-Fase2 + Lesson #20 idempotency_marker). Dry-run Mac Studio + deploy Mini effettivo + smoke 3 scenari + launchd backup automation + Tailscale ACL apply + bump pyproject 0.6.0 -> 0.7.0 + tag annotato `v3.2.0-alpha.8` LOCALE+REMOTO + commit closing + push atomico.
+
+Scope architetturalmente blindato par.22.94 ratifica blanket Q0=A + 9 default Q-N5L.A÷I + design draft consolidato 7 artefatti (vedi par.22.94 sez. "Design draft consegnato"). Token attesi ~50-80K. Wall-clock ~3-4h.
+
+#### Sub-AMB N+5.M.A÷D candidate (definizione effettiva apertura)
+
+- **N+5.M.A** (Docker engine Mini): (i) Docker Desktop (ii) Colima (iii) OrbStack (iv) nativo containerd. Default raccomandato Docker Desktop (cross-platform consistency, GUI maintenance Mini headless via SSH-X11 forwarding o admin console). TBD CP0-ext empirico audit Mini.
+- **N+5.M.B** (secrets gen strategy): (i) `openssl rand -base64 32` one-shot durante CP3 deploy + persist in `/etc/pharmatimer/db_*_password` 600 root-only (ii) 1Password CLI integration `op read` runtime (iii) macOS Keychain `security add-generic-password` + retrieve via `security find-generic-password -w`. Default raccomandato (i) one-shot openssl (semplicita massima single-user setup, no deps NEW, no cloud).
+- **N+5.M.C** (SSL/TLS layer porta 8000): (i) Tailscale serve auto-TLS `tailscale serve --bg --https=443 http://localhost:8000` (ii) reverse proxy Caddy/Nginx container sidecar con Let's Encrypt (iii) HTTP plain dentro Tailscale mesh (no TLS termination). Default raccomandato (i) Tailscale serve auto-TLS (zero config certs, MagicDNS HTTPS automatico, coerente Q7=A trust mesh).
+- **N+5.M.D** (rollback strategy CP3 healthcheck red): (i) revert containers `docker compose down -v` + restore volume backup snapshot pre-deploy + retry (ii) git revert deploy commit + push + smoke (iii) rollback iterativo step-by-step (revert solo container fallito + log analysis + retry). Default raccomandato (iii) iterativo (massima informazione diagnostica, single-user accept downtime debug).
+
+#### CP plan N+5.M (7 step)
+
+| CP | Scope | Note |
+|---|---|---|
+| **CP0** | Baseline empirico (HEAD `5026383` invariato, tag `v3.2.0-alpha.7`, 76+575 verde, push 0 ahead) | Verifica stato pre-N+5.M post-N+5.L doc-only |
+| **CP0-ext** | **Audit Mac Mini empirico** Lesson #27 strict: SSH access Studio->Mini + macOS version + Docker engine empirico (N+5.M.A choice empirica) + ports 8000+3306 free + Tailscale install + tailscaled status + path `/var/lib/mysql_pharmatimer` writable + resolve `<TAILNET>` MagicDNS reale | Risolve Q-N5L.H + sub-decisione 1.6 in-sessione |
+| **CP1** | Patcher Python `cp_n5m_deploy_patcher.py` emit 7 file NEW + 2 MOD anchored `app.py` (CORS + drift-N45) | Pattern par.22.58 SENTINEL `SENTINEL_N5M_DEPLOY_APPLIED` content-based |
+| **CP2** | Dry-run Mac Studio: `docker compose -f deploy/docker-compose.yml config` + `docker compose build` + verifica image `pharmatimer-api:0.7.0` builda | Pre-deploy validation, zero deploy fino verde |
+| **CP3** | Deploy effettivo Mini: rsync `deploy/` -> Mini + secrets gen openssl (Q-N5L.M.B=(i)) + `docker compose up -d` + healthcheck attesa 90s + log analysis | Roberto SSH bash, Tailscale tunnel |
+| **CP4** | Smoke 3 scenari Q-N5L.G da Mac Studio Tailscale (curl 401 vocabulary + 200 happy + 422 Pydantic) | Verifica vocabolario errori uniforme post-N+5.K cementato |
+| **CP5** | Install launchd plist + script `+x` + `launchctl load -w` + verifica `launchctl list \| grep pharmatimer` + smoke manuale primo backup `launchctl start com.pharmatimer.backup` | Backup automation attivo, retention 7gg rolling |
+| **CP6** | Apply Tailscale ACL via admin console (manual upload `tailscale-acl.hujson` su https://login.tailscale.com/admin/acls) + verifica accesso 8000 da iPhone PWA Tailscale | Defense-in-depth L3/4 attivo |
+| **CP7** | Cleanup-N+5.M (`.bak.cp_n5m_*` + patcher repo root) + bump `backend/pyproject.toml` 0.6.0 -> 0.7.0 + sync `__version__` autoderivato + tag annotato `v3.2.0-alpha.8` LOCALE su HEAD post-deploy verde + commit closing selettivo + par.22.95 emit + par.11.S-S3 N+5.N pre-frozen emit + **push atomico** `origin/fase-3-backend` HEAD (1+CP7 commits cumulativi) + push 1 tag locale (`v3.2.0-alpha.8` NEW) + Spec v1.9 KB-only emit (sez. 12 deployment + Lesson #29 cementazione formale sez. 11.6.12) | AMB-11.B.7-bis undicesima applicazione cumulativa Fase 3 |
+
+#### Pre-letture obbligatorie N+5.M
+
+1. Questo Changelog Fase 3 § 22.94 (closing N+5.L design draft + ratifiche) + § 11.R-S3 scope (questa sezione)
+2. `par.22.93-Fase3` integrale (closing N+5.K cluster auth-layer chiuso simmetrico + push atomico baseline)
+3. `par.22.86-Fase3` (drift-N45 origine + scope FastAPI version hardcoded)
+4. Spec v1.8 sez. 9 + sez. 11.6.11 (vocabolario errori cementato post-N+5.K, smoke checklist Q-N5L.G riferimento)
+5. `par.11.D-rev v3.2-Fase2` + `par.22.78-bis-Fase2` (setup operativo Mac Mini headless + Tailscale + R1 ratifica Studio-all dev)
+6. `par.22.55-Fase2` split safety-first preventivo undicesima applicazione cumulativa Fase 3
+7. `par.22.58-Fase2` pattern patcher Python content-based SENTINEL idempotent (template emit CP1)
+8. **Lesson #20-#29 cumulative MANDATORY** (in particolare Lesson #27 strict dump fisico file infrastruttura Mini pre-emit CP1 + **Lesson #29 NEW delivery file-based artefatti documentali**)
+9. Design draft N+5.L scaricato (`/home/claude/n5l_design_draft/` o equivalente repo locale Roberto) come riferimento bit-perfect contenuto 9 file per CP1 patcher emit
+
+#### Modalita raccomandata N+5.M
+
+Esecutiva monolitica CP0+CP0-ext+CP1+CP2+CP3+CP4+CP5+CP6+CP7 unica sessione. Token spesi stimati ~50-80K. Wall-clock ~3-4h. Pattern split safety-first par.22.55-Fase2 NON applicabile a priori (scope architetturalmente blindato N+5.L ratificato + sub-AMB N+5.M.A-D risolvibili in-sessione CP0-ext empirico).
+
+**Possibile split N+5.M-pre/N+5.M-post** (CP0+CP0-ext+CP1 sub-step / CP2-CP7 sub-step) opportunistico se CP0-ext rileva discoveries inaspettate (es. Docker engine assente Mini + porting Colima richiesto, oppure Tailscale ACL UI cambiata). Decisione split in-sessione N+5.M CP0-ext esito.
+
+#### Esito atteso N+5.M
+
+- 7 file NEW in `deploy/` (compose + Dockerfile + ACL + plist + script + dockerignore in backend + README opzionale)
+- 1 file MOD `backend/pharmatimer_api/app.py` (CORS env-driven + drift-N45 fix synced `__version__`)
+- Mac Mini operativo: pharmatimer-api:0.7.0 + pharmatimer-db:11.4 healthchecks green
+- Smoke 3 scenari Q-N5L.G verde da Mac Studio Tailscale
+- Backup automation launchd attivo + primo backup notte successiva
+- Tailscale ACL applicato + accesso PWA iPhone/Android verificato
+- Drift-N45 chiuso
+- Bump pyproject 0.6.0 -> 0.7.0 + tag `v3.2.0-alpha.8` LOCALE+REMOTO
+- Push atomico `origin/fase-3-backend` HEAD + 1 tag NEW (totali 8 tag remoti)
+- Spec v1.9 KB-only emit (sez. 12 + sez. 11.6.12 Lesson #29)
+- par.22.95 closing N+5.M emit
+- par.11.S-S3 N+5.N pre-frozen emit (TBD scope: F3-S5-beta UI login token entry vs F3-S7 smoke finale end-to-end vs Fase 4 estensioni)
+
+#### Sessione successiva post-N+5.M
+
+**N+5.N pre-frozen scope TBD** a CP7 N+5.M closing in base esito empirico deploy + sub-AMB N+5.M.A-D risolte. Candidate:
+- F3-S5-beta UI login/token entry PWA-side (deferred N+5.I-post par.22.91)
+- F3-S7 smoke finale end-to-end cross-device PWA iPhone -> Mini API -> MariaDB
+- Patch v3.2.0-rc.1 promotion (`alpha.8` -> `rc.1` se deploy verde + smoke green + 24h stabilita)
+
+**One-liner apertura nuova sessione N+5.M:**
+
+```
+Esegui il prompt al par.11.R-S3 del Changelog Fase 3.
+```
+
+---
