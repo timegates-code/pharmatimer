@@ -2464,3 +2464,542 @@ Esegui il prompt al par.11.N-S3 del Changelog Fase 3 sub-step CP1.B (continuazio
 ```
 
 ---
+
+### 22.91 (Fase 3, closing FINALE N+5.I-post F3-S5-alpha CP1.B 71 test green + CP2 575/575 + CP4 cleanup-N10+N11+N12 + CP5 bump 3.2.0-alpha.1 + tag v3.2.0-alpha.6 + Spec v1.7 + Lesson #28 ratifica MANDATORY — superseding par.22.91-pre cumulativo F3-S5-alpha milestone)
+
+<!-- par.22.91 R1 emit closing finale N+5.I-post, supersedes par.22.91-pre (par.22.91-pre conservato per immutability storica par.6.71/85-Fase2) -->
+
+**Data:** 24 maggio 2026 sera-tarda.
+
+**Modalita:** Sessione esecutiva continuazione sub-step CP1.B + CP2 + CP3 + CP4 + CP5 closing cumulativo, post-commit `ec06375` N+5.I-pre. CP0 baseline empirico 5/5 verde + CP0-ext Lesson #27 dump 6 file sandbox vs ratificato par.22.91-pre bit-perfect + drift-doc-N54 NEW scoperto pre-emit test piano (`RepositoryError.js` `UNAUTHORIZED: 'error'` vs par.22.90+91-pre design draft `'warning'`) + ratifica Opzione A blanket "decidi tu" + design test piano 71 test → sandbox validation 89/89 (71 NEW + 18 pre-existing) → emit patcher Python `cp1_post_n5i_patcher.py` 81K monolitico SENTINEL `SENTINEL_N5I_CP1_POST_APPLIED` su `apiClient.test.js` content-based + esecuzione Mac-side verde + CP2 vitest 575/575 su 69 file + CP4 cleanup-N10+N11+N12 (4 backup `.bak.cp1-n5i-*` + patcher repo root) + CP5 bump `package.json` 3.1.0→3.2.0-alpha.1 + sync `ImpostazioniTab.jsx` riga 484 + commit closing selettivo + tag annotato `v3.2.0-alpha.6` LOCALE NO push (AMB-11.B.7-bis decima applicazione cumulativa Fase 3). Token spesi ~92K. Wall-clock ~3 h.
+
+**Esito:** OK milestone tecnico F3-S5-alpha **completato end-to-end**. ApiRepository ibrido code-complete + tested + integrato runtime toggle. 575/575 cumulativi verde (504 baseline + 71 NEW). Spec v1.7 KB-only emessa (+116 LOC, sez. 11.6.7 aggiornata + 11.6.8 ampliata + 11.6.9 NUOVA + 11.6.10 NUOVA + 11.6.11 NUOVA). Lesson #28 MANDATORY ratifica formale. 14 ahead `origin/fase-3-backend` post-CP5 (13 pre + 1 closing). 5 tag F3-S5-alpha LOCALI cumulativi (`v3.2.0-alpha.{2..6}`) tutti deferred push AMB-11.B.7-bis atomic con deploy. Sub-step N+5.J scope decision F3-S5-beta cluster auth-layer + push atomico.
+
+#### CP0 baseline empirico N+5.I-post verde 5/5
+
+- HEAD `ec06375` branch `fase-3-backend` (post-commit s.N+5.I-pre)
+- 13 ahead `origin/fase-3-backend`
+- Tag annotato `v3.2.0-alpha.5` LOCALE su `dc4f10c` invariato (intermedio LOCALE)
+- `backend/pyproject.toml` version `0.5.0` invariato
+- `package.json` version `3.1.0` invariato pre-CP5
+- vitest 504/504 su 62 file invariato verde
+- pytest 75/75 backend invariato verde
+- Working tree clean eccetto `M PharmaTimer_Changelog_Fase3.md` (KB-sync asimmetria pattern par.22.34-Fase2 noto, non bloccante)
+
+#### CP0-ext Lesson #27 self-applied bit-perfect 6 file sandbox vs par.22.91-pre
+
+Verifica sandbox Claude pre-emit patcher CP1.B su 6 file source CP1.A (`apiClient.js` + `ApiRepository.js` NEW + `RepositoryError.js` + `index.js` + `vite.config.js` MOD + `LocalRepository.js` reference signature 31 metodi delegate spy):
+
+| File | sha16 post-CP1.A | sha16 declared par.22.91-pre | Esito |
+|---|---|---|---|
+| `RepositoryError.js` | `dca542b9aa5c8413` | `dca542b9aa5c8413` | ✅ bit-perfect |
+| `index.js` | `9fc7558ce90875d5` | `9fc7558ce90875d5` | ✅ bit-perfect |
+| `vite.config.js` | `d51808336780a4b8` | `d51808336780a4b8` | ✅ bit-perfect |
+| `apiClient.js` (NEW) | `456b1924c39be622` | n/a (NEW) | ✅ 151 LOC 4722 byte |
+| `ApiRepository.js` (NEW) | `cf4b1ad6b8cda504` | n/a (NEW) | ✅ 440 LOC 16364 byte |
+| `LocalRepository.js` ref | `9f0aa64daae71af3` | n/a (reference Fase 2) | ✅ 445 LOC 15432 byte (31 metodi match contract) |
+
+Lesson #27 self-applied verde. Zero drift filesystem cross-sessione cementato.
+
+#### Drift-doc-N54 scoperto CP0-ext pre-emit test piano + ratifica formale Opzione A
+
+**Sintesi drift**: codice `RepositoryError.js` CP1.A reale post-MOD `UNAUTHORIZED: 'error'` riga 33 (+ commento header riga 17). Design draft par.22.90 sez "Vocabolario errori finale" + par.22.91-pre sez "Vocabolario errori finale" + tabella HTTP mapping 401 dichiarano `UNAUTHORIZED: 'warning'`. Self-violation Lesson #26 sul patcher emit a CP1.A (oppure decisione consapevole "decidi tu" non documentata in par.22.91-pre, ratifica retroattiva).
+
+**Ratifica formale Opzione A (codice reale invariato)**: `UNAUTHORIZED: 'error'` confermato semanticamente corretto. Token assente/invalido blocca operazione, richiede ri-login utente; severity `warning` (recoverable no-op) appropriata solo per token recuperabile via refresh automatico, non implementato in F3-S5-alpha. Coerente con `CONSTRAINT_VIOLATION` (operation bloccata fino a fix input). `FORBIDDEN: 'warning'` resta corretto: caregiver puo avere permesso parziale su altro paziente, no-op acceptable scoped.
+
+**Razionale par.6.71/85-Fase2 history immutability**: NO retro-correzione doc par.22.90/91-pre. drift-doc-N54 ratifica formale a par.22.91 final (questa sezione). Spec v1.7 sez. 11.6.11 documenta vocabolario definitivo cementato.
+
+**Test cementato**: `RepositoryError.test.js` MOD +2 test (UNAUTHORIZED default `'error'` + FORBIDDEN default `'warning'`) verde sandbox + Mac.
+
+#### Drift-doc-N55 NEW minor 575/69 vs piano 70
+
+Piano par.22.90 stimava 70 file totali post-patcher (62 baseline + 8 patcher ops). Reale post-patcher: 69 file (62 baseline + 7 NEW; il 1 MOD `RepositoryError.test.js` esisteva gia in baseline 62 quindi non incrementa il conteggio file). Tests reali: 575 = 504 + 71 NEW ✅. Drift conteggio file minore non bloccante, ratifica formale a Spec v1.7 sez. 11.6.9 dimensionamento corretto.
+
+#### CP1.B sandbox pre-validation 89/89 verde pre-emit patcher
+
+Sandbox Claude `/home/claude/n5i_post_sandbox/` con vitest 2.1.9 + jsdom env, 8 file test (7 NEW + 1 MOD post-anchor str_replace): tutti verde pre-delivery. Razionale anchor MOD `RepositoryError.test.js`: blocco `it('all SEVERITY_BY_CODE values are members of SEVERITY_VALUES', ...)` chiusura `describe('SEVERITY_VALUES contract')` univoco verificato (1/1 grep count, Lesson #26 self-applied empirico).
+
+| File | Test count | Esito sandbox |
+|---|---|---|
+| `apiClient.test.js` NEW | 13 | ✅ |
+| `ApiRepository.farmaci.test.js` NEW | 10 | ✅ |
+| `ApiRepository.orari.test.js` NEW | 10 | ✅ |
+| `ApiRepository.log.test.js` NEW | 18 | ✅ |
+| `ApiRepository.delegate.test.js` NEW | 11 | ✅ |
+| `ApiRepository.withTransaction.test.js` NEW | 4 | ✅ |
+| `index.test.js` NEW | 3 | ✅ |
+| `RepositoryError.test.js` MOD +2 | 20 (18+2) | ✅ |
+| **Aggregato sandbox** | **89 (71 NEW + 18 pre-existing)** | ✅ 89/89 |
+
+**Pattern test sandbox cementati cumulativi N+5.I-post**:
+
+- `vi.mock('./apiClient.js')` factory mock per `vi.mock`-hoisting (test farmaci+orari+log+withTransaction)
+- `vi.spyOn(repo._local, 'X')` granulare per delegate test (Lesson #28 candidate ratificata)
+- `vi.resetAllMocks()` mandatory in `beforeEach` per test con `mockResolvedValueOnce` queue (test farmaci+orari+log) — `vi.clearAllMocks()` resetta history ma non la coda, causa cross-test contamination (scoperta empirica sandbox test 9 orari rosso prima della fix)
+- `vi.resetModules()` + `await import()` per test factory toggle `index.test.js` (singleton re-init lazy)
+
+#### Patcher cp1_post_n5i_patcher.py 81K monolitico content-based SENTINEL
+
+Strategia delivery scelta (Q-CP1.B.1=a blanket "decidi tu"): patcher monolitico unico 81K (sopra soglia 50K dichiarata par.22.91-pre, drift attribuibile a base64 inline content 8 file × 5-11K + 33% overhead encoding + Python wrapper). Non bloccante (soglia indicativa, no hard limit).
+
+**8 step patcher** (idempotent re-exec early-exit pulito Lesson #20 decima applicazione cumulativa Fase 3):
+
+1. Step 0 idempotency check SENTINEL `SENTINEL_N5I_CP1_POST_APPLIED` su `apiClient.test.js` → early-exit OK
+2. Step 1 cwd check (`package.json` + `src/data/repository/` presence)
+3. Step 2 pre-MOD sha256 verify su `RepositoryError.test.js` (`168974dbb78a4cbb` Lesson #27 self-applied empirico Mac-side)
+4. Step 3 NEW files pre-check absent (7 file)
+5. Step 4 write 7 NEW files base64-decoded + sha256-verify post-decode
+6. Step 5 backup `RepositoryError.test.js` → `.bak.cp1-n5i-post`
+7. Step 6 full-replace `RepositoryError.test.js` con post-MOD content (sha256 atomic = anchor)
+8. Step 7 post-MOD self-check 8 sha256 + 8 byte count + SENTINEL presence
+
+**Pattern cementati**: SENTINEL idempotency Lesson #20, pre-MOD sha256 verify Lesson #27, full-replace MOD content-based univocity (par.22.58-Fase2 equivalent), backup `.bak.cp1-n5i-post`, post-MOD self-check 8 invariants, base64 encoding content embed.
+
+#### CP2 vitest 575/575 verde Mac-side
+
+`npx vitest run` post-patcher exec: **575/575 passed in 3.49s su 69 file**. Zero red. Patcher integrity confermata bit-perfect (sha16 match Mac-side `4d63c9cb9be5ce7f` invariato vs Claude sandbox). Zero breaking cumulativo end-to-end F3-S5-alpha.
+
+#### CP3 smoke browser deferred N+5.J F3-S5-beta
+
+CP3 smoke DevTools manual deferred N+5.J (5-7 scenari sub-AMB N+5.I.G par.22.90 + drift-N44/N45/N53/N54 cluster auth-layer fix prerequisite). Smoke richiede backend localhost dev running + ApiRepository toggle on `localStorage.setItem('pharmatimer.useApiRepo', '1')` + reload PWA + dogfooding manual 6 categorie (login + farmaci CRUD + orari bulk + log dispatch 5 verbi + atomic batch + getAllOrari fan-out). Non bloccante per closing F3-S5-alpha; preparato per N+5.J esecutiva.
+
+#### CP4 cleanup-N10 + N11 + N12 closed (4 backup + 1 patcher repo root)
+
+- **cleanup-N10**: 3 backup CP1.A `.bak.cp1-n5i-pre` (`RepositoryError.js.bak.cp1-n5i-pre` 4785 byte + `index.js.bak.cp1-n5i-pre` 863 byte + `vite.config.js.bak.cp1-n5i-pre`) rimossi
+- **cleanup-N11**: 1 backup CP1.B `.bak.cp1-n5i-post` (`RepositoryError.test.js.bak.cp1-n5i-post` 5898 byte) rimosso post-CP2 verde
+- **cleanup-N12**: 1 patcher repo root `cp1_post_n5i_patcher.py` 81K rimosso post-CP2 verde
+
+Post-cleanup `git status --short`: solo working tree atteso (`M Changelog` + `M package.json` + `M ImpostazioniTab.jsx` + `M RepositoryError.test.js` + 7 NEW untracked).
+
+#### CP5 bump + sync + commit + tag
+
+**CP5.1 bump package.json 3.1.0 → 3.2.0-alpha.1**: `sed -i.bak.cp5-bump` substitution + rm bak transient. Post-bump `node -e "require('./package.json').version"` → `3.2.0-alpha.1` ✅.
+
+**CP5.2 sync ImpostazioniTab.jsx runtime version**: path corretto `src/components/config/ImpostazioniTab.jsx` (drift-N31 cementato userMemories, NON `src/components/tabs/`). `sed -i.bak.cp5-sync` su riga 484 univoca `PharmaTimer 3.1.0 · <em className="italic">by timegates</em>` → `PharmaTimer 3.2.0-alpha.1 · <em className="italic">by timegates</em>`. Pattern par.6.200/205-Fase2 nona applicazione cumulativa Fase 3.
+
+**CP5.3 vitest regression 575/575 verde post-bump+sync**: zero test rosso post-bump.
+
+**CP5.4 commit closing s.N+5.I-post**: `baa100d` su `fase-3-backend`. Subject: `test(repo): F3-S5-alpha ApiRepository ibrido 71 test CP1.B s.N+5.I-post`. 11 file changed (7 NEW + 4 MOD), 1335 insertions, 2 deletions.
+
+**CP5.5 tag annotato v3.2.0-alpha.6 LOCALE NO push** (AMB-11.B.7-bis decima applicazione cumulativa Fase 3 + par.22.65-Fase2 pattern push deferred atomic con deploy): tag `v3.2.0-alpha.6` puntato su commit `baa100d`. Pre-tag listing: `v3.2.0-alpha.{2,3,4,5,6}` 5 tag F3-S5-alpha cumulativi locali.
+
+#### CP5.6 Spec v1.7 KB-only emit
+
+Spec v1.7 emessa KB-only (NON committed per par.22.34-Fase2 + cementato Fase 3) con +116 LOC vs v1.6 = 865 LOC totale:
+
+- Sez. 11.6.7 aggiornata: status F3-S5-alpha completato + roadmap N+5.J push+deploy + F3-S5-beta auth-layer cluster
+- Sez. 11.6.8 ampliata: cross-ref Convenzioni codice PWA-side + Changelog par.22.90+91
+- Sez. 11.6.9 NUOVA: Architettura ApiRepository PWA-side F3-S5-alpha (composition pattern + 31 metodi dispatch table + mapper + dispatch 5 verbi `upsertLog` + atomic detect + fan-out 1+N + bulk PUT replace + wrapper apiClient + runtime toggle)
+- Sez. 11.6.10 NUOVA: Lesson #28 MANDATORY composition pattern over inheritance + self-check pre-emit future wrapper
+- Sez. 11.6.11 NUOVA: Vocabolario errori cross-PWA/backend cementato F3-S5-alpha milestone (7 RepositoryErrorCode + severity table + drift-doc-N54 ratifica + body shape backend emission 3 varianti)
+
+#### Lesson #28 ratifica formale MANDATORY
+
+**Lesson #28 MANDATORY (par.22.91 N+5.I-post F3-S5-alpha milestone)**: `ApiRepository` (e ogni future wrapper Repository) NON estende `LocalRepository` via `class extends`. Owns instance privata `this._local = local ?? new LocalRepository()` accettando injection opzionale via constructor. Razionale: Dexie mutation isolation + test granularity `vi.spyOn(repo._local, X)` + injection support test 11 delegate + symmetric contract 31 metodi enforcement esplicito (no fallback ereditato).
+
+**Self-check pre-emit per future wrapper** (es. F3-S5-beta `MockRepository.js` test-only o wrapper futuri):
+
+- 31 metodi presenti (grep `^\s*async\s+\w+\(` + diff vs `LocalRepository.js`)
+- Constructor accetta `_local` injection (`new W(custom)._local === custom`)
+- Zero `class W extends LocalRepository` (grep negativo)
+
+**Ratifica empirica**: 11 test `ApiRepository.delegate.test.js` verde + 4 test `ApiRepository.withTransaction.test.js` verde + 575/575 cumulativi senza red post-implementation.
+
+#### 2 drift-doc NEW N+5.I-post ratificati par.22.91 final
+
+- **drift-doc-N54** (UNAUTHORIZED severity): codice CP1.A `RepositoryError.js` `'error'` vs design draft par.22.90+91-pre `'warning'`. Ratifica Opzione A: codice invariato, semantica `'error'` corretta (token blocca operazione). Spec v1.7 sez. 11.6.11 documenta vocabolario definitivo.
+- **drift-doc-N55** (file count): piano 70 file vs reale 69 file. Test count 575 invariato match piano. Carry-forward minor.
+
+#### Lesson #27 estensione candidate ratificata empirico
+
+**Pattern Lesson #27 self-applied PWA-side anche su file post-MOD CP1.A (estensione candidate)**: pre-emit patcher CP1.B su file MOD `RepositoryError.test.js` MANDATORY dump fisico + sha256 16-char vs ratificato par.22.91-pre. Self-applied verde sandbox + Mac-side. Pattern cementato Spec v1.7 sez. 11.6.10 self-check pre-emit future wrapper.
+
+#### Stato cumulativo F3-S5-alpha milestone closed v3.2.0-alpha.6 LOCALE
+
+- HEAD `baa100d12da9152039fb69c03a11f8220f841f18` branch `fase-3-backend`
+- Tag annotato `v3.2.0-alpha.6` LOCALE su `baa100d` (AMB-11.B.7-bis decima applicazione)
+- 14 ahead `origin/fase-3-backend` (13 pre-N+5.I-post + 1 closing s.N+5.I-post)
+- `package.json` version `3.2.0-alpha.1`
+- `backend/pyproject.toml` version `0.5.0` invariato (auth-layer fix deferred N+5.J)
+- `ImpostazioniTab.jsx` riga 484 sync `3.2.0-alpha.1` runtime
+- vitest 575/575 su 69 file verde + pytest 75/75 verde
+- 5 tag F3-S5-alpha LOCALI cumulativi tutti deferred push (AMB-11.B.7-bis atomic con deploy)
+- Spec v1.7 KB-only emessa (sez. 11.6.7+8+9+10+11)
+- Lesson #28 MANDATORY ratifica formale
+- 2 drift-doc NEW N54+N55 ratificati
+- 1 Lesson #27 estensione candidate ratificata empirico
+
+#### Sessione successiva N+5.J analisi-first scope decision + closing F3-S5-beta cluster auth-layer + push atomico
+
+**Scope alto livello N+5.J**: analisi-first sola scope decision tra:
+
+- **Percorso A (raccomandato) F3-S5-beta cluster auth-layer + push atomico**: unificare `dependencies.py` `get_current_user` raise `RepositoryError(UNAUTHORIZED)` invece di `HTTPException(401, detail=str)` plain. Chiusura drift-N44/N45/N53/N54 cluster (4 drift correlati auth-layer cementati Fase 3). PWA-side ApiRepository gia consume entrambe le body shape (test 6 apiClient `detail string` + test 7 `vocabulary body`) — compatibility cross-version. Patcher Python ~15-20K = 1 file MOD `dependencies.py` + 1 file MOD/NEW test pytest backend + Spec v1.8 sez. 11.6.11 update. Stima sessione monolitica ~50-70K token. Push atomico 14 commit `fase-3-backend` + 5 tag locali post-fix verde (regola critica #5 + AMB-11.B.7-bis chiusura).
+- **Percorso B (deferred) F3-S6 deploy Mac Mini**: docker-compose target Mini + Tailscale setup + CORS prod restrictive + healthcheck Mini + backup automation mysqldump cron + monitoring. Coerente backend-completeness pre-deploy pattern par.11.D-rev v3.2-Fase2 ma drift auth-layer N44/N45/N53/N54 cluster ancora aperto. Default raccomandato sequenza fix backend → push → deploy.
+
+**Modalita raccomandata N+5.J.** Apertura analisi-first sola doc-only (Q2=A pattern par.22.55-Fase2 decima applicazione cumulativa Fase 3 se decisione drift-cluster). CP0 mandatory dump `dependencies.py` + grep `HTTPException(401)` + ratifica decisione A/B blanket "decidi tu" + design draft consolidato. Stima token ~30-40K. Wall-clock 90-120 min. Zero source change in apertura analisi-first.
+
+Pre-frozen `par.11.O-S3` emit a CP5 N+5.I-post closing (questa sezione).
+
+One-liner apertura: `Esegui il prompt al par.11.O-S3 del Changelog Fase 3.`
+
+---
+
+### par.11.O-S3 — Prompt apertura N+5.J analisi-first scope decision F3-S5-beta vs F3-S6
+
+<!-- par.11.O-S3 R1 emit Fase 3 post-N+5.I-post closing par.22.91 -->
+
+**One-liner apertura:** `Esegui il prompt al par.11.O-S3 del Changelog Fase 3.`
+
+#### Scope alto livello
+
+Analisi-first sola scope decision tra Percorso A (F3-S5-beta cluster auth-layer fix `dependencies.py` HTTPException 401 → RepositoryError(UNAUTHORIZED) + closing drift-N44/N45/N53/N54 cluster + push atomico 14 commit + 5 tag LOCALI) vs Percorso B (F3-S6 deploy Mac Mini docker-compose + Tailscale + CORS prod + healthcheck + backup automation). Default raccomandato Percorso A: completeness backend pre-deploy + cluster drift cementato 4 sessioni cumulative Fase 3 chiuso atomic prima del deploy. Zero source change in apertura analisi-first.
+
+#### CP0 baseline empirico mandatory
+
+```bash
+cd ~/Sviluppo/pharmatimer
+echo 'CP0.1 -- HEAD + branch + ahead + tag corrente'
+git rev-parse HEAD
+git rev-parse --abbrev-ref HEAD
+git rev-list --count origin/fase-3-backend..HEAD
+git describe --tags --abbrev=0
+echo 'CP0.2 -- versioni pyproject + package.json + ImpostazioniTab runtime'
+grep -E '^version' backend/pyproject.toml
+node -e "console.log(require('./package.json').version)"
+grep -n '3\.2\.0' src/components/config/ImpostazioniTab.jsx
+echo 'CP0.3 -- working tree clean'
+git status --short
+echo 'CP0.4 -- vitest 575/575 invariato'
+npx vitest run 2>&1 | tail -8
+echo 'CP0.5 -- pytest 75 invariato'
+source backend/venv/bin/activate
+cd backend && pytest --tb=no -q 2>&1 | tail -5
+cd ..
+deactivate
+echo 'CP0.6 -- 5 tag F3-S5-alpha LOCALI listing'
+git tag -l 'v3.2.0-alpha.*'
+echo 'CP0 baseline done'
+```
+
+Output atteso: HEAD=`baa100d`, ahead=14, tag corrente=`v3.2.0-alpha.6`, pyproject=`0.5.0`, package=`3.2.0-alpha.1`, ImpostazioniTab riga 484 `3.2.0-alpha.1`, working tree clean (o solo `M Changelog` KB-sync), vitest 575/575, pytest 75/75.
+
+#### CP0-ext mandatory Lesson #27 dump file auth-layer
+
+```bash
+cd ~/Sviluppo/pharmatimer
+echo 'CP0-ext Lesson 27 dump dependencies.py + grep HTTPException'
+shasum -a 256 backend/pharmatimer_api/dependencies.py backend/pharmatimer_api/exceptions.py | awk '{print substr($1,1,16), $2}'
+echo 'Grep HTTPException 401 sites:'
+grep -nE 'HTTPException\(.*401|status_code=401|raise HTTPException' backend/pharmatimer_api/*.py | head -20
+echo 'Archive tar.gz 2 file auth-layer per upload Claude'
+tar -czf /tmp/n5j_2files.tar.gz \
+  backend/pharmatimer_api/dependencies.py \
+  backend/pharmatimer_api/exceptions.py
+ls -la /tmp/n5j_2files.tar.gz
+shasum -a 256 /tmp/n5j_2files.tar.gz | awk '{print substr($1,1,16)}'
+echo 'Carica /tmp/n5j_2files.tar.gz in chat'
+```
+
+#### Q-N5J.1..3 da risolvere pre-procedure
+
+**Q-N5J.1 — Scope sessione N+5.J?**
+- (a) Percorso A solo analisi-first design draft drift cluster auth-layer fix → poi N+5.K esecutiva fix + push atomico → poi N+5.L deploy F3-S6 (3 sessioni)
+- (b) Percorso A monolitica analisi+exec+commit+push N+5.J ~50-70K token (1 sessione, alto carico)
+- (c) Percorso B F3-S6 deploy diretto, drift cluster auth-layer ratificato carry-forward (rischio: drift mai chiuso)
+
+**Q-N5J.2 — Body shape fix unificato?**
+- (a) `RepositoryError(UNAUTHORIZED)` raise + handler `_HTTP_STATUS` mapping 401 vocabulary body `{error:{code:'UNAUTHORIZED', severity:'error', message}}`
+- (b) `HTTPException(401, detail={'error':{...}})` custom JSON detail (compatibility con Pydantic OpenAPI auto-doc)
+
+**Q-N5J.3 — Push timing?**
+- (a) Push atomico post-fix verde 14+1 commit + 6 tag LOCALI (`v3.2.0-alpha.{2..6}` + nuovo `v3.2.0-alpha.7` post-fix)
+- (b) Push deferred ulteriore: fix + commit + tag locale `v3.2.0-alpha.7`, push solo a milestone deploy F3-S6
+
+#### Modalita raccomandata N+5.J
+
+Apertura **analisi-first sola doc-only** (Q-N5J.1=a + Q2=A pattern par.22.55-Fase2 decima applicazione cumulativa Fase 3). Token spesi ~30-40K. Wall-clock 90-120 min. Zero source change, zero commit codice, zero bump, zero tag, zero push. Output sessione: ratifica decisioni Q-N5J.1..3 + design draft drift cluster N44/N45/N53/N54 closure + pre-frozen `par.11.P-S3` N+5.K esecutiva fix + push.
+
+#### Esito atteso
+
+- Ratifica Q-N5J.1..3
+- Design draft drift-cluster auth-layer closure (1 file MOD `dependencies.py` + N file MOD test pytest backend + Spec v1.8 sez. 11.6.11 update body shape unification)
+- Pre-frozen `par.11.P-S3` N+5.K esecutiva fix + push (sub-step se necessario)
+- Zero source change
+
+#### Sessione successiva post-N+5.J
+
+**N+5.K esecutiva fix + push atomico** scope architetturalmente blindato N+5.J ratificato. Patcher Python ~15-20K = 1 file MOD `dependencies.py` + N file MOD test backend pytest. Push 14+1 commit `fase-3-backend` + 6 tag LOCALI atomic. Pre-frozen `par.11.Q-S3` N+5.L emit a CP5 N+5.K closing (F3-S6 deploy Mac Mini).
+
+**One-liner apertura nuova sessione N+5.J:**
+
+```
+Esegui il prompt al par.11.O-S3 del Changelog Fase 3.
+```
+
+---
+
+### 22.92 (Fase 3, closing N+5.J analisi-first sola scope decision F3-S5-beta vs F3-S6 + 4 drift-doc-N56-N59 ratificati + scope cluster auth-layer ridotto a N44+N53 backend-side + Lesson #27 estensione cementata empirica)
+
+<!-- par.22.92 R1 emit Fase 3 -->
+
+**Data:** 25 maggio 2026 mattina.
+
+**Modalita:** Sessione analisi-first sola doc-only, pattern par.22.55-Fase2 decima applicazione cumulativa Fase 3 (post F3-S1-bis-delta parte 1/2-2/2 + F3-S3-alpha-pre/post + N+5.B + N+5.D + N+5.F + N+5.G + N+5.H + N+5.I-pre). Token spesi ~30K. Wall-clock ~90 min. Zero source change, zero commit codice, zero bump, zero tag, zero push.
+
+**Esito:** OK scope decision **Percorso A F3-S5-beta cluster auth-layer fix** ratificato (Q-N5J.1=a, Q-N5J.2=A, Q-N5J.3=A). Cluster ridotto post-discovery: **N44 + N53 backend-side** (fix simmetrico unificato), **N45 scorporato** (FastAPI version hardcoded ortogonale ad auth-layer, fix deferred sessione dedicata o opportunistico), **N54 gia chiuso** doc-only par.22.91 (severity `'error'` ratificata Opzione A). 4 drift-doc-N56-N59 ratificati (3 prompt drift `par.11.O-S3` path/file/conteggio tag + 1 commento sorgente `db/dependencies.py:76-81` cita rif. `Sub-Q-NEW.4 (par.22.86)` inesistente nel Changelog). Lesson #27 estensione candidate (par.22.91) cementata empirica: pattern `static analysis doc-only != applicata-empirico` applicabile anche a path/file/citazioni indirette in prompt pre-frozen E in commenti sorgente.
+
+#### CP0 baseline empirico verde 6/6
+
+- HEAD `baa100d` branch `fase-3-backend` 14 ahead `origin/fase-3-backend`
+- Tag annotato `v3.2.0-alpha.6` LOCALE su `baa100d` invariato
+- `backend/pyproject.toml` `0.5.0` invariato
+- `package.json` `3.2.0-alpha.1` invariato + `ImpostazioniTab.jsx` riga 484 sync invariato
+- Working tree: `M PharmaTimer_Changelog_Fase3.md` (KB-sync pre-N+5.J)
+- vitest 575/575 su 69 file (4.42s) verde invariato
+- pytest 75/75 (3.46s) verde invariato
+- 6 tag F3-S5-alpha LOCALI listati (`v3.2.0-alpha.1..v3.2.0-alpha.6`)
+
+#### CP0-ext Lesson #27 strict dump dependencies.py + grep HTTPException 401
+
+**Discovery empirica (sweep D1-D9):**
+
+- `backend/pharmatimer_api/dependencies.py` **NON ESISTE** sul filesystem reale (prompt par.11.O-S3 path errato → drift-doc-N56).
+- Path reale: `backend/pharmatimer_api/db/dependencies.py` (sha16 `<dump>`, ~80 righe).
+- Grep `HTTPException(.*401|status_code=401` su `backend/pharmatimer_api/*.py` flat: zero hit (file in `db/` sottodirectory).
+- Grep ricorsivo `backend/pharmatimer_api --include='*.py'`: 1 site confermato `db/dependencies.py:58-59` raise `HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, ...)` in `get_current_user`.
+- `db/dependencies.py:76-81` commento sorgente cita `Sub-Q-NEW.4 = A (par.22.86): pragmatic conservative auth-layer pattern` — **riferimento inesistente nel Changelog Fase 3** (zero match grep `Sub-Q-NEW\.4` su `PharmaTimer_Changelog_Fase3.md`, drift-doc-N59 NEW).
+- Exception handlers registrati in `app.py` (NON `main.py` come dichiarato in prompt par.11.O-S3 → drift-doc-N57; `main.py` non esiste nel package backend).
+- `exceptions.py` enum confermato incompleto per Q-N5J.2=A: `RepositoryErrorCode` enum manca `UNAUTHORIZED`, `_HTTP_STATUS` mappa 503/404/409/403/500 (manca 401), `_SEVERITY_MAP` allineato 5 codici esistenti.
+- `repository_error_handler` modulo-level in `exceptions.py:71` aligned vocabulary body shape (verifica empirica par.22.86 §CP3 smoke S4/S5/S9).
+- Conteggio tag F3-S5-alpha LOCALI: 6 visibili (`alpha.1..alpha.6`), prompt par.11.O-S3 dichiarava "5 tag F3-S5-alpha LOCALI" (drift-doc-N58, alpha.1 preesistente baseline Fase 3 + 5 emessi durante F3-S5-alpha alpha.2..alpha.6).
+
+#### 4 drift-doc-N56÷N59 NEW ratificati
+
+- **drift-doc-N56** (prompt par.11.O-S3 path auth-layer): dichiarato `backend/pharmatimer_api/dependencies.py`, reale `backend/pharmatimer_api/db/dependencies.py`. Pattern par.22.91 Lesson #27 self-violation estensione cumulativa: prompt pre-frozen emit a CP5 N+5.I-post ha ereditato path da memoria/design draft senza dump fisico empirico. Carry-forward N+5.K patcher target corretto.
+- **drift-doc-N57** (prompt par.11.O-S3 file exception handler): dichiarato `main.py`, reale `app.py`. `main.py` non esiste nel package `pharmatimer_api`. Pattern identico drift-N56. Carry-forward N+5.K analisi handler registration empirica (vedi sub-AMB N+5.J.B).
+- **drift-doc-N58** (prompt par.11.O-S3 conteggio tag F3-S5-alpha): dichiarato "5 tag LOCALI", reale 6 tag visibili (`alpha.1` baseline + `alpha.2..alpha.6` emessi durante F3-S5-alpha). Drift documentale conteggio testuale, non bloccante. Carry-forward N+5.K push atomico 6 tag (Q-N5J.3=A).
+- **drift-doc-N59** (commento sorgente `db/dependencies.py:76-81`): cita `Sub-Q-NEW.4 = A (par.22.86): pragmatic conservative auth-layer pattern` — riferimento **inesistente nel Changelog Fase 3** (zero match). Origine probabile: design draft pre-CP1 N+5.E-alpha sub-AMB cp2-err-N3.A÷E ratificate par.22.86, errato re-labeling come `Sub-Q-NEW.4` durante emit commento sorgente. Drift fattuale: il commento attribuisce a ratifica formale Changelog una scelta NON presente in nessuna sub-AMB par.22.86 (le 5 sub-AMB cp2-err-N3.A÷E coprono migration v03 ENUM `caregiver`, non auth-layer 401). Asimmetria auth-layer `get_current_user` (HTTPException 401) vs `get_current_owner` (RepositoryError FORBIDDEN) e in realta drift-doc-N44 ratificato par.22.86 riga 955-923 come **"fix opzionale deferred F3-S5+, non-bloccante"** — NON come "pragmatic conservative intentional pattern". Cleanup commento sorgente N+5.K sub-AMB N+5.J.D.
+
+**Pattern Lesson #27 estensione cementata empirica:** static analysis doc-only != applicata-empirico estensione N+5.J ratifica formale. Lesson #27 candidate par.22.91 final (riga 2442) cementata da scoperta empirica N+5.J: path/file/citazioni indirette in prompt pre-frozen E in commenti sorgente DEVONO essere dump-verified pre-emit, non assunti da memoria/design draft. Pattern simmetrico a Lesson #27 baseline (file source code), esteso a artifact documentali e commenti.
+
+#### Q-N5J.1÷3 ratificate
+
+| Q | Decisione | Razionale |
+|---|---|---|
+| Q-N5J.1 | **a** | Percorso A spalmato 3 sessioni: N+5.J analisi-first → N+5.K esecutiva fix → N+5.L deploy F3-S6. Pattern par.22.55-Fase2 decima applicazione. (b) monolitica viola pattern + rework risk. (c) F3-S6 diretto lascia cluster aperto al deploy = antipattern par.11.D-rev v3.2-Fase2 backend-completeness pre-deploy. |
+| Q-N5J.2 | **A** | `RepositoryError(UNAUTHORIZED)` raise + handler `_HTTP_STATUS` mapping 401 → vocabulary body `{error:{code:'UNAUTHORIZED', severity:'error', message}}`. Simmetria cross-PWA/backend: PWA `RepositoryError.js` ha gia `UNAUTHORIZED: 'error'` cementato N+5.I CP1.A par.22.91 (drift-N54 Opzione A). ApiRepository PWA test 7 vocabulary body gia consuma questa shape. (B) HTTPException custom detail JSON mantiene divergenza shape vs business-logic errors = fix cosmetico non strutturale. Severity `'error'` confermata drift-N54 ratificato. |
+| Q-N5J.3 | **A** | Push atomico post-fix verde N+5.K = 14+1 commit `fase-3-backend` + 6 tag locali (`v3.2.0-alpha.1..v3.2.0-alpha.6 + v3.2.0-alpha.7 NEW post-fix`). AMB-11.B.7-bis decima applicazione cumulativa Fase 3 chiude pattern: push deferred fino a milestone tecnico verde = N+5.K chiusura cluster auth-layer. (B) ulteriore deferred a F3-S6 accumula commit+tag senza beneficio; deploy ha rischi indipendenti (CORS prod, healthcheck, Tailscale) potenzialmente ritardanti il push del fix pulito. |
+
+#### Scope cluster auth-layer ridotto post-discovery
+
+| Drift | Stato | Scope N+5.K |
+|---|---|---|
+| drift-N44 (par.22.86) — auth-layer backend 401 HTTPException → RepositoryError(UNAUTHORIZED) | **APERTO** | Fix simmetrico unificato N+5.K |
+| drift-N45 (par.22.86) — FastAPI version hardcoded `"0.1.0"` in `app.py` vs pyproject `0.5.0` | **APERTO** | **SCORPORATO** ortogonale ad auth-layer, fix deferred sessione dedicata o opportunistico (sync `__version__` constant module) |
+| drift-N53 (s.6.223 N+5.G) — vocabolario errori asimmetrico PWA/backend | PWA-side CHIUSO N+5.I CP1.A; backend-side `exceptions.py` UNAUTHORIZED enum mancante = **APERTO** | Fix simmetrico unificato N+5.K (3 entry: `RepositoryErrorCode.UNAUTHORIZED` + `_SEVERITY_MAP[UNAUTHORIZED]=ERROR` + `_HTTP_STATUS[UNAUTHORIZED]=401`) |
+| drift-N54 (par.22.91) — UNAUTHORIZED severity `'error'` vs design draft `'warning'` | **CHIUSO** doc-only ratifica Opzione A | NO action N+5.K (gia chiuso) |
+
+#### Sub-AMB N+5.J.A÷D ratificate
+
+- **N+5.J.A** (test pytest backend impatto): conteggio file test pytest `tests/` che testano shape `HTTPException 401` vs `RepositoryError vocabulary body`. Default: MOD targetato solo test che asserts su 401 body shape, NEW eventuale test simmetria vocabulary body. **Conteggio empirico mandatory in CP0-ext N+5.K** (Lesson #27 strict: dump fisico `tests/test_*.py` + grep `401|HTTP_401_UNAUTHORIZED|UNAUTHORIZED|unauthorized` pre-emit patcher).
+- **N+5.J.B** (handler registration): `exceptions.py:71` ha `repository_error_handler` modulo-level. **Verifica empirica mandatory in CP0-ext N+5.K** che `app.py` registri `app.add_exception_handler(RepositoryError, repository_error_handler)` — gia funzionante per FORBIDDEN/NOT_FOUND/CONSTRAINT_VIOLATION/DB_UNAVAILABLE/GENERIC, quindi UNAUTHORIZED **eredita gratis** post-MOD enum + mapping. Default: NO MOD `app.py` necessaria N+5.K.
+- **N+5.J.C** (Spec v1.7 → v1.8): aggiornare vocabolario errori sez. 11.6.11 per ratificare backend-side `UNAUTHORIZED` enum + chiusura drift-N44 + drift-N53 backend-side simmetrico. Aggiornare HTTP mapping table (riga `401 | HTTPException detail` → `401 | vocabulary body shape uniform`). Bump Spec v1.7 → v1.8. KB-only, no git.
+- **N+5.J.D** (commento sorgente fix drift-N-doc-N59): cleanup commento `db/dependencies.py:76-81`. Decisione in N+5.K: (a) cancellare blocco commento intero 8 righe, (b) sostituire con rif. corretto a par.22.86 drift-N44 closure + par.22.92 ratifica chiusura N+5.J. **Default raccomandato N+5.K: (b)** sostituzione con rif. corretti cross-reference.
+
+#### Pattern par.22.55-Fase2 decima applicazione cumulativa Fase 3
+
+Pattern split safety-first applicato come analisi-first sola separata da esecutiva fix. Sequenza Fase 3 decima applicazione:
+1. F3-S1-bis-delta parte 1/2 (Fase 2 par.22.79-quater)
+2. F3-S1-bis-delta parte 2/2 (Fase 2 par.22.80)
+3. F3-S3-alpha-pre (par.22.82)
+4. F3-S3-alpha-post (par.22.83)
+5. N+5.B (par.22.84-pre, cementazione finale CP5 N+5.C)
+6. N+5.D (par.22.85)
+7. N+5.F (par.22.88)
+8. N+5.G (par.22.89)
+9. N+5.H (par.22.90)
+10. **N+5.I-pre (par.22.91-pre)** + **N+5.J (par.22.92, questa sezione)**
+
+#### Mio errore zsh
+
+Nessuno questa sessione. Tutti blocchi bash zsh-safe (echo single-quoted, no `#` commenti, no apostrofi italiani, no espansione variabili inattese, no apostrofi italiani in commit messages futuri).
+
+#### Cleanup status
+
+- **cleanup-N1** (Fase 2 IndexedDB dev-only browser-side): invariato carry-forward
+- **cleanup-N8 candidate** (~9 file `.bak.*` filesystem residui gitignored, 2 storici notable cross-sessione): invariato carry-forward, opportunistico N+5.K CP4 finale
+- **cleanup-N10/N11/N12** (chiusi N+5.I-post par.22.91 CP4 cumulativo): invariati
+
+#### Stato git post-N+5.J
+
+- Branch `fase-3-backend` HEAD `<TBD-N5J-doc-only-commit>` 15 ahead `origin/fase-3-backend` (14 pre-N+5.J + 1 doc-only N+5.J closing)
+- Tag annotato `v3.2.0-alpha.6` LOCALE su `baa100d` invariato (NO push, AMB-11.B.7-bis pattern preservato, push atomico deferred N+5.K Q-N5J.3=A)
+- 6 tag F3-S5-alpha LOCALI listati invariati (`v3.2.0-alpha.1..v3.2.0-alpha.6`)
+- `backend/pyproject.toml` `0.5.0` invariato
+- `package.json` `3.2.0-alpha.1` invariato
+- 575/575 PWA + 75/75 backend = **650 test totali cumulativi** invariato
+- Working tree clean post-closing (solo `PharmaTimer_Changelog_Fase3.md` toccato + commit)
+
+#### Findings cumulativi carry-forward post-N+5.J
+
+- 17 findings registry Fase 2 polish invariati
+- 12 residual UX findings v3.1.0 invariati
+- 4 drift-doc Fase 3 N30-N33 chiusi par.22.79-quater-Fase2
+- 4 drift-doc Fase 3 N36-N39 chiusi par.22.82
+- 4 drift-doc Fase 3 N40-N43 chiusi par.22.83
+- 0 drift-doc N+5.C chiusi par.22.84
+- 0 drift-doc N+5.D
+- 3 drift-doc N44-N46 par.22.86 (N44 + N45 carry-forward, N46 chiuso CP2-FIX3)
+- drift-doc N47-N52 N+5.E-beta-N+5.I-pre invariati
+- 2 drift-doc N+5.I-post chiusi par.22.91 (N53 PWA-side + N54 doc-only Opzione A)
+- 1 drift-doc N55 par.22.91 (file count piano vs reale, minor non bloccante)
+- **4 drift-doc Fase 3 N56-N59 NEW N+5.J ratificati** (3 prompt drift par.11.O-S3 + 1 commento sorgente db/dependencies.py)
+- **7 lesson NEW #20-#28 MANDATORY cumulative invariati** (Lesson #27 estensione cementata empirica par.22.92, NO Lesson #29 NEW)
+- Sub-AMB carry-forward invariati: `addFarmaco` undefined literal persistence PWA-side + IndexedDB test row dev-only
+- **4 sub-AMB N+5.J.A÷D NEW cementate** (test pytest impact + handler registration + Spec v1.7→v1.8 + commento sorgente cleanup)
+
+#### Riferimenti par.22.92
+
+- **par.22.91-Fase3** (closing FINALE N+5.I-post F3-S5-alpha milestone CP1.B 71 test green + Spec v1.7 + Lesson #28 ratifica MANDATORY)
+- **par.22.91-pre-Fase3** (closing PARZIALE N+5.I-pre CP1.A source ops + CP2-soft 504 invariato, immutability par.6.71/85-Fase2)
+- **par.22.90-Fase3** (closing N+5.H analisi-first profonda dedicata + contract mapping IRepository 31 metodi + Lesson #28 candidate)
+- **par.22.89-Fase3** (closing N+5.G analisi-first scoperta empirica 7 drift + 4 finding s.6.222-225 + Lesson #27 MANDATORY)
+- **par.22.86-Fase3** (closing N+5.E-alpha-bis F3-S4-alpha milestone tecnico + Lesson #25 MANDATORY + drift-N44/N45/N46 emit)
+- **par.22.34-Fase2**: RepositoryError vocabulary cross-PWA/backend simmetrico — estensione UNAUTHORIZED backend-side cementata N+5.K (post-fix)
+- **par.22.55-Fase2**: split safety-first preventivo, decima applicazione cumulativa Fase 3 questa sezione
+- **par.22.58-Fase2**: patcher Python content-based con SENTINEL, applicabile N+5.K
+- **par.6.118-Fase2**: pre-code scenario validation MANDATORY, applicabile N+5.K
+- **par.6.71/85-Fase2**: history immutability + gap s.6.NN preservato, applicato N+5.J (no retro-correzione par.22.86 / par.11.O-S3)
+
+#### Pre-letture obbligatorie N+5.K
+
+1. Questo Changelog Fase 3 § 22.92 (questa sezione) + § 11.P-S3 scope esecutiva
+2. `par.22.91-Fase3` integrale (closing FINALE N+5.I-post F3-S5-alpha milestone + drift-N54 ratifica + Lesson #28 ratifica)
+3. `par.22.86-Fase3` (drift-N44/N45 origin + sub-AMB cp2-err-N3.A÷E ratificate, **NO Sub-Q-NEW.4 fittizia commento sorgente**)
+4. Spec v1.7 sez. 11.6.11 (vocabolario errori PWA-side cementato F3-S5-alpha milestone) — da aggiornare a v1.8 in N+5.K
+5. `par.22.34-Fase2` integrale (RepositoryError vocabulary cross-PWA/backend simmetrico)
+6. `par.6.118-Fase2` (pre-code scenario validation MANDATORY)
+7. `par.22.58-Fase2` (patcher Python content-based con SENTINEL)
+8. Lesson #20-#28 cumulative MANDATORY (in particolare Lesson #23 schema-first introspect su test fixture inventory pre-emit pytest + Lesson #27 strict dump fisico file source/test impattati pre-emit patcher)
+
+---
+
+### par.11.P-S3 — Prompt apertura N+5.K esecutiva fix cluster auth-layer N44+N53 backend-side + push atomico
+
+<!-- par.11.P-S3 R1 emit Fase 3 post-N+5.J closing par.22.92 -->
+
+**One-liner apertura:** `Esegui il prompt al par.11.P-S3 del Changelog Fase 3.`
+
+#### Scope alto livello
+
+Esecutiva monolitica fix cluster auth-layer backend-side N44+N53 simmetrico unificato + push atomico `fase-3-backend` HEAD + 6 tag locali. Scope architetturalmente blindato N+5.J par.22.92 (Q-N5J.1=a + Q-N5J.2=A + Q-N5J.3=A + 4 sub-AMB N+5.J.A÷D ratificate). Patcher Python `cp_n5k_authlayer_patcher.py` ~15-25K content-based SENTINEL idempotent. 2 file source MOD + N file MOD test pytest backend (count empirico CP0-ext mandatory) + commento sorgente cleanup drift-N-doc-N59 + Spec v1.7 → v1.8 sez. 11.6.11 emit + bump `backend/pyproject.toml` 0.5.0 → 0.6.0 + tag annotato `v3.2.0-alpha.7` LOCALE post-fix verde + push atomico 15 commit + 7 tag a fine sessione.
+
+#### CP0 baseline empirico mandatory
+
+```bash
+cd ~/Sviluppo/pharmatimer
+echo 'CP0.1 -- HEAD + branch + ahead + tag corrente'
+git rev-parse HEAD
+git rev-parse --abbrev-ref HEAD
+git rev-list --count origin/fase-3-backend..HEAD
+git describe --tags --abbrev=0
+echo 'CP0.2 -- versioni pyproject + package.json + ImpostazioniTab runtime'
+grep -E '^version' backend/pyproject.toml
+node -e "console.log(require('./package.json').version)"
+grep -n '3\.2\.0' src/components/config/ImpostazioniTab.jsx
+echo 'CP0.3 -- working tree clean post-N+5.J'
+git status --short
+echo 'CP0.4 -- vitest 575/575 invariato'
+npx vitest run 2>&1 | tail -8
+echo 'CP0.5 -- pytest 75/75 invariato'
+source backend/venv/bin/activate
+cd backend && pytest --tb=no -q 2>&1 | tail -5
+cd ..
+deactivate
+echo 'CP0.6 -- 6 tag F3-S5-alpha LOCALI listing'
+git tag -l 'v3.2.0-alpha.*'
+echo 'CP0 baseline done'
+```
+
+Output atteso: HEAD = commit closing N+5.J (1 ahead vs `baa100d`), ahead=15, tag corrente=`v3.2.0-alpha.6`, pyproject=`0.5.0`, package=`3.2.0-alpha.1`, working tree clean, vitest 575/575, pytest 75/75, 6 tag listati.
+
+#### CP0-ext Lesson #27 strict mandatory (dump file source + test pytest impattati)
+
+```bash
+cd ~/Sviluppo/pharmatimer
+echo 'CP0-ext.1 Lesson 27 strict dump 2 file source target'
+shasum -a 256 \
+  backend/pharmatimer_api/db/dependencies.py \
+  backend/pharmatimer_api/exceptions.py \
+  | awk '{print substr($1,1,16), $2}'
+echo 'CP0-ext.2 dump file test pytest impattati (grep 401 + UNAUTHORIZED + unauthorized)'
+grep -rnlE '401|HTTP_401|UNAUTHORIZED|unauthorized|HTTPException' backend/tests --include='*.py' | sort
+echo 'CP0-ext.3 grep test che testano get_current_user shape body'
+grep -rnE 'get_current_user|X-User-Token.*invalid|token.*absent|401.*detail' backend/tests --include='*.py' | head -30
+echo 'CP0-ext.4 verifica handler registration app.py'
+grep -nE 'add_exception_handler|RepositoryError' backend/pharmatimer_api/app.py
+echo 'CP0-ext.5 archive 4-6 file per inspection completa'
+tar -czf /tmp/n5k_source_test_dump.tar.gz \
+  backend/pharmatimer_api/db/dependencies.py \
+  backend/pharmatimer_api/exceptions.py \
+  backend/pharmatimer_api/app.py \
+  backend/tests/conftest.py \
+  $(grep -rlE '401|UNAUTHORIZED|HTTPException' backend/tests --include='*.py' | head -10)
+ls -la /tmp/n5k_source_test_dump.tar.gz
+shasum -a 256 /tmp/n5k_source_test_dump.tar.gz | awk '{print substr($1,1,16)}'
+echo 'Carica /tmp/n5k_source_test_dump.tar.gz in chat (Lesson #27 strict)'
+```
+
+#### Q-N5K.1÷3 da risolvere pre-patcher
+
+- **Q-N5K.1 — Strategia test pytest backend impatto:** (a) MOD targetato solo test che asserts su `HTTPException 401` shape (preserva tutti gli altri test); (b) MOD esteso preventivo + NEW test simmetria vocabulary body per `UNAUTHORIZED` (target +2-4 test NEW); (c) hybrid: MOD targetato + NEW test simmetria minimo 1 (smoke check vocabulary body shape su 401 cross-router). **Default raccomandato (c)** hybrid simmetrico patterns par.22.86 §CP3 smoke S4/S5/S9 (FORBIDDEN/CONSTRAINT_VIOLATION/NOT_FOUND vocabulary body shape verified empirico).
+- **Q-N5K.2 — Strategia cleanup commento sorgente drift-N-doc-N59:** (a) cancellare blocco commento intero `db/dependencies.py:76-81` (8 righe); (b) sostituire con rif. corretto a par.22.86 drift-N44 closure + par.22.92 ratifica chiusura simmetrica N+5.J/N+5.K. **Default raccomandato (b)** cross-reference esplicito immutability par.6.71/85-Fase2.
+- **Q-N5K.3 — Strategia Spec v1.7 → v1.8 emit:** (a) Spec v1.8 atomic con patcher CP1 (incluso nel commit fix); (b) Spec v1.8 deferred CP5 closing pattern par.22.91 sez. 11.6.11 emit. **Default raccomandato (a)** atomic con CP1 (no separazione + handover Spec aggiornata immediato per N+5.L deploy F3-S6).
+
+#### Modalita raccomandata N+5.K
+
+Esecutiva monolitica CP1+CP2+CP3+CP4+CP5 unica sessione. Token spesi stimati ~50-70K. Wall-clock ~2-3h. Pattern split safety-first par.22.55-Fase2 NON applicabile (densita contenuta scope ridotto cluster simmetrico N44+N53 unificato, ~25K patcher target).
+
+#### Scope CP1 patcher Python `cp_n5k_authlayer_patcher.py`
+
+- **`exceptions.py` MOD** (+3 entry): `RepositoryErrorCode.UNAUTHORIZED = 'UNAUTHORIZED'` enum value + `_SEVERITY_MAP[RepositoryErrorCode.UNAUTHORIZED] = RepositoryErrorSeverity.ERROR` (severity `'error'` cementato drift-N54 par.22.91) + `_HTTP_STATUS[RepositoryErrorCode.UNAUTHORIZED] = 401`. Pattern simmetrico FORBIDDEN/NOT_FOUND/CONSTRAINT_VIOLATION/DB_UNAVAILABLE/GENERIC.
+- **`db/dependencies.py` MOD**: `get_current_user` raise `RepositoryError(RepositoryErrorCode.UNAUTHORIZED, "Token not found or user inactive")` invece di `HTTPException(status_code=401, detail=...)`. Rimuovere `HTTPException, status` dall'import `fastapi` se non piu usato altrove nel file (verifica empirica pre-emit). Sub-AMB N+5.J.D applicata: sostituire commento `db/dependencies.py:76-81` con rif. corretto par.22.86 drift-N44 closure + par.22.92 ratifica chiusura simmetrica N+5.J/N+5.K (Q-N5K.2=b default).
+- **`tests/test_*.py` MOD targetato + NEW simmetria minimo 1** (Q-N5K.1=c default hybrid): conteggio empirico CP0-ext sub-AMB N+5.J.A. Aggiornare assert body shape `HTTPException detail` → `RepositoryError vocabulary body {error:{code:'UNAUTHORIZED', severity, message}}`. Aggiungere minimo 1 test simmetria smoke (es. `test_unauthorized_body_shape_vocabulary` in conftest o test_utenti_crud).
+- **Spec v1.7 → v1.8** (Q-N5K.3=a atomic): emit `PharmaTimer_Project_Spec.md` v1.8 sez. 11.6.11 aggiornamento vocabolario errori + HTTP mapping table riga 401. KB-only, no git.
+
+#### Scope CP2-CP5 esecutiva
+
+- **CP2** vitest 575/575 verde invariato + pytest target NEW ≥77 (75 baseline + 2 MOD + 1+ NEW simmetria) verde.
+- **CP3** smoke uvicorn nativo Studio opzionale (deferred N+5.L deploy F3-S6 se non bloccante; verifica empirica vocabulary body shape 401 via curl).
+- **CP4** cleanup-N+ (rimozione `cp_n5k_authlayer_patcher.py` repo root + eventuali `.bak.cp_n5k_*` post-apply verde).
+- **CP5** bump `backend/pyproject.toml` 0.5.0 → 0.6.0 + tag annotato `v3.2.0-alpha.7` LOCALE su HEAD post-fix verde + commit closing selettivo + par.22.93 emit + par.11.Q-S3 pre-frozen N+5.L emit (F3-S6 deploy Mac Mini) + **push atomico** `origin/fase-3-backend` HEAD (15+1+CP5 commits cumulativi) + push 7 tag locali (`v3.2.0-alpha.1..v3.2.0-alpha.6 + v3.2.0-alpha.7 NEW`).
+
+#### AMB-11.B.7-bis chiusura
+
+Push atomico fine N+5.K applica chiusura pattern AMB-11.B.7-bis decima applicazione cumulativa Fase 3 (push deferred cumulativo fino a milestone tecnico verde). Post-push: `origin/fase-3-backend` HEAD = local HEAD, lavoro Fase 3 backend visibile remoto + 7 tag remoti.
+
+#### Esito atteso
+
+- 2 file source MOD (`exceptions.py` + `db/dependencies.py`) verde
+- N file test pytest MOD + ≥1 NEW simmetria verde
+- pytest target ≥77 verde
+- vitest 575/575 invariato
+- Spec v1.8 sez. 11.6.11 emit KB-only
+- Bump pyproject 0.5.0 → 0.6.0 + tag `v3.2.0-alpha.7` LOCALE
+- Push atomico HEAD + 7 tag a `origin/fase-3-backend`
+- Drift-N44 + drift-N53 backend-side chiusi simmetricamente
+- Drift-N-doc-N59 chiuso (commento sorgente fix sub-AMB N+5.J.D)
+- Pre-frozen par.11.Q-S3 N+5.L deploy F3-S6 emit a CP5 N+5.K closing
+- par.22.93 closing N+5.K emit
+
+#### Sessione successiva post-N+5.K
+
+**N+5.L deploy F3-S6 Mac Mini** scope architetturalmente blindato N+5.K push-atomic-completed. Docker-compose + Tailscale + CORS prod + healthcheck + backup automation. Pre-frozen `par.11.Q-S3` emit a CP5 N+5.K closing (questa sessione N+5.K). Drift-N45 (FastAPI version hardcoded `app.py`) candidate carry-forward o fix opportunistico N+5.L CP0-ext.
+
+**One-liner apertura nuova sessione N+5.K:**
+
+```
+Esegui il prompt al par.11.P-S3 del Changelog Fase 3.
+```
+
+---
