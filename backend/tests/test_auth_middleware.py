@@ -23,11 +23,13 @@ def test_auth_no_header(client: TestClient) -> None:
 
 
 def test_auth_invalid_token(client: TestClient, seed_owner_test: Tuple[str, int]) -> None:
-    """Wrong token returns 401 Unauthorized with detail string."""
+    """Wrong token returns 401 with RepositoryError vocabulary body (post-N+5.K)."""
+    # SENTINEL_N5K_CP1_TEST_INVALID_TOKEN_VOCABULARY drift-N44+N53 symmetric closure
     response = client.get("/api/farmaci", headers={"X-User-Token": "wrong-token-value"})
     assert response.status_code == 401
     body = response.json()
-    assert "Token non valido" in body["detail"]
+    assert body["error"]["code"] == "UNAUTHORIZED"
+    assert "Token non valido" in body["error"]["message"]
 
 
 def test_auth_inactive_user(client: TestClient, insert_test_user: Callable[..., Tuple[str, int]]) -> None:
@@ -35,6 +37,21 @@ def test_auth_inactive_user(client: TestClient, insert_test_user: Callable[..., 
     token, _ = insert_test_user(nome="Inactive", ruolo="paziente", attivo=False)
     response = client.get("/api/farmaci", headers={"X-User-Token": token})
     assert response.status_code == 401
+
+
+# SENTINEL_N5K_CP1_TEST_INVALID_TOKEN_VOCABULARY_SYMMETRY_NEW vocabulary cross-handler symmetry smoke
+def test_auth_invalid_token_vocabulary_symmetry(
+    client: TestClient, seed_owner_test: Tuple[str, int]
+) -> None:
+    """N+5.K smoke vocabulary symmetry: 401 body shape mirrors FORBIDDEN/NOT_FOUND."""
+    response = client.get("/api/farmaci", headers={"X-User-Token": "wrong-token"})
+    assert response.status_code == 401
+    body = response.json()
+    assert "error" in body
+    assert body["error"]["code"] == "UNAUTHORIZED"
+    assert body["error"]["severity"] == "error"
+    assert isinstance(body["error"]["message"], str)
+    assert len(body["error"]["message"]) > 0
 
 
 def test_auth_token_hash_sha256() -> None:

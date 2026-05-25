@@ -8,7 +8,7 @@ FastAPI dependencies:
 import hashlib
 from typing import Generator
 
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, Header  # SENTINEL_N5K_CP1_DEPS_IMPORT_CLEANUP_HTTPEXCEPTION removed HTTPException+status post-N+5.K
 from mysql.connector.pooling import PooledMySQLConnection
 from pydantic import BaseModel
 
@@ -55,9 +55,11 @@ def get_current_user(
         cur.close()
 
     if row is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token non valido o utente disattivato",
+        # SENTINEL_N5K_CP1_DEPS_GET_CURRENT_USER_RAISE_VOCABULARY drift-N44+N53 backend-side symmetric closure par.22.93
+        from pharmatimer_api.exceptions import RepositoryError, RepositoryErrorCode
+        raise RepositoryError(
+            code=RepositoryErrorCode.UNAUTHORIZED,
+            message="Token non valido o utente disattivato",
         )
 
     return CurrentUser(
@@ -73,10 +75,10 @@ def get_current_owner(
 ) -> CurrentUser:
     """Resolve current user and assert ruolo='owner'.
 
-    Sub-Q-NEW.4 = A (par.22.86): pragmatic conservative auth-layer pattern.
-    Uses RepositoryError(FORBIDDEN) -> 403 via global handler (par.22.34),
-    while get_current_user keeps legacy HTTPException(401). Asymmetry is
-    documented as drift-N44 doc-only, refactor deferred F3-S5+.
+    Asymmetry historical: par.22.86 drift-N44 emit pre-CP1 N+5.E-alpha
+    (deferred allora F3-S5+). Risolta simmetricamente N+5.K par.22.93
+    (`get_current_user` raise RepositoryError(UNAUTHORIZED) ora, vocabulary
+    uniform via global handler par.22.34). SENTINEL_N5K_CP1_DEPS_DRIFT_N59_REF_FIX
 
     Raises 403 Forbidden (via RepositoryError) when authenticated user is
     not the database owner. Spec sez. 11.6 enforces "1 owner per DB" via

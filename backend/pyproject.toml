@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pharmatimer-api"
-version = "0.5.0"
+version = "0.6.0"  # SENTINEL_N5K_CP5_PYPROJECT_BUMP_0_6_0 cluster auth-layer fix milestone
 description = "PharmaTimer backend API (FastAPI + MySQL nativo Studio + multi-tenant)"
 readme = "README.md"
 requires-python = ">=3.12"

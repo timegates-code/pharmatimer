@@ -24,6 +24,7 @@ class RepositoryErrorCode(str, Enum):
     NOT_FOUND = "NOT_FOUND"
     CONSTRAINT_VIOLATION = "CONSTRAINT_VIOLATION"
     FORBIDDEN = "FORBIDDEN"  # CP1 F3-S4-alpha N+5.E-alpha applied SENTINEL
+    UNAUTHORIZED = "UNAUTHORIZED"  # SENTINEL_N5K_CP1_EXCEPTIONS_UNAUTHORIZED_ENUM N+5.K cluster auth-layer fix
     GENERIC = "GENERIC"
 
 
@@ -38,6 +39,7 @@ _DEFAULT_SEVERITY = {
     RepositoryErrorCode.NOT_FOUND: RepositoryErrorSeverity.WARNING,
     RepositoryErrorCode.CONSTRAINT_VIOLATION: RepositoryErrorSeverity.WARNING,
     RepositoryErrorCode.FORBIDDEN: RepositoryErrorSeverity.WARNING,
+    RepositoryErrorCode.UNAUTHORIZED: RepositoryErrorSeverity.ERROR,  # SENTINEL_N5K_CP1_EXCEPTIONS_UNAUTHORIZED_SEVERITY drift-N54 par.22.91 ratifica Opzione A
     RepositoryErrorCode.GENERIC: RepositoryErrorSeverity.ERROR,
 }
 
@@ -46,6 +48,7 @@ _HTTP_STATUS = {
     RepositoryErrorCode.NOT_FOUND: 404,
     RepositoryErrorCode.CONSTRAINT_VIOLATION: 409,
     RepositoryErrorCode.FORBIDDEN: 403,
+    RepositoryErrorCode.UNAUTHORIZED: 401,  # SENTINEL_N5K_CP1_EXCEPTIONS_UNAUTHORIZED_HTTP_STATUS
     RepositoryErrorCode.GENERIC: 500,
 }
 
