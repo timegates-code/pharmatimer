@@ -4164,3 +4164,486 @@ Milestone "F3-S6 fully completed" demandata N+5.N+ Tailscale apply.
 ```
 Esegui il prompt al par.11.R-S3-ter del Changelog Fase 3.
 ```
+
+
+---
+
+### 22.97 (Fase 3, closing N+5.M-pivot-exec-alpha analisi-first pre-CP1 dedicata con CP0-ext-pivot empirico completo Mini+Studio + 5 sub-AMB chiuse empirico + 9 drift NEW catalizzati + sub-AMB.I-NEW emergente architetturale BLOCKER + quattordicesima applicazione cumulativa pattern par.22.55-Fase2 split safety-first preventivo pre-emit patcher)
+
+<!-- par.22.97 R1 emit Fase 3 SENTINEL_N5M_PIVOT_EXEC_ALPHA_CLOSING_PAR_22_97 -->
+
+**Data:** 26 maggio 2026 (sera, post-par.22.96 stesso giorno).
+
+**Modalita:** Sessione N+5.M-pivot-exec-alpha analisi-first sola pre-CP1
+dedicata: CP0 baseline Studio + CP0-ext-pivot Parte A Mini batch SSH 12 audit
++ Parte B Studio 3 audit + Parte C dump empirico `app.py` + `config.py` +
+audit 10/10 file design draft N+5.M-pivot consegnati da Roberto in apertura
+(8 file Downloads + 2 carry-forward N+5.L in project KB `06-cors` +
+`07-drift-N45`). Pattern par.22.55-Fase2 split safety-first **quattordicesima
+applicazione cumulativa Fase 3** preventiva pre-emit patcher CP1
+(post sub-AMB.I-NEW emergente architetturale BLOCKER, regola critica #5
+session sizing applicata). Token spesi ~38K. Wall-clock ~90 min. Zero source
+change, zero commit codice, zero bump pyproject/package, zero tag, zero push
+runtime. **1 commit doc-only** Changelog Fase 3 (questa sezione +
+par.11.R-S3-quater pre-frozen).
+
+**Esito:** OK milestone analisi-first pre-CP1 dedicata completata + split
+safety-first preventivo applicato pre-emit patcher CP1. 5 sub-AMB chiuse
+empirico + 9 drift NEW catalizzati documentati + sub-AMB.I-NEW emergente
+architetturale identificata BLOCKER CP1 (drift D-NEW#8 password injection
+runtime Mini). Pre-frozen `par.11.R-S3-quater` N+5.M-pivot-exec-beta emit.
+
+#### CP0 baseline empirico verde 7/7
+
+- HEAD `3c9c72c` branch `fase-3-backend` (commit closing N+5.M-pivot par.22.96
+  doc-only re-architettura deploy nativo gamma)
+- 0 ahead `origin/fase-3-backend` (push par.22.96 gia applicato chiusura
+  AMB-11.B.7-bis cementazione drift-N63-N68 + Lesson #30 + ratifica 9 sub-AMB
+  + 4 sub-AMB tecniche in origin remote)
+- Tag `v3.2.0-alpha.7` LOCALE+REMOTO invariato (carry-forward N+5.K par.22.93)
+- 7 tag totali `v3.2.0-alpha.1..v3.2.0-alpha.7` LOCALE+REMOTO simmetrici
+- `backend/pyproject.toml` `0.6.0` invariato
+- `package.json` `3.2.0-alpha.1` invariato
+- ImpostazioniTab runtime riga 484 = `3.2.0-alpha.1` (sync)
+- 651/651 test invariati (76 backend + 575 frontend, carry-forward verde
+  N+5.K, non rieseguiti pattern par.22.74-96 doc-only)
+
+#### CP0-ext-pivot Parte A Mini batch SSH alias `mini` verde 11/12
+
+SSH alias `mini` -> `marketreader@192.168.1.167` con `id_ed25519_github` da
+`~/.ssh/config` Studio + LocalForward 3307->3306 sub-AMB tecnica. SSH key
+empirica verde, sub-AMB N+5.M-pivot-exec.B chiusa.
+
+Empirico Mini confermato:
+- macOS Mini `26.3.1` (build 25D2128)
+- MySQL `9.6.0` brew `/opt/homebrew/bin/mysql` -> Cellar/mysql/9.6.0
+- mysqldump path OK `/opt/homebrew/bin/mysqldump` (sub-AMB.mysqldump-NEW
+  chiusura empirica: stderr `unknown variable 'database=MarketData'` deriva
+  da `~/.my.cnf` StockFusion default lookup, bypassato in
+  `06-pharmatimer-backup.sh` via `--defaults-extra-file=~/.my-pharmatimer.cnf`
+  esplicito, design draft gia protetto)
+- Python `3.13.12` brew `/opt/homebrew/bin/python3.13`
+- Port 8000 `PORT_8000_FREE` (no conflict StockFusion)
+- Unix user `uid=501(marketreader)` gruppi staff+admin+_developer+ssh+...
+- `~/PharmaTimer/` assente (atteso pre-deploy)
+- `~/.my-pharmatimer.cnf` assente (atteso pre-setup_pharmatimer_db.sh)
+- LaunchAgents StockFusion confermati 3 plist: `daemon-wrapper.plist` +
+  `log-cleanup.plist` + `market-reader.plist.disabled` (pattern Watchdog
+  KeepAlive=true + wrapper.sh ratificato empirico, replicabile 1:1 per
+  PharmaTimer)
+- `homebrew.mxcl.mysql.plist` gestisce MySQL auto-start (riuso istanza)
+- launchctl Darwin Bootstrapper 7.0.0
+- mDNS `LocalHostName` = `MarketReader-Server` (NON `mini` o `Mac-mini`,
+  drift D-NEW#2 segnalato)
+
+Sub-AMB.mysqldump-NEW chiusa, NON e blocker CP5 backup smoke.
+
+#### CP0-ext-pivot Parte B Studio verde 3/3
+
+- `backend/requirements.txt` PRESENTE (104 bytes, 21 May 2026, sub-AMB.D-NEW#1
+  parzialmente chiusa: file esiste, ma rimedio (ii) preferito per design)
+- `backend/pyproject.toml` `[project] dependencies` block: 6 prod deps con
+  version pinning range (fastapi, uvicorn[standard], mysql-connector-python,
+  pydantic, pydantic-settings, httpx) + 2 dev deps `[project.optional-dependencies]`
+  (pytest, pytest-asyncio)
+- `name = "pharmatimer-api"` ratifica drift-N45 importlib.metadata anchor
+  `_pkg_version("pharmatimer-api")` corretto
+
+#### CP0-ext-pivot Parte C dump empirico `app.py` + `config.py` (Lesson #27 strict)
+
+Pattern Lesson #27 strict applicato: dump fisico file source backend MANDATORY
+pre-design CP1 anchor patcher (NON design draft testuale assumere realta).
+Esito catalizzante drift NEW#5 ortogonale architetturale:
+
+**app.py F3-S1-bis Step 4 CP1-code (54 righe):**
+- `from contextlib import asynccontextmanager` + `from fastapi import FastAPI`
+  + `from fastapi.middleware.cors import CORSMiddleware`
+- `from pharmatimer_api.config import settings` (settings layer
+  pydantic-settings esistente!)
+- `from pharmatimer_api.db.connection import close_pool, init_pool`
+- 5 router include + 1 router post-SENTINEL `permessi` N+5.E-beta CP1
+- `app = FastAPI(title="PharmaTimer API", version="0.1.0", lifespan=lifespan)`
+  (riga 30, drift-N45 hardcoded carry-forward N+5.M-pivot-exec-beta CP1 fix)
+- `app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins_list,
+  allow_credentials=True, allow_methods=["*"], allow_headers=["*"])` (riga
+  34-40, **dev permissive F3-S1-bis** docstring riga 5 commenta "prod
+  restrictive deferred F3-S6" = ora N+5.M-pivot-exec-beta CP1)
+
+**config.py F3-S1-bis Step 4 CP1-code (38 righe):**
+- Pydantic Settings class loader `.env.dev` auto via python-dotenv
+- `case_sensitive=True` + `extra="ignore"`
+- `DB_HOST: str = "127.0.0.1"` default + `DB_USER: str = "pharmatimer"` +
+  `DB_PASSWORD: str` MANDATORY + `DB_NAME: str = "pharmatimer_dev"` +
+  `DB_NAME_TEST` + `DB_POOL_SIZE: int = 5`
+- `CORS_ORIGINS: str = "http://localhost:5173"` default
+- `@property cors_origins_list` parse CSV identico design draft 06-cors AFTER
+
+#### 5 sub-AMB N+5.M-pivot-exec.B÷H chiuse empirico
+
+| ID | Tema | Chiusura empirica |
+|---|---|---|
+| **B** | SSH key vs password Studio->Mini | (i) SSH key `id_ed25519_github` via alias `mini` `~/.ssh/config` verde + known_hosts ed25519 192.168.1.167 |
+| **F revised** | hostname CORS LAN | **Y revised**: `http://192.168.1.167:8000,http://MarketReader-Server.local:8000,https://timegates-code.github.io` (post-empirico mDNS = MarketReader-Server, NON mini.local D-NEW#2) |
+| **G NEW** | app.py rename architettura | (c) mantieni convenzione standard FastAPI `app.py` ratificata empirica turn-by-turn Roberto (convention `<pkg>.<modulo>:<variabile>` = `pharmatimer_api.app:app`, no scope creep) |
+| **H NEW** | drift NEW#5 strategia CORS mod | (a) settings layer pydantic-settings invariato, MOD `app.py` minimale 3 righe restrict (allow_credentials=False, allow_methods=["GET","POST","PUT","DELETE"], allow_headers=["Content-Type","X-User-Token"]) post-empirico dump config.py |
+| **mysqldump-NEW** | Diag mysqldump exit 7 | NON e blocker: stderr `unknown variable database=MarketData` deriva da `~/.my.cnf` StockFusion default lookup, bypassato design draft `06-pharmatimer-backup.sh` via `--defaults-extra-file=~/.my-pharmatimer.cnf` esplicito |
+
+#### 9 drift NEW catalizzati questo step
+
+| ID | Drift | Severity | Stato |
+|---|---|---|---|
+| **D-NEW#1** | `requirements.txt` presente Studio ma deve essere bypassato design corretto | 🟢 minore | Chiuso (sub-AMB.D-NEW#3/#4 rimedio (ii) carry-forward) |
+| **D-NEW#2** | mDNS Mini hostname reale `MarketReader-Server.local` (NON `mini.local`), 03-plist + Spec v1.9 sez. 12.4 da aggiornare | 🟢 chiuso F revised | Chiuso (carry-forward CP1 patcher beta MOD 03-plist + Spec v1.9 delta sez. 12.4) |
+| **D-NEW#3** | `requirements.txt` include `pytest` + `pytest-asyncio` (dev deps mix prod) | 🟡 architetturale | Carry-forward (rimedio (ii) in CP1 patcher beta) |
+| **D-NEW#4** | `requirements.txt` senza version pinning -> divergenza Studio vs Mini riproducibilita | 🟡 architetturale | Carry-forward (rimedio (ii) in CP1 patcher beta) |
+| **D-NEW#5** | design draft `06-cors-app-py-mod.py` AFTER block superato realta empirica (settings layer pydantic-settings esistente F3-S1-bis CP1-code) | 🟢 chiuso sub-AMB.H | Chiuso (sub-AMB.H opzione (a), MOD 3 righe restrict invece di re-implementare CORS hardcoded) |
+| **D-NEW#6** | `config.py` `env_file=".env.dev"` hardcoded riga 11 -> Mini deploy NO .env.dev (pattern `extra="ignore"` salva, env var lette runtime da plist) | 🟡 confusionale non-bloccante | Carry-forward (Q-I.3 doc-only Spec v1.9 oppure MOD difensiva) |
+| **D-NEW#7** | `config.py` `DB_HOST = "127.0.0.1"` default vs 03-plist `localhost` env var (TCP vs Unix socket potenziale divergence) | 🟢 risolto plist override | Carry-forward (Q-I.3 doc-only Spec v1.9) |
+| **D-NEW#8** | `config.py` `DB_PASSWORD: str` MANDATORY senza default, 03-plist passa solo `DB_DEFAULTS_FILE=~/.my-pharmatimer.cnf` env var. Runtime Mini = pydantic-settings ValidationError startup -> app crash. **BLOCKER CP3 deploy effettivo** | 🔴 BLOCKER | **sub-AMB.I-NEW emergente architetturale** Q-I.1 dedicato N+5.M-pivot-exec-beta apertura |
+| **D-NEW#9** | `config.py` `DB_NAME = "pharmatimer_dev"` default vs Mini prod `pharmatimer` | 🟢 risolto plist override | Carry-forward (Q-I.3 doc-only Spec v1.9) |
+
+#### Sub-AMB.I-NEW emergente architetturale BLOCKER CP1 (drift D-NEW#8)
+
+**Problema:** `config.py` Settings class richiede `DB_PASSWORD: str` MANDATORY
+via env var. Design draft `03-plist` (LaunchAgent api wrapper) passa env var
+`DB_DEFAULTS_FILE=~/.my-pharmatimer.cnf` (path file secrets) ma NON passa
+`DB_USER`/`DB_PASSWORD` env vars dirette. Mismatch design vs implementazione
+runtime: app crash startup pydantic-settings ValidationError pre-pool init.
+
+**3 opzioni rimedio candidate (turn-by-turn N+5.M-pivot-exec-beta Q-I.1 strict
+Lesson #30):**
+
+| Opt | Strategia | Pro | Contro |
+|---|---|---|---|
+| **(a)** | MOD `03-plist` aggiungo `DB_USER`+`DB_PASSWORD` env vars (parsing pre-launchctl da .cnf inline) | Settings layer invariato, scope CP1 blindato, plist auto-contained | Password in `EnvironmentVariables` plist process-inspectionabile `ps auxe` (minor security) |
+| **(b)** | MOD `config.py` + `db/connection.py`: `db_defaults_file: str \| None` + mysql.connector.connect `option_files=...` conditional | Coerente design originale `09-cnf-template` riga 17-18, no password in plist, single source-of-truth .cnf | 🔴 Scope creep CP1 N+5.M-pivot-exec (impatta `config.py` + `db/connection.py` + 76 pytest backend smoke verify) -> split N+5.M-pivot-exec-beta-1 backend + beta-2 deploy possibile |
+| **(c)** | MOD `04-pharmatimer-api-wrapper.sh` legge .cnf pre-uvicorn `sed/awk/grep parsing` + `export DB_USER`+`DB_PASSWORD` prima `exec uvicorn` | Scope CP1 backend invariato + password mai in plist statica (solo env runtime process) | Wrapper complicato (.cnf parsing fragile), password ancora in process env runtime |
+
+**Default raccomandato:** TBD turn-by-turn N+5.M-pivot-exec-beta apertura Q-I.1.
+NO blanket "decidi tu" Lesson #30 strict (AMB-deferred multi-opzione
+architetturale).
+
+#### Sub-AMB N+5.M-pivot-exec.A÷F pending carry-forward N+5.M-pivot-exec-beta
+
+| ID | Default raccomandato carry-forward | Note |
+|---|---|---|
+| **A** | Patcher monolitico `cp_n5m_pivot_deploy_patcher.py` (~32-50K stimato post-decisione I-NEW) | Soglia split safety-first 50K, eventuale split beta-1/beta-2 se Q-I.1=(b) |
+| **C** | Smoke CP4 ordine 401 no-token -> 200 happy con `X-User-Token` -> 422 Pydantic invalid body + `curl -v` verbose | Progressione semantica auth-layer (cluster N44+N53 N+5.K) -> happy -> validation |
+| **D** | `seed_owner.py` Mini-side CP3, OWNER_NAME=Roberto, new token random stdout one-shot copy-paste PWA `VITE_USER_TOKEN` (NON migrato Studio dev) | Separation prod/dev token, no leak token Studio in Mini prod |
+| **E** | Spec v1.9 merge Roberto-side post-CP5 smoke verde (KB-only locale, no git) | Cementazione formale post-deploy verificato |
+| **F revised** | CORS_ORIGINS = `http://192.168.1.167:8000,http://MarketReader-Server.local:8000,https://timegates-code.github.io` | Post-empirico mDNS, 03-plist + Spec v1.9 delta sez. 12.4 MOD inclusi CP1 patcher |
+| **D-NEW#3/#4** | Rimedio (ii) integrato CP1 patcher: `02-setup-pharmatimer-venv.sh` MOD skip `requirements.txt` pre-flight + pre-install + usa solo `pip install -e backend/` (deps da pyproject range pinning) | Skip dev deps prod + skip unpinned divergence |
+
+#### Test
+
+651/651 invariati su 131 file (76 backend pytest + 575 vitest frontend, zero
+delta vs baseline N+5.M-pivot par.22.96). Allineato pattern par.22.74-96
+sessioni analisi-first/doc-only delta zero.
+
+#### Tag git e push
+
+- **Tag git: NO** (AMB-11.B.7 rispettato: analisi-first, no milestone tecnico,
+  no codice runtime modificato)
+- **package.json: invariato 3.2.0-alpha.1**
+- **pyproject.toml: invariato 0.6.0**
+- **Commit: 1 doc-only** Changelog Fase 3 (questa sezione +
+  par.11.R-S3-quater pre-frozen, pattern par.22.75/76/77/96 replicato esatto
+  patcher Python idempotente content-based SENTINEL)
+- **Push: SI immediato raccomandato** per cementare 9 drift NEW + sub-AMB.I-NEW
+  + 5 sub-AMB chiuse in origin remote (backup KB cross-device, Lesson #11
+  pre-frozen prompt drift protezione cross-session)
+- **Spec: invariata KB-only Roberto-side** (Spec v1.9 delta merge demandato
+  post-deploy verificato CP5 N+5.M-pivot-exec-beta)
+
+#### Lesson #11 estensione candidata (Lesson NEW #31)
+
+Empirical CP0-ext dump source/config MANDATORY pre-CP1 patcher emit: anchor
+design draft N+5.M-pivot consolidato par.22.96 puo essere superato dalla
+realta architetturale evolved senza segnalazione esplicita in Changelog. Case
+study drift NEW#5: design draft `06-cors-app-py-mod.py` BEFORE block
+ipotizzava `allow_origins=["*"]` hardcoded come baseline, realta empirica
+F3-S1-bis Step 4 CP1-code aveva gia `settings.cors_origins_list` pydantic-settings
+layer (architettura superiore). Senza CP0-ext Parte C dump empirico (Lesson
+#27 strict applicato), CP1 patcher avrebbe scritto MOD inferiore re-implementando
+`os.getenv` inline + degrade architetturale.
+
+**Punti operativi candidate Lesson #31 NEW MANDATORY** (cementazione formale
+N+5.M-pivot-exec-beta CP closing se ratifica Roberto):
+
+1. **Pre-CP1 patcher emit OBBLIGA CP0-ext Parte C dump empirico file source
+   target MOD** (NON solo CP0 baseline empirico delta sessioni precedenti).
+   Pattern Lesson #27 strict esteso a static analysis source pre-patcher
+   design.
+
+2. **Design draft N-sessioni-fa puo essere superato realta evolved**: anchor
+   pre-flight count `== 1` su BEFORE block puo failure-rate elevato in
+   patcher se realta architetturale e divergente. Empirico count BEFORE +
+   AFTER + struttura semantica MANDATORY pre-emit.
+
+3. **Cluster drift architetturali NEW catalizzato da CP0-ext-pivot Parte C**
+   (9 drift NEW questo step, di cui 1 BLOCKER) e pattern previsto se design
+   draft N-sessioni-fa data > 5gg vs realta sviluppo intermedia. Aspettativa
+   minimum 3-5 drift architetturali ortogonali ad ogni CP0-ext-pivot Parte C
+   dump.
+
+Lesson #31 candidate ratifica turn-by-turn N+5.M-pivot-exec-beta apertura,
+cementazione Spec v1.9 sez. 11.6.14 post-CP5 verde.
+
+#### Cleanup status
+
+- **cleanup-N1** (Fase 2 IndexedDB dev-only browser-side): invariato carry-forward
+- **cleanup-N3** (Fase 3 farmaci.id=2 attivo=FALSE F3-S2): invariato carry-forward
+- **cleanup-N3-bis** (2 utenti zombie + 6 permessi orfane Fase 3): invariato
+- **cleanup-N+5.M-pivot-exec-alpha**: nessun file source/test/config generato
+  (sessione analisi-first pre-CP1 dedicata, no .bak codice), 1 file Changelog
+  `.bak.cp_n5m_pivot_exec_alpha_closing` post-apply patcher repo root
+  (gitignore `*.bak.*` coperto par.22.74 esteso, cleanup demandato CP6
+  N+5.M-pivot-exec-beta)
+
+#### Riferimenti par.22.97
+
+- **par.22.96-Fase3** (closing N+5.M-pivot doc-only + 12 artefatti design
+  draft consolidato delivery file-based + ratifica turn-by-turn 9 sub-AMB +
+  Lesson #30 cementata Spec v1.9 sez. 11.6.13)
+- **par.11.R-S3-ter-Fase3** (questo prompt consumato N+5.M-pivot-exec-alpha
+  analisi-first pre-CP1 dedicata, CP plan CP0-CP7 originale carry-forward
+  attivo per N+5.M-pivot-exec-beta esecutiva post-sub-AMB.I-NEW chiusura)
+- **par.22.95-Fase3 R2** (Lesson #30 cementata + vincolo gamma ratificato 3x
+  + 3 precisazioni Roberto)
+- **par.22.78-bis-Fase2** (architettura R1 + AMB-F3.F gamma deferred F3-S6)
+- **par.22.55-Fase2** split safety-first preventivo **quattordicesima
+  applicazione cumulativa Fase 3** (post F3-S1-bis-delta parte 1/2-2/2 +
+  F3-S3-alpha-pre/post + N+5.B + N+5.D + N+5.F + N+5.G + N+5.H + N+5.I-pre +
+  N+5.J + N+5.K + N+5.L + N+5.M abort + N+5.M-pivot)
+- **par.22.58-Fase2** patcher Python content-based SENTINEL idempotent
+  (applicato APPEND par.22.97 + par.11.R-S3-quater, NON anchor-based MOD
+  source per analisi-first sola)
+- **par.22.75/22.76/22.77-Fase2** patcher Changelog APPEND idempotente
+  pattern bit-perfect sandbox Linux Python 3.13 vs Mac Studio macOS Tahoe
+  Python 3.13 replicato esatto
+- **par.6.118-Fase2** pre-code scenario validation MANDATORY: applicato
+  CP0-ext-pivot Parte C dump source pre-emit patcher CP1 (estensione Lesson
+  #31 candidate)
+- **par.6.71/85-Fase2** history immutability: 9 drift NEW questo step
+  carry-forward immutabili post-push
+- **AMB-11.B.7 / AMB-11.B.7-bis-Fase2**: NO bump + NO tag (sessione analisi-first
+  doc-only, demandato N+5.M-pivot-exec-beta CP6)
+- **Lesson #20-#30 cumulative MANDATORY** invariate + applicate (in particolare
+  Lesson #11 pre-frozen prompt drift, Lesson #27 strict static analysis
+  empirico dump source/config, Lesson #28 fonte primaria carry-forward,
+  Lesson #29 delivery file-based via present_files, Lesson #30 deferred
+  decisions immutabili turn-by-turn ratifica)
+- **Lesson #31 candidate NEW MANDATORY** (estensione Lesson #11+#27): CP0-ext
+  Parte C dump empirico source/config pre-CP1 patcher emit + cluster drift
+  architetturali NEW catalizzato pattern
+
+#### Sessione successiva post-N+5.M-pivot-exec-alpha
+
+**N+5.M-pivot-exec-beta esecutiva post-decisione sub-AMB.I-NEW Q-I.1/.2/.3 +
+ratifica batch sub-AMB pending carry-forward A/C/D/E/F-revised/D-NEW#3/#4 +
+CP1 patcher emit + CP2-CP7 deploy nativo Mini.** Scope architetturalmente
+blindato par.22.95 R2 + par.22.96 + par.22.97 (questo) + 10/10 file design
+draft consolidato + CP0-ext-pivot empirico verde + sub-AMB.I-NEW dialogato
+dedicato Lesson #30 strict. Token attesi 60-90K (potenzialmente 100-120K se
+Q-I.1=(b) refactor backend). Wall-clock 3-4h.
+
+Possibile split N+5.M-pivot-exec-beta-1 (backend mod config.py + db/connection.py
++ smoke pytest 76 verde) + N+5.M-pivot-exec-beta-2 (deploy infrastruttura
+Mini + smoke + backup + commit + push + tag) **quindicesima applicazione
+cumulativa pattern par.22.55-Fase2** se Q-I.1=(b) ratificato.
+
+**One-liner apertura nuova sessione N+5.M-pivot-exec-beta:**
+
+```
+Esegui il prompt al par.11.R-S3-quater del Changelog Fase 3.
+```
+
+---
+
+### par.11.R-S3-quater -- Prompt apertura N+5.M-pivot-exec-beta esecutiva post-sub-AMB.I-NEW dialogato + CP1-CP7 deploy nativo Mini
+
+<!-- par.11.R-S3-quater R1 emit Fase 3 post-N+5.M-pivot-exec-alpha closing par.22.97 -->
+
+**One-liner apertura:** `Esegui il prompt al par.11.R-S3-quater del Changelog Fase 3.`
+
+#### VINCOLO ARCHITETTURALE IMMUTABILE (carry-forward par.22.95 R2 + par.22.96 + par.22.97 + L1-L4 difesa multi-layer)
+
+**Deploy F3-S6 PharmaTimer = opzione gamma par.22.78-bis ratificata + riconfermata 4 volte (par.22.95 R2 + par.22.96 + par.22.97 + Spec v1.9 sez. 12 cementata):**
+
+- ✅ MySQL nativo Mini esistente RIUSO porta 3306
+- ✅ DB user dedicato `pharmatimer_app`@`localhost` (NESSUN Unix user dedicato)
+- ✅ Unix user processo = marketreader (LaunchAgent default, uid 501 empirico)
+- ✅ venv Python 3.13.12 nativo Mini `/Users/marketreader/PharmaTimer/.venv`
+- ✅ LaunchAgent macOS user-level (NON LaunchDaemon, drift-N63 retroattivo)
+- ✅ Watchdog pattern replicato StockFusion 1:1 (KeepAlive=true plist + wrapper.sh while loop) - empirico verde par.22.97
+- ✅ Secrets `~/.my-pharmatimer.cnf` 600 marketreader:staff (slot `~/.my.cnf` occupato StockFusion)
+- ✅ Backup `~/PharmaTimer/backups/` retention 7gg
+- ✅ Tailscale deferred N+5.N+ (LAN-only smoke iniziale Studio HTTP -> Mini HTTP)
+- ✅ SSH alias `mini` -> `marketreader@192.168.1.167` con `id_ed25519_github`
+- ✅ mDNS Mini reale `MarketReader-Server.local` (NON `mini.local` drift-N+5.M-pivot-exec-D-NEW#2)
+
+**❌ VIETATO N+5.M-pivot-exec-beta e sessioni successive:**
+- ❌ Docker container qualsiasi forma
+- ❌ Seconda istanza MySQL/MariaDB Mini
+- ❌ LaunchDaemon system-level (`/Library/LaunchDaemons/`)
+- ❌ Secrets in `/etc/`
+- ❌ Backup in `/var/backups/`
+- ❌ Default alpha/beta container senza ratifica esplicita Roberto NEW turn-by-turn
+- ❌ Rename `app.py` (G NEW chiusa empirica opzione (c), convention FastAPI standard ratificata)
+
+#### Scope alto livello
+
+Sessione **esecutiva monolitica (default) o split beta-1/beta-2 (se Q-I.1=(b))**
+deploy F3-S6 infrastruttura Mac Mini headless tramite patcher Python
+`cp_n5m_pivot_deploy_patcher.py` content-based SENTINEL idempotente
+(pattern par.22.58-Fase2 + Lesson #20 idempotency_marker). 7 file NEW write
+deploy/ + 2 MOD anchored `backend/pharmatimer_api/app.py` (CORS restrict 3
+parametri + drift-N45 importlib.metadata) + eventuali MOD `02-setup-venv.sh`
+(D-NEW#3/#4 rimedio (ii)) + MOD `03-plist` (CORS revised F + D-NEW#8 rimedio
+Q-I.1) + eventuali MOD `config.py` + `db/connection.py` (Q-I.1=(b)).
+
+Deploy effettivo Mini via SSH alias `mini` + rsync deploy/+backend/ +
+setup_pharmatimer_db.sh + setup_pharmatimer_venv.sh + apply schema v01_init.sql
++ seed_owner.py + load LaunchAgents user-level. Smoke 3 scenari Q-N5L.G
+da Mac Studio LAN HTTP. Backup smoke. Commit closing + bump pyproject
+0.6.0 -> 0.7.0 + tag annotato LOCALE+REMOTO `v3.2.0-alpha.8` + push atomico
+(AMB-11.B.7-bis pattern undicesima applicazione cumulativa attesa Fase 3).
+
+Scope architetturalmente blindato par.22.95 R2 + par.22.96 + par.22.97 +
+10/10 file design draft consolidato + CP0-ext-pivot empirico verde +
+sub-AMB.I-NEW dialogato dedicato.
+
+#### Pre-letture obbligatorie N+5.M-pivot-exec-beta
+
+1. **`par.22.97-Fase3` integrale** (closing N+5.M-pivot-exec-alpha + 5 sub-AMB
+   chiuse empirico + 9 drift NEW catalizzati + sub-AMB.I-NEW emergente
+   BLOCKER + 6 sub-AMB pending carry-forward + Lesson #31 candidate)
+2. `par.11.R-S3-ter-Fase3` (consumato N+5.M-pivot-exec-alpha, CP plan CP0-CP7
+   originale carry-forward attivo)
+3. `par.22.96-Fase3` (12 artefatti design draft consolidato + ratifica 9
+   sub-AMB N+5.M-pivot.A-I)
+4. `par.22.95-Fase3 R2` (Lesson #30 cementata + vincolo gamma ratificato)
+5. `par.22.78-bis-Fase2` (architettura R1 + AMB-F3.F gamma)
+6. Spec v1.9 delta KB-only Roberto-side
+   `~/Documents/PharmaTimer_KB/Spec_v1.9_delta_pending_merge.md` (merge
+   demandato post-CP5 verde)
+7. Lesson #20-#30 cumulative MANDATORY + Lesson #31 candidate (ratifica
+   eventuale turn-by-turn questa sessione)
+
+#### Q-I.1/.2/.3 priorita dialogato dedicato pre-CP1 (Lesson #30 strict NO blanket)
+
+**Apertura sessione OBBLIGA ratifica turn-by-turn 3 Q architetturali PRIMA
+emit patcher CP1.** Lesson #30 strict applicabile: NO blanket "decidi tu",
+dialogato dedicato single-Q + ratifica esplicita Roberto.
+
+**Q-I.1 (BLOCKER CP1) - drift D-NEW#8 password injection runtime Mini:**
+
+| Opt | Strategia | Stima impatto CP1 |
+|---|---|---|
+| **(a)** | MOD `03-plist` env vars `DB_USER`+`DB_PASSWORD` parsed da .cnf inline pre-launchctl | +3 righe plist, +5-10 righe setup_pharmatimer_db.sh export, scope CP1 invariato |
+| **(b)** | MOD `config.py` + `db/connection.py` option_files conditional | +20-30 righe backend, +smoke pytest verify, possibile split beta-1/beta-2 |
+| **(c)** | MOD `04-pharmatimer-api-wrapper.sh` parse .cnf + export env pre-uvicorn | +10-15 righe wrapper, scope CP1 backend invariato |
+
+Default raccomandato Claude-side post-empirico audit: **TBD** dialogato
+dedicato (NO default unilaterale Lesson #30 strict).
+
+**Q-I.2 (CP1 scope):** se Q-I.1=(b), preferenza split:
+- **(i) split N+5.M-pivot-exec-beta-1** (backend mod `config.py` + `db/connection.py`
+  + smoke pytest 76 verde + commit + tag intermedio) **+ N+5.M-pivot-exec-beta-2**
+  (deploy infra + CP3-CP7) **quindicesima applicazione cumulativa par.22.55-Fase2**
+- **(ii) monolitico** N+5.M-pivot-exec-beta unica (rischio densita ~100-120K
+  token + wall-clock 4-5h)
+
+Default raccomandato Claude-side: **(i) split** se Q-I.1=(b) ratificato
+(safety-first preventivo + smoke backend pre-deploy isolato).
+
+**Q-I.3 (drift NEW#6/#7/#9 cementazione Spec v1.9):**
+- **(a)** carry-forward doc-only Spec v1.9 sez. 12.7 NEW "Limitazioni
+  config.py F3-S1-bis vs F3-S6 prod" senza azione runtime (plist override
+  protegge)
+- **(b)** MOD difensive `config.py` (es. rimuovo `env_file=".env.dev"`
+  reference condizionale `os.getenv("PHARMATIMER_ENV") == "prod"`)
+
+Default raccomandato Claude-side: **(a) doc-only** (non-bloccante runtime,
+plist override protegge, MOD defensive scope creep CP1).
+
+#### Sub-AMB N+5.M-pivot-exec.A-F pending ratifica batch post-Q-I
+
+Ratifica batch explicit accettata post-Q-I.1/.2/.3 dialogato (no Lesson #30
+violation: A/C/D/E/F-revised/D-NEW#3/#4 sono operativi non-architetturali,
+default raccomandati post-empirico audit par.22.97 senza opzioni multiple
+significative):
+
+| ID | Default raccomandato carry-forward par.22.97 |
+|---|---|
+| A | Patcher monolitico ~32-50K (post-decisione Q-I.1) o split (Q-I.2=(i)) |
+| C | Smoke 401 -> 200 -> 422 + `curl -v` verbose |
+| D | seed_owner Mini new token random stdout one-shot |
+| E | Spec v1.9 merge Roberto-side post-CP5 verde |
+| F revised | CORS IP + MarketReader-Server.local + gh-pages |
+| D-NEW#3/#4 | Rimedio (ii) `02-setup-venv.sh` skip requirements.txt |
+
+#### CP plan N+5.M-pivot-exec-beta post-Q-I
+
+| CP | Scope (post-decisione Q-I) |
+|---|---|
+| **CP0** | Baseline empirico Studio invariato post-N+5.M-pivot-exec-alpha: HEAD post-push par.22.97 doc-only, tag v3.2.0-alpha.7 invariato, pyproject 0.6.0, package 3.2.0-alpha.1, 651 test verde non-rieseguiti |
+| **CP1** | Patcher Python `cp_n5m_pivot_deploy_patcher.py` emit (8-10 file NEW deploy + 2-3 MOD anchored: `app.py` 3 righe CORS restrict + drift-N45 importlib.metadata + 03-plist CORS revised + eventuale `02-setup-venv.sh` rimedio (ii) + eventuali `config.py` + `db/connection.py` se Q-I.1=(b)). Content-based SENTINEL idempotent, .bak backup, SHA-256 in/out |
+| **CP2** | Dry-run sandbox Linux Python 3.13 + Mac Studio macOS Python 3.13 bit-perfect: idempotenza patcher (re-run = NO-OP), audit `setup_pharmatimer_db.sh` SQL syntax `bash -n`, audit LaunchAgent plist `plutil -lint`, eventuale smoke pytest 76 verde Studio (Q-I.1=(b)) |
+| **CP3** | Deploy effettivo Mini via SSH alias `mini`: rsync `deploy/` + `backend/` -> `marketreader@192.168.1.167:~/PharmaTimer/` + ssh esecuzione `setup_pharmatimer_db.sh` (CREATE DATABASE + USER + GRANT + .my-pharmatimer.cnf 600) + `setup_pharmatimer_venv.sh` (venv Python 3.13.12 + pip install -e backend/) + apply schema `v01_init.sql` + `seed_owner.py` (token Roberto stdout one-shot) + `cp launchd/*.plist ~/Library/LaunchAgents/` + `launchctl bootstrap gui/$UID` (api-wrapper + backup) |
+| **CP4** | Smoke 3 scenari Q-N5L.G da Mac Studio LAN HTTP: (S1) `curl -v http://192.168.1.167:8000/api/farmaci` no token = 401 `{"error":"UNAUTHORIZED","severity":"warning"}` + (S2) `curl -v -H 'X-User-Token: <new-token>' http://192.168.1.167:8000/api/farmaci` = 200 `[]` (DB Mini empty post-seed) + (S3) `curl -v -X POST -H 'Content-Type: application/json' -H 'X-User-Token: <new-token>' --data '{}' http://192.168.1.167:8000/api/farmaci` = 422 Pydantic schema error |
+| **CP5** | Backup smoke: `launchctl start com.pharmatimer.backup` + verifica `~/PharmaTimer/backups/pharmatimer_YYYYMMDD_HHMMSS.sql.gz` esistente + size >1KB + decompression OK (`gzip -t`) + log `~/PharmaTimer/logs/backup.log` clean |
+| **CP6** | Cleanup-N+5.M-pivot-exec-beta + bump pyproject 0.6.0 -> 0.7.0 (`backend/pyproject.toml`) + sync ImpostazioniTab.jsx runtime (eventuale, se package.json bump 3.2.0-alpha.1 -> 3.2.0-alpha.2 ratificato) + tag annotato LOCALE+REMOTO `v3.2.0-alpha.8` su HEAD CP6 + push atomico `origin/fase-3-backend` (AMB-11.B.7-bis undicesima applicazione cumulativa Fase 3) |
+| **CP7** | Closing par.22.98 emit + pre-frozen N+5.N (TBD scope: Tailscale apply F3-S7-pre vs PWA login UI deferred F3-S5-beta) + Roberto applica Spec v1.9 merge manuale post-deploy verde + memory_user_edits cementazione finale architettura gamma deploy fully completed (parzialmente, Tailscale deferred) |
+
+#### Modalita raccomandata N+5.M-pivot-exec-beta
+
+**Default (monolitico)** se Q-I.1=(a) o Q-I.1=(c) (scope CP1 backend invariato).
+**Split beta-1/beta-2 (quindicesima applicazione par.22.55-Fase2)** se
+Q-I.1=(b) ratificato (refactor backend richiede smoke pytest pre-deploy
+isolato).
+
+Pattern par.22.94 N+5.L abortito + par.22.95 R2 Lesson #30 strict applicata:
+dialogato turn-by-turn su Q-I.1/.2/.3 PRIMA emit patcher CP1.
+
+#### Esito atteso N+5.M-pivot-exec-beta
+
+- FastAPI uvicorn Mini operativo + 2 LaunchAgent user-level auto-start
+  post-login marketreader (uid 501)
+- DB `pharmatimer` + DB user `pharmatimer_app@localhost` + schema v01_init.sql
+  applicato + seed Roberto owner verde + token stdout one-shot
+- 3 smoke Q-N5L.G verdi da Mac Studio LAN HTTP 192.168.1.167:8000
+- Backup mysqldump retention 7gg primo file verde
+- Commit cumulativo + bump 0.7.0 + tag `v3.2.0-alpha.8` LOCALE+REMOTO + push
+  atomico verde
+- Spec v1.9 merge applicato Roberto-side (post-deploy verificato)
+- Pre-frozen N+5.N emit
+- Eventuale Lesson #31 NEW MANDATORY cementata Spec v1.9 sez. 11.6.14
+
+#### Limitazione scope N+5.M-pivot-exec-beta (Tailscale deferred carry-forward)
+
+**F3-S6 deploy nativo MILESTONE = parzialmente completata** post-N+5.M-pivot-exec-beta:
+- ✅ FastAPI uvicorn + MySQL Mini + smoke `curl http://192.168.1.167:8000/api/health` verde Studio LAN
+- ✅ LaunchAgent api-wrapper + backup operativi Mini auto-start post-login marketreader
+- ✅ Backup mysqldump retention 7gg primo backup verificato
+- ⚠️ NOT smoke iPhone PWA prod (GitHub Pages HTTPS) -> Mini API (HTTP LAN) BLOCCATO mixed content browser-side
+- ⚠️ NOT Tailscale ACL apply + auto-TLS HTTPS Mini API
+- ⚠️ NOT smoke cross-device PWA iPhone/Android end-to-end
+
+Milestone "F3-S6 fully completed" demandata N+5.N+ Tailscale apply.
+
+#### Sessione successiva post-N+5.M-pivot-exec-beta
+
+**N+5.N pre-frozen scope TBD** a CP7 N+5.M-pivot-exec-beta closing in base
+esito empirico deploy + sub-AMB N+5.M-pivot-exec.A-F + Q-I.1/.2/.3 risolte.
+Candidate:
+- N+5.N-Tailscale: install daemon + tailscale up + ACL apply + serve auto-TLS HTTPS Mini API + smoke iPhone PWA HTTPS end-to-end (sblocca milestone F3-S6 fully completed)
+- N+5.N-PWA-UI: F3-S5-beta UI login/token entry PWA-side (deferred N+5.I-post par.22.91)
+- N+5.N-rc: promotion v3.2.0-alpha.8 -> v3.2.0-rc.1 se 24h stabilita post-deploy verde
+
+**One-liner apertura nuova sessione N+5.M-pivot-exec-beta:**
+
+```
+Esegui il prompt al par.11.R-S3-quater del Changelog Fase 3.
+```
+
