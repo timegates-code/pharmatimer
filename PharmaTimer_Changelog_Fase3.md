@@ -3869,3 +3869,298 @@ Esegui il prompt al par.11.R-S3-bis del Changelog Fase 3.
 ```
 
 ---
+
+---
+
+### 22.96 (Fase 3, closing N+5.M-pivot analisi-first sola doc-only re-architettura deploy F3-S6 nativo opzione γ par.22.78-bis + 6 drift architetturali catalizzati post-empirico Mini + ratifica turn-by-turn 9 sub-AMB N+5.M-pivot.A-I + 4 sub-AMB tecniche periferiche + Lesson #30 cementata Spec v1.9 sez. 11.6.13 + delivery file-based 12 artefatti via present_files + tredicesima applicazione cumulativa pattern par.22.55-Fase2)
+
+<!-- par.22.96 R1 emit Fase 3 SENTINEL_N5M_PIVOT_CLOSING_PAR_22_96 -->
+
+**Data:** 26 maggio 2026 (pomeriggio, post-par.22.95 R2 stesso giorno).
+
+**Modalita:** Sessione N+5.M-pivot analisi-first sola doc-only re-architettura
+deploy F3-S6 PharmaTimer come opzione γ nativa MySQL Mini esistente. Pattern
+par.22.55-Fase2 split safety-first **tredicesima applicazione cumulativa Fase 3**
+(post F3-S1-bis-delta parte 1/2-2/2 + F3-S3-alpha-pre/post + N+5.B + N+5.D +
+N+5.F + N+5.G + N+5.H + N+5.I-pre + N+5.J + N+5.K + N+5.L + N+5.M abort).
+Token spesi ~35K (inclusi CP0 baseline Studio + CP0-ext-prep-pivot empirico
+Mini batch SSH 11 audit + investigation EMP-2 wrapper.sh + design draft
+consolidato 12 artefatti + Lesson #30 cementazione + ratifica turn-by-turn 9
+sub-AMB N+5.M-pivot.A-I post-empirico). Wall-clock ~120 min. Zero source change,
+zero commit codice, zero bump pyproject/package, zero tag, zero push runtime.
+**1 commit doc-only** Changelog Fase 3 (questa sezione + par.11.R-S3-ter
+pre-frozen).
+
+**Esito:** OK milestone analisi-first sola doc-only re-architettura completata.
+8 artefatti deploy nativo + 2 carry-forward bit-perfect + 1 template + 1
+requirements memo + Spec v1.9 delta + Changelog append delivery file-based via
+`present_files` (Lesson #29 MANDATORY applicata). Pre-frozen `par.11.R-S3-ter`
+N+5.M-pivot-exec emit.
+
+#### CP0 baseline Mac Studio verde 7/7
+
+- Branch `fase-3-backend` HEAD `0d9864c` allineato `origin/fase-3-backend` (post-push par.22.95 R2 closing N+5.M abort)
+- 0 ahead origin (push N+5.M abort closing applicato come raccomandato par.22.95 R2)
+- Tag `v3.2.0-alpha.7` LOCALE+REMOTO su `5026383` invariato simmetrico
+- pyproject backend `0.6.0` invariato
+- package.json frontend `3.2.0-alpha.1` invariato
+- 651 test cumulativi invariati (76 backend + 575 frontend) non-rieseguiti questa sessione doc-only
+- Working tree clean (0 file)
+- drift-N45 confermato carry-forward (`app.py:30 version="0.1.0"` ancora hardcoded, target MOD CP1 N+5.M-pivot-exec)
+
+#### CP0-ext-prep-pivot empirico audit Mini (Step 0 ANALISI obbligatorio applicato)
+
+11 audit point batch SSH eseguiti da Mac Studio. Conclusioni:
+
+| # | Audit | Esito empirico |
+|---|---|---|
+| 1 | MySQL Mini version | 9.6.0 brew `/opt/homebrew/Cellar/mysql/9.6.0/bin/mysql` (false-positive `command not found` SSH PATH sanificato `/usr/bin:/bin:...`) |
+| 2 | MySQL Mini connectivity | mysqld PID 846 LISTEN `*:3306` (bind universale), 4 connessioni attive incluse 192.168.1.109 (Studio) |
+| 3 | Python 3 Mini | 3.13.12 brew `/opt/homebrew/bin/python3.13` (system `/usr/bin/python3` 3.9.6 ignorato, false-positive iniziale risolto post-investigation EMP-2) |
+| 4 | macOS Mini | Tahoe 26.3.1 build 25D2128 |
+| 5 | Disk space Mini | 146Gi free / 228Gi (66% usato, ampio per venv) |
+| 6 | User Mini | marketreader uid=501 gid=20 staff+admin+ssh+screensharing |
+| 7 | Sudo Mini | password required (Roberto in admin group, no NOPASSWD) |
+| 8 | /etc Mini | standard root:wheel, `/etc/pharmatimer` non esiste (no creation necessaria, secrets redirect home user) |
+| 9 | Port 8000 | libera (`nc -zv localhost 8000 = Connection refused`) |
+| 10 | Watchdog StockFusion | `com.stockfusion.daemon-wrapper` LaunchAgent user marketreader running PID 20625 (KeepAlive auto-restart) + `com.stockfusion.log-cleanup` idle |
+| 11 | /Library/LaunchDaemons Mini | vuota (4 file totali = `.` + `..` solo). StockFusion gira LaunchAgent NON LaunchDaemon |
+
+**Investigation EMP-2 supplementare** (catalizzata da `command not found` false-positive Audit 1):
+- `wrapper.sh` StockFusion empirico: pattern `source .venv/bin/activate + while true; do python -m daemon.tasks.wrapper_loop; sleep 5; done + trap SIGTERM cleanup PGID`
+- `~/Library/LaunchAgents/` marketreader: 7 plist (4 user-level system) + 3 StockFusion (`daemon-wrapper`, `log-cleanup`, `market-reader.plist.disabled`) + 1 MySQL homebrew (`homebrew.mxcl.mysql.plist`)
+- Struttura StockFusion: `~/StockFusion/{.venv, .env, app_config.py, backups/, config.yaml, daemon/, db/, requirements.txt, scripts/, tools/}` (= template empirico riusabile)
+- pip list system marketreader: solo `pip 26.0 + wheel 0.46.3` (4 righe, conferma StockFusion usa venv dedicato non system-wide)
+- `~/.my.cnf` empirico: `[client] user=marketdata_svc password=marketdata123 database=MarketData` 600 marketreader:staff
+- crontab marketreader vuoto (LaunchAgent StartCalendarInterval pattern unico Mini)
+
+#### Drift catalizzati N+5.M-pivot (6 drift-doc-NEW)
+
+| Drift | Origine | Effetto post-empirico |
+|---|---|---|
+| **drift-N63** | par.22.95 R2 precisazione Roberto #3 "LaunchDaemon NON LaunchAgent" basata su assunto errato pattern StockFusion | Retro-corretto: **LaunchAgent user marketreader** (auto-login Mini sempre attivo = always-on funzionalmente identico LaunchDaemon). Carry-forward immutabile par.6.71/85 (par.22.95 R2 cementato mattino 26/05, drift emerge pomeriggio 26/05 post-empirico) |
+| **drift-N64** | par.22.95 R2 secrets path `/etc/pharmatimer/db_app_password` 600 root:wheel | Redirect home user: `~/.my-pharmatimer.cnf` 600 marketreader:staff. Pattern empirico `~/.my.cnf` StockFusion riusato. Zero sudo required |
+| **drift-N65** | par.22.95 R2 sub-AMB N+5.M-pivot.G "Watchdog riuso vs dedicato" implicava entità separata generica | Empiricamente inesistente: `find ... -iname '*watch*' = 0 risultati`. Il "Watchdog" e' il pattern composto `KeepAlive=true plist + wrapper.sh while loop` per ciascun servizio. Sub-AMB G chiusa con (ii) replica pattern StockFusion |
+| **drift-N66** | par.22.95 R2 artefatti N+5.L design draft mancavano `setup_pharmatimer_venv.sh` (assunzione errata "no venv su Mini") | Aggiunto artefatto NEW `02-setup-pharmatimer-venv.sh`. Pattern empirico StockFusion `~/.venv/` confermato (dump wrapper.sh + audit 3) |
+| **drift-N67** | par.22.95 R2 backup destinazione `/var/backups/pharmatimer/` system-standard 750 root:wheel | Redirect home user: `~/PharmaTimer/backups/` 755 marketreader:staff. Pattern empirico StockFusion `~/StockFusion/backups/` (audit 3). Zero sudo, simmetria empirica |
+| **drift-N68** | N+5.L design draft `04-com_pharmatimer_backup.plist` aveva `/Users/Shared/pharmatimer-backups/` + `/etc/pharmatimer/db_root_password` | Adattati a path empirici post-pivot: `~/PharmaTimer/backups/` + `~/.my-pharmatimer.cnf` |
+
+Tutti i drift dentro vincolo γ par.22.78-bis (nativo, no Docker). Carry-forward
+immutabili par.6.71/85 (no retro-correzione par.22.94 / par.22.95 R2 / par.11.R-S3-bis R2).
+
+#### Sub-AMB N+5.M-pivot.A-I ratificate turn-by-turn post-empirico
+
+Roberto ratifica "decidi tu" + 2 precisazioni esplicite turn-by-turn
+(N+5.M-pivot turno 3): venv non-prevista PharmaTimer Fase 2 (chiarisce Fase 3
+introduce per la prima volta backend deploy Mini quindi venv NEW necessaria,
+pattern empirico StockFusion 1:1) + Watchdog StockFusion non condivisibile
+(replica pattern, NO entita riusabile generica). Lesson #30 punto 2 strict
+applicata: dialogato consenso esplicito non blanket cieco.
+
+| ID | Decisione cementata empirica | Rationale 1-riga |
+|---|---|---|
+| **N+5.M-pivot.A** | nativo no-Docker + venv Python Mini + **LaunchAgent** user marketreader (corretto retroattivamente da LaunchDaemon par.22.95 R2 via drift-N63) | Pattern empirico StockFusion `daemon-wrapper.plist` confermato; auto-login marketreader sempre attivo = always-on funzionalmente identico LaunchDaemon |
+| **N+5.M-pivot.B** | riuso MySQL Mini 9.6.0 brew porta 3306 + DB user `pharmatimer_app`@`localhost` dedicato | Confermato empirico mysqld PID 846 LISTEN *:3306 |
+| **N+5.M-pivot.C** | defer Tailscale N+5.N+, LAN-only `mini.local:8000` smoke Studio HTTP | Coerente vincolo γ par.22.78-bis. Mixed content iPhone PWA prod deferred |
+| **N+5.M-pivot.D** | Unix user processo = **marketreader** (LaunchAgent default user), DB user `pharmatimer_app`@`localhost`, secrets `~/.my-pharmatimer.cnf` 600 marketreader:staff, LaunchAgent naming `com.pharmatimer.api-wrapper.plist` + `com.pharmatimer.backup.plist` | Empirico audit 6 turno -2 + 7 turno -2 + 9 turno -1 |
+| **N+5.M-pivot.E** | venv path = `/Users/marketreader/PharmaTimer/.venv` pattern StockFusion 1:1 (drift-N66 risolto via artefatto NEW `02-setup-pharmatimer-venv.sh`) | Replica empirica `~/StockFusion/.venv` audit 3 turno -1 |
+| **N+5.M-pivot.F** | port FastAPI = 8000 (libera Mini empirico audit 9 turno -2) | Default raccomandato par.11.R-S3-bis confermato |
+| **N+5.M-pivot.G** | (ii) LaunchAgent dedicato `KeepAlive=true` + wrapper.sh while loop = replica pattern StockFusion 1:1 (drift-N65 risolto: NO riuso entità separata empiricamente inesistente) | Audit 5 turno -1 conferma assenza entità "watchdog" generica |
+| **N+5.M-pivot.H** | backup destinazione = `~/PharmaTimer/backups/` user-home (drift-N67 redirect da `/var/backups/pharmatimer/`) | Pattern empirico StockFusion `~/StockFusion/backups/` audit 3 turno -1 |
+| **N+5.M-pivot.I** | restart policy = `KeepAlive=true` plist + `sleep 5` loop wrapper.sh + trap SIGTERM cleanup PGID (template empirico StockFusion `wrapper.sh` audit 1 turno -1) | Replica bit-pattern verificato empirico |
+
+#### Sub-AMB tecniche periferiche ratificate (4 NEW)
+
+| ID | Decisione | Rationale |
+|---|---|---|
+| **Q-EMP-VENV bis** | venv dedicato `/Users/marketreader/PharmaTimer/.venv` (replica pattern empirico StockFusion) | Chiarisce Roberto "non era prevista venv" = Fase 2 PWA-only senza backend remoto; Fase 3 deploy Mini richiede venv come ogni altro servizio Python Mini |
+| **Q-PROJECT-PATH** | `/Users/marketreader/PharmaTimer/` CamelCase | Simmetria empirica StockFusion `/Users/marketreader/StockFusion/` |
+| **Q-WATCHDOG-PATTERN** | 2 LaunchAgent separati: `com.pharmatimer.api-wrapper.plist` (FastAPI uvicorn KeepAlive=true) + `com.pharmatimer.backup.plist` (backup RunAtLoad=false StartCalendarInterval 03:15) | Pattern empirico StockFusion 2 plist separati audit 2 turno -1 |
+| **Q-CREDS-PATH** | `~/.my-pharmatimer.cnf` 600 marketreader:staff | Slot `~/.my.cnf` occupato StockFusion `marketdata_svc`; pattern empirico replicato senza collisione |
+
+#### Lesson #30 NEW MANDATORY cementata Spec v1.9 sez. 11.6.13
+
+Pattern auto-segnalato par.22.94 -> par.22.95 R1->R2 (25-26 maggio 2026)
+cementato formalmente nella Spec v1.9 KB-only (delta consegnato file
+`11-Spec_v1.9_delta.md` via present_files). 6 punti operativi MANDATORY:
+- Vincoli architetturali immutabili persistere cross-session via userMemories L1-L4
+- "Decidi tu" blanket NON applicabile a AMB-deferred multi-opzione (dialogato single-Q strict)
+- CP0 baseline ogni sessione deploy/architettura-related include audit AMB-deferred aperte
+- memory_user_edits persistente cross-session per decisioni architetturali finali
+- Pattern auto-segnalazione drift-doc retroattivo
+- Revisione coerenza pre-commit MANDATORY sessioni doc-only architetturali
+
+#### Design draft 12 artefatti consegnati via present_files
+
+Lesson #29 MANDATORY delivery file-based applicata (no inline code-fence chat).
+
+| # | File | Destinazione finale N+5.M-pivot-exec | Tipo |
+|---|---|---|---|
+| 0 | `00-README-pivot.md` | n/a (doc accompagnamento) | DOC |
+| 1 | `01-setup-pharmatimer-db.sh` | `deploy/setup_pharmatimer_db.sh` | NEW |
+| 2 | `02-setup-pharmatimer-venv.sh` | `deploy/setup_pharmatimer_venv.sh` | NEW |
+| 3 | `03-com.pharmatimer.api-wrapper.plist` | `deploy/launchd/com.pharmatimer.api-wrapper.plist` | NEW |
+| 4 | `04-pharmatimer-api-wrapper.sh` | `deploy/scripts/pharmatimer-api-wrapper.sh` | NEW |
+| 5 | `05-com.pharmatimer.backup.plist` | `deploy/launchd/com.pharmatimer.backup.plist` | NEW |
+| 6 | `06-pharmatimer-backup.sh` | `deploy/scripts/pharmatimer-backup.sh` | NEW |
+| 7 | `07-cors-app-py-mod.py` | `backend/pharmatimer_api/app.py` (MOD anchor) | MOD bit-perfect carry-forward N+5.L |
+| 8 | `08-drift-n45-fix-app-py-mod.py` | `backend/pharmatimer_api/app.py` (MOD anchor) | MOD bit-perfect carry-forward N+5.L |
+| 9 | `09-my-pharmatimer.cnf-template` | `~/.my-pharmatimer.cnf` (deploy CP3, NON in git) | TPL |
+| 10 | `10-requirements.txt` | `backend/requirements.txt` (carry-forward, validato Mini) | REF |
+| 11 | `11-Spec_v1.9_delta.md` | merge in `PharmaTimer_Project_Spec.md` KB-only sez. 12 + 11.6.13 | DOC |
+| 12 | `12-Changelog_Fase3_append_N5M_pivot.md` | append in `PharmaTimer_Changelog_Fase3.md` (par.22.96 + par.11.R-S3-ter) | DOC |
+
+#### Tag git e push
+
+- **Tag git: NO** (sessione doc-only, no milestone tecnico, no codice runtime modificato, no bump pyproject)
+- **Pyproject backend invariato 0.6.0**
+- **Package.json frontend invariato 3.2.0-alpha.1**
+- **Commit: 1 doc-only** Changelog Fase 3 (questa sezione + par.11.R-S3-ter pre-frozen append)
+- **Spec aggiornata KB-only**: delta consegnato `11-Spec_v1.9_delta.md`, Roberto applichera merge manualmente in `PharmaTimer_Project_Spec.md` post-CP3 deploy verificato N+5.M-pivot-exec (cementazione formale post-empirico)
+- **Push: opportunistico immediato** (1 commit doc-only questa sessione = 1 ahead origin/fase-3-backend, push atomico safe perche zero source change). Decisione push: **push immediato raccomandato** per cementare drift-N63-N68 + Lesson #30 + ratifica 9 sub-AMB A-I + 4 sub-AMB tecniche periferiche in origin remote = backup KB cross-device
+
+#### Test
+
+651 invariati (76 backend + 575 frontend, zero delta vs baseline N+5.M abort).
+Allineato pattern par.22.74-95 sessioni doc-only delta zero.
+
+#### Cleanup status
+
+- **cleanup-N1** (Fase 2 IndexedDB dev-only browser-side): invariato carry-forward
+- **cleanup-N3** (Fase 3 farmaci.id=2 attivo=FALSE F3-S2): invariato carry-forward
+- **cleanup-N3-bis** (2 utenti zombie + 6 permessi orfane Fase 3): invariato carry-forward
+- **cleanup-N+5.M-pivot**: nessun file generato (sessione analisi-first doc-only, nessun .bak), nessun cleanup necessario
+
+#### Riferimenti par.22.96
+
+- **par.22.95-Fase3 R2** (closing N+5.M abort + Lesson #30 NEW MANDATORY + ratifica pivot opzione γ + 3 precisazioni Roberto + revisione coerenza pre-commit 9 incongruenze risolte)
+- **par.22.94-Fase3** (closing N+5.L design draft docker-compose abbandonato drift-doc N62)
+- **par.22.78-bis-Fase2** (architettura R1 Studio-all dev + AMB-F3.F deferred F3-S6 con 3 opzioni α/β/γ + Mini zero-touch invariante + Q3=A doc-only deviation Spec MariaDB -> prod MySQL)
+- **par.11.R-S3-bis** (questo prompt consumato N+5.M-pivot)
+- **par.22.55-Fase2** split safety-first preventivo **tredicesima applicazione cumulativa Fase 3**
+- **par.22.58-Fase2** patcher Python content-based SENTINEL idempotent (NON applicato N+5.M-pivot doc-only, demandato N+5.M-pivot-exec)
+- **par.6.118-Fase2** pre-code scenario validation MANDATORY: applicato post-empirico audit Mini (catalizzato 6 drift architetturali N63-N68)
+- **par.6.71/85-Fase2** history immutability: drift-doc N63-N68 carry-forward immutabili
+- **AMB-11.B.7 / AMB-11.B.7-bis-Fase2**: NO bump effettivo + NO tag (sessione doc-only, demandato N+5.M-pivot-exec CP6 bump pyproject 0.6.0 -> 0.7.0 + tag `v3.2.0-alpha.8` LOCALE+REMOTO + push atomico)
+- **Lesson #20-#30 cumulative MANDATORY** invariate + applicate (in particolare Lesson #27 strict static analysis empirico + Lesson #28 fonte primaria carry-forward + Lesson #29 delivery file-based + Lesson #30 NEW deferred decisions immutabili cementata Spec v1.9 sez. 11.6.13)
+- **Lesson #11 (s.6.219)** pre-frozen prompt drift: applicato N+5.M-pivot CP0-ext-prep-pivot (drift-N63 LaunchDaemon/LaunchAgent + drift-N65 Watchdog generic)
+- **Q3=A par.22.78-bis-Fase2**: doc-only deviation Spec MariaDB -> prod MySQL, cementazione formale Spec v1.9 sez. 12.1 (delta consegnato)
+
+#### Sessione successiva post-N+5.M-pivot
+
+**N+5.M-pivot-exec esecutiva monolitica deploy nativo Mac Mini opzione γ.** Scope architetturalmente blindato par.22.95 R2 + par.22.96 + 12 artefatti design draft consolidato. Token attesi ~50-80K. Wall-clock ~3-4h. Pre-frozen `par.11.R-S3-ter` emit a CP closing questa sezione (sotto).
+
+**One-liner apertura nuova sessione N+5.M-pivot-exec:**
+
+```
+Esegui il prompt al par.11.R-S3-ter del Changelog Fase 3.
+```
+
+---
+
+### par.11.R-S3-ter -- Prompt apertura N+5.M-pivot-exec esecutiva monolitica deploy F3-S6 nativo opzione γ Mac Mini
+
+<!-- par.11.R-S3-ter R1 emit Fase 3 post-N+5.M-pivot closing par.22.96 -->
+
+**One-liner apertura:** `Esegui il prompt al par.11.R-S3-ter del Changelog Fase 3.`
+
+#### VINCOLO ARCHITETTURALE IMMUTABILE (carry-forward par.22.95 R2 + par.22.96 + L1-L4 difesa multi-layer)
+
+**Deploy F3-S6 PharmaTimer = opzione γ par.22.78-bis ratificata + riconfermata 3 volte (par.22.95 R2 + par.22.96 + Spec v1.9 sez. 12 cementata):**
+
+- ✅ MySQL nativo Mini esistente RIUSO porta 3306
+- ✅ DB user dedicato `pharmatimer_app`@`localhost` (NESSUN Unix user dedicato)
+- ✅ Unix user processo = marketreader (LaunchAgent default)
+- ✅ venv Python nativo Mini `/Users/marketreader/PharmaTimer/.venv`
+- ✅ LaunchAgent macOS user-level (NON LaunchDaemon, drift-N63 retroattivo)
+- ✅ Watchdog pattern replicato StockFusion 1:1 (KeepAlive=true plist + wrapper.sh while loop)
+- ✅ Secrets `~/.my-pharmatimer.cnf` 600 marketreader:staff
+- ✅ Backup `~/PharmaTimer/backups/` retention 7gg
+- ✅ Tailscale deferred N+5.N+ (LAN-only smoke iniziale)
+
+**❌ VIETATO N+5.M-pivot-exec e sessioni successive:**
+- ❌ Docker container qualsiasi forma
+- ❌ Seconda istanza MySQL/MariaDB Mini
+- ❌ LaunchDaemon system-level (`/Library/LaunchDaemons/`)
+- ❌ Secrets in `/etc/`
+- ❌ Backup in `/var/backups/`
+- ❌ Default α/β container senza ratifica esplicita Roberto NEW turn-by-turn
+
+#### Scope alto livello
+
+Sessione **esecutiva monolitica** deploy F3-S6 infrastruttura Mac Mini headless tramite patcher Python `cp_n5m_pivot_deploy_patcher.py` content-based SENTINEL idempotente (pattern par.22.58-Fase2 + Lesson #20 idempotency_marker). 8 file NEW write + 2 MOD anchored su `backend/pharmatimer_api/app.py` (CORS env-driven + drift-N45 `__version__` sync). Deploy effettivo Mini via SSH/rsync + setup_db.sh + setup_venv.sh + LaunchAgent load. Smoke 3 scenari Q-N5L.G da Mac Studio LAN HTTP. Backup smoke. Commit closing + bump pyproject 0.6.0 -> 0.7.0 + tag annotato LOCALE+REMOTO `v3.2.0-alpha.8` + push atomico (AMB-11.B.7-bis pattern undicesima applicazione cumulativa attesa).
+
+Scope architetturalmente blindato par.22.95 R2 + par.22.96 + 12 artefatti design draft consolidato par.22.96. Token attesi ~50-80K. Wall-clock ~3-4h.
+
+#### Pre-letture obbligatorie N+5.M-pivot-exec
+
+1. `par.22.96-Fase3` integrale (questa sezione, closing N+5.M-pivot + 9 sub-AMB A-I + 4 sub-AMB tecniche periferiche + 6 drift N63-N68 + design draft 12 artefatti)
+2. `par.22.95-Fase3 R2` (closing N+5.M abort + Lesson #30 cementata + 3 precisazioni Roberto)
+3. `par.22.94-Fase3` (closing N+5.L design draft α/β abbandonato drift-doc N62, riferimento storico, NO riuso artefatti docker-compose)
+4. `par.22.78-bis-Fase2` (architettura R1 + AMB-F3.F + 3 opzioni α/β/γ + Mini zero-touch invariante)
+5. Spec v1.9 KB-only sez. 12 deployment nativo γ + sez. 11.6.13 Lesson #30 (Roberto applichera merge da delta consegnato `11-Spec_v1.9_delta.md`)
+6. `par.22.55-Fase2` split safety-first preventivo (eventuale split N+5.M-pivot-exec-a / N+5.M-pivot-exec-b se patcher >50K)
+7. `Lesson #20-#30 cumulative MANDATORY` (in particolare #20 idempotency_marker + #21 CP0 baseline DB Python venv + #27 strict empirico + #29 delivery file-based + #30 deferred decisions immutabili)
+
+#### Sub-AMB N+5.M-pivot-exec.A-E candidate (definizione effettiva apertura)
+
+- **N+5.M-pivot-exec.A** (patcher monolitico vs split): default raccomandato monolitico (~30K stimato sotto soglia 50K); riapertura split se CP1 design pre-emit emerge densita >40K reale
+- **N+5.M-pivot-exec.B** (deploy SSH key vs password): default raccomandato SSH key esistente Studio->Mini (Roberto-controlled trust mesh); password fallback solo se key non disponibile
+- **N+5.M-pivot-exec.C** (smoke scenari Q-N5L.G ordine): 401 no-token -> 200 happy con X-User-Token (token Roberto owner dev DB pharmatimer_dev migrato a pharmatimer prod?) -> 422 Pydantic invalid body. Default raccomandato questo ordine sequenziale + log curl verbose
+- **N+5.M-pivot-exec.D** (seed owner Mini): default raccomandato eseguire `seed_owner.py` Mini-side CP3 con OWNER_NAME=Roberto + nuovo token random (NON migrare token dev Studio). Token stampato stdout una volta sola per copy-paste manuale PWA frontend `VITE_USER_TOKEN`
+- **N+5.M-pivot-exec.E** (Spec v1.9 merge timing): default raccomandato post-CP5 smoke verde (Roberto applica delta `11-Spec_v1.9_delta.md` su Spec KB-only locale post-deploy verificato). Cementazione formale Spec v1.9 commit-able demandata se Spec va in git in futuro (al momento KB-only)
+
+#### CP plan N+5.M-pivot-exec
+
+| CP | Scope |
+|---|---|
+| **CP0** | Baseline empirico Studio invariato post-N+5.M-pivot: HEAD post-push par.22.96, working tree clean, tag `v3.2.0-alpha.7` invariato, pyproject `0.6.0`, package.json `3.2.0-alpha.1`, 651 test verde non-rieseguiti |
+| **CP0-ext** | Audit Mac Mini empirico Lesson #27 strict + Lesson #30: SSH key auth Studio->Mini verde + MySQL accessibile via root password Roberto-side + port 8000 invariato libera + sudo Roberto-side via password (sub-AMB B SSH key esistente) |
+| **CP1** | Patcher Python `cp_n5m_pivot_deploy_patcher.py` emit 8 file NEW + 2 MOD anchored `app.py` (CORS env-driven + drift-N45) content-based SENTINEL idempotente |
+| **CP2** | Dry-run Mac Studio: verifica patcher idempotenza (esecuzione 2 volte = 0 delta secondo) + audit `setup_pharmatimer_db.sh` sintassi SQL (bash -n) + audit LaunchAgent plist syntax (`plutil -lint`) + verifica `mysqldump` cmd available Studio brew |
+| **CP3** | Deploy effettivo Mini: rsync `deploy/` + `backend/` -> `marketreader@mini.local:~/PharmaTimer/` + ssh esecuzione `setup_pharmatimer_db.sh` (CREATE DATABASE + USER + GRANT + .my-pharmatimer.cnf) + `setup_pharmatimer_venv.sh` (venv + pip install + editable) + apply schema `v01_init.sql` + `seed_owner.py` (token Roberto owner) + `cp launchd/*.plist ~/Library/LaunchAgents/` + `launchctl load -w` (api-wrapper + backup) |
+| **CP4** | Smoke 3 scenari Q-N5L.G da Mac Studio LAN HTTP: (S1) curl 401 vocabulary `mini.local:8000/api/farmaci` no token = `{"error":"UNAUTHORIZED","severity":"warning"}` + (S2) curl 200 happy con `X-User-Token: <new-token>` = `[]` (DB Mini empty post-seed) + (S3) curl 422 Pydantic invalid JSON body POST = errore Pydantic schema |
+| **CP5** | Backup smoke: `launchctl start com.pharmatimer.backup` + verifica `~/PharmaTimer/backups/pharmatimer_YYYYMMDD_HHMMSS.sql.gz` esistente + size >1KB + decompression OK (`gzip -t`) + log `~/PharmaTimer/logs/backup.log` clean |
+| **CP6** | Commit cumulativo + bump pyproject 0.6.0 -> 0.7.0 (`backend/pyproject.toml`) + tag annotato LOCALE+REMOTO `v3.2.0-alpha.8` su HEAD CP6 + push atomico `origin/fase-3-backend` (AMB-11.B.7-bis undicesima applicazione cumulativa attesa) |
+| **CP7** | Closing par.22.97 emit + pre-frozen N+5.N (TBD scope: Tailscale apply F3-S7-pre vs PWA login UI deferred F3-S5-beta) + Roberto applica Spec v1.9 merge manuale + memory_user_edits cementazione finale architettura γ |
+
+#### Modalita raccomandata N+5.M-pivot-exec
+
+**Esecutiva monolitica** (stima patcher ~30K bytes sotto soglia 50K). Pattern split safety-first par.22.55-Fase2 NON applicato a priori (scope architetturalmente blindato N+5.M-pivot post-empirico). Se CP1 design pre-emit emerge densita >40K reale -> split tecnico interno N+5.M-pivot-exec-a (4 file NEW + 1 MOD anchor) / N+5.M-pivot-exec-b (4 file NEW + 1 MOD anchor + CP3 deploy + CP4 smoke + CP5 backup + CP6 commit).
+
+Pattern par.22.94 N+5.L replicato safety-checked + par.22.95 R2 Lesson #30 strict applicata: dialogato turn-by-turn su qualsiasi sub-AMB N+5.M-pivot-exec.A-E emergente non default-raccomandato.
+
+#### Esito atteso N+5.M-pivot-exec
+
+- FastAPI uvicorn Mini operativo + 2 LaunchAgent auto-start post-login marketreader
+- DB pharmatimer + DB user pharmatimer_app + schema v01_init.sql applicato + seed Roberto owner verde
+- 3 smoke Q-N5L.G verdi da Mac Studio LAN HTTP
+- Backup mysqldump retention 7gg primo file verde
+- Commit cumulativo + bump 0.7.0 + tag `v3.2.0-alpha.8` LOCALE+REMOTO + push atomico verde
+- Spec v1.9 merge applicato Roberto-side (post-deploy verificato)
+- Pre-frozen N+5.N emit
+
+#### Limitazione scope N+5.M-pivot-exec (Tailscale deferred carry-forward)
+
+**F3-S6 deploy nativo MILESTONE = parzialmente completata** post N+5.M-pivot-exec:
+- ✅ FastAPI uvicorn + MySQL Mini + smoke `curl http://mini.local:8000/api/health` verde Studio LAN
+- ✅ LaunchAgent api-wrapper + backup operativi Mini auto-start post-login
+- ✅ Backup mysqldump retention 7gg primo backup verificato
+- ⚠️ NOT smoke iPhone PWA prod (GitHub Pages HTTPS) -> Mini API (HTTP LAN) BLOCCATO mixed content
+- ⚠️ NOT Tailscale ACL apply + auto-TLS HTTPS Mini API
+- ⚠️ NOT smoke cross-device PWA iPhone/Android end-to-end
+
+Milestone "F3-S6 fully completed" demandata N+5.N+ Tailscale apply.
+
+#### Sessione successiva post-N+5.M-pivot-exec
+
+**N+5.N pre-frozen scope TBD** a CP7 N+5.M-pivot-exec closing in base esito empirico deploy + sub-AMB N+5.M-pivot-exec.A-E risolte. Candidate:
+- N+5.N-Tailscale: install daemon + tailscale up + ACL apply + serve auto-TLS HTTPS Mini API + smoke iPhone PWA HTTPS end-to-end (sblocca milestone F3-S6 fully completed)
+- N+5.N-PWA-UI: F3-S5-beta UI login/token entry PWA-side (deferred N+5.I-post par.22.91)
+- N+5.N-rc: promotion v3.2.0-alpha.8 -> v3.2.0-rc.1 se 24h stabilita post-deploy verde
+
+**One-liner apertura nuova sessione N+5.M-pivot-exec:**
+
+```
+Esegui il prompt al par.11.R-S3-ter del Changelog Fase 3.
+```
