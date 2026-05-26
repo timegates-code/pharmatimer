@@ -1,8 +1,14 @@
 """
-PharmaTimer F3-S1-bis Step 4 CP1-code
+PharmaTimer F3-S1-bis Step 4 CP1-code (refactored N+5.M-pivot-exec-beta-1)
 MySQL connection pool via mysql-connector-python.
 Pool initialized at FastAPI startup (lifespan), torn down at shutdown.
 sub-AMB F3-S1.C default pool_size=5.
+
+N+5.M-pivot-exec-beta-1 refactor (s.6.NN-Fase3 Q-I.1=(b)):
+- Conditional option_files vs user+password based on settings.DB_DEFAULTS_FILE
+- DB_NAME passed explicitly even in defaults-file mode (override [client] section)
+
+SENTINEL_N5M_PIVOT_EXEC_BETA1_BACKEND_REFACTOR_APPLIED
 """
 from mysql.connector import pooling
 from mysql.connector.pooling import MySQLConnectionPool, PooledMySQLConnection
@@ -17,18 +23,22 @@ def init_pool() -> None:
     global _pool
     if _pool is not None:
         return
-    _pool = pooling.MySQLConnectionPool(
-        pool_name="pharmatimer_pool",
-        pool_size=settings.DB_POOL_SIZE,
-        host=settings.DB_HOST,
-        port=settings.DB_PORT,
-        user=settings.DB_USER,
-        password=settings.DB_PASSWORD,
-        database=settings.DB_NAME,
-        charset="utf8mb4",
-        collation="utf8mb4_unicode_ci",
-        autocommit=False,
-    )
+    pool_kwargs = {
+        "pool_name": "pharmatimer_pool",
+        "pool_size": settings.DB_POOL_SIZE,
+        "host": settings.DB_HOST,
+        "port": settings.DB_PORT,
+        "database": settings.DB_NAME,
+        "charset": "utf8mb4",
+        "collation": "utf8mb4_unicode_ci",
+        "autocommit": False,
+    }
+    if settings.DB_DEFAULTS_FILE:
+        pool_kwargs["option_files"] = settings.DB_DEFAULTS_FILE
+    else:
+        pool_kwargs["user"] = settings.DB_USER
+        pool_kwargs["password"] = settings.DB_PASSWORD
+    _pool = pooling.MySQLConnectionPool(**pool_kwargs)
 
 
 def close_pool() -> None:
