@@ -4956,3 +4956,304 @@ Esegui il prompt al par.11.R-S3-quinquies del Changelog Fase 3.
 
 
 ---
+
+
+### 22.99 (Fase 3, closing N+5.M-pivot-exec-beta-2-attempt-1 esecutiva monolitica deploy infra Mini abortita parziale doc-only post-rollback CP2.10 blocker drift-N45 carry-forward Studio + 16 applicazione cumulativa pattern par.22.55-Fase2 split safety-first POST-FACTO + Lesson #31 strong cementata formale + Lesson #32 candidate NEW)
+
+<!-- par.22.99 R1 emit Fase 3 SENTINEL_N5M_PIVOT_EXEC_BETA2_ATTEMPT1_CLOSING_PAR_22_99 -->
+
+**Data:** 27 maggio 2026 (notte, post-par.22.98 stesso ciclo deploy beta-2 split beta-2-attempt-1/attempt-2).
+
+**Modalita:** Sessione N+5.M-pivot-exec-beta-2-attempt-1 esecutiva monolitica deploy infra Mini abortita CP2.10 blocker. Pattern par.22.55-Fase2 split safety-first **sedicesima applicazione cumulativa Fase 3 POST-FACTO** ratificata (rara: normalmente preventivo, qui reattivo a finding empirico CP2.10 pytest ROSSO 1 errore). Pattern par.22.94 N+5.L abortito replicato safety-first. Token spesi ~50K. Wall-clock ~3h.
+
+**Esito:** PARZIALE -- CP1 patcher v1 emit verde sandbox 9 artefatti (8 NEW deploy/ + 1 MOD app.py) bit-perfect cross-platform Linux Python 3.12 -> Mac Studio macOS Tahoe Python 3.13, CP2 dry-run Mac Studio 9/10 verde + 1 ROSSO CP2.10 pytest blocker (`importlib.metadata.PackageNotFoundError` su MOD app.py drift-N45 carry-forward Studio venv non-editable). Rollback CP2.10 esecutivo verde 5/5: app.py restored baseline SHA-256 `9590afe3...`, patcher v1 + backup `.bak.cp_n5m_pivot_beta2` rimossi, 8 file `deploy/` preservati untracked SHA-256 verde, pytest 80/80 ripristinato verde post-restore. Stato Studio invariato pre-sessione (eccetto 8 deploy/ untracked preservati per attempt-2).
+
+#### CP0 baseline empirico verde 9/10 (1 drift-doc-N69)
+
+- HEAD `bfe2793` branch `fase-3-backend` post-N+5.M-pivot-exec-beta-1 doc-only chain child di `be73e83` (code commit + tag `v3.2.0-alpha.7a`)
+- 0 ahead `origin/fase-3-backend`, working tree clean pre-sessione
+- pyproject `0.7.0b1` invariato, package `3.2.0-alpha.1` invariato, ImpostazioniTab sync
+- 8 tag totali `v3.2.0-alpha.1..v3.2.0-alpha.7a` LOCALE+REMOTO simmetrici
+- SSH alias `mini` -> `marketreader@192.168.1.167` verde (LocalForward 3307 warning non-bloccante sub-AMB LF deferred)
+- Sub-AMB tecnica LF (porta 3307 occupata ControlMaster zombie) verificata non-bloccante deploy beta-2 (SSH plain OK, LocalForward MySQL admin use case non utilizzato CP3-7)
+
+#### CP0-ext audit Mini empirico verde 9/9 + 6/6 INV check (2 drift downgrade N70/N71)
+
+- mysqld PID 846 LISTEN `*:3306` brew 9.6.0 marketreader (riuso opzione gamma confermato)
+- `/opt/homebrew/bin/mysql` symlink Cellar/mysql/9.6.0/bin (PATH SSH non-login mancante drift-N70 rimedio CP1 patcher riga 2 export PATH)
+- `~/.my-pharmatimer.cnf` ASSENTE pre-setup OK (`.my.cnf` globale StockFusion `marketdata_svc` separato baseline)
+- Porta 8000 LIBERA, porte 8001-8009 anti-collisione StockFusion verificate
+- Python 3.13.12 brew `/opt/homebrew/opt/python@3.13/bin/python3.13` confermato (drift-N71 rimedio CP1 abs path)
+- Watchdog StockFusion pattern modello: `~/Library/LaunchAgents/com.stockfusion.daemon-wrapper.plist` + `com.stockfusion.log-cleanup.plist` + market-reader.plist.disabled, PID running 20625 verified replica 1:1 target
+- `~/PharmaTimer` ASSENTE pre-deploy OK, LaunchAgents `com.pharmatimer.*` ASSENTI pre-setup OK
+- `marketreader` uid 501 gid 20 staff confermato, hostname `MarketReader-Server.local` (mDNS)
+
+#### CP1 esiti patcher v1 emit verde sandbox
+
+Patcher `cp_n5m_pivot_exec_beta2_deploy_patcher.py` 19362 bytes 583 righe AST parse OK + bash -n 6/6 OK + plistlib parse 2/2 OK + py_compile OK. Sandbox `/home/claude/n5m_beta2/sandbox/` apply RUN #1 verde 9 artefatti (8 NEW deploy/ + 1 MOD app.py 2 sub-MOD anchored: INSERT import importlib.metadata + REPLACE version="0.1.0"). Apply RUN #2 verde 0 delta idempotente bit-perfect SHA-256 identici 9/9.
+
+SHA-256 9 artefatti sandbox bit-perfect:
+
+| Artefatto | SHA-256 |
+|---|---|
+| `backend/pharmatimer_api/app.py` (post-MOD) | `3b243d5529c846bc88fde74aafa82ed13f9466b8ad8c311f5f15f657e49a28b2` |
+| `deploy/01-setup-pharmatimer-db.sh` | `6590d62b7f7714cb273cea9b5a494dabf0ca8809a61d48dd1c774906f0b70761` |
+| `deploy/02-setup-pharmatimer-venv.sh` | `9199f6d5b9824894867b992486b196817c6553de9d29003c8991dbf796289896` |
+| `deploy/03-apply-schema.sh` | `4bc2fdfe3a4917cb1ff37ed120deabe7eb19c6868bf037f39e4dcf38f80d9580` |
+| `deploy/04-seed-owner.sh` | `334895d98a997e605e65ba676933264c160730ff8ff960fae72793c8059a1042` |
+| `deploy/launchd/api-wrapper.sh` | `2c1fbebab52ef6206f6a825be5fffa0c4f93c7304871fededd668057a98ce8a4` |
+| `deploy/launchd/backup.sh` | `a1fe23244e213bbc386cb4452d89a1dc2261233b88c8d5092697b2a77861a4f3` |
+| `deploy/launchd/com.pharmatimer.api-wrapper.plist` | `3d19f1859b4355d9fd51320f356591b89bf3b5b7ab3d3abaf8be1609171c24e1` |
+| `deploy/launchd/com.pharmatimer.backup.plist` | `6d01dbf30325a7c30b07f79429f77bfe255b3da056950332ce781c4af4c126b6` |
+
+Mac Studio apply CP2.5-2.9 verde: SHA-256 match esatto cross-platform sandbox Linux Python 3.12 -> Mac macOS Tahoe Python 3.13 (pattern par.22.75/76/77-Fase2 bit-perfect replicato). Idempotency RUN #2 Mac-side 0 delta verde.
+
+#### CP2 esiti dry-run Mac Studio 9/10 verde + 1 ROSSO BLOCKER
+
+CP2.1-CP2.9 verde 9/9: patcher SHA-256 match `6a240a21...` + baseline app.py `9590afe3...` + working tree clean pre-apply + 8 NEW creato + app.py MOD applicato corretto (righe 8-12 import + 28-34 FastAPI version dinamica) + backup `.bak.cp_n5m_pivot_beta2` SHA-256 baseline match + RUN #2 idempotent 0 delta.
+
+**CP2.10 pytest 80/80 ROSSO blocker:**
+
+```
+importlib.metadata.PackageNotFoundError: No package metadata was found for pharmatimer-api
+    pharmatimer_api/app.py:31: in <module>
+    version=_pkg_version("pharmatimer-api"),
+```
+
+CP2.11 vitest 575/575 verde invariato (no-impact frontend).
+
+#### Diagnosi blocker CP2.10
+
+**drift-N45 carry-forward Studio ratificato beta-1 par.22.98 §CP3** (riga 4732 Changelog Fase 3 esplicito): *"`importlib.metadata.version('pharmatimer_api')` raise `No package metadata` post-bump: NON drift NEW questa sessione, **estensione drift-N45 carry-forward Studio-side** (backend non installato editable nel venv, pytest funziona via `pyproject.toml configfile + rootdir backend/`). Fix beta-2 deploy Mini-side `pip install -e backend/` via `02-setup-pharmatimer-venv.sh`."*
+
+Studio venv `backend/venv/` MANDATORY pre-pytest (userMemory + par.22.79 cementato) MA pacchetto `pharmatimer-api` **NON installato editable** by design ratificato beta-1: pytest funziona via `pyproject.toml [tool.pytest.ini_options]` rootdir/configfile workaround. MOD #2 patcher v1 ipotizzava `_pkg_version("pharmatimer-api")` hard fail -> rompe pytest Studio import-time.
+
+**Pattern errore Claude:** pre-letture par.22.98 lette in larghezza (closing + sub-AMB + lesson candidate) ma saltato §CP3 esiti bump pyproject dove drift-N45 carry-forward esplicitamente documentato 1 riga sopra il closing. Lesson #27 strict applicata superficiale + pattern-matching su design draft N+5.L originale par.22.94/L1 ("NO fallback hard fail") invece di stato evoluto post-empirico beta-1.
+
+#### Rollback CP2.10 verde 5/5 (eseguito Roberto Mac-side)
+
+- A.1 restore `cp backend/pharmatimer_api/app.py.bak.cp_n5m_pivot_beta2 backend/pharmatimer_api/app.py` -> SHA-256 baseline `9590afe3...` match
+- A.2 cleanup patcher v1 + backup `.bak.cp_n5m_pivot_beta2` rimossi
+- A.3 8 file `deploy/` mantenuti untracked SHA-256 bit-perfect preservati per attempt-2
+- A.4 working tree status: solo `deploy/` untracked, app.py invariato baseline
+- A.5 pytest 80/80 verde ripristinato post-restore (3.80s wall-clock)
+
+Stato Studio post-rollback: invariato pre-sessione eccetto 8 deploy/ untracked preservati come asset attempt-2.
+
+#### Drift NEW catalizzati N69-N76 (8 finding)
+
+| ID | Tipo | Descrizione | Status |
+|---|---|---|---|
+| **N69** | doc-only | par.11.R-S3-quinquies CP0 atteso HEAD `be73e83` (code) vs empirico `bfe2793` (doc-only chain child). Pattern atomic push code+doc par.22.75/76/77 | doc-only documentato qui, demanda cementazione |
+| **N70** | doc-only + rimedio CP1 | SSH non-login shell PATH `/opt/homebrew/bin` mancante per zsh non-interattiva | Rimedio applicato 8 script bash deploy/ riga 2 `export PATH="/opt/homebrew/bin:$PATH"` |
+| **N71** | doc-only | Python 3.13.12 brew path `/opt/homebrew/opt/python@3.13/bin/python3.13` (vs prompt nominava nudo `python3.13`) | Rimedio applicato 02-setup-pharmatimer-venv.sh abs path |
+| **N72** | doc-only + rimedio CP1 | Schema path empirico `backend/db/migrations/` vs prompt `backend/schema/v01_init.sql` regressione consolidamento N+5.M-pivot design draft par.22.96 vs F3-S1 par.22.79 originale | Rimedio applicato 03-apply-schema.sh catena v01+v02+v03 |
+| **N73** | doc-only + rimedio CP1 | seed_owner path `backend/seed_owner.py` standalone vs prompt `backend/pharmatimer_api/scripts/seed_owner.py` (dir scripts assente Studio) | Rimedio applicato 04-seed-owner.sh path adjusted |
+| **N74** | doc-only | MOD CORS env-driven design draft par.22.96 superato par.22.98 backend refactor (`settings.cors_origins_list` gia presente riga 36 app.py) -> MOD no-op rimosso da patcher v1 | Rimosso da patcher (no-op) |
+| **N75** | error process Claude | Pre-letture par.22.98 lette in larghezza ma §CP3 esiti bump pyproject (riga 4732 drift-N45 carry-forward Studio esplicito) saltato. Lesson #27 strict applicata superficiale | Cementabile Lesson #31 strong (vedi sotto) |
+| **N76** | error process Claude | Pattern-matching su design draft N-2-sessioni-fa (par.22.94/L1 N+5.L "NO fallback") invece di stato evoluto post-empirico beta-1 (par.22.98 §CP3) | Cementabile Lesson #31 strong (vedi sotto) |
+
+#### Lesson #31 cementata formale **strong version** (auto-segnalata da N75/N76 + conferma empirica 4 occorrenze cumulative)
+
+**Pattern cumulativo:** Lesson #31 candidate emersa par.22.94 N+5.L (1 occorrenza), riconfermata par.22.97 N+5.M-pivot-exec-alpha 9 drift NEW (2 occorrenza), riconfermata par.22.98 N+5.M-pivot-exec-beta-1 3 drift NEW (3 occorrenza), riconfermata par.22.99 questa sessione 8 drift NEW di cui 2 process-Claude (4 occorrenza). **Cementazione formale strong** ratificata.
+
+**Lesson #31 strong version:**
+
+> *"Pre-emit patcher CP1, Claude DEVE elencare in dettaglio le assunzioni nascoste di ogni MOD/file NEW (es. `assumo pacchetto installato editable Studio venv`, `assumo schema path X`, `assumo binario Y in PATH`). Ogni assunzione DEVE essere validata empiricamente PRIMA dell'emit tramite INV check dedicato in CP0-ext Parte rilevante. **CP0-ext Parte D NEW MANDATORY se patcher tocca codice che dipende da install state**: dump stato venv runtime ambiente (pip list + grep pacchetto target + verifica editable install via `pip show <pkg> | grep Location`) per ogni libreria che dipende da install state (importlib.metadata, package resources, plugin discovery, entry points). Lesson #27 strict estesa: dump source + dump runtime state ambiente."*
+
+**Punti operativi Lesson #31 strong:**
+
+1. **Pre-CP1 patcher emit:** Claude lista assunzioni nascoste explicit (3-5 per MOD/file NEW) in apertura analisi-first
+2. **Ogni assunzione -> INV empirico dedicato** in CP0-ext Parte X (path, install state, version, env, runtime)
+3. **CP0-ext Parte D NEW MANDATORY** se MOD usa `importlib.metadata`, `pkg_resources`, `entry_points`, plugin discovery, o qualsiasi API che dipenda da `pip install` state
+4. **Pre-letture obbligatorie estese:** par.22.NN closing letti integrali in CP0 pre-letture (non solo prefisso + closing summary, ma §CP1-CP7 esiti dettaglio), specialmente per dettagli operativi che possono cambiare il design del prossimo patcher
+
+#### Lesson #32 candidate NEW (cementazione formale demandata CP closing N+5.M-pivot-exec-beta-2-attempt-2)
+
+**Self-skepticism checkpoint post-CP esecutivo:**
+
+> *"Al closing di ogni CP esecutivo, Claude DEVE esplicitamente elencare le assunzioni fatte in quel CP che NON ha validato empiricamente. Pre-emit del CP successivo, le assunzioni elencate DEVONO essere validate (INV check dedicato) o ratificate empiricamente come accettabili. Cattura drift sistemici nel turno corrente, non al CP successivo."*
+
+Cementazione formale demandata N+5.M-pivot-exec-beta-2-attempt-2 CP closing con conferma cumulativa pattern visto questa sessione (rollback CP2.10 = costo evitabile se Lesson #32 applicata in CP1 closing).
+
+#### Sub-AMB pending carry-forward attempt-2 (invariate beta-1 ratifiche + 2 sub-AMB ratificate questa sessione)
+
+Ratificate batch in apertura attempt-1 + riconfermate per attempt-2:
+
+| Sub-AMB | Ratifica |
+|---|---|
+| A | Patcher monolitico ~32-50K, soglia split 50K (empirico v1 = 19362 bytes, monolitico confermato attempt-2) |
+| C | Smoke 401 -> 200 -> 422 con curl -v (CP4 attempt-2 carry-forward) |
+| D | seed_owner.py Mini-side token random stdout one-shot (CP3 attempt-2 carry-forward) |
+| E | Spec v1.9 merge Roberto-side post-CP5 verde (CP7 attempt-2 carry-forward) |
+| F-revised | CORS 3 origins (IP + mDNS + gh-pages) -- N74 MOD no-op rimosso, gia presente settings.cors_origins_list |
+| D-NEW#3/#4 | Setup venv: skip requirements.txt + pip install -e backend/ only (CP3 attempt-2 carry-forward) |
+| LF tecnica | Porta 3307 occupata = deferred non-bloccante beta-2 (rationale empirico ControlMaster zombie auto-respawn) |
+| MySQL root setup NEW | (a) interactive `mysql -uroot -p` prompt password one-shot (CP3 attempt-2 carry-forward) |
+| Schema chain NEW | (a) catena v01+v02+v03 idempotent IF NOT EXISTS (CP3 attempt-2 carry-forward) |
+
+Package bump ratificato: `3.2.0-alpha.1 -> 3.2.0-alpha.2` simmetrico con pyproject `0.7.0b1 -> 0.7.0` + tag `v3.2.0-alpha.8` (CP6 attempt-2 carry-forward).
+
+#### Test post-sessione
+
+- pytest backend 80/80 verde Studio (3.80s wall-clock post-rollback)
+- vitest frontend 575/575 verde invariato pre-sessione (3.73s wall-clock CP2.11)
+- Totale 655/655 invariati vs baseline par.22.98 verde
+
+#### Tag git e push
+
+- **Tag git:** NO (sessione abortita parziale, AMB-11.B.7 rispettato: no milestone tecnico, no codice runtime modificato in commit)
+- **package.json:** invariato `3.2.0-alpha.1`
+- **pyproject.toml:** invariato `0.7.0b1`
+- **Commit:** 1 doc-only Changelog Fase 3 (questa sezione + par.11.R-S3-sexies pre-frozen, pattern par.22.75/76/77/96/97 replicato esatto patcher Python idempotente content-based SENTINEL)
+- **Push:** SI immediato raccomandato per cementare 8 drift NEW + Lesson #31 strong + Lesson #32 candidate in origin remote (backup KB cross-device, Lesson #11 cross-session protezione)
+- **Spec:** invariata KB-only Roberto-side (Spec v1.9 delta merge demandato post-deploy verificato CP5 N+5.M-pivot-exec-beta-2-attempt-2)
+- **8 file deploy/ untracked:** preservati pre-attempt-2, NON committati questa sessione (patcher v2 attempt-2 skip idempotent SHA-256 match)
+
+#### Stato git/test post-sessione (invariato pre-sessione eccetto deploy/ untracked)
+
+- HEAD `bfe2793` branch `fase-3-backend` invariato
+- 0 ahead `origin/fase-3-backend` pre-commit doc-only par.22.99 (1 ahead post-commit attesa CP closing)
+- Tag `v3.2.0-alpha.7a` invariato, 8 tag totali LOCALE+REMOTO simmetrici
+- backend/pharmatimer_api/app.py SHA-256 `9590afe3...` baseline ripristinato
+- 8 file deploy/ untracked preservati
+
+#### Riferimenti par.22.99
+
+- **par.22.98-Fase3** integrale (closing N+5.M-pivot-exec-beta-1 + §CP3 esiti bump pyproject riga 4732 drift-N45 carry-forward Studio esplicito SALTATO da Claude in pre-letture attempt-1)
+- **par.22.97-Fase3** (analisi-first pre-CP1 pattern simile + 9 drift NEW catalizzati + Lesson #31 candidate 2 occorrenza)
+- **par.22.94-Fase2** N+5.L design draft (drift-N45 fix MOD raw "NO fallback hard fail" raccomandato originale, superato beta-1)
+- **par.22.55-Fase2** split safety-first **sedicesima applicazione cumulativa Fase 3 POST-FACTO** ratificata (rara: post F3-S1-bis-delta 1/2-2/2 + F3-S3-alpha-pre/post + N+5.B + N+5.D + N+5.F + N+5.G + N+5.H + N+5.I-pre + N+5.J + N+5.K + N+5.L + N+5.M abort + N+5.M-pivot + N+5.M-pivot-exec-alpha + N+5.M-pivot-exec-beta-1 + N+5.M-pivot-exec-beta-2-attempt-1)
+- **par.22.58-Fase2** patcher Python content-based SENTINEL idempotent
+- **par.22.75/22.76/22.77-Fase2** patcher Changelog APPEND idempotente bit-perfect cross-platform replicato esatto (SHA-256 match esatto atteso questa sessione)
+- **par.6.71/85-Fase2** history immutability: 8 drift N69-N76 cementati immutabili post-push
+- **par.6.118-Fase2** pre-code scenario validation MANDATORY (violazione Claude su MOD #2 drift-N45 imposto rollback CP2.10)
+- **Lesson #20-#30 cumulative MANDATORY** invariate + applicate
+- **Lesson #31 strong cementata formale** (vedi sopra) -- 4 occorrenza confermata cumulative
+- **Lesson #32 candidate NEW MANDATORY** -- cementazione formale demandata CP closing N+5.M-pivot-exec-beta-2-attempt-2
+
+#### Sessione successiva post-N+5.M-pivot-exec-beta-2-attempt-1
+
+**N+5.M-pivot-exec-beta-2-attempt-2 esecutiva CP1 patcher v2 emit (solo MOD app.py revised try/except + PackageNotFoundError fallback) + CP3-CP7 originali carry-forward + smoke 3 scenari LAN + backup smoke + commit/tag/push finale atomico** scope architetturalmente blindato par.22.99 (questo) + 8 file deploy/ gia presenti SHA-256 bit-perfect untracked preservati + CP0-ext Parte D NEW MANDATORY Lesson #31 strong dump venv state + sub-AMB pending invariate. Token attesi ~30-40K (ridotti vs attempt-1 ~50K: 8 deploy/ gia scritti + Lesson #31 strong applicata pre-emit). Wall-clock ~1.5-2h. Pre-frozen `par.11.R-S3-sexies` emit sotto.
+
+**One-liner apertura nuova sessione N+5.M-pivot-exec-beta-2-attempt-2:**
+
+```
+Esegui il prompt al par.11.R-S3-sexies del Changelog Fase 3.
+```
+
+
+
+---
+
+### par.11.R-S3-sexies -- Prompt apertura N+5.M-pivot-exec-beta-2-attempt-2 esecutiva MOD app.py only (8 deploy/ preservati) + CP3-CP7 carry-forward + Lesson #31 strong applicata pre-emit
+
+<!-- par.11.R-S3-sexies R1 emit Fase 3 post-N+5.M-pivot-exec-beta-2-attempt-1 closing par.22.99 -->
+
+**One-liner apertura:** `Esegui il prompt al par.11.R-S3-sexies del Changelog Fase 3.`
+
+#### VINCOLO ARCHITETTURALE IMMUTABILE (carry-forward par.22.95 R2 + par.22.96 + par.22.97 + par.22.98 + par.22.99 + L1-L4 difesa multi-layer)
+
+**Deploy F3-S6 PharmaTimer = opzione gamma par.22.78-bis ratificata + riconfermata 6 volte (par.22.95 R2 + par.22.96 + par.22.97 + par.22.98 + par.22.99 + Spec v1.9 sez. 12 cementata):**
+
+- Vincoli architetturali invariati par.22.98 sez. VINCOLO ARCHITETTURALE IMMUTABILE (riferimento integrale)
+- Aggiunto par.22.99: 8 file deploy/ gia scritti SHA-256 verde untracked preservati attempt-1
+
+**VIETATO N+5.M-pivot-exec-beta-2-attempt-2 e sessioni successive (carry-forward par.22.98 + estensioni par.22.99):**
+
+- Vincoli VIETATO invariati par.22.98 (riferimento integrale)
+- AGGIUNTO: re-write 8 file deploy/ esistenti SHA-256 verde (patcher v2 skip idempotent OBBLIGATORIO via SENTINEL match)
+- AGGIUNTO: MOD app.py senza try/except + PackageNotFoundError fallback (rompe pytest Studio per drift-N45 carry-forward ratificato par.22.98 §CP3 + par.22.99 §Diagnosi)
+
+#### Scope alto livello
+
+Sessione **esecutiva monolitica ridotta** deploy F3-S6 infrastruttura Mac Mini headless attempt-2 tramite patcher Python `cp_n5m_pivot_exec_beta2_deploy_patcher_v2.py` content-based SENTINEL idempotent. **1 MOD anchored REVISED `backend/pharmatimer_api/app.py`** (try/except + PackageNotFoundError fallback "0.0.0-dev" Studio + version reale Mini editable). **8 file NEW `deploy/` SKIP idempotent** (SHA-256 match attempt-1 verde bit-perfect, SENTINEL identici).
+
+Deploy effettivo Mini via SSH alias `mini` + rsync + setup scripts + LaunchAgent + smoke + backup + commit + bump pyproject `0.7.0b1 -> 0.7.0` + bump package `3.2.0-alpha.1 -> 3.2.0-alpha.2` + tag annotato `v3.2.0-alpha.8` LOCALE+REMOTO + push atomico (**12 applicazione cumulativa AMB-11.B.7-bis Fase 3** attesa).
+
+#### Pre-letture obbligatorie N+5.M-pivot-exec-beta-2-attempt-2 (Lesson #31 strong applicata)
+
+1. **`par.22.99-Fase3` integrale** (closing attempt-1 abortita + rollback verde + 8 drift N69-N76 + Lesson #31 strong cementata + Lesson #32 candidate + 16 applicazione cumulativa POST-FACTO)
+2. **`par.22.98-Fase3` integrale** -- in particolare **§CP3 esiti bump pyproject** (riga 4732 drift-N45 carry-forward Studio esplicito, Lesson #31 strong applicabile)
+3. `par.22.97-Fase3` (closing N+5.M-pivot-exec-alpha + sub-AMB.I-NEW chiusa + 9 drift NEW catalizzati)
+4. `par.22.96-Fase3` (12 artefatti design draft consolidato + ratifica 9 sub-AMB N+5.M-pivot.A-I)
+5. `par.22.94-Fase2` (N+5.L design draft drift-N45 fix originale "NO fallback" SUPERATO beta-1 + attempt-1)
+6. Lesson #20-#30 cumulative MANDATORY + **Lesson #31 strong MANDATORY** + Lesson #32 candidate
+
+#### Assunzioni nascoste MOD app.py v2 da validare pre-emit (Lesson #31 strong applicazione)
+
+1. **Studio venv `backend/venv/` esistente con Python 3.13** -> INV check `python3 -c "import sys; print(sys.executable)"` in venv attivato (CP0 baseline carry-forward)
+2. **Studio venv pacchetto `pharmatimer-api` NON installato editable** by design beta-1 -> INV check **CP0-ext Parte D NEW MANDATORY** `pip list | grep -i pharma` + `pip show pharmatimer-api` (expected stderr fail)
+3. **Studio pytest funziona via `pyproject.toml configfile + rootdir backend/`** -> INV check `cat backend/pyproject.toml | grep -A 3 'tool.pytest'`
+4. **Mini venv post-CP3 setup_venv.sh `pip install -e backend/` registrera pacchetto editable** -> verifica empirica post-CP3 deploy via `~/PharmaTimer/.venv/bin/pip show pharmatimer-api | grep -E 'Version|Location'`
+5. **`importlib.metadata.PackageNotFoundError` import disponibile Python 3.13.12** stdlib -> INV check `python3 -c "from importlib.metadata import PackageNotFoundError; print(PackageNotFoundError.__module__)"` (atteso `importlib.metadata`)
+
+#### CP0 baseline empirico mandatory + Parte D NEW
+
+```
+cd ~/Sviluppo/pharmatimer
+git rev-parse HEAD                # atteso 1 ahead bfe2793 post-par.22.99 commit
+git describe --tags --abbrev=0    # atteso v3.2.0-alpha.7a invariato
+grep '^version' backend/pyproject.toml   # atteso 0.7.0b1 invariato
+node -e "console.log(require('./package.json').version)"   # atteso 3.2.0-alpha.1 invariato
+git status --short                # atteso solo deploy/ untracked (preservati attempt-1)
+git rev-list --count origin/fase-3-backend..HEAD  # atteso 0 ahead post-push
+git tag -l 'v3.2.0-alpha.*'       # atteso 8 tag .1..7a invariati
+ssh -o ConnectTimeout=5 -o BatchMode=yes mini 'echo ssh-ok'
+shasum -a 256 backend/pharmatimer_api/app.py
+# atteso 9590afe3aec0746d4e5361918c8f15ed67c24fcd683c0f936ecae1e7c61836a1 baseline
+find deploy -type f | sort | xargs shasum -a 256
+# atteso 8 SHA-256 bit-perfect match par.22.99 tabella riferimento
+source backend/venv/bin/activate
+echo 'CP0 Parte D NEW Lesson 31 strong dump venv state'
+pip list | grep -iE 'pharma|fastapi|pydantic|mysql-connector' | head -10
+pip show pharmatimer-api 2>&1 | head -5
+python3 -c "from importlib.metadata import PackageNotFoundError; print('PackageNotFoundError import OK')"
+deactivate
+```
+
+#### CP plan N+5.M-pivot-exec-beta-2-attempt-2
+
+| CP | Scope |
+|---|---|
+| **CP0** | Baseline empirico Studio post-par.22.99 + verifica 8 deploy/ SHA-256 match attempt-1 + **Parte D NEW MANDATORY Lesson #31 strong dump venv state** |
+| **CP0-ext** | Audit Mini empirico delta beta-2-attempt-1: SSH alias mini verde + sub-AMB LF deferred (ControlMaster zombie auto-respawn) |
+| **CP1** | Patcher Python `cp_n5m_pivot_exec_beta2_deploy_patcher_v2.py` emit (1 MOD app.py REVISED try/except + PackageNotFoundError fallback) + 8 NEW deploy/ SKIP idempotent SENTINEL match attempt-1 |
+| **CP2** | Dry-run Mac Studio: idempotenza patcher (2 run = 0 delta) + verifica MOD app.py v2 + **CP2.10 pytest 80/80 verde post-MOD v2** + vitest 575/575 verde invariato |
+| **CP3** | Deploy effettivo Mini via SSH alias `mini`: rsync `deploy/` + `backend/` -> `~/PharmaTimer/` + `setup_pharmatimer_db.sh` (interactive `mysql -uroot -p`) + `setup_pharmatimer_venv.sh` (`pip install -e backend/` chiude drift-N45 Mini-side) + schema catena v01+v02+v03 + `seed_owner.py` (token stdout) + `cp launchd/*.plist ~/Library/LaunchAgents/` + `launchctl bootstrap gui/$UID` (api + backup) |
+| **CP4** | Smoke 3 scenari Q-N5L.G Mac Studio LAN HTTP: S1 401 vocabulary no token + S2 200 happy con `X-User-Token` + S3 422 Pydantic invalid body, tutti con `curl -v` verbose log + verifica `version` endpoint /api/health o /openapi.json returna `0.7.0` (post-bump) |
+| **CP5** | Backup smoke: `launchctl start com.pharmatimer.backup` + verifica `~/PharmaTimer/backups/pharmatimer_YYYYMMDD_HHMMSS.sql.gz` + size >1KB + `gzip -t` decompression OK |
+| **CP6** | Cleanup-attempt-2 + bump pyproject `0.7.0b1 -> 0.7.0` + bump package `3.2.0-alpha.1 -> 3.2.0-alpha.2` + sync ImpostazioniTab.jsx runtime + tag annotato LOCALE+REMOTO `v3.2.0-alpha.8` su HEAD CP6 + push atomico (**12 applicazione cumulativa AMB-11.B.7-bis Fase 3**) |
+| **CP7** | Closing par.22.100 emit + pre-frozen N+5.N + Roberto applica Spec v1.9 merge manuale + memory_user_edits cementazione finale F3-S6 deploy parzialmente completato gamma + Lesson #32 cementata formale (self-skepticism checkpoint post-CP) |
+
+#### Modalita raccomandata N+5.M-pivot-exec-beta-2-attempt-2
+
+**Esecutiva monolitica ridotta** (scope ridotto: 1 MOD app.py + 8 NEW skip idempotent + CP3-CP7 carry-forward). Stima patcher v2 ~20K bytes (vs v1 19362, incremento ~700 bytes per try/except + PackageNotFoundError import + commenti).
+
+Pattern par.22.55-Fase2 split safety-first NON applicato a priori (scope ridotto). Pattern par.22.99 attempt-1 lesson applicata: Lesson #31 strong pre-emit MANDATORY + Lesson #32 candidate self-skepticism checkpoint post-CP suggerito.
+
+#### Esito atteso N+5.M-pivot-exec-beta-2-attempt-2
+
+- FastAPI uvicorn Mini operativo + 2 LaunchAgent user-level auto-start post-login marketreader
+- DB pharmatimer + DB user pharmatimer_app + schema catena v01+v02+v03 + seed Roberto owner verde + token stdout one-shot
+- 3 smoke Q-N5L.G verdi da Mac Studio LAN HTTP 192.168.1.167:8000
+- /api/health o /openapi.json returna version `0.7.0` (chiude drift-N45 Mini-side)
+- Backup mysqldump retention 7gg primo file verde
+- pytest Studio 80/80 verde post-MOD app.py v2 (try/except fallback `0.0.0-dev`)
+- Commit cumulativo + bump pyproject 0.7.0 + bump package 3.2.0-alpha.2 + tag `v3.2.0-alpha.8` LOCALE+REMOTO + push atomico verde
+- Spec v1.9 merge applicato Roberto-side (post-deploy verificato)
+- Lesson #32 cementata formale
+- Pre-frozen N+5.N emit (Tailscale apply vs PWA UI vs rc promotion)
+
+#### Sessione successiva post-N+5.M-pivot-exec-beta-2-attempt-2
+
+**N+5.N pre-frozen scope TBD** a CP7 N+5.M-pivot-exec-beta-2-attempt-2 closing. Candidate invariati par.22.99 carry-forward.
+
+**One-liner apertura nuova sessione N+5.M-pivot-exec-beta-2-attempt-2:**
+
+```
+Esegui il prompt al par.11.R-S3-sexies del Changelog Fase 3.
+```
+
+
+---
