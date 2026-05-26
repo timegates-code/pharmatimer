@@ -3459,3 +3459,413 @@ Esegui il prompt al par.11.R-S3 del Changelog Fase 3.
 ```
 
 ---
+
+
+### 22.95 (Fase 3, closing N+5.M esecutiva ABORTITA doc-only split safety-first + 4 drift architetturali catalizzati CP0-ext-prep + drift-doc N62 abbandono silenzioso opzione γ par.22.78-bis + Lesson #30 NEW MANDATORY + pivot N+5.M-pivot ratificato ritorno γ + dodicesima applicazione cumulativa pattern par.22.55-Fase2)
+
+<!-- par.22.95 R2 emit Fase 3 SENTINEL_N5M_CP_ABORT_CLOSING_PAR_22_95 -->
+<!-- par.22.95 R2 revisione coerenza 9 incongruenze risolte + 3 precisazioni Roberto integrate -->
+
+**Data:** 26 maggio 2026.
+
+**Modalita:** Sessione N+5.M aperta come esecutiva monolitica deploy F3-S6 docker-compose Mac Mini (scope par.11.R-S3 ratificato par.22.94 N+5.L design draft + blanket Q0=A + 9 default Q-N5L.A-I). **Abortita a CP0-ext-prep** post 4 drift architetturali empirici catalizzati. Token spesi ~35K (di cui ~7K revisione coerenza pre-commit, vedi sez. "Revisione coerenza pre-commit" sotto). Wall-clock ~75 min. Zero source change, zero commit codice, zero bump, zero tag, zero push runtime. **1 commit doc-only** Changelog Fase 3 (questa sezione + par.11.R-S3-bis pre-frozen).
+
+**Esito:** ABORT esecutiva docker-compose deploy α/β + RATIFICA pivot N+5.M-pivot ritorno opzione γ par.22.78-bis (**MySQL nativo Mini esistente riuso**). Pattern par.22.55-Fase2 split safety-first **dodicesima applicazione cumulativa Fase 3**. Pre-frozen `par.11.R-S3-bis` analisi-first dedicata re-architettura.
+
+#### Scope sessione N+5.M (catalysis sequence)
+
+**CP0 baseline empirico Mac Studio** verde 9/11 + **2 drift non-bloccanti**:
+- Branch `fase-3-backend` HEAD `916789d` (NOT `5026383` come dichiarato par.11.R-S3 CP plan)
+- `1` commit ahead origin (commit doc-only N+5.L closing par.22.94 stesso)
+- Tag `v3.2.0-alpha.7` su `5026383` invariato corretto
+- pyproject `0.6.0`, package.json `3.2.0-alpha.1`, 76+575=651 test verde
+- Working tree clean
+
+**Drift HEAD chiarito false-positive scenario (a)** legittimo (par.22.94 closing N+5.L = commit `916789d` doc-only stesso, auto-referenza ricorsiva pre-frozen par.11.R-S3): **drift-doc N61** carry-forward, push atomico CP7 N+5.M (eventuale) avrebbe incluso 2 commits cumulativi. Nessuna retro-correzione par.6.71/85.
+
+**Q-OPEN-1 ratifica blanket** sub-AMB N+5.M.A-D default (i)(i)(i)(iii) par.22.94 + "decidi tu" su N+5.M.A pendente CP0-ext empirico.
+
+**Q-OPEN-2** discovery Mac Mini via SSH config + Tailscale status + Bonjour mDNS Mac Studio-side. Output empirico **4 drift architetturali NEW**:
+
+| ID | Drift empirico | Evidenza |
+|---|---|---|
+| **N+5.M.E** | Mini = host CONDIVISO con sistema finanziario StockFusion (Studio-side) + MarketReader (Mini-side) Roberto-controlled (non dedicato PharmaTimer) | SSH user `marketreader`, Bonjour mDNS `MarketReader-Server`, tunnel persistente Studio:3307 -> Mini:3306 attivo da 7gg |
+| **N+5.M.F** | Mini = NO container engine installato | `which docker docker-compose colima orbstack` -> all not found su Mini SSH |
+| **N+5.M.G** | Mini = porta 3306 OCCUPATA da **MySQL** esistente (MarketReader DB engine, NON MariaDB come Spec PharmaTimer) | tunnel persistente Studio:3307 -> Mini:3306 ON 7gg, confermato empirico. Coerente Q3=A par.22.78-bis doc-only deviation Spec MariaDB -> prod MySQL ratificata 21/05/2026 |
+| **N+5.M.H** | Studio Tailscale = CLI orfano (binary presente, daemon `tailscaled` ASSENTE, launchctl vuoto) | `which tailscaled` not found, `launchctl list \| grep tailscale` vuoto, `tailscale status` "Tailscale is stopped" |
+
+**Drift minore non-bloccante:**
+- **N+5.M.I**: SSH identityfile Studio->Mini = `~/.ssh/id_ed25519_github` (chiave promiscua github-tagged). Funziona, carry-forward.
+
+#### Drift-doc N62 NEW (regola critica #2 retroattiva)
+
+**Origine:** par.22.94 N+5.L design draft Claude-side ha silenziosamente abbandonato **opzione γ MySQL nativo Mini riuso esistente** (par.22.78-bis Fase 2 F3-S0-R1 AMB-F3.F 21/05/2026) a favore α/β (container Docker `mariadb:11.4` + bind mount path nuovo `/var/lib/mysql_pharmatimer`) **senza ratifica esplicita Roberto**. Sub-AMB Q-N5L.C ratificata par.22.94 con default `(ii) bind mount path` implica container Docker dedicato, non riuso istanza esistente.
+
+**Evidenza par.22.78-bis ratificato AMB-F3.F deferred F3-S6 3 opzioni candidate aperte:**
+- (α) Docker Desktop Mini + first-run VNC + docker-compose
+- (β) Colima Mini CLI-only + docker-compose
+- (γ) **MySQL nativo Mini riuso esistente** + DB+user dedicato `pharmatimer`+`pharmatimer_app` + venv Python nativo + opzionale launchd autostart
+
+**Impatto:** N+5.L design draft 9 file (00-README.md, 01-docker-compose.yml, 02-Dockerfile, 02b-dockerignore, 03-tailscale-acl.hujson, 04-com_pharmatimer_backup.plist, 05-pharmatimer-backup.sh, 06-cors-app-py-mod.py, 07-drift-n45-fix-app-py-mod.py) costruito su assunzione α/β esclusiva + assunzione errata `mariadb:11.4` container image (Spec dice MariaDB ma prod Mini effettivamente MySQL, drift Q3=A ratificato par.22.78-bis e dimenticato in N+5.L design draft).
+
+**Ratifica retroattiva:** drift-doc N62 chiuso da pivot N+5.M-pivot questa sessione. Carry-forward immutabile par.6.71/85 (no retro-correzione par.22.94 / par.11.R-S3 / 9 design draft N+5.L). Re-design completo in `par.11.R-S3-bis` analisi-first dedicata.
+
+#### Drift-doc N61 carry-forward (consolidato in questo closing)
+
+HEAD `916789d` (NOT `5026383`) origine = par.22.94 N+5.L closing doc-only stesso, auto-referenza ricorsiva pre-frozen par.11.R-S3. Falso positivo CP0, immutabile.
+
+#### Sub-AMB N+5.M-pivot.A-D ratificate post-revisione coerenza (carry-forward `par.11.R-S3-bis`)
+
+Roberto ratifica turn-by-turn "decidi tu" + 3 precisazioni esplicite post-revisione coerenza pre-commit:
+
+| ID | Decisione ratificata | Rationale |
+|---|---|---|
+| **N+5.M-pivot.A** | **(ii) nativo no-Docker** + riuso MySQL Mini esistente + venv Python nativo Mini + LaunchDaemon (NO LaunchAgent: Mini headless 24/7 auto-boot post-reboot indipendente login user) per FastAPI uvicorn + backup mysqldump | Risolve drift N+5.M.E/F/G/H by-design. Coerente γ par.22.78-bis. Zero install Docker, zero seconda istanza DB, zero port conflict, zero Tailscale prereq. Precisazione Roberto #3 LaunchDaemon NON LaunchAgent applicata. |
+| **N+5.M-pivot.B** | **(i) riuso istanza MySQL Mini esistente porta 3306** + `CREATE DATABASE pharmatimer; CREATE USER 'pharmatimer_app'@'localhost' IDENTIFIED BY <generated>; GRANT ALL ON pharmatimer.* TO 'pharmatimer_app'@'localhost'`. **Solo DB user dedicato** `pharmatimer_app`, **NESSUN Unix user dedicato** | Pattern StockFusion/MarketReader identico, zero impatto DB esistenti. Precisazione Roberto #2 applicata: solo DB user. Processo FastAPI uvicorn girera sotto LaunchDaemon (root by default, oppure under existing Mini user TBD CP0-ext-prep-pivot). Precisazione Roberto #1 applicata: MySQL non MariaDB (Spec dice MariaDB, prod Mini effettivamente MySQL, doc-only deviation Q3=A par.22.78-bis carry-forward). |
+| **N+5.M-pivot.C** | **(ii) defer Tailscale** a sessione successiva N+5.N+. Deploy LAN-only `mini.local:8000` (o `192.168.1.167:8000`) per smoke iniziale **da Mac Studio Safari/curl HTTP**. Smoke iPhone PWA prod (GitHub Pages HTTPS -> Mini HTTP) **BLOCCATO mixed content browser-side**, deferred N+5.N+ Tailscale serve auto-TLS apply | Disaccoppia 2 problemi (deploy ↔ network). Smoke PWA iPhone prod NON completabile fino N+5.N+ Tailscale. Coerenza scope N+5.M-pivot-exec = deploy nativo verificato Studio LAN, milestone "PWA iPhone prod operativa" demandata N+5.N+. Documentato esplicitamente in par.11.R-S3-bis sez. "Limitazione scope". |
+| **N+5.M-pivot.D** | **DB user dedicato `pharmatimer_app`@`localhost`** (decisione cementata). **Unix user processo FastAPI uvicorn**: TBD CP0-ext-prep-pivot empirico audit Mini (LaunchDaemon root default vs `UserName=marketreader` riuso vs altro user esistente). **Secrets path** `/etc/pharmatimer/db_app_password` 600 root:wheel (LaunchDaemon root legge file + apre connessione MySQL con DB user `pharmatimer_app` + password). **LaunchDaemon naming** `com.pharmatimer.api.plist` + `com.pharmatimer.backup.plist` | Isolamento logico massimo via DB user, coerente pattern Mini. Permessi file 600 root:wheel funzionano con LaunchDaemon root (default macOS) senza conflitti. |
+
+#### Sub-AMB N+5.M-pivot.G NEW (Watchdog strategy, precisazione Roberto #3)
+
+**NEW** sub-AMB su strategia Watchdog post-reboot Mini headless 24/7:
+
+- **(i) riuso Watchdog esistente Mini** (presumibilmente quello che monitora StockFusion/MarketReader esistente). Vantaggio: pattern consolidato Mini gia in uso, monitoring unico cross-sistema. Svantaggio: dipendenza runtime da Watchdog esterno, coupling deploy PharmaTimer + Watchdog esistente, modifica config Watchdog esistente potenzialmente impattante MarketReader.
+- **(ii) LaunchDaemon dedicato KeepAlive=true** auto-restart se processo muore + restart post-reboot. Pattern macOS standard self-contained. Vantaggio: zero dipendenze runtime da Watchdog esterno, recovery banale `launchctl unload/load`, isolation totale da MarketReader. Svantaggio: 2 sistemi monitoring paralleli Mini (StockFusion Watchdog + PharmaTimer LaunchDaemon).
+- **(iii) entrambi**: LaunchDaemon dedicato + Watchdog esistente come secondo strato monitoring opzionale (es. alert su `launchctl list | grep pharmatimer` exit code non zero).
+
+**Default raccomandato:** TBD turn-by-turn N+5.M-pivot apertura post-CP0-ext-prep-pivot audit empirico Watchdog esistente Mini. Senza visibilita su Watchdog esistente (binary path, config, semantica restart) decisione difficile a-priori. Audit empirico CP0-ext-prep-pivot include:
+- `launchctl list | grep -i marketreader` (LaunchDaemon esistenti)
+- `ls /Library/LaunchDaemons/` + `ls ~/Library/LaunchAgents/` (filtro marketreader/stockfusion)
+- `cat <plist-marketreader>` (config Watchdog esistente)
+- Roberto-side: descrizione semantica Watchdog esistente (cron? script supervisord? altro?)
+
+Ratifica turn-by-turn richiesta apertura N+5.M-pivot (NO blanket Lesson #30 strict).
+
+#### Revisione coerenza pre-commit (9 incongruenze risolte + 3 precisazioni Roberto)
+
+Pausa controllo coerenza Roberto-richiesta post-emit draft v1 par.22.95 + par.11.R-S3-bis. Trovate 9 incongruenze interne (3 critiche, 4 medie, 2 minori), tutte corrette pre-commit immutabile (par.6.71/85 evitato). Token spesi revisione ~7K incluso in totale ~35K sessione.
+
+| # | Gravita | Origine | Fix applicato |
+|---|---|---|---|
+| 1 | Critica | MariaDB nativo Mini asserito senza verifica | Terminologia neutra → MySQL (Spec dice MariaDB, prod Mini MySQL, Q3=A par.22.78-bis doc-only deviation invariata). Precisazione Roberto #1 applicata |
+| 2 | Critica | Ambiguita Unix user vs DB user `pharmatimer` | Solo DB user `pharmatimer_app` dedicato + NO Unix user dedicato (Unix user processo TBD CP0-ext-prep-pivot empirico). Precisazione Roberto #2 applicata |
+| 3 | Critica | LaunchAgent vs LaunchDaemon mix | Unificato LaunchDaemon (Mini headless 24/7 auto-boot pre-login). Precisazione Roberto #3 conferma indirettamente via TBD Watchdog |
+| 4 | Media | Permessi file 600 root-only vs Unix user non-root processo | LaunchDaemon root by default + file 600 root:wheel + processo root legge file e apre connessione MySQL con DB user `pharmatimer_app`. Drop privileges runtime deferred N+5.M-pivot eventuale hardening |
+| 5 | Media | Mixed content PWA HTTPS prod -> Mini HTTP LAN | Documentato esplicitamente. Smoke iPhone PWA prod deferred N+5.N+ Tailscale. Smoke Studio LAN ok via curl/Safari desktop HTTP |
+| 6 | Media | CP0-ext-prep-pivot Mini audit empirico non pre-allocato | Aggiunto step 0 ANALISI obbligatorio `par.11.R-S3-bis` PRIMA design draft consolidato. Audit list specifica MySQL version + Python 3 + user Mini + paths + ports + Watchdog esistente |
+| 7 | Media | Vincolo γ "NO Docker" rigido senza escape clause | Aggiunta sez. "Riapertura legittima vincolo γ" caso blockers CP0-ext-prep-pivot empirico (es. MySQL Mini version molto vecchia incompatibile mysql-connector-python 8.x). Riapertura turn-by-turn Roberto, NO Claude-side silenzioso Lesson #30 strict |
+| 8 | Minore | Bash mac-side git commit step missing | Aggiunto step git add + git commit dedicato pre-push |
+| 9 | Minore | Port 8000 audit empirico Mini missing | Aggiunto `lsof -i :8000` a CP0-ext-prep-pivot audit. Default port (i) 8000 invariato + TBD esito empirico |
+
+**Precisazioni Roberto post-revisione coerenza pre-commit:**
+1. ✅ Mini ha **MySQL** non MariaDB (vincolo γ adattato, coerente Q3=A par.22.78-bis doc-only deviation Spec)
+2. ✅ Solo **DB user** dedicato `pharmatimer_app`, NESSUN Unix user dedicato
+3. ✅ Watchdog strategy: NEW sub-AMB N+5.M-pivot.G aggiunta (riuso vs LaunchDaemon dedicato vs entrambi)
+
+#### Vincolo architetturale immutabile cementato (anti-dimenticanza multi-layer)
+
+**Layer L1 - Claude memory persistente cross-session:** entry NEW `userMemories` #21 aggiornata 26/05/2026 R2 con vincolo γ esplicito + MySQL non MariaDB + DB user only + LaunchDaemon + Watchdog TBD + drift-doc N62 monito "NON RIPETERE". Caricamento automatico in ogni futura sessione PharmaTimer pre-lettura Changelog.
+
+**Layer L2 - Lesson #30 NEW MANDATORY:** vedi sez. 11.6.13 sotto.
+
+**Layer L3 - Pre-letture obbligatorie `par.11.R-S3-bis`:** include citazione esplicita `par.22.78-bis Fase 2 AMB-F3.F opzione γ` come pre-lettura #1 obbligatoria + `par.22.95` (questo closing) come pre-lettura #2 + `par.22.94` come pre-lettura #3 (per evitare regressione α/β container).
+
+**Layer L4 - Sentinella CP0 baseline ogni sessione deploy-related:** "Verifica vincolo γ ratificato + 3 precisazioni Roberto (MySQL/DB user/LaunchDaemon) in apertura CP0" come checkpoint obbligatorio. Pattern preventivo: prima di proporre qualsiasi default deploy, ri-verifica γ in apertura. Se Claude propone α/β container in qualsiasi sessione futura senza ratifica esplicita Roberto NEW = regola critica #2 violata + drift-doc nuovo.
+
+#### Lesson #30 NEW MANDATORY (sez. 11.6.13 cementazione Spec v1.9)
+
+**Decisioni architetturali deferred a sessioni future** (es. AMB-F3.F par.22.78-bis γ deferred F3-S6) **possono essere silenziosamente sovrascritte da default Claude-side in sessione analisi-first successiva senza approvazione esplicita Roberto**. Pattern di protezione MANDATORY:
+
+1. **Ogni decisione architetturale deferred** DEVE essere esplicitamente citata in pre-letture obbligatorie di OGNI sessione che la tocca, con tutte le opzioni candidate aperte.
+2. **Default Claude-side** in sessione analisi-first NON può chiudere AMB-deferred SENZA esplicita ratifica Roberto turn-by-turn. "Decidi tu" blanket NON applicabile a AMB-deferred multi-opzione: richiede dialogato dedicato single-Q.
+3. **CP0 baseline ogni sessione deploy/architettura-related** include "audit AMB-deferred aperte da sessioni precedenti" come checkpoint preventivo.
+4. **`memory_user_edits` persistente cross-session** per ogni decisione architetturale finale cementata (post-ratifica): layer L1 difesa.
+5. **Pattern auto-segnalazione drift-doc**: se in sessione N+1 si scopre che N ha chiuso AMB-deferred N-X silenziosamente, emit drift-doc immediato + ratifica retroattiva + carry-forward immutabile.
+6. **Revisione coerenza pre-commit MANDATORY** (estensione NEW post-incidente par.22.95 R1->R2): in sessioni doc-only che cementano decisioni architetturali immutabili, Roberto puo richiedere "controllo coerenza" pre-commit prima di emit final. Pattern utile per evitare cementazione contraddizioni interne (drift cementati immutabili par.6.71/85 = costo retro-correzione massimo).
+
+Lesson #30 estende Lesson #27 strict (static analysis doc-only != applicata-empirico) + Lesson #28 fonte primaria carry-forward + Lesson #11 (s.6.219) pre-frozen prompt drift. Auto-segnalata da incidente par.22.94 -> par.22.95 R1 questa sessione, regola critica #2 retroattiva. **Pattern revisione coerenza pre-commit** auto-applicato in questa sessione R1->R2 (9 incongruenze risolte, vedi sez. sopra).
+
+Cementazione formale Spec v1.9 KB-only sez. 11.6.13 emit in sessione successiva (analisi-first re-architettura N+5.M-pivot output).
+
+#### Tag git e push
+
+- **Tag git: NO** (sessione abortita doc-only, no milestone tecnico, no codice runtime modificato, no bump pyproject)
+- **Pyproject backend invariato 0.6.0**
+- **Package.json frontend invariato 3.2.0-alpha.1**
+- **Commit: 1 doc-only** Changelog Fase 3 (questa sezione R2 + par.11.R-S3-bis pre-frozen append)
+- **Spec invariata** (sez. 11.6.13 Lesson #30 + sez. 12 deploy nativo γ cementazione formale demandate Spec v1.9 KB-only post-pivot design draft N+5.M-pivot)
+- **Push: opportunistico immediato** (1 commit doc-only N+5.L `916789d` + 1 commit doc-only questa sessione N+5.M abort = 2 ahead origin/fase-3-backend, push atomico safe perche zero source change). Decisione push immediato vs deferred N+5.M-pivot: **push immediato raccomandato** per cementare drift-doc N61+N62 + Lesson #30 + ratifica γ + 3 precisazioni Roberto in origin remote = backup KB cross-device.
+
+#### Test
+
+651 invariati (76 backend + 575 frontend, zero delta vs baseline N+5.K + N+5.L). Allineato pattern par.22.74-77 + par.22.85 + par.22.87 + par.22.90 + par.22.94 sessioni doc-only delta zero.
+
+#### Cleanup status
+
+- **cleanup-N1** (Fase 2 IndexedDB dev-only browser-side): invariato carry-forward
+- **cleanup-N3** (Fase 3 farmaci.id=2 attivo=FALSE F3-S2): invariato carry-forward
+- **cleanup-N3-bis** (2 utenti zombie + 6 permessi orfane Fase 3): invariato carry-forward
+- **cleanup-N+5.M**: nessun file generato (sessione abortita pre-CP1 patcher emit), nessun cleanup necessario
+
+#### Riferimenti par.22.95
+
+- **par.22.94-Fase3** (closing N+5.L design draft + 9 ratifiche Q0+Q-N5L.A-I + drift-doc N62 origine retroattiva)
+- **par.22.78-bis-Fase2** (ratifica architetturale R1 Studio-all dev + AMB-F3.F deferred F3-S6 con 3 opzioni α/β/γ aperte + Mini zero-touch invariante + sicurezza multi-tenant trust mesh accettabile + Q3=A doc-only deviation Spec MariaDB -> prod MySQL)
+- **par.22.93-Fase3** (closing N+5.K push atomico baseline vocabolario errori cementato)
+- **par.22.55-Fase2** split safety-first preventivo dodicesima applicazione cumulativa Fase 3
+- **par.22.58-Fase2** patcher Python content-based SENTINEL idempotent (NON applicato N+5.M abort)
+- **par.6.118-Fase2** pre-code scenario validation MANDATORY: catalizzato 4 drift architetturali empirici CP0-ext-prep
+- **par.6.71/85-Fase2** history immutability: drift-doc N61+N62 carry-forward immutabili, no retro-correzione par.22.94 / par.11.R-S3 / 9 design draft N+5.L. Revisione coerenza pre-commit (R1->R2) NON viola par.6.71/85 perche commit doc-only non ancora emesso (cementazione immutabile post-commit)
+- **AMB-11.B.7 / AMB-11.B.7-bis-Fase2**: NO bump effettivo + NO tag (sessione abortita doc-only)
+- **Lesson #20-#29 cumulative MANDATORY** invariate + **Lesson #30 NEW MANDATORY** (questo emit, incluso punto 6 revisione coerenza pre-commit)
+- **Lesson #11 (s.6.219)** pre-frozen prompt drift: applicato N+5.M CP0 (drift-doc N61 false-positive + drift-doc N62 architettura)
+- **Q3=A par.22.78-bis-Fase2**: doc-only deviation Spec MariaDB -> prod MySQL, riversamento Spec v1.5 differito F3-S7 (ora demandato Spec v1.9 cementazione formale post-deploy γ verificato N+5.M-pivot-exec)
+
+#### Sessione successiva post-N+5.M abort
+
+**N+5.M-pivot analisi-first sola doc-only** re-architettura deploy F3-S6 nativo opzione γ. Token attesi ~30-40K (incluso CP0-ext-prep-pivot empirico audit Mini + Watchdog audit + Spec v1.9 design + 7 artefatti design draft). Wall-clock ~90-120 min. Zero source change, zero commit codice, zero bump, zero tag, zero push.
+
+Output sessione N+5.M-pivot: ratifica turn-by-turn 4 sub-AMB N+5.M-pivot.A-D già pre-ratificate questo closing + sub-AMB G Watchdog ratifica turn-by-turn post-empirico + 5 sub-AMB E-I candidate + design draft consolidato artefatti deploy nativo + pre-frozen `par.11.R-S3-ter` esecutiva N+5.M-pivot-exec deploy nativo.
+
+**Design draft artefatti deploy nativo attesi N+5.M-pivot** (output analisi-first):
+- LaunchDaemon plist FastAPI uvicorn (path, env, KeepAlive, restart policy, log redirect, UserName TBD)
+- LaunchDaemon plist backup mysqldump (schedule notturno, retention 7gg)
+- Setup script shell idempotente `setup_pharmatimer_db.sh` (CREATE DATABASE + CREATE DB USER + GRANT su MySQL Mini esistente + verifica empirica + rollback)
+- Setup script shell idempotente `setup_pharmatimer_venv.sh` (venv Python Mini + pip install requirements + verifica)
+- Path secrets `/etc/pharmatimer/db_app_password` 600 root:wheel
+- CORS env-driven mod `backend/pharmatimer_api/app.py` (carry-forward 06-cors-app-py-mod.py invariato, riusabile)
+- Drift-N45 fix `__version__` sync mod `backend/pharmatimer_api/app.py` (carry-forward 07-drift-n45-fix-app-py-mod.py invariato, riusabile)
+- README sequenza deploy nativo + sicurezza notes + Watchdog strategy ratificata
+- Spec v1.9 KB-only sez. 12 deployment nativo γ + sez. 11.6.13 Lesson #30
+
+**File design draft N+5.L riusabili in N+5.M-pivot:**
+- ✅ `06-cors-app-py-mod.py` (CORS env-driven, agnostic engine deploy)
+- ✅ `07-drift-n45-fix-app-py-mod.py` (drift-N45 `__version__` sync, agnostic engine deploy)
+- ❌ `00-README.md` (deploy sequence docker-compose, da riscrivere nativo)
+- ❌ `01-docker-compose.yml` (container Docker mariadb:11.4, da scartare)
+- ❌ `02-Dockerfile` (container Docker, da scartare)
+- ❌ `02b-dockerignore` (container Docker, da scartare)
+- ⚠️ `03-tailscale-acl.hujson` (carry-forward deferred, Tailscale demandato N+5.N+)
+- ⚠️ `04-com_pharmatimer_backup.plist` (LaunchDaemon backup, riadattare per nativo Mini path + MySQL connection params)
+- ⚠️ `05-pharmatimer-backup.sh` (script mysqldump non mariadb-dump, riadattare connection params nativo)
+
+**One-liner apertura nuova sessione N+5.M-pivot:**
+
+```
+Esegui il prompt al par.11.R-S3-bis del Changelog Fase 3.
+```
+
+---
+
+### par.11.R-S3-bis -- Prompt apertura N+5.M-pivot analisi-first sola doc-only re-architettura deploy F3-S6 nativo opzione γ par.22.78-bis (post-abort N+5.M + drift-doc N62 + 3 precisazioni Roberto applicate)
+
+<!-- par.11.R-S3-bis R2 emit Fase 3 post-N+5.M abort par.22.95 R2 -->
+<!-- par.11.R-S3-bis R2 revisione coerenza 9 incongruenze risolte -->
+
+**One-liner apertura:** `Esegui il prompt al par.11.R-S3-bis del Changelog Fase 3.`
+
+#### VINCOLO ARCHITETTURALE IMMUTABILE (carry-forward par.22.95 R2 + L1-L4 difesa multi-layer anti-dimenticanza + 3 precisazioni Roberto)
+
+**Deploy F3-S6 PharmaTimer = opzione γ par.22.78-bis Fase 2 (F3-S0-R1 21/05/2026) ratificata + riconfermata par.22.95 Fase 3 N+5.M closing 26/05/2026 R2:**
+
+- **MySQL nativo Mini esistente RIUSO** istanza che ascolta porta 3306 (condivisa con sistema finanziario StockFusion (Studio-side) + MarketReader (Mini-side) Roberto-controlled, trust mesh totale). **Precisazione Roberto #1**: MySQL NON MariaDB. Coerente Q3=A par.22.78-bis doc-only deviation Spec MariaDB -> prod MySQL.
+- **Solo DB user dedicato**: `CREATE DATABASE pharmatimer; CREATE USER 'pharmatimer_app'@'localhost' IDENTIFIED BY <generated>; GRANT ALL ON pharmatimer.* TO 'pharmatimer_app'@'localhost'`. **Precisazione Roberto #2**: NESSUN Unix user dedicato. Processo FastAPI uvicorn girera sotto LaunchDaemon (root by default oppure UserName=<existing-user> TBD CP0-ext-prep-pivot audit empirico).
+- **venv Python nativo Mini** (NO container, NO Docker, NO Colima, NO OrbStack)
+- **LaunchDaemon macOS** (NON LaunchAgent: Mini headless 24/7, auto-boot post-reboot indipendente login user, pattern allineato StockFusion/MarketReader esistente Mini): `com.pharmatimer.api.plist` (FastAPI uvicorn) + `com.pharmatimer.backup.plist` (mysqldump schedule notturno + retention 7gg)
+- **Watchdog strategy TBD** sub-AMB N+5.M-pivot.G turn-by-turn apertura post-CP0-ext-prep-pivot audit empirico: (i) riuso Watchdog esistente Mini (StockFusion/MarketReader monitor) vs (ii) LaunchDaemon dedicato `KeepAlive=true` self-contained vs (iii) entrambi (LaunchDaemon principale + Watchdog esistente secondo strato). **Precisazione Roberto #3** applicata: valutare riuso vs dedicato in apertura sessione N+5.M-pivot.
+- **Tailscale deferred** N+5.N+ (deploy LAN-only `mini.local:8000` / `192.168.1.167:8000` iniziale). **Limitazione scope**: smoke iPhone PWA prod (GitHub Pages HTTPS -> Mini HTTP LAN) **BLOCCATO mixed content browser-side** fino N+5.N+ Tailscale serve auto-TLS apply
+- **Sicurezza** appurata accettabile par.22.78-bis: trust-mesh single-user Roberto-controlled + isolamento logico DB+user (no isolamento fisico processo) + Mini sempre acceso 24/7 host trusted famiglia + shared-secret-per-device `X-User-Token` Q15=A defense-in-depth
+
+**❌ VIETATO in N+5.M-pivot e sessioni successive deploy-related:**
+- ❌ Docker container `mariadb:11.4` o `mysql:X.Y` (qualsiasi image DB container)
+- ❌ Seconda istanza MySQL/MariaDB Mini (porta es. 3307 o altra dedicata)
+- ❌ `docker-compose.yml` / `Dockerfile` / `.dockerignore` deploy-side
+- ❌ Bind mount `/var/lib/mysql_pharmatimer:/var/lib/mysql` (path nuovo container-dedicato)
+- ❌ Docker Desktop / Colima / OrbStack install Mini ex-novo
+- ❌ Tailscale serve auto-TLS prereq pre-deploy
+- ❌ Default α/β container in qualsiasi forma senza ratifica esplicita Roberto NEW turn-by-turn
+- ❌ Unix user dedicato `pharmatimer` (solo DB user `pharmatimer_app`, processo FastAPI sotto user esistente Mini)
+- ❌ LaunchAgent (Mini headless: serve LaunchDaemon)
+
+**Origine vincolo:** drift-doc N62 par.22.95 retroattivo (par.22.94 N+5.L design draft Claude-side ha silenziosamente abbandonato γ a favore α/β container senza ratifica esplicita Roberto). Pattern Lesson #30 NEW MANDATORY: deferred decisions NON sovrascrivibili silenziosamente da default Claude-side. **Revisione coerenza pre-commit R1->R2 questa sessione N+5.M closing** ha applicato 9 fix incongruenze interne + 3 precisazioni Roberto (MySQL/DB user/LaunchDaemon+Watchdog), pattern auto-applicato Lesson #30 punto 6 NEW.
+
+#### Riapertura legittima vincolo γ (escape clause, Lesson #30 punto 2 strict)
+
+Vincolo γ NON è assoluto a-priori. **Riapertura legittima** se CP0-ext-prep-pivot empirico audit Mini rivela blockers strutturali tipo:
+- MySQL Mini version molto vecchia incompatibile `mysql-connector-python` 8.x (es. MySQL 5.7 EOL su Mini)
+- Python 3 assente Mini o version <3.10 incompatibile FastAPI stack
+- Mini disk space insufficient per venv Python pharmatimer (~500MB minimo)
+- Privilegi sudo Roberto-side mancanti Mini (necessari LaunchDaemon `/Library/LaunchDaemons/`)
+- Watchdog esistente Mini struttura incompatibile (es. systemd-like script che assume container layer)
+
+**Riapertura procedura strict**:
+1. **NO Claude-side silenziosa** decisione (Lesson #30 punto 2). Drift architetturale empirico catalizzato CP0-ext-prep-pivot empirico = STOP regola critica #2.
+2. **Dialogato dedicato Roberto turn-by-turn** con presentazione blocker + 3 opzioni alternative riapertura: (X) workaround mantenendo γ (es. upgrade MySQL Mini, install Python 3 Mini, mount disk esterno per venv) (Y) regressione opzione γ-bis (es. MySQL container minimal `mysql:8.0` solo per PharmaTimer porta diversa 3307, con DB user dedicato e bind LAN-only) (Z) regressione opzione α/β container Docker pieno (riapertura completa AMB-F3.F)
+3. **Ratifica esplicita Roberto** + emit drift-doc immediato + cementazione `userMemories` aggiornata + nuovo `par.11.R-S3-ter`-bis pre-frozen sessione successiva
+4. **NO blanket "decidi tu"** su riapertura γ (Lesson #30 punto 2 strict applicabile)
+
+#### Scope alto livello
+
+Sessione **analisi-first sola doc-only** re-architettura deploy F3-S6 PharmaTimer come opzione γ nativa MySQL Mini. Pattern par.22.55-Fase2 split safety-first **tredicesima applicazione cumulativa Fase 3**. Token attesi ~30-40K (incluso CP0-ext-prep-pivot empirico + Watchdog audit + Spec v1.9 design + 7 artefatti design draft). Wall-clock ~90-120 min. Zero source change, zero commit codice, zero bump, zero tag, zero push.
+
+**Output atteso:**
+- **CP0-ext-prep-pivot empirico audit Mini** (step 0 ANALISI obbligatorio NEW, vedi sez. dedicata sotto) come PRIMA azione apertura sessione, PRIMA del design draft consolidato
+- Ratifica turn-by-turn 4 sub-AMB N+5.M-pivot.A-D (gia pre-ratificate par.22.95 R2, conferma esplicita Roberto in apertura)
+- Ratifica turn-by-turn sub-AMB N+5.M-pivot.G Watchdog strategy NEW post-empirico audit
+- Ratifica 5 sub-AMB N+5.M-pivot.E-I candidate post-empirico
+- Design draft artefatti deploy nativo (vedi sez. "Design draft artefatti deploy nativo" sotto)
+- Spec v1.9 KB-only sez. 12 deployment nativo γ + sez. 11.6.13 Lesson #30 (delivery file-based via present_files post-design draft consolidato)
+- Pre-frozen `par.11.R-S3-ter` esecutiva N+5.M-pivot-exec deploy nativo
+
+#### CP0-ext-prep-pivot empirico audit Mini (step 0 ANALISI obbligatorio NEW)
+
+Apertura sessione N+5.M-pivot OBBLIGA audit empirico read-only Mini PRIMA design draft consolidato. Pattern Lesson #27 strict (static analysis doc-only != applicata-empirico) + Lesson #30 punto 3 (audit AMB-deferred aperte).
+
+**Audit list specifica (bash SSH da Mac Studio, single-shot batch):**
+
+| # | Audit | Comando | Scopo |
+|---|---|---|---|
+| 1 | MySQL Mini version | `ssh mini "mysql --version"` | Conferma MySQL (NON MariaDB) + version (precisazione Roberto #1) |
+| 2 | MySQL Mini connectivity test | `ssh mini "mysql -u root -e 'SELECT VERSION(),@@hostname'"` | Verifica accesso root MySQL Mini (per CREATE DATABASE + GRANT) |
+| 3 | Python 3 path Mini | `ssh mini "which python3 && python3 --version"` | Conferma Python 3 disponibile + version >=3.10 |
+| 4 | Mini macOS version | `ssh mini "sw_vers"` | Audit macOS version per LaunchDaemon compatibility |
+| 5 | Disk space Mini | `ssh mini "df -h /"` | Verifica ~500MB free per venv |
+| 6 | User Mini esistente | `ssh mini "id marketreader && whoami"` | Audit user esistente (Unix user processo FastAPI N+5.M-pivot.D TBD) |
+| 7 | Sudo privileges | `ssh mini "sudo -l"` | Verifica privilegi root Roberto Mini (per LaunchDaemon `/Library/LaunchDaemons/`) |
+| 8 | Path /etc esistente | `ssh mini "ls -la /etc/ \| head -20 && ls -la /etc/pharmatimer 2>&1"` | Audit dir secrets target |
+| 9 | Port 8000 free | `ssh mini "lsof -i :8000 2>&1; nc -zv localhost 8000 2>&1"` | Verifica port 8000 libera (sub-AMB N+5.M-pivot.F default 8000 invariato) |
+| 10 | Watchdog esistente Mini audit | `ssh mini "launchctl list \| grep -iE 'marketreader\|stockfusion'; ls -la /Library/LaunchDaemons/ \| grep -iE 'marketreader\|stockfusion'"` | Audit Watchdog esistente (sub-AMB N+5.M-pivot.G ratifica) |
+| 11 | LaunchDaemon esistenti dir | `ssh mini "ls -la /Library/LaunchDaemons/ \| head -20"` | Audit pattern LaunchDaemon esistenti Mini |
+
+**Output atteso CP0-ext-prep-pivot empirico:**
+- Conferma MySQL Mini (NON MariaDB) + version compatible mysql-connector-python 8.x
+- Conferma Python 3 disponibile Mini path + version
+- Decisione sub-AMB N+5.M-pivot.D Unix user processo (root LaunchDaemon vs UserName=marketreader vs altro)
+- Decisione sub-AMB N+5.M-pivot.F port (i) 8000 confermata o switch (ii)/(iii)
+- Decisione sub-AMB N+5.M-pivot.G Watchdog (i) riuso vs (ii) LaunchDaemon dedicato vs (iii) entrambi
+- Audit Watchdog esistente Mini-side: Roberto descrizione semantica (cron? script? supervisord? pattern restart?)
+- Eventuale STOP Lesson #30 punto 2 strict per blockers (riapertura γ legittima vedi sez. "Riapertura legittima vincolo γ" sopra)
+
+**Roberto-side audit complement**: descrizione Watchdog esistente Mini (cron job + script restart? launchd plist? supervisord? altro pattern). Necessaria pre-ratifica turn-by-turn sub-AMB G.
+
+#### Pre-letture obbligatorie N+5.M-pivot
+
+1. **`par.22.95-Fase3` R2 integrale** (questo closing + 4 drift architetturali + drift-doc N61+N62 + Lesson #30 NEW + 4 sub-AMB N+5.M-pivot.A-D pre-ratificate + VINCOLO ARCHITETTURALE IMMUTABILE γ + 3 precisazioni Roberto integrate + 9 incongruenze risolte revisione coerenza pre-commit)
+2. **`par.22.78-bis-Fase2` integrale** (ratifica architetturale R1 Studio-all dev + AMB-F3.F deferred F3-S6 con 3 opzioni α/β/γ aperte + Mini zero-touch invariante + sicurezza multi-tenant trust mesh accettabile + Q3=A doc-only deviation Spec MariaDB -> prod MySQL)
+3. **`par.22.94-Fase3` integrale** (closing N+5.L design draft α/β container ratifiche Q0+Q-N5L.A-I + 9 file design draft per identificazione carry-forward riusabili 06+07 vs scartare 00/01/02/02b/03/04/05) -- lettura **per evitare regressione α/β container in N+5.M-pivot**, non per ereditare scelte
+4. **`par.11.D-rev v3.2-Fase2`** (setup operativo Mac Mini headless + Tailscale + Web Push deferred + Q1-Q12 single-user blanket ratificati + Q3=A doc-only MariaDB->MySQL deviation Spec)
+5. **`par.22.86-Fase3`** (drift-N45 origine FastAPI version hardcoded `app.py:30` "0.1.0" -> sync `__version__` import pyproject 0.6.0) -- 07-drift-n45-fix-app-py-mod.py riusabile
+6. **Spec v1.8 sez. 9 + sez. 11.6.11** (vocabolario errori cementato post-N+5.K, smoke checklist riferimento)
+7. **`par.22.55-Fase2`** split safety-first preventivo tredicesima applicazione cumulativa Fase 3
+8. **Lesson #20-#30 cumulative MANDATORY** (in particolare Lesson #27 strict + Lesson #28 fonte primaria carry-forward + Lesson #29 delivery file-based + Lesson #30 NEW deferred decisions immutabili + revisione coerenza pre-commit punto 6)
+9. **`<userMemories>` entry NEW #21 R2** (VINCOLO ARCHITETTURALE IMMUTABILE γ persistente cross-session, layer L1 difesa, aggiornato R2 con MySQL/DB user/LaunchDaemon/Watchdog TBD)
+
+#### Sub-AMB N+5.M-pivot.A-D ratifiche carry-forward (conferma turn-by-turn richiesta apertura)
+
+Default proposti par.22.95 R2 (Roberto "decidi tu" + 3 precisazioni 26/05/2026):
+
+| ID | Default | Conferma apertura N+5.M-pivot |
+|---|---|---|
+| N+5.M-pivot.A engine strategy | (ii) nativo no-Docker + riuso MySQL Mini esistente + venv Python Mini + LaunchDaemon (NO LaunchAgent) | TBD turn 1 |
+| N+5.M-pivot.B DB strategy | (i) riuso istanza MySQL Mini 3306 + DB user `pharmatimer_app` dedicato (NO Unix user dedicato) | TBD turn 1 |
+| N+5.M-pivot.C Tailscale | (ii) defer Tailscale N+5.N+, deploy LAN-only mini.local:8000 iniziale, smoke iPhone PWA prod deferred N+5.N+ mixed content | TBD turn 1 |
+| N+5.M-pivot.D users/paths/secrets | DB user `pharmatimer_app`@`localhost` cementato + Unix user processo TBD CP0-ext-prep-pivot empirico + secrets `/etc/pharmatimer/db_app_password` 600 root:wheel + LaunchDaemon naming `com.pharmatimer.api.plist` + `com.pharmatimer.backup.plist` | TBD turn 1 + sub-AMB CP0-ext-prep-pivot empirico |
+
+#### Sub-AMB N+5.M-pivot.E-I + G candidate (definizione effettiva in apertura)
+
+Pre-allocazione candidate sub-AMB NEW potenzialmente emergenti:
+
+- **N+5.M-pivot.E** (Python venv location): (i) `/Users/<existing-mini-user>/pharmatimer_api/venv/` sotto user esistente Mini (ii) `/opt/pharmatimer/venv/` system-wide root-owned (iii) `/var/lib/pharmatimer/venv/` standard prod-style. Default raccomandato TBD CP0-ext-prep-pivot esito (user esistente Mini + disk space layout).
+- **N+5.M-pivot.F** (FastAPI port): (i) 8000 invariato (Q-N5L originale) (ii) 8080 (evitare collisione potenziale port comune dev) (iii) 8088 unique. Default raccomandato (i) 8000 + TBD CP0-ext-prep-pivot empirico `lsof -i :8000` Mini.
+- **N+5.M-pivot.G** (Watchdog strategy NEW, precisazione Roberto #3): (i) riuso Watchdog esistente Mini (StockFusion/MarketReader monitor pre-esistente) (ii) LaunchDaemon dedicato `KeepAlive=true` self-contained (iii) entrambi (LaunchDaemon principale + Watchdog secondo strato). Default raccomandato TBD CP0-ext-prep-pivot audit + Roberto descrizione semantica Watchdog esistente Mini.
+- **N+5.M-pivot.H** (backup destinazione): (i) `/var/backups/pharmatimer/` system-standard (ii) `~<existing-user>/Backups/pharmatimer/` user-home (iii) Time Machine snapshot integration. Default raccomandato (i) `/var/backups/pharmatimer/` 750 root:wheel coerente pattern Unix.
+- **N+5.M-pivot.I** (CORS origin LAN-only): (i) wildcard `*` (insecure ma single-user LAN) (ii) explicit `http://192.168.1.167:8000` + `http://mini.local:8000` + `https://timegates-code.github.io` (PWA prod) (iii) regex pattern. Default raccomandato (ii) explicit whitelist.
+
+#### Design draft artefatti deploy nativo attesi (output N+5.M-pivot analisi-first)
+
+8 artefatti NEW + 2 carry-forward riusabili da N+5.L:
+
+| # | Artefatto | Stato source N+5.L | Azione N+5.M-pivot |
+|---|---|---|---|
+| 1 | `deploy/setup_pharmatimer_db.sh` (CREATE DATABASE + CREATE DB USER `pharmatimer_app` + GRANT idempotente su MySQL Mini) | NEW | Design draft completo |
+| 2 | `deploy/setup_pharmatimer_venv.sh` (venv Python Mini + pip install requirements + verifica) | NEW | Design draft completo |
+| 3 | `deploy/com.pharmatimer.api.plist` (LaunchDaemon FastAPI uvicorn + KeepAlive=true se sub-AMB.G=(ii) o (iii)) | NEW | Design draft completo |
+| 4 | `deploy/com.pharmatimer.backup.plist` (LaunchDaemon backup mysqldump + KeepAlive=false + StartCalendarInterval notte) | Carry-forward riadattabile da 04-com_pharmatimer_backup.plist | Riadattamento naming + path + mysqldump (non mariadb-dump) + user TBD |
+| 5 | `deploy/pharmatimer-backup.sh` (script mysqldump retention 7gg) | Carry-forward riadattabile da 05-pharmatimer-backup.sh | Riadattamento mysqldump (non mariadb-dump) + connection params nativo (no container, no Docker network) |
+| 6 | `backend/pharmatimer_api/app.py` MOD (CORS env-driven) | Carry-forward identico da 06-cors-app-py-mod.py | Riuso bit-perfect, engine-agnostic |
+| 7 | `backend/pharmatimer_api/app.py` MOD (drift-N45 `__version__` sync) | Carry-forward identico da 07-drift-n45-fix-app-py-mod.py | Riuso bit-perfect, engine-agnostic |
+| 8 | `deploy/README.md` (sequence deploy nativo + sicurezza notes + Watchdog strategy ratificata + limitazione scope Tailscale deferred) | NEW (riscrittura da 00-README.md docker-compose) | Design draft completo |
+| 9 | `deploy/tailscale-acl.hujson` | Carry-forward immutato da 03-tailscale-acl.hujson | Demandato N+5.N+ Tailscale apply (non incluso N+5.M-pivot-exec scope) |
+| 10 | Spec v1.9 KB-only sez. 12 deployment nativo γ + sez. 11.6.13 Lesson #30 | NEW (delivery file-based via present_files post-design draft consolidato) | Design draft completo |
+
+**Patcher Python `cp_n5m_pivot_deploy_patcher.py` esecutivo N+5.M-pivot-exec:**
+- Content-based SENTINEL `SENTINEL_N5M_PIVOT_DEPLOY_APPLIED` pattern par.22.58-Fase2
+- Idempotency marker explicit Lesson #20
+- Anchor-based replace_in MOD `backend/pharmatimer_api/app.py` (2 anchor distinti CORS env-driven + drift-N45)
+- 8 file NEW write con verifica univocity
+- Backup `.bak.cp_n5m_pivot_*` ogni file MOD
+- Demandato N+5.M-pivot-exec (par.11.R-S3-ter prossimo pre-frozen)
+
+#### Modalita raccomandata N+5.M-pivot
+
+Apertura **analisi-first sola doc-only**:
+1. **Step 0 ANALISI obbligatorio**: CP0-ext-prep-pivot empirico audit Mini (11 audit point batch SSH)
+2. Ratifica turn-by-turn 4 sub-AMB N+5.M-pivot.A-D carry-forward
+3. Ratifica turn-by-turn sub-AMB N+5.M-pivot.G Watchdog strategy NEW (post-empirico audit)
+4. Ratifica 5 sub-AMB N+5.M-pivot.E/F/H/I (E-I non-G) post-empirico
+5. Design draft 8 artefatti deploy nativo + Spec v1.9 KB-only
+6. Pre-frozen `par.11.R-S3-ter` N+5.M-pivot-exec esecutiva
+
+Pattern par.22.94 N+5.L replicato safety-checked questa volta (no abbandono silenzioso decisioni deferred, Lesson #30 punto 2 strict).
+
+**Possibile split N+5.M-pivot-a/N+5.M-pivot-b** opportunistico se densita >40K (Spec v1.9 sez. 12 + sez. 11.6.13 demand sub-step CP5 dedicato delivery file-based). Decisione split in-sessione N+5.M-pivot.
+
+#### Esito atteso N+5.M-pivot
+
+- CP0-ext-prep-pivot empirico audit Mini completato (11 audit point + Watchdog audit + Roberto-side descrizione semantica Watchdog esistente)
+- 4 sub-AMB N+5.M-pivot.A-D ratificate turn-by-turn (conferma esplicita Roberto, NO default Claude-side silenzioso Lesson #30 strict)
+- Sub-AMB N+5.M-pivot.G Watchdog ratificata turn-by-turn post-empirico audit
+- 5 sub-AMB N+5.M-pivot.E/F/H/I ratificate o cementate carry-forward post-empirico
+- 8 artefatti design draft completi consegnati via `present_files` (Lesson #29 delivery file-based MANDATORY)
+- Spec v1.9 KB-only sez. 12 + sez. 11.6.13 delivery file-based via `present_files`
+- par.22.96 closing N+5.M-pivot emit
+- par.11.R-S3-ter N+5.M-pivot-exec pre-frozen emit (esecutivo CP0+CP0-ext+CP1+CP2+CP3+CP4+CP5+CP6 deploy nativo Mini)
+- Zero source change, zero commit codice, zero bump, zero tag, zero push (sessione analisi-first sola)
+- **1 commit doc-only** Changelog Fase 3 N+5.M-pivot closing (par.22.96 + par.11.R-S3-ter)
+
+#### Limitazione scope N+5.M-pivot-exec (Tailscale deferred carry-forward)
+
+**F3-S6 deploy nativo MILESTONE = parzialmente completata** post N+5.M-pivot-exec esecutiva:
+- ✅ FastAPI uvicorn + MySQL Mini connection + DB pharmatimer + smoke `curl http://mini.local:8000/api/health` verde da Mac Studio LAN
+- ✅ LaunchDaemon api + backup operativi Mini auto-boot post-reboot
+- ✅ Backup mysqldump retention 7gg primo backup verificato
+- ⚠️ **NOT completed**: smoke iPhone PWA prod (GitHub Pages HTTPS) -> Mini API (HTTP LAN) **BLOCCATO mixed content browser-side**
+- ⚠️ **NOT completed**: Tailscale ACL apply + auto-TLS HTTPS Mini API
+- ⚠️ **NOT completed**: smoke cross-device PWA iPhone/Android end-to-end
+
+**Milestone "F3-S6 deploy fully completed" demandata N+5.N+ Tailscale apply** (post-install daemon tailscaled Studio + Mini ex-novo + `tailscale up` con tag + ACL apply admin console + serve auto-TLS config + smoke iPhone PWA HTTPS).
+
+#### Sessione successiva post-N+5.M-pivot
+
+**N+5.M-pivot-exec esecutiva deploy nativo Mac Mini opzione γ** scope architetturalmente blindato par.22.95 + par.22.96 + N+5.M-pivot design draft consolidato + CP0-ext-prep-pivot empirico verificato. Token attesi ~50-80K. Wall-clock ~3-4h. Pre-frozen `par.11.R-S3-ter` emit a CP5 N+5.M-pivot closing.
+
+CP plan N+5.M-pivot-exec (anteprima):
+
+| CP | Scope |
+|---|---|
+| CP0 | Baseline empirico Studio invariato post-N+5.M-pivot |
+| **CP0-ext-pivot** | Audit Mac Mini empirico Lesson #27 strict + #30: SSH access + macOS version + MySQL version Mini confermata (`mysql --version`) + Unix user processo ratifica empirica (sub-AMB D) + path `/etc/pharmatimer/` creation pre-req + Python 3 path Mini + porte 8000 verifica + ratifica sub-AMB N+5.M-pivot.D + E + F + G + H empirici |
+| CP1 | Patcher Python `cp_n5m_pivot_deploy_patcher.py` emit 8 file NEW + 1 MOD anchored `app.py` (CORS env-driven + drift-N45) |
+| CP2 | Dry-run Mac Studio: verifica patcher idempotenza + audit `setup_pharmatimer_db.sh` sintassi SQL + audit LaunchDaemon plist syntax `plutil` + verifica `mysqldump` cmd available Studio |
+| CP3 | Deploy effettivo Mini: rsync `deploy/` -> Mini + esecuzione `setup_pharmatimer_db.sh` (CREATE DATABASE + DB USER + GRANT) + `setup_pharmatimer_venv.sh` (venv + pip install) + `sudo cp *.plist /Library/LaunchDaemons/` + `sudo launchctl load -w` (api + backup) |
+| CP4 | Smoke 3 scenari Q-N5L.G da Mac Studio LAN HTTP: curl 401 vocabulary `mini.local:8000/api/farmaci` no token + 200 happy con X-User-Token + 422 Pydantic invalid body. Smoke iPhone PWA prod **NOT included** (mixed content blocked, deferred N+5.N+) |
+| CP5 | Smoke primo backup manuale `sudo launchctl start com.pharmatimer.backup` + verifica file backup `/var/backups/pharmatimer/` + audit Watchdog integration (sub-AMB G) verificato |
+| CP6 | Cleanup-N+5.M-pivot-exec + bump pyproject 0.6.0 -> 0.7.0 + tag `v3.2.0-alpha.8` LOCALE+REMOTO + commit closing + push atomico (4+ commits cumulativi: N+5.L doc + N+5.M abort doc + N+5.M-pivot doc + N+5.M-pivot-exec commit) + Spec v1.9 KB-only re-emit (sez. 12 deployment nativo finale) |
+
+**One-liner apertura nuova sessione N+5.M-pivot:**
+
+```
+Esegui il prompt al par.11.R-S3-bis del Changelog Fase 3.
+```
+
+---
