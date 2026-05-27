@@ -10,3 +10,7 @@ dist/
 
 TREE.TXT
 *.bak
+
+# SENTINEL_N5M_BETA2_PARTE2B2_CP6_GITIGNORE_PYCACHE drift-N79 rimedio
+__pycache__/
+*.pyc

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SENTINEL_N5M_BETA2_05_PLIST_API -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.pharmatimer.api-wrapper</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/marketreader/PharmaTimer/deploy/launchd/api-wrapper.sh</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/marketreader/PharmaTimer/logs/api.out.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Users/marketreader/PharmaTimer/logs/api.err.log</string>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/marketreader/PharmaTimer</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>DB_DEFAULTS_FILE</key>
+    <string>/Users/marketreader/.my-pharmatimer.cnf</string>
+    <key>DB_NAME</key>
+    <string>pharmatimer</string>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+</dict>
+</plist>

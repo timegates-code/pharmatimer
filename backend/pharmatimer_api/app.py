@@ -15,6 +15,18 @@ from pharmatimer_api.db.connection import close_pool, init_pool
 from pharmatimer_api.exceptions import RepositoryError, repository_error_handler
 from pharmatimer_api.routers import farmaci, health, log_assunzioni, orari, utenti  # CP1 F3-S4-alpha N+5.E-alpha applied SENTINEL
 
+# SENTINEL_N5M_PIVOT_EXEC_BETA2_ATTEMPT2_APP_VERSION_DYNAMIC
+# F3-S6 N+5.M-pivot-exec-beta-2-attempt-2: dynamic version from package metadata.
+# Mini editable install -> real version (e.g. "0.7.0").
+# Studio venv non-editable -> fallback "0.0.0-dev" (drift-N45 carry-forward
+# par.22.98/22.99, Lesson #31 strong applicazione).
+from importlib.metadata import PackageNotFoundError, version as _pkg_version
+
+try:
+    __version__ = _pkg_version("pharmatimer-api")
+except PackageNotFoundError:
+    __version__ = "0.0.0-dev"
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -27,7 +39,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="PharmaTimer API",
-    version="0.1.0",
+    version=__version__,
     lifespan=lifespan,
 )
 
