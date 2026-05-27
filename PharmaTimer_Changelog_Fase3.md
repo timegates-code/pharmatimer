@@ -5974,3 +5974,288 @@ Esegui il prompt al par.11.R-S3-octies del Changelog Fase 3.
 
 
 ---
+
+
+---
+
+
+### 22.101-ter (Fase 3, closing N+5.M-pivot-exec-beta-2-attempt-2-parte-2-b1 esecutiva monolitica CP4 verde end-to-end LAN + CP5 deferred drift-N101-NEW architetturale unificato + 4 drift NEW catalizzati N93/N98/N100/N101 + 2 false-finding ratifica chiusura N97/N99 + Lesson #32 record assoluto 7 case-study #11-#17 sessione singola + 19 applicazione cumulativa par.22.55-Fase2 split safety-first preventivo + sicurezza token rotate-1 leakato chat invalidato rotate-3 Keychain robusto)
+
+<!-- par.22.101-ter R1 emit Fase 3 SENTINEL_N5M_PIVOT_EXEC_BETA2_ATTEMPT2_PARTE2B1_CLOSING_PAR_22_101_TER -->
+
+**Data:** 27 maggio 2026 (mattina-mezzogiorno, post-par.22.101-bis stesso ciclo deploy beta-2 split parte-2-b parte-2-b1/parte-2-b2).
+
+**Modalita:** Sessione N+5.M-pivot-exec-beta-2-attempt-2-parte-2-b1 esecutiva monolitica chiusura CP4 + tentativo CP5 (3 iterazioni fallite). Split safety-first 19 applicazione cumulativa Fase 3 ratificata da Roberto blanket "decidi tu" post-C.5.7 iterazione 3 fallita drift-N100 confutato empirico patch ineffective. Token spesi ~44-46K vicino soglia 50K saturazione. 4 drift NEW + 2 false-finding catalizzati richiedono cementazione closing dedicato. CP5 backup smoke deferred parte-2-b2 post-refactor backup.sh repo-side unificato.
+
+**Esito:** OK milestone tecnico parziale F3-S6 deploy gamma:
+
+- CP4 smoke 4/4 verde end-to-end LAN HTTP Mini 192.168.1.167:8000:
+  - S1 GET /api/farmaci no token -> 422 Pydantic missing X-User-Token header (drift-N93-NEW carry-forward N+5.N cleanup batch, vocab UNAUTHORIZED 401 atteso teorico cementato par.22.91/92 non applicato a token-mancante FastAPI Header required, applicato solo a token-presente-invalido)
+  - S2 GET /api/farmaci con X-User-Token rotate-3 -> 200 + [] body (DB Mini empty post-seed, auth-layer end-to-end verde)
+  - S3 POST /api/farmaci JSON invalid {foo:bar} + token -> 422 Pydantic body validation con 5 campi required missing (nome + tipo_frequenza + dosi_giornaliere + relazione_pasto + data_inizio) bonus Lesson #23 self-applied passivo
+  - S4 GET /openapi.json info.version = 0.7.0b1 (drift-N45 chiuso end-to-end LAN-side, parte-2-a confermava solo Mini-localhost)
+- CP5 backup smoke 3 iterazioni fallite:
+  - Iterazione 1 CP5 originale: drift-N95 cnf section database in [client] -> mysqldump unknown variable exit 7 + file 20-byte
+  - Iterazione 2 C.4 retry post-fix C.2 cnf section split [client] + [mysql]: drift-N100-NEW FLUSH TABLES RELOAD privilege denied (root cause --single-transaction implicit FTWRL pre-dump) + file 358-byte
+  - Iterazione 3 C.5 retry post-patch --skip-lock-tables: identico errore FLUSH TABLES (drift-N100 confutato empirico, --skip-lock-tables disabilita LOCK TABLES READ MyISAM-legacy, non FLUSH globale MySQL 8+/9.x)
+- 4 fix architetturali runtime Mini-side cementati preservati:
+  - cnf sections split [client] credenziali + [mysql] database=pharmatimer (drift-N95 chiuso empirico C.2.3 verde mysql client + C.2.4 verde mysqldump dry-run + C.4 conferma definitiva backup.err.log integrale)
+  - backup.sh patch --no-tablespaces (drift-N98 chiuso empirico C.3 patch + Run 2 SKIP idempotency)
+  - backup.sh patch --skip-lock-tables (drift-N100 confutato empirico C.5 patch + Run 2 SKIP idempotency, MOD comunque preserved come reference per refactor parte-2-b2)
+  - Keychain Apple login pattern token storage robusto (drift-N92-NEW chiuso empirico Step B integrato hash match end-to-end Studio-DB Mini verde 4/4)
+- Token rotate-1 leakato chat (`-wGgaTcvYpe_tWvQCOjOZPjoEQb7Q6a5P05aTzBvjFs`) invalidato server-side rotate-3 atomic UPDATE token_hash WHERE id=1 (sicurezza ripristinata, verifica hash_db_prefix16 = hash_studio_prefix16 = ce37e03a9ee2665e bit-perfect Step B)
+
+CP6+CP7 + CP5 retry post-refactor backup.sh repo-side -> carry-forward parte-2-b2 par.11.R-S3-nonies (sotto).
+
+#### Pre-letture eseguite (Lesson #31 strong applicata)
+
+1. OK par.22.101-bis-Fase3 integrale (closing parte-2-a CP3 deploy Mini verde + Lesson #32 8 case-study + Lesson #33 candidate + 18 applicazione cumulativa par.22.55)
+2. OK par.22.100-Fase3 integrale (closing parte-1 CP0-CP2 verde + Lesson #31 strong 4/5)
+3. OK par.22.99-Fase3 integrale (closing attempt-1 abortita + Lesson #31 strong cementata)
+4. OK Lesson #20-#32 cumulative MANDATORY + Lesson #31 strong + Lesson #32 candidate 8 case-study (cumulativa pre-sessione)
+
+#### CP0 baseline ridotto parte-2-b1 verde 11/11
+
+- CP0.1 HEAD 98ff08b branch fase-3-backend tag v3.2.0-alpha.7a invariato (HEAD avanzato vs ce555a0 par.22.101-bis pre-emit per push doc-only parte-2-a gia eseguito)
+- CP0.2 0 ahead origin/fase-3-backend (push parte-2-a applicato)
+- CP0.3 working tree state preservato: M app.py + 3 patcher untracked (closing parte-1 + parte-2-a + deploy v2) + ?? deploy/ collapsed
+- CP0.4 SHA app.py d11ab1b6b9afe107a809d52ea2ad14167ab17433fe03afea58f8991fd5ff9e29 bit-perfect
+- CP0.5 8 file deploy/ presenti SHA-256 short 16-char log (4bc2fdfe + 6590d62b + 9199f6d5 + 334895d9 + 2c1fbeba + a1fe2324 + 3d19f185 + 6d01dbf3)
+- CP0.6 SSH alias mini smoke ssh-ok (LF tecnica 3307 zombie carry-forward non-bloccante)
+- Mini.1-6 acquisizione runtime: uvicorn PID 30513 alive + /api/health 200 + /openapi.json 0.7.0b1 + plist EnvVars 3 chiavi acquisite (DB_DEFAULTS_FILE + DB_NAME + PATH /opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin) + editable pharmatimer-api 0.7.0b1 Location /Users/marketreader/PharmaTimer/.venv
+- CP0.9 IP Mini Studio ping 1.922 ms + curl health 200
+- CP0.10 pytest backend 80/80 passed 3.88s
+- CP0.11 vitest frontend 575/575 passed 69 Test Files
+
+#### Drift NEW catalizzati parte-2-b1 (4 totali, tutti catched-in-turn)
+
+| ID | Categoria | Severita | Catched | Rimedio carry-forward |
+|---|---|---|---|---|
+| drift-N93-NEW | Architetturale auth-layer | Cosmetic UX (smoke S1 422 vs UNAUTHORIZED 401 vocab atteso teorico) | CP4 originale S1 paradoxal output | N+5.N+ cleanup batch refactor `Header(None)` + manual raise UNAUTHORIZED if None (preserva FastAPI Header dependency injection ma propaga vocabolario errori RepositoryError) |
+| drift-N98-NEW | Architetturale design backup.sh | Medio (Access denied PROCESS privilege) | C.2.4 dry-run smoke pre-retry CP5 (Lesson #23 empirico via mysqldump head 30 righe) | Chiuso runtime Mini-side C.3 patch --no-tablespaces; repo MOD parte-2-b2 CP5.0 refactor unificato |
+| drift-N100-NEW | Architetturale design backup.sh | Alto (Access denied RELOAD/FLUSH_TABLES, blocca dump completo) | C.4.7 backup.err.log post-retry iterazione 2 | Inizialmente assunto rimediabile via --skip-lock-tables (C.5 patch), confutato empirico C.5.6 iterazione 3 identico errore; **rimedio architetturale unico**: rimozione --single-transaction per app-user least-privilege OR GRANT RELOAD extra; repo MOD parte-2-b2 CP5.0 refactor unificato |
+| drift-N101-NEW | Architetturale design backup.sh UNIFIED | Alto (root cause comune N98+N100+--single-transaction privilege) | C.5.6 iterazione 3 fallita post-patch ineffective + dump empirico backup.sh source C.3.1 + Lesson #32 self-skepticism in-turn | Repo MOD parte-2-b2 CP5.0 refactor unificato: backup.sh scritto per assunzione mysqldump root-user prod-grade, incompatibile app-user least-privilege da 01-setup-pharmatimer-db.sh GRANT minimi (SELECT/INSERT/UPDATE/DELETE solo). Rimedio canonico: rimozione --single-transaction + mantieni --no-tablespaces gia patched C.3, oppure GRANT extra pharmatimer-specific (RELOAD + PROCESS) in 01-setup-pharmatimer-db.sh in scope sub-step CP5.0 |
+
+#### False-finding ratifica chiusura parte-2-b1 (2 totali, Lesson #23 self-applied passive)
+
+| ID | Mia assunzione originale | Realta empirica dump backup.sh C.3.1 | Stato |
+|---|---|---|---|
+| drift-N97 | Manca `set -o pipefail` in backup.sh | `set -euo pipefail` riga 7 presente (anchor strict) | Ratifica chiusura false-finding |
+| drift-N99 | Manca `--single-transaction` flag | flag presente in mysqldump block riga 8 | Ratifica chiusura false-finding (anzi e parte di drift-N101 root cause architetturale, ma direttiva NON mancante) |
+
+Lesson learned: dump empirico Lesson #27 strict mandatory pre-emit patcher su file sorgenti non visti in sessione. Mia assunzione originale CP5 STOP era basata su pattern atteso "backup.sh tipico" senza dump empirico, violazione passive Lesson #27 + Lesson #23 schema-first. Catched-in-turn C.3.1 dump (Lesson #32 case-study #15).
+
+#### Lesson #32 record assoluto 7 case-study in singola sessione (cumulativa #11-#17 + #18-strong)
+
+| # | Trigger | Azione corretta | Note |
+|---|---|---|---|
+| #11 | `2>/dev/null` su critical-path UPDATE rotate-2 workflow integrato | Stderr NON sopprimere mai su state-change critical | Step B re-emit rotate-3 robusto +set -e + verification ROWS COUNT |
+| #12 | SSH non-interactive non-login no PATH `/opt/homebrew/bin` -> `mysql command not found` Step A.2 diagnosi | `export PATH=/opt/homebrew/bin:...` mandatory in heredoc REMOTE | Step B rotate-3 robusto applicato |
+| #13 | drift-N95 cnf section [client] vs [mysql] separazione mandatory mysqldump strict parsing | Sections separate canonical MySQL docs | C.2 fix runtime Mini-side cnf split |
+| #14 | drift-N98 PROCESS privilege mysqldump --no-tablespaces flag mandatory app-user | Flag al posizione canonica MySQL docs (post-defaults-file pre-single-transaction) | C.3 patch sandbox verification Run 2 SKIP |
+| #15 | drift-N97 + drift-N99 false-finding mia assunzione vs realta empirica dump | Lesson #27 strict mandatory dump pre-emit patcher | C.3.1 dump empirico backup.sh source ratifica chiusura |
+| #16 | drift-N100 --skip-lock-tables NON disabilita FLUSH TABLES (disabilita solo LOCK TABLES READ MyISAM-legacy) | Lesson #23 empirico mysqldump --help PRE-patch mandatory | C.5 patch ineffective ratifica empirica iterazione 3 |
+| #17 | drift-N101 unificazione root cause N98+N100+--single-transaction = backup.sh assumption root-user vs app-user GRANT minimi | Refactor architetturale unificato repo-side, non runtime-patching iterativo | Split safety-first ratifica + parte-2-b2 CP5.0 dedicato |
+
+**Lesson #32 cementazione formale strong version + #33 candidate NEW cementazione formale strong version + #34 candidate NEW (refactor architetturale-unificato vs runtime-patching iterativo) demandate CP7 parte-2-b2 closing finale par.22.101.**
+
+#### Sicurezza incidente + recovery cumulativo
+
+1. **Token rotate-1 leakato chat**: workflow rotate-2 originale emit `echo "$NEW_TOKEN"` a stdout senza guardrail tecnico (file mode 600). Roberto incolla output integrale chat (assunzione "Roberto non incolla token" violata empirico, Lesson #29-Fase3 case-study #2 strong). Token `-wGgaTcvYpe_tWvQCOjOZPjoEQb7Q6a5P05aTzBvjFs` cementato Anthropic chat log conversazione corrente + Claude contesto attivo, irrecuperabile retroattivamente.
+2. **Tentativo mitigazione rotate-2 fallito silenziosamente**: workflow integrato Studio->Mini SSH heredoc con `mysql ... >/dev/null 2>&1` ha soppresso errore `command not found: mysql` (PATH SSH non-interactive non-login no /opt/homebrew/bin). DB Mini token_hash NON aggiornato. Keychain Apple plain rotate-2 NON matcha hash DB rotate-1. Token leakato continua valido server-side (rischio sicurezza prolungato).
+3. **Diagnosi Step A**: hash_keychain_prefix16 vs hash_db_prefix16 dovevano confrontare, ma Step A.2 SSH command ssh mini "<cmd>" identico errore PATH -> rivelato pattern Lesson #32 #12. Catched empirico.
+4. **Rotate-3 robusto Step B**: PATH explicit Mini-side + set -e Mini + stderr NON soppresso + ROWS verification Mini-side + hash match end-to-end Studio-DB Mini bit-perfect (ce37e03a9ee2665e) + Keychain Apple login conditional write SOLO se hash match. Token rotate-1 + rotate-2 entrambi invalidati server-side via single UPDATE rotate-3. Keychain Apple plain rotate-3 protetto cifrato a riposo, retrieval via `security find-generic-password -s pharmatimer-owner-token -w`. Drift-N92-NEW chiuso empirico Step B.
+
+#### Sub-AMB pending carry-forward parte-2-b2 (carry-forward integrale parte-2-b1 + NEW)
+
+| Sub-AMB | Stato parte-2-b1 | Carry-forward parte-2-b2 |
+|---|---|---|
+| Sub-AMB-CP4.A | drift-N93 vocab 422 vs UNAUTHORIZED 401 missing X-User-Token header | N+5.N+ cleanup batch refactor `Header(None)` + manual raise (non-bloccante deploy) |
+| Sub-AMB-CP5.A | drift-N101 refactor unificato backup.sh repo-side | Sub-step CP5.0 dedicato parte-2-b2 (eccezione legittima VIETATO MOD codice batch carry-forward par.22.101-bis: drift architetturale-bloccante backup-feature vs cosmetic-batch demandabile) |
+| Sub-AMB-CP6.A | sync plist Mini->Studio asset deploy 3 EnvironmentVariables | CP6 carry-forward invariato (chiavi acquisite Mini.5 parte-2-b1: DB_DEFAULTS_FILE=/Users/marketreader/.my-pharmatimer.cnf + DB_NAME=pharmatimer + PATH=/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin) |
+| Sub-AMB-CP6.B | bump pyproject 0.7.0b1 -> 0.7.0 + package 3.2.0-alpha.1 -> 3.2.0-alpha.2 + sync ImpostazioniTab + .gitignore __pycache__/ | CP6 carry-forward invariato |
+| Sub-AMB-CP6.C | tag v3.2.0-alpha.8 LOCALE+REMOTO push atomico 12 applicazione cumulativa AMB-11.B.7-bis Fase 3 | CP6 carry-forward invariato |
+| Sub-AMB-CP6.D | Mini-side `pip install -e .` re-install post-bump + launchctl bootout/bootstrap pickup version 0.7.0 | CP6 carry-forward invariato |
+| Sub-AMB-CP7.A | closing par.22.101 finale + Lesson #32 strong + Lesson #33 NEW + Lesson #34 candidate NEW + Spec v1.9 KB-only merge Roberto-side | CP7 carry-forward invariato |
+| Sub-AMB-CP7-NEW | drift-N101 unified rimedio backup.sh repo MOD parte-2-b2 CP5.0 + drift-N95 repo MOD (01-setup-pharmatimer-db.sh sections cnf) ratifica empirica CP6 sync ImpostazioniTab | Sub-step CP5.0 nuovo prerequisito CP6 |
+
+#### Deviazioni s.6.NN
+
+**Zero deviazioni s.6.NN sorgenti.** Deviazioni doc-only cumulative parte-2-b1:
+
+- doc-only Q1-Q5 ratifica blanket "decidi tu" CP0 (token disponibile + IP Mini check + plist acquisition CP6.0 anticipata + CP4 batch unico smoke + push atomico CP6 ratifica)
+- doc-only Sub-AMB recovery token via opzione (a) UPDATE token_hash atomico vs (b) seed_owner.py rerun vs (c) DELETE+INSERT distruttivo - opzione (a) ratificata blanket
+- doc-only Sub-AMB-CP4.A drift-N93 carry-forward N+5.N+ cleanup batch ratificata blanket
+- doc-only Sub-AMB-CP5.A drift-N101 refactor in scope parte-2-b2 vs demandare N+5.N+ ratificata Roberto-side (3 ragioni concrete: fix architetturale unificato + backup safety-feature non-cosmetic + smoke end-to-end coerente session-charter)
+- doc-only Q-N5M-parte2b1.split=(a) split safety-first ora 19 applicazione cumulativa Fase 3 ratificata Roberto-side post-C.5.7 iterazione 3 fallita (token saturazione ~44K + Lesson #32 record 7 case-study + drift architetturale-bloccante non-runtime-patchable)
+- doc-only Q-N5M-parte2b1.emit=(a) emit patcher Python APPEND-EOF idempotente Changelog (questo)
+
+#### Test post-sessione parte-2-b1
+
+- pytest backend 80/80 verde Studio (invariato pre+post, 3.88s wall-clock CP0.10)
+- vitest frontend 575/575 verde invariato (3.x wall-clock CP0.11 + 69 Test Files)
+- Mini runtime: uvicorn Python PID 30513 alive LISTEN *:8000 + /api/health 200 + /openapi.json 0.7.0b1 (auth-layer end-to-end verde CP4 4/4)
+- DB Mini pharmatimer: utente Roberto id=1 token_hash rotate-3 valido (hash prefix16 ce37e03a9ee2665e), 7 tabelle altre vuote (post-seed iniziale, [] body S2 conferma)
+- Backup Mini-side: 0 file .sql.gz validi (3 file orphan rimossi C.4.1 + C.5.4), CP5 backup smoke deferred parte-2-b2 post-refactor unificato
+
+#### Tag git e push parte-2-b1
+
+- **Tag git:** NO (sessione parziale split safety-first, AMB-11.B.7-bis rispettato: tag annotato v3.2.0-alpha.8 carry-forward CP6 parte-2-b2 atomic con bump + push)
+- **package.json:** invariato 3.2.0-alpha.1
+- **pyproject.toml:** invariato 0.7.0b1
+- **MOD app.py:** invariato working-tree (carry-forward parte-2-a, NON committato, carry-forward CP6 parte-2-b2 commit cumulativo atomic con bump)
+- **MOD cnf Mini-side runtime:** applicato C.2 (sections split [client] credenziali + [mysql] database), backup `.my-pharmatimer.cnf.bak.cp5fix.20260527_110734` preserved Mini-side, asset repo `01-setup-pharmatimer-db.sh` Studio-side INVARIATO (sync demandato parte-2-b2 CP6 in scope drift-N95 ratifica empirica cementazione)
+- **MOD backup.sh Mini-side runtime:** applicato C.3 patch --no-tablespaces + C.5 patch --skip-lock-tables (cosmetic ineffective preserved come reference), backup `.bak.cp5fix.20260527_111024` preserved Mini-side, asset repo `deploy/launchd/backup.sh` Studio-side INVARIATO (refactor unificato demandato parte-2-b2 CP5.0 in scope drift-N101 ratifica architetturale)
+- **Backup atomic Mini-side preserved:** 2 file .bak.cp5fix preserved Mini-side (cnf + backup.sh) per audit + rollback opzionale
+- **8 file deploy/ Studio-side untracked:** preservati attempt-1 + parte-1 + parte-2-a + parte-2-b1 + verificati SHA-256 bit-perfect (CP0.5 OK), NON committati (carry-forward CP6 parte-2-b2 atomic)
+- **Commit:** 1 doc-only Changelog Fase 3 (questa sezione par.22.101-ter + par.11.R-S3-nonies pre-frozen, pattern par.22.75/76/77/96/99/100/101-bis replicato esatto patcher Python idempotente APPEND-EOF SENTINEL)
+- **Push:** SI immediato raccomandato per cementare 4 drift NEW + 2 false-finding ratifica + Lesson #32 record 7 case-study + 19 applicazione cumulativa par.22.55 in origin remote (backup KB cross-device, Lesson #11 cross-session protezione MANDATORY data split + token rotate-1 leakato + recovery rotate-3 sicurezza cementazione)
+- **Spec:** invariata KB-only Roberto-side (Spec v1.9 delta merge demandato CP7 parte-2-b2 post-CP4+CP5 verde: sez. 3 + sez. 12 + sez. 11.6.13 Lesson #30 + sez. 11.6.14 Lesson #32 strong + sez. 11.6.15 Lesson #33 NEW + sez. 11.6.16 Lesson #34 candidate NEW)
+- **userMemories:** invariata parte-2-b1, aggiornamento cumulativo CP7 parte-2-b2 closing
+
+#### Sessione successiva post-parte-2-b1
+
+**N+5.M-pivot-exec-beta-2-attempt-2-parte-2-b2 esecutiva monolitica chiusura CP5.0 refactor + CP5 retry + CP6 cleanup/bump/sync plist+cnf/tag/push atomico + CP7 closing finale par.22.101** scope architetturalmente blindato par.22.99 + par.22.100 + par.22.101-bis + par.22.101-ter (questo) carry-forward integrale + sub-AMB pending invariate parte-2-b1 + Lesson #32 + Lesson #33 + Lesson #34 candidate cementazione formale strong CP7 + sync plist Mini -> Studio asset deploy/ ratifica empirica CP6 + sync cnf template repo (01-setup-pharmatimer-db.sh sections) ratifica empirica CP6 + refactor backup.sh repo unificato (CP5.0 NUOVO pre-CP5 retry). Token attesi ~25-35K. Wall-clock ~1.5-2.5h. Pre-frozen par.11.R-S3-nonies emit sotto.
+
+**One-liner apertura nuova sessione N+5.M-pivot-exec-beta-2-attempt-2-parte-2-b2:**
+
+```
+Esegui il prompt al par.11.R-S3-nonies del Changelog Fase 3.
+```
+
+---
+
+### par.11.R-S3-nonies -- Prompt apertura N+5.M-pivot-exec-beta-2-attempt-2-parte-2-b2 esecutiva monolitica chiusura CP5.0 refactor backup.sh repo unificato + CP5 retry smoke + CP6 cleanup/bump/sync plist+cnf/tag/push atomico + CP7 closing finale par.22.101 + Lesson #32+#33+#34 cementazione formale strong
+
+<!-- par.11.R-S3-nonies R1 emit Fase 3 post-N+5.M-pivot-exec-beta-2-attempt-2-parte-2-b1 closing par.22.101-ter SENTINEL_N5M_PIVOT_EXEC_BETA2_ATTEMPT2_PARTE2B2_PROMPT_PAR_11_R_S3_NONIES -->
+
+**One-liner apertura:** `Esegui il prompt al par.11.R-S3-nonies del Changelog Fase 3.`
+
+#### VINCOLO ARCHITETTURALE IMMUTABILE (carry-forward integrale par.22.95 R2 + par.22.96 + par.22.97 + par.22.98 + par.22.99 + par.22.100 + par.22.101-bis + par.22.101-ter + L1-L4 difesa multi-layer)
+
+Vincoli architetturali invariati par.22.101-ter sez. VINCOLO ARCHITETTURALE IMMUTABILE (riferimento integrale par.22.101-bis).
+
+**VIETATO parte-2-b2 e sessioni successive (carry-forward par.22.98 + par.22.99 + par.22.100 + par.22.101-bis + par.22.101-ter):**
+
+- Vincoli VIETATO invariati par.22.100/22.101-bis/22.101-ter (riferimento integrale)
+- AGGIUNTO par.22.101-ter: re-deploy completo Mini (rsync deploy + backend + setup_db + setup_venv + schema + seed + LaunchAgent gia operativi runtime alive parte-2-a, runtime patch cnf + backup.sh Mini-side parte-2-b1 preserved, NO re-apply distruttivo)
+- AGGIUNTO par.22.101-ter: rollback runtime Mini-side cnf split [client]+[mysql] (preserved parte-2-b1, sync repo cementato CP6 parte-2-b2)
+- AGGIUNTO par.22.101-ter: rollback runtime Mini-side backup.sh patch --no-tablespaces + --skip-lock-tables (preserved parte-2-b1 come reference, REFACTOR repo CP5.0 sovrascrive runtime via rsync CP5.1)
+- AGGIUNTO par.22.101-ter: rollback token rotate-1/rotate-2 (preserved invalidati server-side rotate-3 Keychain robusto, retrieval via `security find-generic-password -s pharmatimer-owner-token -w` mandatory ogni sessione futura)
+
+**ECCEZIONE LEGITTIMA VIETATO MOD codice batch parte-2-b2 (ratificata Roberto-side parte-2-b1 closing):**
+
+- **CP5.0 refactor `deploy/launchd/backup.sh` repo-side** (drift-N101-NEW unified rimedio): refactor canonico app-user least-privilege via rimozione `--single-transaction` + mantieni `--no-tablespaces` cementato + opzionale aggiunta `--set-gtid-purged=OFF` (cosmetic warning soppression). Razionale eccezione: drift architetturale-bloccante backup-feature safety, non cosmetic-batch demandabile. Demandare N+5.N+ significa deploy F3-S6 prod con backup non-funzionante 3+ sessioni = rischio data loss reale.
+- **CP6 sync `deploy/01-setup-pharmatimer-db.sh` repo-side** (drift-N95 rimedio cnf sections): aggiornamento template cnf con sections split [client] + [mysql] (ratifica empirica MOD runtime Mini-side parte-2-b1). Razionale eccezione: gemello drift-N101 (stesso cluster setup-DB infrastructure), single MOD repo per single CP6 atomic.
+
+Altri MOD codice batch (N87 seed_owner.py + N88 plist sync gia in CP6 + N89 health.py VERSION import + N93 auth-layer Header refactor) RESTANO demandati N+5.N+ cleanup batch (pattern coerente Lesson #33 candidate).
+
+#### Pre-letture obbligatorie parte-2-b2 (Lesson #31 strong + Lesson #11 cross-session)
+
+1. **par.22.101-ter-Fase3 integrale** (closing parte-2-b1 CP4 verde + CP5 deferred + 4 drift NEW N93/N98/N100/N101 + 2 false-finding ratifica N97/N99 + Lesson #32 record 7 case-study + 19 applicazione cumulativa par.22.55-Fase2 + sicurezza rotate-3 Keychain)
+2. **par.22.101-bis-Fase3 integrale** (closing parte-2-a CP3 deploy Mini verde + 9 drift NEW + Lesson #32 8 case-study + Lesson #33 candidate + 18 applicazione cumulativa par.22.55-Fase2)
+3. **par.22.100-Fase3 integrale** (closing parte-1 CP0-CP2 verde + Lesson #31 strong 4/5 + Lesson #32 candidate primo case-study)
+4. **par.22.99-Fase3 integrale** (closing attempt-1 abortita + Lesson #31 strong cementata)
+5. **Lesson #20-#32 cumulative MANDATORY** + Lesson #31 strong + Lesson #32 record 7 case-study cumulativa pre-sessione + Lesson #33 + #34 candidate
+
+#### CP0 baseline ridotto parte-2-b2 mandatory
+
+```
+cd ~/Sviluppo/pharmatimer
+
+echo 'CP0.1 HEAD branch tag post parte-2-b1'
+git rev-parse HEAD
+git rev-parse --abbrev-ref HEAD
+git describe --tags --abbrev=0
+echo 'atteso: branch fase-3-backend tag v3.2.0-alpha.7a invariato + HEAD 98ff08b oppure +1 (post commit par.22.101-ter)'
+
+echo 'CP0.2 ahead origin'
+git rev-list --count origin/fase-3-backend..HEAD
+echo 'atteso: 0 ahead se push gia fatto oppure 1 ahead se commit doc-only par.22.101-ter non pushed'
+
+echo 'CP0.3 working tree state preservato parte-2-b1'
+git status --short
+echo 'atteso: M backend/pharmatimer_api/app.py + 8 deploy/ + 4 patcher untracked (incluso closing parte-2-b1 NEW)'
+
+echo 'CP0.4 SHA app.py preservato'
+shasum -a 256 backend/pharmatimer_api/app.py
+echo 'atteso: d11ab1b6b9afe107a809d52ea2ad14167ab17433fe03afea58f8991fd5ff9e29'
+
+echo 'CP0.5 Keychain retrieval token rotate-3 (no expose plain)'
+RETRIEVED_LEN=$(security find-generic-password -s pharmatimer-owner-token -w 2>/dev/null | tr -d '\n' | wc -c | tr -d ' ')
+echo "atteso: length=43"
+echo "actual: length=$RETRIEVED_LEN"
+
+echo 'CP0.6 SSH alias mini smoke + curl Mini health alive + openapi version 0.7.0b1'
+ssh -o ConnectTimeout=5 -o BatchMode=yes mini 'echo ssh-ok; curl -s -m 3 http://localhost:8000/api/health'
+echo 'atteso: ssh-ok + JSON status ok db reachable (Mini runtime alive carry-forward parte-2-b1)'
+
+echo 'CP0.7 dump empirico backup.sh Mini-side runtime stato post-C.5 patches (Lesson 27 strict)'
+ssh mini 'cat ~/PharmaTimer/deploy/launchd/backup.sh'
+echo 'atteso: backup.sh con --no-tablespaces (C.3) + --skip-lock-tables (C.5) patches preserved + set -euo pipefail + --single-transaction (da rimuovere CP5.0)'
+
+echo 'CP0.8 dump empirico backup.sh repo Studio-side (baseline pre-refactor CP5.0)'
+cat deploy/launchd/backup.sh
+echo 'atteso: backup.sh repo-side INVARIATO vs commit closing N+5.L par.22.96 (no patch runtime applicate)'
+
+echo 'CP0.9 pytest backend + vitest frontend verde pre-CP5.0'
+source backend/venv/bin/activate
+cd backend && pytest --tb=no -q 2>&1 | tail -3
+cd ..
+deactivate
+npx vitest run 2>&1 | grep -E 'Test Files|Tests' | head -3
+echo 'atteso: 80 passed + 575 passed su 69 files'
+
+echo 'CP0 ridotto parte-2-b2 completato'
+```
+
+#### CP plan parte-2-b2 (CP5.0 NUOVO + CP5 retry + CP6 + CP7)
+
+| CP | Scope |
+|---|---|
+| **CP5.0** | Refactor `deploy/launchd/backup.sh` repo-side (drift-N101 unified rimedio) via patcher Python idempotente content-based SENTINEL. Scope MOD: (a) rimozione riga `  --single-transaction \\` (anchor univoco), (b) inserimento `  --no-tablespaces \\` post `--defaults-file=` (anchor univoco) -- cementa runtime patch C.3 in repo, (c) opzionale rimozione riga `  --skip-lock-tables \\` se runtime preserved (cosmetic, decisione "decidi tu" Q-CP5.0.1 in apertura). Sandbox verification Run 1 APPLIED + Run 2 SKIP. Refactor `deploy/01-setup-pharmatimer-db.sh` repo-side (drift-N95 rimedio cnf sections) via patcher Python parallelo: cnf template emit con sections split [client] + [mysql] (cementa runtime patch C.2). |
+| **CP5.1** | Rsync `deploy/launchd/backup.sh` + `deploy/01-setup-pharmatimer-db.sh` Studio -> Mini sovrascrive runtime patches C.3/C.5 (cementa refactor canonico). Cnf Mini-side NON sovrascritto (cnf e generato da setup script, non template; verifica empirica cnf Mini-side gia in sezioni split parte-2-b1 C.2). |
+| **CP5** | Retry CP5 backup smoke iterazione 4: `launchctl start com.pharmatimer.backup` + wait 5s + verifica file `~/PharmaTimer/backups/pharmatimer_YYYYMMDD_HHMMSS.sql.gz` + size >1KB + `gzip -t OK` + 8 `CREATE TABLE` statements grep (utenti + farmaci + orari_base + log_assunzioni + permessi + profilo_utente + impostazioni_app + push_subscriptions) + INSERT count >=1 (owner Roberto) + payload TAIL `Dump completed on ...` + LaunchAgent last exit code = 0 + backup.err.log clean (ZERO new error post-refactor). |
+| **CP6** | Cleanup parte-2-b2: rimuovere 4 patcher untracked dopo commit (parte-1 + parte-2-a + parte-2-b1 + deploy v2 + closing parte-2-b2 NUOVO patcher Changelog) + bump pyproject `0.7.0b1 -> 0.7.0` + bump package `3.2.0-alpha.1 -> 3.2.0-alpha.2` + sync `src/components/config/ImpostazioniTab.jsx` runtime string + **sync plist Mini -> deploy/launchd/com.pharmatimer.api-wrapper.plist Studio-side** (ratifica empirica MOD EnvironmentVariables 3 chiavi DB_DEFAULTS_FILE+DB_NAME+PATH, drift-N88 rimedio cementato asset deploy git) + **.gitignore patch __pycache__/** (drift-N79 rimedio) + **commit cumulativo include MOD app.py parte-1 + MOD backup.sh repo CP5.0 + MOD 01-setup-pharmatimer-db.sh repo CP5.0 + 8 deploy/ + sync plist + sync cnf + .gitignore + bump + sync ImpostazioniTab** + tag annotato LOCALE+REMOTO `v3.2.0-alpha.8` su HEAD CP6 + push atomico (commit cumulativo + tag + push, **12 applicazione cumulativa AMB-11.B.7-bis Fase 3**) + Mini-side `cd ~/PharmaTimer/backend && pip install -e .` re-install (post-bump Mini editable refresh `__version__` runtime + ssh -t mini 'launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.pharmatimer.api-wrapper.plist && launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.pharmatimer.api-wrapper.plist' restart uvicorn pickup version 0.7.0) |
+| **CP7** | Closing par.22.101 finale emit + pre-frozen N+5.N (Tailscale apply vs PWA UI vs rc promotion vs code cleanup batch N87+N88+N89+N93+N94) + Roberto applica Spec v1.9 merge manuale (sez. 3 update 8 tabelle drift-N86 + sez. 12 deployment nativo + sez. 11.6.13 Lesson #30 + sez. 11.6.14 Lesson #32 strong record 7 case-study + sez. 11.6.15 Lesson #33 NEW + sez. 11.6.16 Lesson #34 candidate NEW refactor architetturale-unificato vs runtime-patching iterativo) + memory_user_edits cementazione finale F3-S6 deploy gamma completato parzialmente (full completion = N+5.N+ Tailscale ACL HTTPS PWA prod) + **Lesson #32 cementata formale strong version** (record 7 case-study self-skepticism in-turn cumulativa) + **Lesson #33 cementata formale NEW** (refactor architetturale audit batch consumer pattern) + **Lesson #34 cementata formale NEW** (refactor architetturale-unificato preferred su runtime-patching iterativo quando root cause comune emerge da multi-iterazione fallita) |
+
+#### Modalita raccomandata parte-2-b2
+
+**Esecutiva monolitica** (token attesi ~25-35K, sotto soglia 50K). Pattern par.22.55-Fase2 split safety-first NON applicato a priori parte-2-b2 (scope ridotto: CP5.0 refactor + CP5.1 rsync + CP5 retry + CP6 commit/tag/push + CP7 closing).
+
+Pattern par.22.99 + par.22.101-bis + par.22.101-ter lesson concreta: dialogato turn-by-turn su qualsiasi sub-AMB Mini-side o Studio-side emergente non default-raccomandato pre-frozen. Lesson #31 strong + Lesson #32 record 7 case-study + Lesson #33 + Lesson #34 candidate applicate: assunzioni nascoste CP5.0+CP5+CP6 elencate explicit pre-emit + INV check empirico dispatch + dump empirico mandatory pre-emit patcher (Lesson #23 + Lesson #27 strict) + refactor architetturale-unificato preferred runtime-patching (Lesson #34 candidate).
+
+#### Esito atteso parte-2-b2
+
+- backup.sh repo Studio-side refactored canonico app-user least-privilege (no --single-transaction + --no-tablespaces cementato)
+- 01-setup-pharmatimer-db.sh repo Studio-side refactored cnf template sections [client]+[mysql] (drift-N95 cementato repo)
+- Rsync Studio->Mini cementa refactor canonico (runtime patches C.3/C.5 sovrascritte)
+- CP5 retry iterazione 4 verde 4/4: file .sql.gz size >1KB + gzip -t OK + 8 CREATE TABLE + INSERT >=1 + last exit 0
+- pytest Studio 80/80 verde + vitest 575/575 verde invariato
+- Commit cumulativo CP6 atomic + bump pyproject 0.7.0 + bump package 3.2.0-alpha.2 + sync ImpostazioniTab + sync plist Mini->Studio + sync cnf template + .gitignore __pycache__/ + MOD app.py + 8 deploy/ + tag v3.2.0-alpha.8 LOCALE+REMOTO + push atomico verde
+- Mini-side pip install -e . re-install + launchctl bootout/bootstrap restart pickup version 0.7.0 + /openapi.json info.version 0.7.0
+- Spec v1.9 merge applicato Roberto-side KB-only post-deploy verificato
+- Lesson #32 cementata formale strong record 7 case-study + Lesson #33 cementata strong NEW + Lesson #34 cementata strong NEW
+- Pre-frozen par.11.S-S3 (o equivalente) emit per N+5.N: candidate Tailscale apply HTTPS PWA prod / PWA UI login / rc promotion v3.2.0-alpha.8 -> v3.2.0-rc.1 / code cleanup batch N87+N88+N89+N93+N94
+- F3-S6 deploy gamma **completato + cementato** (full completion = N+5.N+ Tailscale ACL apply per HTTPS iPhone PWA prod end-to-end)
+
+#### Sessione successiva post-parte-2-b2
+
+**N+5.N pre-frozen scope TBD** a CP7 parte-2-b2 closing.
+
+Candidate invariati par.22.101-bis carry-forward + nuovi parte-2-b1:
+- N+5.N-Tailscale: install daemon + tailscale up + ACL apply + serve auto-TLS HTTPS Mini API + smoke iPhone PWA HTTPS end-to-end
+- N+5.N-PWA-UI: F3-S5-beta UI login/token entry PWA-side (deferred N+5.I-post par.22.91)
+- N+5.N-rc: promotion v3.2.0-alpha.8 -> v3.2.0-rc.1 se 24h stabilita post-deploy verde
+- N+5.N-cleanup: MOD codice batch seed_owner.py (drift-N87) + sync api-wrapper.sh + plist Mini->Studio (drift-N88 cementato CP6 parte-2-b2 ma MOD script wrapper opzionale) + health.py VERSION import (drift-N89) + refactor auth-layer Header(None) + manual raise UNAUTHORIZED if None (drift-N93) (pattern coerente Lesson #33 + Lesson #34)
+
+**One-liner apertura nuova sessione N+5.N:**
+
+```
+Esegui il prompt al par.11.S-S3 del Changelog Fase 3.
+```
+
+(par.11.S-S3 pre-frozen emit a CP7 parte-2-b2 closing)
+
+
+---
