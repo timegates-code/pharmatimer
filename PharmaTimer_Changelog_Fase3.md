@@ -6869,3 +6869,202 @@ Esegui il prompt al par.11.T-S3 del Changelog Fase 3.
 
 
 ---
+
+
+---
+
+### par.22.103 -- Closing N+5.O esecutiva monolitica Tailscale HTTPS apply Mini+Studio+iPhone + ACL admin console + serve auto-TLS + CORS dual-origin + smoke baseline + bump 0.7.1 + tag v3.2.0-alpha.9
+
+<!-- par.22.103 R1 emit Fase 3 post-N+5.O closing SENTINEL_N5O_CLOSING_PAR_22_103 -->
+
+**Esito sintetico CP0-CP6.** Stack architetturale Tailscale HTTPS apply cementato empirico verde end-to-end:
+
+- **CP0+CP0-ext baseline + audit prereq verde 11/11** (drift-N108 false-finding SSH LF 3307 + drift-N89 health version 0.1.0 cosmetic carry-forward)
+- **CP1** Tailscale install Mini-only (drift-N109 Studio pre-installed .pkg pregressa) + up Mini+Studio con tag pharmatimer-server/client + ACL grants syntax dual-port :443+:8000 deployata (drift-N110+N115) + auto-approval admin (Lesson #36 candidate)
+- **CP2** tailscale serve --bg --https=443 Mini-side persistente Let-s Encrypt cert valid 27-May-2026 -> 25-Aug-2026 (Lesson #37 candidate config-persist pre-feature-flag)
+- **CP3** CORS MOD .env.dev + .env.dev.example dual-origin localhost:5173 + FQDN tailnet (drift-N117 terminology scope rivisto da app.py a .env.dev) -- patcher idempotente Run 1+Run 2 verde
+- **CP4** smoke HTTPS verde Studio (TLS verify ok HTTP/2 200 JSON body) + iPhone Safari (JSON body via tailnet ACL pass) -- iPhone CLI status display gap drift-N118 cosmetic
+- **CP5** rsync .env.dev Studio->Mini bit-perfect SHA 77e832fa + restart LaunchAgent com.pharmatimer.api-wrapper (drift-N119 naming + drift-N120 path discovery) + CORS pickup runtime verified preflight dual-origin + security deny CP5.3.4 HTTP/1.1 400 strict-deny pattern
+- **CP6.1** bump pyproject.toml 0.7.0 -> 0.7.1 SENTINEL_N5O cementato (CP6.2 closing + CP6.3 commit+tag+push)
+
+#### 12 drift NEW catalizzati N109-N120
+
+| ID | Categoria | Severita | Catched | Status |
+|---|---|---|---|---|
+| N109 | architetturale asimmetria install | Cosmetic | CP0-ext.2 | Cementato (Studio .pkg pre-installed, MOD scope CP1 install solo Mini) |
+| N110 | architetturale ACL dual-port | Bloccante pre-CP1 | CP1 design pre-emit | Cementato dual-port :443+:8000 ACL upload |
+| N111 | install method asymmetric .pkg vs brew | Cosmetic | CP1.2.5 | Cementato (Mini .pkg + brew separati no CLI symlink headless) |
+| N112 | version asymmetric 1.94.2 / 1.98.2 | Cosmetic | CP1.2.6 risolto post-verify | Risolto (Mini Tailscale.app = 1.94.2 match Studio) |
+| N113 | tailnet pre-esistente 4 device riusato | Cosmetic | CP1.2 status | Cementato carry-forward |
+| N114 | 2 device fossili offline 90d (iPad+iPhone) | Cosmetic cleanup | CP1.2 status | Carry-forward cleanup N+5.S+ |
+| N115 | ACL syntax grants vs acls legacy | Architetturale evolutivo | CP1.3 JSON editor | Cementato grants syntax (Tailscale 2025+) |
+| N116 | password sudo Mini vs Studio asymmetric | Operativo Roberto-side | CP1.6 | Cementato (Mini=#1, Studio=#2) |
+| N117 | terminology scope CP3 (app.py vs .env.dev) | Doc-only retrofit | CP3.0 audit | Cementato MOD reale .env.dev (par.11.T-S3 formulazione imprecisa) |
+| N118 | tailscale status Studio CLI != admin console Machines | Cosmetic diagnostic | CP4.2.0 retry | Cementato carry-forward (smoke empirico iPhone verde dimostra realta) |
+| N119 | naming LaunchAgent io.* vs com.* | Doc-only mio Claude-side | CP5.0.3 grep | Cementato com.pharmatimer.* reale |
+| N120 | path wrapper.sh ~/PharmaTimer/ vs ~/PharmaTimer/deploy/launchd/ | Doc-only mio Claude-side | CP5.0.4 ls | Cementato path reale |
+
+#### 4 Lesson candidate NEW
+
+- **Lesson #35 candidate.** Mac App Store/.pkg GUI app installation NON espone CLI symlink su headless host senza apertura GUI run (richiede dialog "Install command-line tool" da menubar app). Verify CLI symlink existence empirico mandatory pre-comando CLI assumption. Pattern catalizzato CP1.2.5 Mini Tailscale.app .pkg vs Studio .pkg post-GUI run.
+- **Lesson #36 candidate.** --advertise-tags con tagOwners autogroup:admin + user admin del tailnet = tag auto-approved server-side senza manual admin tag approval. Default raccomandato N+5.O.C "manual approval" pessimistico vs realta. Catalizzato CP1.5.1-rerun3 Mini + CP1.6 Studio entrambi auto-approved.
+- **Lesson #37 candidate.** tailscale serve --bg persists config Mini-side anche pre-feature-flag tailnet-side enable (cert provisioning ACME asincrono possibile pre-enable). Al feature-flag enable, config existing diventa active automatico. Catalizzato CP2.2.1 originale ("Serve not enabled") + CP2.2.2 enable browser + CP2.2.3 verify funnel status mostra config gia attiva pre-retry.
+- **Lesson #38 candidate.** Patcher Python heredoc PYEOF cat-to-file con APPEND_CONTENT contenente markdown code-fence triple-backtick destabilizza zsh heredoc parsing (terminale entra modalita continuazione heredoc> non-terminata). Mitigation pattern: scrivere patcher come file consegnato + spostato in /tmp via mv (NO inline cat heredoc). Estensione Lesson #17 + #17-bis heredoc PYEOF Python f-string variabile intermedia. Catalizzato CP6.2 inline heredoc emit hang Roberto-side.
+
+Cementazione formale demandata CP7 closing N+5.O e Lesson #35-#38 candidate carry-forward Spec v1.10 sez. 12 deployment (sub-AMB N+5.O.I = (B) cumulativo applicato).
+
+#### Sub-AMB N+5.O.A-K ratificate
+
+| ID | Default | Esito empirico |
+|---|---|---|
+| A | (i) brew install Mini+Studio | MOD drift-N109 install solo Mini (Studio .pkg pre-installed) |
+| B | (i) account esistente attivo | Confermato timegates@gmail.com Free tier |
+| C | (ii) manual admin approval | Cambio in (auto-approval) Lesson #36 emerso runtime |
+| D | (i) --bg flag persistente | Cementato + Lesson #37 config persist pre-enable |
+| E | (i) curl Studio + browser iPhone | Cementato Safari iPhone smoke verde |
+| F | (ii) hardcoded FQDN MagicDNS Mini | Cementato in .env.dev (drift-N117 path) |
+| G | (i) empirico tailscale status | Cementato TAILNET=taila127de.ts.net |
+| H | (i) tailscale serve --https=443 off rollback | Cementato comando rollback noto |
+| I | (B) cumulativo CP7 closing | Spec v1.10 emit demandato N+5.P+ |
+| J | (ii) DEFERRED N+5.P | Login dialog F3-S5-beta candidate (B) |
+| K | TBD | 4 Lesson #35-#38 candidate emerse |
+
+#### Cementazione architetturale stack Tailscale HTTPS verticale
+
+[Studio + iPhone client tag:pharmatimer-client] -> [tailnet WireGuard cifrato cross-LAN 2ms direct] -> [Mini tailnet0:443 tailscale serve Lets Encrypt cert E7] -> [TLS termination + proxy localhost:8000] -> [uvicorn FastAPI lifespan Pydantic Settings .env.dev runtime] -> [CORS dual-origin localhost:5173 + tailnet FQDN] -> [mysql-connector pool MySQL 9.6 Homebrew DB pharmatimer]
+
+#### Stato git post-N+5.O (target post-CP6.3 push atomic)
+
+- branch fase-3-backend HEAD <TBD-post-CP6.3> commit cumulativo CP3+CP6.1+CP6.2 cementato
+- tag annotato v3.2.0-alpha.9 LOCALE+REMOTO post-push atomic
+- backend/pyproject.toml 0.7.1 SENTINEL_N5O_TAILSCALE_HTTPS_APPLY_CP6_PYPROJECT_BUMP_0_7_1
+- backend/.env.dev MOD gitignored (Mini sync via rsync CP5.1, repo Studio MOD non-tracked)
+- backend/.env.dev.example MOD tracked commit cumulativo
+- 3 .bak.cp3_n5o + .bak.cp6_n5o + .bak.cp6_2_n5o untracked filtered .gitignore *.bak*
+- pytest backend 80/80 + vitest frontend 575/575 invariati (no test added/MOD N+5.O)
+
+#### Cleanup status
+
+- cleanup-N+5.O: 1 file backup.sh.bak.cp5fix.20260527_111024 Mini-side parte-2-b2 carry-forward cleanup N+5.P+ batch (no impatto runtime)
+- cleanup-N+5.O-Studio: 3 .bak.cp3_n5o + .bak.cp6_n5o + .bak.cp6_2_n5o repo Studio filtered .gitignore (nessun rimedio richiesto)
+- drift-N108 false-finding SSH LF 3307 zombie carry-forward N+5.S+ ssh config cleanup
+
+#### Findings cumulativi carry-forward post-N+5.O
+
+- 17 findings registry Fase 2 polish invariati
+- 12 residual UX findings v3.1.0 invariati
+- drift-doc cluster Fase 3 N30-N120 cumulativi invariati (12 NEW catalizzati N+5.O)
+- Lesson #20-#34 cumulative MANDATORY invariate
+- **4 Lesson #35-#38 candidate NEW** (cementazione formale strong demandata N+5.P+ se ricorrono)
+- Sub-AMB carry-forward invariati
+
+#### Riferimenti par.22.103
+
+- par.22.102 closing N+5.N (design draft 9 step consolidato + 11 sub-AMB elaborate + Lesson #17-bis NEW cementata strong)
+- par.22.101-ter closing parte-2-b1 (Lesson #32 record 7 + #34 candidate refactor unified)
+- par.22.101 closing parte-2-b2 (Lesson #32 record 8 + #33 + #34 strong)
+- par.22.94 design draft Tailscale ACL 03-tailscale-acl.hujson (origine schemata + tag assignment design + drift-N115 sintassi grants emersa in apply)
+- par.22.55-Fase2 split safety-first ventitreesima applicazione cumulativa Fase 3 (NOT applicato N+5.O monolitico, scope blindato N+5.N pre-elaborato)
+- par.22.58-Fase2 patcher Python content-based SENTINEL idempotent (applicato CP3.1 + CP6.1 + questa CP6.2)
+- par.22.75/22.76/22.77-Fase2 patcher Changelog APPEND idempotente (questa par.22.103 pattern)
+- par.6.71/85-Fase2 history immutability (12 drift NEW + Lesson #35-#38 candidate cementati immutabili post-push)
+- par.6.118-Fase2 pre-code scenario validation MANDATORY (rispettata 12 drift NEW catched-in-turn N+5.O, nessun rollback distruttivo richiesto)
+- par.6.119+ .gitignore *.bak* pattern globale (eredita filter .bak.cp3_n5o + .bak.cp6_n5o + .bak.cp6_2_n5o)
+- Lesson #11 cross-session protezione MANDATORY
+- Lesson #17 + #17-bis NEW MANDATORY heredoc PYEOF Python f-string variabile intermedia (applicata CP0.5 openapi version verify)
+- Lesson #20-#34 cumulative MANDATORY invariate
+
+#### Sessione successiva post-N+5.O
+
+**N+5.P candidate (B) PWA UI F3-S5-beta Login dialog/token entry** + integrazione ApiRepository hybrid X-User-Token header injection fetch wrapper PWA-side. Token attesi ~50-80K. Wall-clock ~2-3h. Pre-frozen par.11.U-S3 emit sotto.
+
+**One-liner apertura nuova sessione N+5.P:** Esegui il prompt al par.11.U-S3 del Changelog Fase 3.
+
+
+---
+
+
+### par.11.U-S3 -- Prompt apertura N+5.P esecutiva PWA UI Login dialog F3-S5-beta + ApiRepository integration hybrid X-User-Token + smoke iPhone end-to-end
+
+<!-- par.11.U-S3 R1 emit Fase 3 post-N+5.O closing par.22.103 SENTINEL_N5P_PROMPT_PAR_11_U_S3 -->
+
+**One-liner apertura:** Esegui il prompt al par.11.U-S3 del Changelog Fase 3.
+
+#### VINCOLO ARCHITETTURALE IMMUTABILE (carry-forward integrale)
+
+par.22.95 R2 + par.22.96 + par.22.97 + par.22.98 + par.22.99 + par.22.100 + par.22.101-bis + par.22.101-ter + par.22.101 + par.22.102 + par.22.103 + L1-L4 difesa multi-layer.
+
+#### ECCEZIONE LEGITTIMA MOD codice batch N+5.P (ratificata Roberto-side N+5.O closing)
+
+- **CP2 MOD src/repo/ApiRepository.js X-User-Token header injection** fetch wrapper centralizzato (EMP-17 + drift-N53 closure UNAUTHORIZED handling, sub-AMB N+5.P.C+G)
+- **CP3 NEW src/components/auth/LoginDialog.jsx + .test.jsx** UI Login dialog F3-S5-beta modal portale (sub-AMB N+5.P.A)
+- **CP4 MOD src/App.jsx mount LoginDialog gated token assente** (sub-AMB N+5.P.D)
+- **CP5 MOD src/components/config/ImpostazioniTab.jsx add Logout button Avanzate-DEV** (sub-AMB N+5.P.E, gated import.meta.env.DEV)
+- **CP7 bump backend/pyproject.toml 0.7.1 -> 0.7.2** OR package.json 3.2.0-alpha.2 -> 3.2.0-alpha.3 (decisione apertura) + tag annotato v3.2.0-alpha.10 LOCALE+REMOTO + push atomico (AMB-11.B.7-bis tredicesima applicazione cumulativa Fase 3, milestone F3 fully-completed end-to-end production-ready)
+
+#### VIETATO N+5.P
+
+- Patcher source code MOD OLTRE scope Login + ApiRepository integration + LoginDialog NEW + App.jsx + ImpostazioniTab Logout
+- rc promotion v3.2.0-alpha.10 -> v3.2.0-rc.1 -> DEFERRED N+5.Q candidate (C) (prereq 24-72h stabilita post-Login)
+- Cleanup batch drift residui (drift-N87+N88+N89+N93+N109-N120) -> DEFERRED N+5.R+ batch
+
+#### Scope alto livello N+5.P
+
+Esecutiva 7 step CP1-CP7 implementazione UI Login dialog F3-S5-beta PWA-side + integrazione ApiRepository hybrid X-User-Token header injection + smoke iPhone PWA HTTPS /api/farmaci con token authentication = **milestone F3 fully-completed end-to-end production-ready**. Token attesi ~50-80K. Wall-clock ~2-3h. Pattern par.22.55-Fase2 split safety-first ventiquattresima applicazione cumulativa Fase 3 applicabile se densita >50K reale CP1 design pre-emit.
+
+Eventuale split tecnico interno se densita >50K reale CP1 design pre-emit:
+- N+5.P-alpha: CP1+CP2 (design ApiRepository + patcher hybrid)
+- N+5.P-beta: CP3+CP4+CP5 (LoginDialog NEW + mount + Logout)
+- N+5.P-gamma: CP6 smoke + CP7 bump+tag+push+closing
+
+#### 9 sub-AMB N+5.P.A-I candidate (ratifica blanket "decidi tu" attesa apertura)
+
+| ID | Tema | Default raccomandato |
+|---|---|---|
+| N+5.P.A | LoginDialog UI placement | (i) modal portale React standard pattern Config view |
+| N+5.P.B | Token storage PWA-side | (i) localStorage chiave pt_user_token con clear su logout |
+| N+5.P.C | ApiRepository hybrid X-User-Token injection | (i) fetch wrapper centralizzato _request header set automatic se token presente |
+| N+5.P.D | LoginDialog trigger | (i) display se token assente all-avvio app via gated mount App.jsx |
+| N+5.P.E | Logout flow | (i) bottone ImpostazioniTab Avanzate-DEV gated import.meta.env.DEV inizialmente |
+| N+5.P.F | Token validation client-side pre-store | (ii) smoke GET /api/farmaci con token PRE-store, se 401 reject + error message inline modal |
+| N+5.P.G | RepositoryError UNAUTHORIZED handling | (i) auto-clear token + re-display LoginDialog (drift-N53 closure formale) |
+| N+5.P.H | Bump version | (i) backend pyproject.toml 0.7.1->0.7.2 + tag v3.2.0-alpha.10 (frontend package.json invariato) |
+| N+5.P.I | Spec v1.11 emit timing | (B) cumulativo CP7 closing (milestone F3 fully-completed) |
+
+#### Pre-letture obbligatorie N+5.P
+
+1. par.22.103 integrale (closing N+5.O Tailscale HTTPS apply + 12 drift cumulativi + 4 Lesson candidate + cementazione architetturale stack HTTPS)
+2. par.22.91-Fase3 + par.22.92-Fase3 (closing F3-S5-alpha-pre + post EMP-16..21 cementazione ApiRepository hybrid + drift-N53 RepositoryError UNAUTHORIZED handling pre-elaborato)
+3. par.22.96 + par.22.101-ter + par.22.101 + par.22.102 (architettura Mini headless + LaunchAgent + Lesson #17-bis cumulativa)
+4. Lesson #11 cross-session + Lesson #17-bis NEW + Lesson #20-#38 cumulative MANDATORY
+
+#### CP0 baseline ridotto N+5.P mandatory
+
+- HEAD branch fase-3-backend post-N+5.O closing (commit cumulativo CP3+CP6.1+CP6.2 + tag v3.2.0-alpha.9 anchor)
+- pytest backend 80/80 + vitest frontend 575/575 invariati
+- Tailscale tailnet 3 device verde (Studio+Mini+iPhone post-CP4 N+5.O)
+- HTTPS smoke /api/health Studio + iPhone Safari verde (smoke N+5.O cementato)
+- tailscale status 2-3 device visibili con tag pharmatimer-server/client
+
+#### Modalita raccomandata N+5.P
+
+Esecutiva mista CP1 design pre-emit ApiRepository hybrid X-User-Token + CP2 patcher fetch wrapper + CP3 NEW LoginDialog + CP4 mount App.jsx + CP5 Logout button + CP6 smoke iPhone PWA con token verde + CP7 closing. Pattern par.22.94 N+5.L abortito + par.22.95 R2 Lesson #30 strict applicata: dialogato turn-by-turn su qualsiasi sub-AMB N+5.P.A-I emergente non default-raccomandato in apertura.
+
+#### Esito atteso N+5.P
+
+- LoginDialog F3-S5-beta operativo PWA-side (UI modal portale React Test Library tested)
+- ApiRepository X-User-Token injection hybrid fetch wrapper centralizzato
+- Smoke iPhone PWA HTTPS /api/farmaci con token verde (lista farmaci utente scoped)
+- **Milestone F3 fully-completed end-to-end production-ready** (full Tailscale HTTPS + Login + multi-tenant scoped data)
+- Bump 0.7.1 -> 0.7.2 + tag v3.2.0-alpha.10 LOCALE+REMOTO + push atomico
+- Spec v1.11 KB-only emit sez. 9 Login flow + sez. 12 deployment Tailscale HTTPS + Lesson #35-#38 cementazione
+
+#### Limitazione scope N+5.P
+
+- NOT rc promotion v3.2.0-alpha.10 -> v3.2.0-rc.1 (DEFERRED N+5.Q candidate C, prereq 24-72h stabilita post-Login)
+- NOT cleanup batch drift residui (DEFERRED N+5.R+ batch)
+- NOT iPad smoke (N+5.O fossile offline 90d, reattivazione fuori scope)
+
+#### Sessione successiva post-N+5.P
+
+**N+5.Q candidate (C) rc promotion v3.2.0-alpha.10 -> v3.2.0-rc.1** prereq 24-72h stabilita post-Login + cleanup batch demandato N+5.R+.
