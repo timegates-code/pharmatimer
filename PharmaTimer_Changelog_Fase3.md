@@ -6559,3 +6559,313 @@ Apertura **analisi-first sola doc-only** (Q2=a + pattern par.22.55-Fase2 ventune
 - Pre-frozen `par.11.T-S3` N+5.O esecutiva
 - Eventuale Lesson #35 candidate emergente
 - par.22.102 closing emit + 1 commit doc-only Changelog Fase 3 + push atomic
+
+
+---
+
+
+### 22.102 (Fase 3, closing N+5.N analisi-first sola doc-only F3-S6 maturation scope decision candidate A Tailscale HTTPS ratificata + design draft 9 step stack architetturale + 11 sub-AMB N+5.O.A÷K candidate + CP plan 8 step + 2 drift NEW N107 + N108 + Lesson #17-bis NEW cementazione formale strong + ventunesima applicazione cumulativa par.22.55-Fase2 split safety-first preventivo)
+
+<!-- par.22.102 R1 emit Fase 3 SENTINEL_N5N_CP_DOCONLY_APPLIED_PAR_22_102 -->
+
+**Data:** 27 maggio 2026 (sera, post-par.22.101 stesso giorno).
+
+**Modalita:** Sessione N+5.N analisi-first sola doc-only, pattern par.22.55-Fase2 **ventunesima applicazione cumulativa Fase 3** (post-parte-2-b2 ventesima par.22.101). Token spesi ~15-20K. Wall-clock ~60 min. Zero source change, zero commit codice, zero bump, zero tag, zero push runtime. **1 commit doc-only** Changelog Fase 3 (questa sezione par.22.102 + par.11.T-S3 pre-frozen).
+
+#### CP0 baseline empirico verde 8/8
+
+- CP0.1 HEAD `d4e47b2c7b4c6c228b134cf880651ebe3f151a33` branch `fase-3-backend` tag `v3.2.0-alpha.8` = `851f3fc + 1` atteso (commit doc-only par.22.101 CP7 parte-2-b2)
+- CP0.2 ahead origin = 0 (push doc-only par.22.101 gia fatto)
+- CP0.3 working tree clean post-CP7 (no `.bak.cp7` residui)
+- CP0.4 Mini runtime alive `{"status":"ok","db":"reachable","version":"0.1.0"}` (drift-N89 carry-forward noto, NON drift NEW)
+- CP0.5 retry openapi info.version = `0.7.0` (drift-N45 chiuso post-CP6 bump invariato; CP0.5 originale fallito mio bug emit drift-N107)
+- CP0.6 LaunchAgent api-wrapper `state=running pid=48948`
+- CP0.7 Tailscale NOT installed Mini-side `zsh:1: command not found: tailscale` (atteso, install daemon = primo CP1 N+5.O)
+- CP0.8 pytest 80/80 verde (3.86s) + vitest 575/575 su 69 file verde
+
+#### Ratifica blanket "decidi tu" Q1-Q4 N+5.N
+
+| Q | Tema | Decisione ratificata | Razionale |
+|---|---|---|---|
+| Q1 | Scope decision A/B/C/D | **(A) Tailscale daemon + ACL apply + auto-TLS HTTPS Mini API + smoke iPhone PWA HTTPS** | Sblocca B (HTTPS strict service worker iPhone) e C (smoke end-to-end prereq rc); design draft `03-tailscale-acl.hujson` carry-forward par.22.99 riusabile |
+| Q2 | Modalita N+5.N | **(a) analisi-first sola doc-only** | Pattern par.22.55-Fase2 ventunesima cumulativa, zero drift retroattivi in 20 applicazioni precedenti |
+| Q3 | Carry-forward lesson | **#32 record 8 + #33 + #34 strong invariate; #17-bis NEW cementata** | Cementate par.22.101 invariate; #17-bis NEW emerge empirica drift-N107 |
+| Q4 | Spec v1.9 KB-only merge stato | **Gia applicato pre-N+5.N** | Confermato Roberto-side post-CP7 parte-2-b2 par.22.101 |
+
+#### Design draft consolidato candidate (A) Tailscale HTTPS — 9 step stack architetturale N+5.O
+
+| # | Step | Esecutore | Asset/comando |
+|---|---|---|---|
+| 1 | Install tailscaled Mini | Roberto SSH Mini | `brew install tailscale` o Tailscale.app macOS pkg (sub-AMB N+5.O.A) |
+| 2 | Install tailscaled Studio | Roberto Mac Studio | come sopra (sub-AMB N+5.O.A) |
+| 3 | Install Tailscale app iPhone | Roberto iOS App Store | manual install + login account Roberto |
+| 4 | `tailscale up` Mini con tag server | Roberto SSH Mini | `sudo tailscale up --advertise-tags=tag:pharmatimer-server --hostname=pharmatimer-mini` |
+| 5 | `tailscale up` Studio con tag client | Roberto Mac Studio | `sudo tailscale up --advertise-tags=tag:pharmatimer-client --hostname=pharmatimer-studio` |
+| 6 | `tailscale up` iPhone con tag client | Roberto iOS | Tailscale app -> sign-in -> enable (tag client auto via ACL admin approval) |
+| 7 | ACL upload admin console | Roberto browser | upload `03-tailscale-acl.hujson` su `https://login.tailscale.com/admin/acls` + Save |
+| 8 | `tailscale serve` Mini auto-TLS HTTPS proxy -> :8000 | Roberto SSH Mini | `tailscale serve --bg --https=443 http://localhost:8000` + persist post-reboot |
+| 9 | CORS MOD `backend/pharmatimer_api/app.py` add FQDN MagicDNS Mini | patcher Python repo Studio | 1 line MOD anchor (resolve `<mini-fqdn>` post step 4) |
+
+#### 11 sub-AMB N+5.O.A÷K candidate (definizione effettiva apertura N+5.O, ratifica blanket attesa)
+
+| ID | Tema | Default raccomandato | Razionale 1-riga |
+|---|---|---|---|
+| N+5.O.A | tailscaled install method Mini+Studio | (i) `brew install tailscale` | Headless friendly, idempotente, simmetrico Mini+Studio |
+| N+5.O.B | Account Tailscale Roberto | (i) esistente se gia attivo | Verifica CP0-ext N+5.O empirica |
+| N+5.O.C | Tag auto-approval | (ii) manual admin approval primo `tailscale up` | Coerente ACL `tagOwners: autogroup:admin` sicurezza first-deploy |
+| N+5.O.D | `tailscale serve` persistence | (i) `--bg` flag + verifica auto-restart | Built-in persistente Tailscale, no plist custom necessario |
+| N+5.O.E | iPhone smoke checklist | (i) curl Studio + browser fetch + Login F3-S5-beta deferred | Login = blocking per fetch X-User-Token autenticato, vedi N+5.O.J |
+| N+5.O.F | CORS MOD scope | (ii) hardcoded post-tailscale-up `<mini-fqdn>` | 1 line MOD `app.py` Tailnet FQDN stabile post-first-up |
+| N+5.O.G | `<TAILNET>` resolution | (i) `tailscale status` empirico CP0-ext N+5.O | Pattern par.22.94 sub-decisione 1.6 replicato |
+| N+5.O.H | Rollback strategy HTTPS smoke red | (i) `tailscale serve --https=443 off` revert + retry | Built-in Tailscale revert, no impatto API HTTP LAN |
+| N+5.O.I | Spec v1.10 emit timing | (B) cumulativo CP7 N+5.O closing F3-S6 fully-completed milestone | Pattern par.22.93/22.101 emit cumulativo |
+| N+5.O.J | Login dialog F3-S5-beta prereq smoke iPhone | (ii) DEFERRED a N+5.P candidate (B) | Smoke iPhone HTTPS-only su `/api/health` no token, fetch autenticato richiede B |
+| N+5.O.K | Lesson #35 candidate emergente | TBD only-if emerge | Es: `tailscale serve` quirk macOS-specific, ACL tag-propagation latency |
+
+#### CP plan N+5.O esecutiva (anteprima 8 step)
+
+| CP | Scope | Note |
+|---|---|---|
+| CP0 | Baseline empirico post-N+5.N: HEAD `d4e47b2 + 1` (commit doc-only par.22.102), tag `v3.2.0-alpha.8`, 80+575 verde, push 0 ahead | Verifica stato post-N+5.N |
+| CP0-ext | Audit empirico Mini+Studio+account Tailscale: `tailscale status` + `tailscale version` + account Roberto attivo + Mini hostname resolvable + porta 443 free Mini + ACL admin access verificato | Risolve N+5.O.A÷C + sub-decisione G empirica |
+| CP1 | Install tailscaled Mini+Studio + `tailscale up` con tag + ACL upload admin console + verifica `tailscale status` cross-device | Step 1-7 stack architetturale Roberto SSH bash |
+| CP2 | `tailscale serve` Mini auto-TLS HTTPS -> :8000 + verifica curl HTTPS Studio -> Mini | Step 8 stack smoke baseline |
+| CP3 | Patcher Python `cp_n5o_cors_patcher.py` emit 1 MOD `app.py` add FQDN MagicDNS Mini + pytest update | Step 9 stack MOD source minimal |
+| CP4 | Smoke 2 scenari: curl HTTPS Studio + browser fetch HTTPS iPhone PWA prod su `/api/health` (no token autenticato) | Verifica HTTPS end-to-end senza Login |
+| CP5 | Mini-side runtime sync: rsync deploy + restart api-wrapper LaunchAgent (CORS pickup nuova FQDN) | Pickup runtime modifiche |
+| CP6 | Cleanup-N+5.O + bump `backend/pyproject.toml` 0.7.0 -> 0.7.1 + tag `v3.2.0-alpha.9` LOCALE+REMOTO + commit atomic + push + Spec v1.10 KB-only emit | AMB-11.B.7-bis dodicesima applicazione cumulativa |
+| CP7 | Closing par.22.103 + par.11.U-S3 N+5.P pre-frozen (candidate B PWA UI Login) | Milestone F3-S6 fully-completed HTTPS smoke baseline verde |
+
+Token attesi N+5.O esecutiva ~50-80K (sotto soglia patcher 50K monolitico applicabile). Eventuale split tecnico interno CP1-CP3 / CP4-CP7 se densita >50K reale emerge CP1 design pre-emit.
+
+#### Drift NEW N+5.N
+
+- **drift-N107 (Claude bug emit CP0.5)**: `SyntaxError: f-string expression part cannot include a backslash` in `print(f"openapi info.version = {d[\"info\"][\"version\"]}")`. Python 3.12+ vieta backslash escape dentro espressioni f-string. Risolto retry con variabile intermedia `v = d["info"]["version"]` poi `f'... {v} ...'`. Catalizza Lesson #17-bis NEW cementata strong.
+- **drift-N108 false-finding (SSH LocalForward 3307 Studio cosmetic)**: warning ricorrente `bind [127.0.0.1]:3307: Address already in use` da `~/.ssh/config` Studio-side `LocalForward 3307 -> 3306 Mini` quando sessione SSH parallela tiene tunnel aperto. Warning solo cosmetic, remote exec passa comunque. Ratificato false-finding Roberto-side: config attesa, no cleanup action.
+
+#### Lesson #17-bis NEW cementazione formale strong
+
+**Lesson #17-bis: dentro espressioni f-string Python 3.12+ vietato uso di backslash escape sequences.** Pattern emerge drift-N107 N+5.N. Estensione **strong** di Lesson #17 (heredoc PYEOF Python multi-line via single-quote ssh):
+
+- Vietato: `f"{d[\"info\"][\"version\"]}"` -> SyntaxError 3.12+
+- Pattern corretto: variabile intermedia `v = d["info"]["version"]; print(f"... {v} ...")`
+
+MANDATORY applicato a tutti i prompt emit Claude futuri contenenti Python f-string heredoc PYEOF dentro ssh single-quote. Self-check pre-emit: ogni `f"..."` con `\` interno triggera rewrite con variabile intermedia.
+
+#### Stato git post-N+5.N
+
+- branch `fase-3-backend` HEAD = `d4e47b2 + 1` (commit doc-only par.22.102 emit + par.11.T-S3 pre-frozen) post-push
+- 0 ahead `origin/fase-3-backend` post-push atomic
+- Tag `v3.2.0-alpha.8` LOCALE+REMOTO invariato (no bump N+5.N doc-only)
+- `backend/pyproject.toml` `0.7.0` invariato
+- `package.json` `3.2.0-alpha.2` invariato
+- pytest 80/80 + vitest 575/575 invariati
+- Working tree clean post-cleanup `.bak.cp_n5n_docony`
+
+#### Findings cumulativi carry-forward post-N+5.N
+
+- 17 findings registry Fase 2 polish invariati
+- 12 residual UX findings v3.1.0 invariati
+- drift-doc cluster Fase 3 N30-N106 cumulativi invariati (cementati par.22.79-quater/82/83/87/91/92/93/96/97/98/99/100/101-bis/101-ter/101)
+- **2 drift-doc NEW N+5.N: N107 (Claude bug emit f-string Python) + N108 (false-finding SSH LocalForward 3307 cosmetic)**
+- Lesson #20-#34 cumulative MANDATORY invariate
+- **Lesson #17-bis NEW cementata strong** (estensione Lesson #17)
+- Sub-AMB carry-forward invariati
+- TODO codice deferred F3-S3-gamma+ invariato
+
+#### Cleanup status
+
+- cleanup-N1/N3/N3-bis invariati carry-forward
+- cleanup-N+5.N: 1 file `.bak.cp_n5n_docony` + 1 file `cp_n5n_docony_patcher.py` in repo root rimossi post-commit (pattern par.22.93/96/99/100/101)
+
+#### Riferimenti par.22.102
+
+- par.22.101 closing parte-2-b2 (origine carry-forward integrale + Lesson #32 record 8 + #33 + #34)
+- par.22.99 design draft `03-tailscale-acl.hujson` consegnato (carry-forward riusabile N+5.O)
+- par.22.94 sub-decisione 1.6 `<TAILNET>` resolution (pattern replicato N+5.O.G)
+- par.22.55-Fase2 split safety-first preventivo ventunesima applicazione cumulativa Fase 3
+- Lesson #17 originale heredoc PYEOF Python (estensione #17-bis NEW)
+- par.6.118-Fase2 pre-code scenario validation (applicato emit drift-N107 retry)
+
+#### Sessione successiva post-N+5.N
+
+**N+5.O esecutiva monolitica Tailscale HTTPS apply candidate (A)** scope architetturalmente blindato N+5.N + design draft 9 step stack + 11 sub-AMB ratifica attesa apertura blanket "decidi tu". Token attesi ~50-80K. Wall-clock ~2-3h. Pre-frozen `par.11.T-S3` emit sotto.
+
+**One-liner apertura nuova sessione N+5.O:**
+
+```
+Esegui il prompt al par.11.T-S3 del Changelog Fase 3.
+```
+
+
+---
+
+
+### par.11.T-S3 -- Prompt apertura N+5.O esecutiva monolitica Tailscale HTTPS apply Mini+Studio+iPhone + ACL admin console + serve auto-TLS + CORS MOD + smoke baseline + bump 0.7.1 + tag v3.2.0-alpha.9 + Lesson #17-bis applicata
+
+<!-- par.11.T-S3 R1 emit Fase 3 post-N+5.N closing par.22.102 SENTINEL_N5O_PROMPT_PAR_11_T_S3 -->
+
+**One-liner apertura:** `Esegui il prompt al par.11.T-S3 del Changelog Fase 3.`
+
+#### VINCOLO ARCHITETTURALE IMMUTABILE (carry-forward integrale par.22.95 R2 + par.22.96 + par.22.97 + par.22.98 + par.22.99 + par.22.100 + par.22.101-bis + par.22.101-ter + par.22.101 + par.22.102 + L1-L4 difesa multi-layer)
+
+Vincoli architetturali invariati par.22.102 sez. VINCOLO ARCHITETTURALE IMMUTABILE (riferimento integrale par.22.101).
+
+**ECCEZIONE LEGITTIMA VIETATO MOD codice batch N+5.O (ratificata Roberto-side N+5.N closing):**
+
+- **CP3 MOD `backend/pharmatimer_api/app.py` 1 line** (CORS add FQDN MagicDNS Mini, drift architetturale-bloccante HTTPS strict cross-origin PWA). Razionale eccezione: scope intero N+5.O Tailscale HTTPS apply e' precisamente sbloccare HTTPS PWA cross-origin; CORS MOD = parte integrante candidate A, non cosmetic-batch demandabile.
+- **CP5 Mini-side runtime sync** (rsync deploy backend repo Studio -> Mini + restart LaunchAgent api-wrapper pickup CORS). Razionale: pickup runtime modifiche CORS, simmetrico parte-2-b2 par.22.101 sync repo.
+- **CP6 bump `backend/pyproject.toml` 0.7.0 -> 0.7.1 + tag annotato `v3.2.0-alpha.9` LOCALE+REMOTO + push atomico** (AMB-11.B.7-bis dodicesima applicazione cumulativa Fase 3, milestone F3-S6 fully-completed post-HTTPS smoke baseline verde).
+
+**VIETATO N+5.O (carry-forward par.22.101 + par.22.102):**
+
+- Patcher source code MOD codice OLTRE 1 line CP3 CORS (drift-N87/N88/N89/N93/N104/N106 cleanup -> DEFERRED N+5.P+ batch)
+- Bump version pyproject/package OLTRE 0.7.0 -> 0.7.1 (un solo bump CP6 atomic)
+- Tag annotato OLTRE `v3.2.0-alpha.9` (un solo tag CP6 atomic)
+- PWA UI Login dialog F3-S5-beta -> DEFERRED N+5.P candidate (B) (sub-AMB N+5.O.J)
+- rc promotion v3.2.0-alpha.9 -> v3.2.0-rc.1 -> DEFERRED N+5.Q candidate (C) (prereq 24-72h stabilita post-HTTPS smoke + Login dialog)
+
+#### Scope alto livello N+5.O
+
+Esecutiva monolitica 9 step stack architetturale Tailscale HTTPS apply Mini+Studio+iPhone + ACL upload admin console + `tailscale serve` auto-TLS HTTPS proxy Mini -> :8000 + CORS MOD backend FQDN MagicDNS + smoke HTTPS baseline (no Login dialog, prereq N+5.P candidate B). Pattern par.22.55-Fase2 split safety-first **ventiduesima applicazione cumulativa Fase 3** (post-N+5.N ventunesima). Token attesi ~50-80K (sotto soglia patcher 50K monolitico applicabile). Wall-clock ~2-3h.
+
+Eventuale split tecnico interno se densita >50K reale CP1 design pre-emit:
+- N+5.O-alpha: CP1 (install tailscaled + tailscale up + ACL upload) + CP2 (`tailscale serve`)
+- N+5.O-beta: CP3 (CORS MOD) + CP4 (smoke HTTPS) + CP5 (Mini-side runtime sync) + CP6 (bump+tag+push)
+- N+5.O-gamma: CP7 closing par.22.103 + par.11.U-S3 pre-frozen N+5.P candidate B
+
+#### 11 sub-AMB N+5.O.A÷K candidate (ratifica blanket "decidi tu" attesa apertura)
+
+| ID | Tema | Default raccomandato |
+|---|---|---|
+| N+5.O.A | tailscaled install method Mini+Studio | (i) `brew install tailscale` |
+| N+5.O.B | Account Tailscale Roberto | (i) esistente se gia attivo |
+| N+5.O.C | Tag auto-approval | (ii) manual admin approval primo `tailscale up` |
+| N+5.O.D | `tailscale serve` persistence | (i) `--bg` flag + verifica auto-restart |
+| N+5.O.E | iPhone smoke checklist | (i) curl Studio + browser fetch + Login F3-S5-beta deferred |
+| N+5.O.F | CORS MOD scope | (ii) hardcoded post-tailscale-up `<mini-fqdn>` |
+| N+5.O.G | `<TAILNET>` resolution | (i) `tailscale status` empirico CP0-ext N+5.O |
+| N+5.O.H | Rollback strategy HTTPS smoke red | (i) `tailscale serve --https=443 off` revert + retry |
+| N+5.O.I | Spec v1.10 emit timing | (B) cumulativo CP7 N+5.O closing F3-S6 fully-completed milestone |
+| N+5.O.J | Login dialog F3-S5-beta prereq smoke iPhone | (ii) DEFERRED a N+5.P candidate (B) |
+| N+5.O.K | Lesson #35 candidate emergente | TBD only-if emerge |
+
+#### Pre-letture obbligatorie N+5.O
+
+1. **par.22.102 integrale** (closing N+5.N + design draft consolidato + 11 sub-AMB + Lesson #17-bis NEW cementata strong)
+2. **par.22.101 integrale** (closing parte-2-b2 cumulativo + 5 drift NEW N102-N106 + Lesson #32 record 8 + #33 + #34 strong)
+3. **par.22.101-ter integrale** (closing parte-2-b1 CP4 verde + CP5 deferred + 4 drift NEW + 2 false-finding)
+4. **par.22.101-bis integrale** (closing parte-2-a CP3 deploy Mini + 9 drift NEW)
+5. **par.22.94 integrale** (design draft Tailscale ACL `03-tailscale-acl.hujson` consegnato + Q-N5L.D/F decisioni)
+6. **`03-tailscale-acl.hujson` integrale** (asset KB project file carry-forward riusabile)
+7. **Lesson #17-bis NEW MANDATORY** (no backslash dentro f-string Python 3.12+) + Lesson #20-#34 cumulative
+
+#### CP0 baseline ridotto N+5.O mandatory
+
+```
+cd ~/Sviluppo/pharmatimer
+
+echo 'CP0.1 HEAD branch tag post-N+5.N'
+git rev-parse HEAD
+git rev-parse --abbrev-ref HEAD
+git describe --tags --abbrev=0
+echo 'atteso: branch fase-3-backend tag v3.2.0-alpha.8 + HEAD = d4e47b2 + 1 (post commit doc-only par.22.102)'
+
+echo 'CP0.2 ahead origin'
+git rev-list --count origin/fase-3-backend..HEAD
+echo 'atteso: 0 ahead post-push atomic N+5.N'
+
+echo 'CP0.3 working tree clean'
+git status --short
+echo 'atteso: working tree clean (no .bak residui)'
+
+echo 'CP0.4 Mini runtime alive'
+ssh mini 'curl -s -m 3 http://localhost:8000/api/health'
+echo 'atteso: status ok db reachable'
+
+echo 'CP0.5 openapi version Mini-side (Lesson #17-bis applicata variabile intermedia)'
+ssh mini 'curl -s -m 3 http://localhost:8000/openapi.json > /tmp/openapi.json && python3 << PYEOF
+import json
+with open("/tmp/openapi.json") as f:
+    d = json.load(f)
+v = d["info"]["version"]
+print(f"openapi info.version = {v}")
+PYEOF
+rm -f /tmp/openapi.json'
+echo 'atteso: openapi info.version = 0.7.0'
+
+echo 'CP0.6 pytest backend + vitest frontend verde post-N+5.N'
+source backend/venv/bin/activate
+cd backend && pytest --tb=no -q 2>&1 | tail -3
+cd ..
+deactivate
+npx vitest run 2>&1 | grep -E 'Test Files|Tests' | head -3
+echo 'atteso: 80 passed + 575 passed'
+
+echo 'CP0 N+5.O completato'
+```
+
+#### CP0-ext audit empirico Tailscale prereq (mandatory pre-CP1)
+
+```
+echo 'CP0-ext.1 tailscale daemon status Mini'
+ssh mini 'tailscale version 2>&1 || echo NOT_INSTALLED'
+
+echo 'CP0-ext.2 tailscale daemon status Studio'
+tailscale version 2>&1 || echo NOT_INSTALLED
+
+echo 'CP0-ext.3 account Tailscale Roberto pre-up'
+tailscale status 2>&1 | head -5 || echo NOT_UP
+
+echo 'CP0-ext.4 porta 443 Mini libera (tailscale serve target)'
+ssh mini 'lsof -i :443 2>&1 | head -3 || echo PORT_443_FREE'
+
+echo 'CP0-ext.5 Tailscale admin console access verificato'
+echo 'atteso: Roberto-side verifica accesso https://login.tailscale.com/admin/acls'
+
+echo 'CP0-ext completato'
+```
+
+#### Modalita raccomandata N+5.O
+
+Esecutiva monolitica. Pattern par.22.55-Fase2 split safety-first NON applicato a priori (scope architetturalmente blindato N+5.N + design draft 9 step pre-validato). Se CP1 design pre-emit emerge densita >50K reale -> split tecnico interno N+5.O-alpha/beta/gamma.
+
+Pattern par.22.94 N+5.L abortito + par.22.95 R2 Lesson #30 strict applicata: dialogato turn-by-turn su qualsiasi sub-AMB N+5.O.A÷K emergente non default-raccomandato in apertura.
+
+#### Esito atteso N+5.O
+
+- tailscaled installato Mini+Studio + Tailscale app iPhone
+- `tailscale up` con tag server+client cross-device + ACL apply admin console upload + tag approval admin
+- `tailscale serve` Mini auto-TLS HTTPS :443 -> :8000 attivo persistente
+- CORS MOD `app.py` 1 line FQDN MagicDNS Mini hardcoded pickup runtime
+- Smoke HTTPS baseline verde Studio + iPhone PWA prod su `/api/health` (no token, Login deferred N+5.P)
+- Commit cumulativo CP6 atomic + bump 0.7.1 + tag `v3.2.0-alpha.9` LOCALE+REMOTO + push atomico verde
+- Spec v1.10 KB-only emit (sez. 12 deployment + Tailscale HTTPS + Lesson #17-bis cementazione)
+- F3-S6 milestone fully-completed HTTPS smoke baseline verde (full completion end-to-end con Login dialog = N+5.P candidate B)
+
+#### Limitazione scope N+5.O
+
+**F3-S6 milestone fully-completed** baseline HTTPS smoke OK post-N+5.O:
+- OK Tailscale HTTPS Mini API attivo cross-device
+- OK Smoke iPhone PWA HTTPS `/api/health` no token
+- NOT smoke iPhone PWA HTTPS `/api/farmaci` con X-User-Token (richiede Login dialog F3-S5-beta = N+5.P candidate B)
+- NOT rc promotion v3.2.0-alpha.9 -> v3.2.0-rc.1 (richiede stabilita 24-72h + B = N+5.Q candidate C)
+- NOT cleanup batch drift-N87+N88+N89+N93 (N+5.R candidate D)
+
+Milestone "F3 fully-completed end-to-end production-ready" demandata N+5.Q+ post-rc promotion.
+
+#### Sessione successiva post-N+5.O
+
+**N+5.P pre-frozen scope TBD** a CP7 N+5.O closing. Candidate principale:
+- **N+5.P candidate (B) PWA UI F3-S5-beta Login dialog/token entry** + integrazione ApiRepository hybrid X-User-Token header injection fetch wrapper PWA-side
+- N+5.Q candidate (C) rc promotion v3.2.0-alpha.9 -> v3.2.0-rc.1 (prereq B)
+- N+5.R candidate (D) cleanup batch code residue (N87+N88+N89+N93)
+
+**One-liner apertura nuova sessione N+5.O:**
+
+```
+Esegui il prompt al par.11.T-S3 del Changelog Fase 3.
+```
+
+
+---
