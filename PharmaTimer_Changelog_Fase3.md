@@ -6259,3 +6259,303 @@ Esegui il prompt al par.11.S-S3 del Changelog Fase 3.
 
 
 ---
+
+
+---
+
+
+### 22.101 (Fase 3, closing N+5.M-pivot-exec-beta-2-attempt-2-parte-2-b2 esecutiva monolitica chiusura CP5.0 refactor backup.sh repo unificato + CP5.1 rsync canonical Studio->Mini + CP5 retry smoke verde 7/7 + CP6 atomic commit/tag/push v3.2.0-alpha.8 + 5 drift NEW N102-N106 + Lesson #32 record 8 case-study cumulativa cementazione formale strong + Lesson #33 + #34 cementazione formale NEW + 20 applicazione cumulativa par.22.55-Fase2 split safety-first preventivo + F3-S6 deploy gamma Mac Mini infrastructure feature-complete cumulativo)
+
+<!-- par.22.101 R1 emit Fase 3 SENTINEL_N5M_PIVOT_EXEC_BETA2_ATTEMPT2_PARTE2B2_CP7_PAR_22_101 -->
+
+**Data:** 27 maggio 2026 (mattina-pomeriggio, post-par.22.101-ter stesso ciclo deploy beta-2 split parte-2-b1/parte-2-b2 finale).
+
+**Modalita:** Sessione N+5.M-pivot-exec-beta-2-attempt-2-parte-2-b2 esecutiva monolitica chiusura CP5.0+CP5.1+CP5+CP6.A-E atomic+CP7. Pattern par.22.55-Fase2 split safety-first **ventesima applicazione cumulativa Fase 3** (post parte-2-b1). Token spesi ~85-95K. Wall-clock ~3h. Roberto blanket "decidi tu" su 2 Q apertura Q-CP5.0.1+Q-CP5.0.2 = (a)+(a) canonical clean app-user least-privilege.
+
+**Esito:** OK milestone tecnico **F3-S6 deploy gamma Mac Mini infrastructure feature-complete cumulativo**:
+
+- CP5.0 refactor canonical `deploy/launchd/backup.sh` repo unificato (drift-N101 unified rimedio): rimosso `--single-transaction` + inserito `--no-tablespaces` + `--set-gtid-purged=OFF` + NO `--skip-lock-tables` (Q-CP5.0.1=a confutato empirico). MOD parallelo `deploy/01-setup-pharmatimer-db.sh` cnf template sections split [client]+[mysql] (drift-N95 cementato repo). Patcher Python `cp_n5m_beta2_attempt2_p2b2_cp50_refactor_patcher.py` content-based SENTINEL idempotente verde 4/4 sandbox + Studio Run 1 APPLIED + Run 2 SKIP bit-perfect.
+- CP5.1 rsync Studio->Mini bit-perfect SHA verde 7/7 (cementa refactor canonical Mini-side, sovrascrive runtime patches C.3+C.5 parte-2-b1).
+- CP5 retry smoke backup iterazione 4 verde 7/7 post-refactor: file `.sql.gz` 2.2K + gzip -t OK + 8 CREATE TABLE statements (utenti + farmaci + orari_base + log_assunzioni + permessi + profilo_utente + impostazioni_app + push_subscriptions) + INSERT count >=1 (seed Roberto + correlato) + footer `Dump completed on ...` + LaunchAgent last exit code 0 + backup.err.log clean post-refactor (errori storici drift-N95/N100 parte-2-b1 carry-forward read-only audit).
+- CP6 atomic (A acquisizione 9/9 + B patcher 5 MOD source 8/8 + C commit/tag locale 14/14 + D cement Mini 5/6 + E push origin 7/7):
+  - 5 MOD source: `deploy/launchd/com.pharmatimer.api-wrapper.plist` EnvVars 1->3 keys (drift-N88 cementato repo) + `backend/pyproject.toml` bump 0.7.0b1->0.7.0 + `package.json` bump 3.2.0-alpha.1->3.2.0-alpha.2 + `src/components/config/ImpostazioniTab.jsx` display string sync + `.gitignore` APPEND __pycache__/+*.pyc (drift-N79 rimedio)
+  - Commit cumulativo CP6 atomic HEAD `851f3fc` 13 file changed 353+/4- (5 M + 8 deploy/ NEW)
+  - Tag annotato `v3.2.0-alpha.8` LOCALE+REMOTO su HEAD CP6
+  - Cement Mini-side: rsync backend/ + pip install -e backend/ refresh runtime 0.7.0 + launchctl bootout+bootstrap api-wrapper + smoke /api/health OK + /openapi.json info.version 0.7.0 (drift-N45 chiuso end-to-end LAN-side post-bump empirico) + smoke /api/farmaci 200 con token rotate-3 + 422 senza token (drift-N93 carry-forward N+5.N+)
+  - Rsync deploy/ Studio->Mini asset repo mirror bit-perfect SHA 8/8 (drift-N105 NEW catched-in-turn)
+  - Push atomic origin `6b34590..851f3fc` + tag push verde + 9 tag remoti cumulativi `v3.2.0-alpha.1..8` simmetrici (AMB-11.B.7-bis dodicesima applicazione cumulativa Fase 3)
+- Sicurezza: rotate-1 DB password `pharmatimer_app` Mini-side post-leak chat CP5.1.6 (drift-N102) via script `rotate_db_pass_pharmatimer_v2.sh` atomic Mini-side self-contained (gen+ALTER+UPDATE cnf+restart wrapper+smoke), drift-N103 PATH export script remoto catched-in-turn Lesson #12 repeat empirico v1->v2 fix
+- pytest backend 80/80 + vitest frontend 575/575 verde invariati post-bump
+
+#### CP0 baseline ridotto parte-2-b2 verde 10/10
+
+- CP0.1 HEAD `6b34590` (par.22.101-ter committed) + branch fase-3-backend + tag v3.2.0-alpha.7a invariato
+- CP0.2 0 ahead origin (par.22.101-ter pushed)
+- CP0.3 working tree state preservato: M app.py + 5 patcher untracked + ?? deploy/ collapsed
+- CP0.4 SHA app.py `d11ab1b6...` bit-perfect
+- CP0.5 Keychain token rotate-3 length=43
+- CP0.6 SSH alias mini smoke + curl Mini health OK + version "0.1.0" (drift-N89 carry-forward)
+- CP0.7 backup.sh Mini-side runtime parte-2-b1 patches C.3+C.5 preserved
+- CP0.8 backup.sh repo Studio-side INVARIATO baseline par.22.96
+- CP0.9 01-setup-pharmatimer-db.sh repo cnf section UNICA [client]+database (drift-N95 root cause repo)
+- CP0.10 pytest 80/80 + vitest 575/575 verde
+
+#### Drift NEW catalizzati parte-2-b2 (5 totali, tutti catched-in-turn)
+
+| ID | Categoria | Severita | Catched | Rimedio |
+|---|---|---|---|---|
+| drift-N102-NEW | Sicurezza credentials leak | Alto (password DB plain in chat conversazione persistente analoga rotate-1 token parte-2-b1 + Lesson #29 ANTHROPIC_API_KEY leak parte-2-a) | CP5.1.6 mio `cat ~/.my-pharmatimer.cnf` raw espone riga `password=xHnwHr3...` plain | Rotate-1 password atomic Mini-side via script `rotate_db_pass_pharmatimer_v2.sh` self-contained (gen openssl 32char + ALTER USER + UPDATE cnf python re.subn + launchctl restart pool drop + smoke health + cleanup .tmp). Nuova password SHA-short `914d58e0629a4a9a` Mini-side cnf 600. Backup cnf preserved `.bak.rotate1`. Vecchia password INVALIDATA server-side |
+| drift-N103-NEW | Lesson #12 repeat empirico script remoto | Medio (script rotate v1 fail `mysql: command not found` SSH non-interactive non-login no PATH /opt/homebrew/bin) | Step 2 ALTER USER post-Step 1 gen password (parziale stato: nuova password generata in .tmp ma ALTER non eseguito, cnf+DB invariati) | Script v2 emit con `export PATH="/opt/homebrew/bin:$PATH"` post-shebang + Step 0 `command -v mysql/openssl/python3/launchctl/curl` pre-check fail-fast. Lesson #12 cementata strong: doc-only != applicata empirico, ogni script remoto deve esportare PATH brew explicit |
+| drift-N104-NEW | Lesson #17 repeat empirico f-string backslash | Cosmetic (mio CP6.D.7 `python3 -c "...f\"...d[\\\"info\\\"]..\""` Python 3.13 strict reject backslash dentro f-string expression) | CP6.D.7 SyntaxError catched-in-turn | Fix CP6.D.E.1 via heredoc Python multi-line `PYEOF` con var intermedia `v = d["info"]["version"]` Lesson #17 strict applicata empirico. Lesson cementata strong: doc-only != applicata empirico, mai f-string + backslash inline Python 3.12+ |
+| drift-N105-NEW | Architetturale asset repo mirror Mini disallineato | Medio (asset `~/PharmaTimer/deploy/launchd/com.pharmatimer.api-wrapper.plist` Mini-side ancora `3d19f185...` baseline pre-MOD, solo install path `~/Library/LaunchAgents/...` cementato `f027eb58...` post-CP6.C.1) | CP6.D.10 dual SHA verify catched-in-turn | Fix CP6.D.E.3 via `rsync -av deploy/ mini:PharmaTimer/deploy/` sincronizza intero asset directory Mini-side bit-perfect Studio. Verifica E.4+E.5 dual SHA: install path NON sovrascritto (path separato), asset mirror bit-perfect Studio 8/8 file |
+| drift-N106-NEW | Cosmetic smoke URL Studio vs LAN | Cosmetic (mio CP6.D.E.2 curl `http://localhost:8000/api/farmaci` da Studio = nessun servizio in ascolto Studio, HTTP_CODE 000 connection failed; API e su Mini IP LAN 192.168.1.167:8000 carry-forward CP4 parte-2-b1) | CP6.D.E.2 HTTP_CODE 000 catched-in-turn | Fix CP6.D.E.7 via URL `http://192.168.1.167:8000/api/farmaci` smoke verde 200 + token rotate-3 + body []. Bonus 422 senza token (drift-N93 carry-forward identico parte-2-b1 CP4.S1) |
+
+#### Lesson #32 record 8 case-study cumulativa cementazione formale strong (parte-2-b1+parte-2-b2 continuum)
+
+Pattern self-skepticism in-turn catched-in-turn applicato sistematico, 8 case-study cumulative:
+
+| # | Trigger | Pattern catched | Rimedio |
+|---|---|---|---|
+| #11 (parte-2-b1) | `2>/dev/null` su critical-path UPDATE rotate-2 workflow integrato | Stderr soppressione critical state-change | Step B re-emit rotate-3 robusto +set -e + ROWS COUNT |
+| #12 (parte-2-b1) | SSH non-interactive non-login no PATH `/opt/homebrew/bin` -> `mysql command not found` Step A.2 | PATH export mandatory in heredoc REMOTE | Step B rotate-3 robusto applicato |
+| #13 (parte-2-b1) | drift-N95 cnf section [client] vs [mysql] separazione mandatory mysqldump strict parsing | Sections separate canonical MySQL docs | C.2 fix runtime Mini-side cnf split |
+| #14 (parte-2-b1) | drift-N98 PROCESS privilege mysqldump --no-tablespaces flag mandatory app-user | Flag al posizione canonica MySQL docs | C.3 patch sandbox verification Run 2 SKIP |
+| #15 (parte-2-b1) | drift-N97 + drift-N99 false-finding mia assunzione vs realta empirica dump | Lesson #27 strict mandatory dump pre-emit patcher | C.3.1 dump empirico backup.sh source ratifica chiusura |
+| #16 (parte-2-b1) | drift-N100 `--skip-lock-tables` NON disabilita FLUSH TABLES (disabilita solo LOCK TABLES READ MyISAM-legacy) | Lesson #23 empirico mysqldump --help PRE-patch mandatory | C.5 patch ineffective ratifica empirica iterazione 3 |
+| #17 (parte-2-b1) | drift-N101 unificazione root cause N98+N100+--single-transaction = backup.sh assumption root-user vs app-user GRANT minimi | Refactor architetturale unificato repo-side, non runtime-patching iterativo | Split safety-first ratifica + parte-2-b2 CP5.0 dedicato |
+| #18 (parte-2-b2) | `cat cnf` su Mini-side espone password DB plain in chat conversazione (drift-N102) | NEVER cat secret-file su critical-path workflow, USE grep -v password OR shasum verify | rotate-1 password atomic + Lesson cementata: redact-aware dump per qualsiasi cnf/key file remoto Mini-side |
+| #19 (parte-2-b2) | PATH export mandatory in script bash remoto via ssh non-interactive (drift-N103, repeat Lesson #12 doc-only != applicata) | Ogni script remoto deve `export PATH="/opt/homebrew/bin:$PATH"` post-shebang + Step 0 command -v pre-check fail-fast | Script v2 emit con fix applicato empirico |
+| #20 (parte-2-b2) | CP5.7 size threshold `>100KB` pre-empirico baseline DB-state senza basi empiriche (DB Mini empty post-seed Roberto = 2 INSERT, .sql.gz 2.2K legittimo) | Pre-emit size threshold solo da empirico SHOW TABLE STATUS o COUNT rows, mai assumption | False-finding ratifica chiusura: semantic check CREATE+INSERT+footer supera size threshold |
+| #21 (parte-2-b2) | f-string backslash Python 3.13 strict reject inline `python3 -c "...f\"...\""` (drift-N104, repeat Lesson #17 doc-only != applicata) | Heredoc Python `PYEOF` non-quoted con var intermedia mandatory | CP6.D.E.1 fix applicata empirico |
+| #22 (parte-2-b2) | curl URL `http://localhost:8000` da Studio = no service, API e su Mini IP LAN 192.168.1.167:8000 (drift-N106) | Smoke URL Studio-side deve usare IP Mini LAN (carry-forward CP4 parte-2-b1), localhost solo Mini-side via ssh | CP6.D.E.7 fix applicata empirico |
+
+**Cementazione formale strong**: pattern Lesson #32 cumulativa cementata Spec v1.9 sez. 11.6.14 (demandato Roberto-side KB-only merge post-CP7).
+
+*"Al closing di ogni sub-CP esecutivo, Claude DEVE esplicitamente: (1) dump source dello script/wrapper/plist target NEXT step pre-emit (Lesson #27 strict); (2) grep pattern critico (auth/env/idempotency/credentials/PATH); (3) ratificare assunzioni nascoste empirico vs design draft documentazione; (4) NON assumere alignment automatico tra refactor sub-system e tutti i consumer (Lesson #33 NEW); (5) preferire refactor architetturale-unificato quando root cause comune emerge da multi-iterazione fallita (Lesson #34 NEW); (6) PATH export brew explicit in ogni script remoto SSH non-interactive (Lesson #12 strong); (7) heredoc Python `PYEOF` per multi-line con escape (Lesson #17 strong); (8) NEVER cat secret-file in chat workflow (Lesson #29+#32-#18 NEW); (9) smoke URL Studio-side deve usare IP Mini LAN, non localhost (Lesson #32-#22 NEW). Pattern carry-forward Lesson #31 strong-strong."*
+
+#### Lesson #33 cementazione formale NEW: refactor architetturale audit batch consumer pattern
+
+**Trigger empirico**: drift-N87 (seed_owner.py incompatibile defaults-file mode pivot par.22.98 Q-I.1=b) + drift-N88 (api-wrapper.sh + plist EnvironmentVariables manca DB_DEFAULTS_FILE+DB_NAME post-refactor config pydantic-settings parte-2-a CP3.7.2) + drift-N89 (health.py VERSION hardcoded post-bump pyproject) + drift-N93 (auth-layer Header(...) FastAPI Pydantic 422 vs UNAUTHORIZED 401 atteso teorico par.22.91/92).
+
+**Pattern cementato strong**: ogni refactor sub-system architetturale (auth-layer / DB-credentials / pool-strategy / config-loader / version-emit / plist-EnvironmentVariables / cnf-format) richiede audit empirico **TUTTI consumer** non solo design draft documentazione. Audit operativo: dump source ogni file che importa o usa sub-system refactored, grep pattern critico, verifica empirico shape vs design assumption.
+
+**Esempio canonico**: refactor `config.py` `option_files` mode parte-2-a non ha auditato seed_owner.py (consumer 1), api-wrapper.sh (consumer 2), plist EnvironmentVariables (consumer 3), health.py VERSION emit (consumer 4) -> 4 drift catalizzati run-time uno-per-uno invece di un singolo audit pre-emit.
+
+**Cementazione strong**: Spec v1.9 sez. 11.6.15 (demandato Roberto-side KB-only merge post-CP7). Lesson #33 deve essere applicata in ogni futuro refactor architetturale sub-system Fase 3+.
+
+#### Lesson #34 cementazione formale NEW: refactor architetturale-unificato preferred runtime-patching iterativo
+
+**Trigger empirico**: parte-2-b1 cluster drift-N98+N100+--single-transaction privilege = root cause comune (backup.sh assumption root-user prod-grade, incompatibile app-user GRANT minimi from 01-setup-pharmatimer-db.sh schema-level ALL PRIVILEGES no globali RELOAD/PROCESS). 3 iterazioni runtime patching fallite (C.3 patch --no-tablespaces + C.4 retry + C.5 patch --skip-lock-tables ineffective) prima del riconoscimento drift-N101 unified architetturale.
+
+**Pattern cementato strong**: quando multi-iterazione fallita rileva drift simili nello stesso cluster sub-system, **STOP runtime-patching** e analizza root cause architetturale unified. Refactor canonical pre-emerge da analisi cluster (es. `--single-transaction` mandatory RELOAD globale, `--no-tablespaces` mandatory PROCESS globale: entrambi richiedono privilegi globali che app-user least-privilege non puo' avere). Una volta identificato il root cause unified, emit refactor canonico in singolo CP atomico (CP5.0 parte-2-b2) invece di multi-CP patching iterativo.
+
+**Esempio canonico**: parte-2-b1 vs parte-2-b2:
+- Parte-2-b1: 3 iterazioni patch incrementali (C.3 + C.4 + C.5) cercando di mantenere `--single-transaction` workaround. Esito: drift-N100 confutato empirico, no soluzione.
+- Parte-2-b2 CP5.0: refactor unified pre-analizzato (rimuovi `--single-transaction` + `--skip-lock-tables` ineffective + add `--no-tablespaces` canonical + `--set-gtid-purged=OFF` cosmetic). Singolo patch atomico, esito verde 4/4 sandbox + Mac-side bit-perfect + CP5 retry smoke verde 7/7.
+
+**Cementazione strong**: Spec v1.9 sez. 11.6.16 (demandato Roberto-side KB-only merge post-CP7). Lesson #34 deve essere applicata in ogni futuro debug cluster sub-system Fase 3+: max 2 iterazioni patch incrementali, post-iterazione 2 mandatory analisi root cause unified + refactor canonical.
+
+#### Sicurezza: rotate-1 DB password pharmatimer_app post-leak chat (drift-N102)
+
+**Incidente:** CP5.1.6 mio `cat ~/.my-pharmatimer.cnf` raw espone riga `password=xHnwHr3FlWZjMEhIhth6QXGI3LZ3kmL0` plain in chat conversazione (logged Anthropic + cross-device backup ambient persistence). Pattern analogo Lesson #29 candidate parte-2-a (Dockerfile ENV -> `/usr/bin/env` exec leak ANTHROPIC_API_KEY) + rotate-1 token API leak parte-2-b1.
+
+**Rimedio applicato:** script `rotate_db_pass_pharmatimer_v2.sh` self-contained Mini-side delivery file-based (Lesson #29 mandatory) con 7-step atomic:
+1. gen openssl rand 32-char base64-stripped (no expose plain stdout, SHA-short 16-char only)
+2. persist `~/.pharmatimer-new-pass.tmp` 600 (recovery se step intermedio fallisce)
+3. ALTER USER `pharmatimer_app@localhost` + FLUSH PRIVILEGES (interactive root prompt mysql -uroot -p)
+4. backup cnf `.bak.rotate1` + UPDATE in-place atomic via python re.subn (preserve sections split [client]+[mysql])
+5. verify login DB con cnf aggiornato SELECT smoke
+6. launchctl bootout+bootstrap api-wrapper plist (drop pool mysql-connector-python con vecchia password) + smoke /api/health post-restart
+7. cleanup .tmp file solo post-smoke verde
+
+**Verifica end-to-end:** smoke /api/farmaci LAN 192.168.1.167:8000 con token rotate-3 Keychain -> 200 + body [] post-rotate (auth-layer + DB pool refresh end-to-end verde).
+
+**Token API rotate-3 (parte-2-b1) + DB password rotate-1 (parte-2-b2) cumulativi**: PharmaTimer F3-S6 deploy gamma Mac Mini full credentials hygiene post-deploy.
+
+#### Riepilogo (regola critica #4)
+
+**Implementato cumulativo parte-2-b2:**
+- CP5.0 refactor canonical backup.sh + 01-setup-pharmatimer-db.sh (4 sandbox + 4 Mac-side verde)
+- CP5.1 rsync canonical Studio->Mini bit-perfect (7/7 verde)
+- CP5 retry smoke backup iterazione 4 verde (7/7 verde, drift-N101 unified cementato runtime)
+- CP6.A acquisizione 9/9 + CP6.B patcher 5 MOD source 8/8 + CP6.C commit/tag locale 14/14 + CP6.D cement Mini 5/6 + CP6.D.E fix 3 drift 6/6 + CP6.E push origin 7/7
+- Rotate-1 DB password Mini-side post-leak (drift-N102 rimedio applicato)
+- CP7 closing par.22.101 emit (questa sezione) + par.11.S-S3 pre-frozen N+5.N analisi-first
+
+**NON implementato parte-2-b2 (deferred N+5.N+):**
+- Tailscale daemon + ACL apply + serve auto-TLS HTTPS Mini API (carry-forward par.22.99)
+- F3-S5-beta UI login/token entry PWA-side (deferred N+5.I-post par.22.91)
+- v3.2.0-rc.1 promotion (24-72h stabilita deploy verde threshold)
+- Cleanup batch code residue: N87 seed_owner.py + N88 sync wrapper api-wrapper.sh + N89 health.py VERSION + N93 auth-layer Header 401 + N104+N106 lesson-applied gates
+
+**Deviazioni s.6.NN emesse parte-2-b2:** Zero `s.6.NN` sorgenti. Una semantica reformulata Q-CP5.0.1 (rimozione `--skip-lock-tables` -> non aggiunta, repo era baseline) documentata in apertura sessione (drift-doc N+ no retro-correzione par.6.71/85). Una incongruenza userMemories GRANT minimi vs schema ALL ratificata `memory_user_edits` CP7 closing.
+
+**Drift NEW catalizzati parte-2-b2 (5 totali):** N102 (password leak) + N103 (PATH export script remoto) + N104 (f-string backslash) + N105 (asset mirror Mini disallineato) + N106 (curl URL localhost vs LAN). Tutti catched-in-turn, tutti rimediati in-session. Documentati Lesson #32 case-study #18-#22 cumulativa record 8 cementazione formale strong.
+
+#### Stato git post-push origin
+
+- HEAD `851f3fc` propagato `origin/fase-3-backend` (push CP6.E verde 6b34590..851f3fc, 22 objects, 7.49 KiB)
+- Tag annotato `v3.2.0-alpha.8` LOCALE+REMOTO su HEAD CP6 (push CP6.E.3 verde, [new tag] propagato)
+- 9 tag remoti cumulativi `v3.2.0-alpha.1..7 + 7a + 8 NEW` (AMB-11.B.7-bis dodicesima applicazione cumulativa Fase 3)
+- 0 ahead origin post-push (CP6.E.4 fetch + rev-list verified)
+- Working tree post-commit clean (pre-CP7 commit doc-only par.22.101 self-append questo)
+- 8 file deploy/ committati + 5 M file (.gitignore + app.py + pyproject.toml + package.json + ImpostazioniTab.jsx)
+
+#### Spec v1.9 delta merge demandato Roberto-side KB-only
+
+- sez. 3: update 8 tabelle schema DB (drift-N86 cementato: utenti + farmaci + orari_base + log_assunzioni + permessi + profilo_utente + impostazioni_app + push_subscriptions, vs Spec datata 5 tabelle ipotizzate)
+- sez. 12: deployment nativo Mac Mini infrastructure (LaunchAgent api-wrapper + LaunchAgent backup + cnf credentials + Keychain token + rotate pattern)
+- sez. 11.6.13: Lesson #30 N+5.M-pivot infrastructure
+- sez. 11.6.14: Lesson #32 strong cementazione record 8 case-study cumulativa
+- sez. 11.6.15: Lesson #33 NEW refactor architetturale audit batch consumer
+- sez. 11.6.16: Lesson #34 NEW refactor architetturale-unificato preferred runtime-patching iterativo
+
+#### Sub-AMB residue carry-forward N+5.N+
+
+- **LF tecnica 3307 zombie**: deferred non-bloccante (carry-forward parte-2-b1, non blocca rsync/scp/SSH normale operations)
+- **drift-N89 health.py VERSION hardcoded "0.1.0"**: cosmetic carry-forward, openapi.json e' authoritative source via app.version FastAPI parte-1 MOD. Cleanup demandato N+5.N+ code cleanup batch
+- **drift-N93 auth-layer Header(...) FastAPI Pydantic 422 vs UNAUTHORIZED 401 atteso teorico**: cosmetic UX carry-forward (vocab UNAUTHORIZED 401 atteso teorico cementato par.22.91/92 non applicato a token-mancante FastAPI Header required). Cleanup demandato N+5.N+ refactor Header(None) + manual raise UNAUTHORIZED if None
+- **drift-N87 seed_owner.py defaults-file incompatibile**: MOD codice batch demandato N+5.N+ cleanup
+- **drift-N88 sync wrapper api-wrapper.sh + plist EnvVars**: gia in CP6 ratificato repo asset, MOD script wrapper opzionale demandato N+5.N+
+- **errori storici backup.err.log 400 byte (drift-N95 + drift-N100 parte-2-b1 iterazioni 2+3)**: carry-forward read-only audit, cleanup opportunistico `> ~/PharmaTimer/logs/backup.err.log` truncate Mini-side N+5.N+ batch
+
+#### Sessione successiva post-parte-2-b2
+
+**N+5.N analisi-first sola doc-only** scope decision quale next step F3-S6 deploy gamma maturation. Token attesi ~25-35K. Wall-clock ~60-90 min. Pre-frozen `par.11.S-S3` emit sotto.
+
+**One-liner apertura nuova sessione N+5.N:**
+
+```
+Esegui il prompt al par.11.S-S3 del Changelog Fase 3.
+```
+
+
+---
+
+
+### par.11.S-S3 -- Prompt apertura N+5.N analisi-first sola doc-only scope decision F3-S6 maturation candidate (Tailscale HTTPS / PWA UI / rc promotion / code cleanup batch) + ventunesima applicazione cumulativa par.22.55-Fase2
+
+<!-- par.11.S-S3 R1 emit Fase 3 post-N+5.M-pivot-exec-beta-2-attempt-2-parte-2-b2 closing par.22.101 SENTINEL_N5N_PROMPT_PAR_11_S_S3 -->
+
+**One-liner apertura:** `Esegui il prompt al par.11.S-S3 del Changelog Fase 3.`
+
+#### VINCOLO ARCHITETTURALE IMMUTABILE (carry-forward integrale par.22.95 R2 + par.22.96 + par.22.97 + par.22.98 + par.22.99 + par.22.100 + par.22.101-bis + par.22.101-ter + par.22.101 + L1-L4 difesa multi-layer)
+
+Vincoli architetturali invariati par.22.101 sez. VINCOLO ARCHITETTURALE IMMUTABILE (riferimento integrale par.22.101-bis/ter).
+
+**VIETATO N+5.N analisi-first sola (carry-forward par.22.101 + estensioni):**
+
+- Patcher source code MOD codice -> DEFERRED N+5.N (analisi-first pura)
+- Bump version pyproject/package -> DEFERRED N+5.N (no codice modificato)
+- Tag annotato `v3.2.0-alpha.N` -> DEFERRED N+5.N
+- Push origin -> DEFERRED N+5.N (eventuale 1 commit doc-only post-CP5)
+- Backend MOD source (drift-N87+N88+N89+N93+N104+N106 cleanup) -> DEFERRED N+5.N+ batch
+- Mini-side runtime modifiche (rsync/launchctl/cnf) -> DEFERRED N+5.N+
+
+#### Scope alto livello N+5.N
+
+Sessione analisi-first dedicata scope decision quale next step F3-S6 deploy gamma maturation. Pattern par.22.55-Fase2 **ventunesima applicazione cumulativa Fase 3** (post-parte-2-b2 ventesima). Token attesi ~25-35K. Wall-clock ~60-90 min. Zero source change, zero commit codice, zero bump, zero tag, zero push runtime. **1 commit doc-only** Changelog Fase 3 (par.22.102 closing + par.11.T-S3 pre-frozen).
+
+#### 4 candidate N+5.N (default raccomandato A->B->C->D sequenziale)
+
+- **(A) Tailscale daemon + ACL apply + serve auto-TLS HTTPS Mini API + smoke iPhone PWA HTTPS end-to-end** [default raccomandato N+5.N successiva]
+  - Razionale: sblocca PWA UI HTTPS auth-feasible iPhone (prereq B). Service worker PWA richiede HTTPS strict cross-origin.
+  - Token attesi ~50-80K esecutiva. Wall-clock ~2-3h.
+  - Carry-forward par.22.99 design draft Tailscale ACL `03-tailscale-acl.hujson` gia consegnato.
+- **(B) PWA UI F3-S5-beta login/token entry**
+  - Razionale: feature-complete UI auth-flow (X-User-Token header injection in fetch wrapper PWA-side + dialog setup token + persist Dexie + integrazione ApiRepository hybrid).
+  - Deferred N+5.I-post par.22.91, deferred CP7 parte-2-b2 (carry-forward).
+  - Prereq (A) per HTTPS strict iPhone smoke end-to-end.
+- **(C) rc promotion v3.2.0-alpha.8 -> v3.2.0-rc.1**
+  - Razionale: 24-72h stabilita deploy verde threshold + smoke completi end-to-end PWA iPhone HTTPS (prereq A+B).
+  - Tag annotato `v3.2.0-rc.1` LOCALE+REMOTO + push atomic.
+- **(D) Cleanup batch code residue post-deploy gamma**
+  - Razionale: N87 seed_owner.py defaults-file refactor + N88 sync wrapper api-wrapper.sh + N89 health.py VERSION import dynamic + N93 auth-layer Header(None) + manual raise UNAUTHORIZED + drift-N104+N106 lesson-applied gates documentazione.
+  - Pattern coerente Lesson #33 cementata strong: refactor architetturale audit batch consumer multi-file.
+
+**Default raccomandato sequenziale**: A -> B -> C -> D. A sblocca B (HTTPS auth iPhone). B prereq C (smoke end-to-end PWA). D opzionale ultimo (cleanup post-feature-complete).
+
+#### Pre-letture obbligatorie N+5.N
+
+1. **par.22.101 integrale** (closing parte-2-b2 cumulativo + 5 drift NEW + Lesson #32 record 8 + Lesson #33 + Lesson #34 cementazione strong)
+2. **par.22.101-ter integrale** (closing parte-2-b1 CP4 verde + CP5 deferred + 4 drift NEW + 2 false-finding + Lesson #32 record 7)
+3. **par.22.101-bis integrale** (closing parte-2-a CP3 deploy Mini + 9 drift NEW + Lesson #32 8 case-study)
+4. **par.22.100 integrale** (closing parte-1 CP0-CP2 verde + Lesson #31 strong 4/5)
+5. **Lesson #20-#34 cumulative MANDATORY** + Lesson #31 strong + Lesson #32 record 8 case-study cumulativa + Lesson #33 + Lesson #34 strong (cementate par.22.101)
+
+#### CP0 baseline ridotto N+5.N mandatory
+
+```
+cd ~/Sviluppo/pharmatimer
+
+echo 'CP0.1 HEAD branch tag post parte-2-b2'
+git rev-parse HEAD
+git rev-parse --abbrev-ref HEAD
+git describe --tags --abbrev=0
+echo 'atteso: branch fase-3-backend tag v3.2.0-alpha.8 + HEAD 851f3fc oppure +1 (post commit doc-only par.22.101 CP7)'
+
+echo 'CP0.2 ahead origin'
+git rev-list --count origin/fase-3-backend..HEAD
+echo 'atteso: 0 ahead se push doc-only par.22.101 gia fatto oppure 1 ahead se non pushed'
+
+echo 'CP0.3 working tree clean post-CP7'
+git status --short
+echo 'atteso: working tree clean (no .bak.cp7 residui post-cleanup)'
+
+echo 'CP0.4 Mini runtime alive smoke'
+ssh mini 'curl -s -m 3 http://localhost:8000/api/health'
+echo 'atteso: status ok db reachable'
+
+echo 'CP0.5 openapi version Mini-side (drift-N45 chiuso post-CP6 bump)'
+ssh mini 'curl -s -m 3 http://localhost:8000/openapi.json > /tmp/openapi.json && python3 << PYEOF
+import json
+with open("/tmp/openapi.json") as f:
+    d = json.load(f)
+print(f"openapi info.version = {d[\"info\"][\"version\"]}")
+PYEOF
+rm -f /tmp/openapi.json'
+echo 'atteso: openapi info.version = 0.7.0'
+
+echo 'CP0.6 LaunchAgent api-wrapper alive'
+ssh mini 'launchctl print "gui/$(id -u)/com.pharmatimer.api-wrapper" 2>&1 | grep -E "state|pid|last exit"'
+echo 'atteso: state = running + pid > 0'
+
+echo 'CP0.7 Tailscale daemon status Mini (prereq candidate A)'
+ssh mini 'tailscale status 2>&1 | head -10 || echo "WARN tailscale not installed Mini-side, install needed candidate A"'
+
+echo 'CP0.8 pytest backend + vitest frontend verde post-CP7'
+source backend/venv/bin/activate
+cd backend && pytest --tb=no -q 2>&1 | tail -3
+cd ..
+deactivate
+npx vitest run 2>&1 | grep -E 'Test Files|Tests' | head -3
+echo 'atteso: 80 passed + 575 passed'
+
+echo 'CP0 N+5.N completato'
+```
+
+#### Sub-AMB N+5.N candidate (ratifica blanket "decidi tu" attesa)
+
+- **N+5.N.Q1** scope decision: (A/B/C/D) di cui sopra default sequenziale A->B->C->D
+- **N+5.N.Q2** modalita: (a) analisi-first sola doc-only [pattern par.22.55 ventunesima cumulativa] / (b) misto analisi-first + esecutiva diretta scope ridotto (es. D solo cleanup gates documentazione)
+- **N+5.N.Q3** carry-forward Lesson #32 record 8 -> #33 strong + #34 strong + eventuale Lesson #35 candidate emergente in-session
+- **N+5.N.Q4** Spec v1.9 delta merge Roberto-side KB-only (sez. 3+12+11.6.13-16) gia applicato pre-N+5.N? (default raccomandato applica post-CP7 doc-only commit, pre-aprire N+5.N)
+
+#### Out-of-scope N+5.N (esplicito)
+
+- Implementazione candidate (A/B/C/D) -> deferred sessione esecutiva successiva (N+5.O+) pattern par.22.55-Fase2 split safety-first
+- Patcher source code MOD -> deferred N+5.O+
+- Bump version pyproject/package + tag -> deferred N+5.O+
+- Mini-side runtime modifiche (rsync/launchctl/cnf) -> deferred N+5.O+
+
+#### Modalita raccomandata N+5.N
+
+Apertura **analisi-first sola doc-only** (Q2=a + pattern par.22.55-Fase2 ventunesima applicazione cumulativa Fase 3). Output sessione: ratifica N+5.N.Q1-Q4 + design draft consolidato candidate (A) Tailscale dettaglio + pre-frozen `par.11.T-S3` N+5.O esecutiva candidate (A).
+
+#### Esito atteso N+5.N
+
+- Ratifica N+5.N.Q1-Q4 sub-AMB scope decision
+- Design draft consolidato candidate scelto (default (A) Tailscale: install daemon + ACL apply + serve auto-TLS HTTPS Mini API + iPhone smoke PWA)
+- Pre-frozen `par.11.T-S3` N+5.O esecutiva
+- Eventuale Lesson #35 candidate emergente
+- par.22.102 closing emit + 1 commit doc-only Changelog Fase 3 + push atomic
