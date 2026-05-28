@@ -454,6 +454,20 @@ function SezioneAvanzate() {
         <dt>Notifiche pendenti</dt>
         <dd>{pendingCount}</dd>
       </dl>
+      {/* SENTINEL_N5P_CP5_LOGOUT -- manual DEV-only logout (N+5.P CP5) */}
+      <button
+        type="button"
+        onClick={() => {
+          // Clear the hybrid API user token (apiClient TOKEN_STORAGE_KEY)
+          // and reload so LoginGate re-displays. DEV-only manual logout.
+          localStorage.removeItem('pharmatimer.userToken');
+          window.location.reload();
+        }}
+        className="mt-3 px-3 py-1.5 rounded border text-sm"
+        style={{ background: t.modalBg, color: t.textPrimary, borderColor: t.headerBorder }}
+      >
+        Esci (DEV)
+      </button>
     </fieldset>
   );
 }

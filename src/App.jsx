@@ -8,6 +8,7 @@ import ErrorSurface from "./components/shared/ErrorSurface.jsx";
 import ErrorAnnouncer from "./components/shared/ErrorAnnouncer.jsx";
 import Toast from "./components/shared/Toast.jsx";
 import OnboardingModal from "./components/onboarding/OnboardingModal.jsx";
+import LoginDialog from "./components/auth/LoginDialog.jsx";
 import { useTheme } from "./hooks/useTheme.js";
 import { useApp } from "./state/AppContext.jsx";
 import { selectImpostazione, selectFarmaciAttivi } from "./state/selectors.js";
@@ -48,6 +49,7 @@ export default function App() {
       <ErrorSurface />
       <Toast />
       <OnboardingGate />
+      <LoginGate />
       <Routes>
         <Route path="/" element={<Navigate to="/oggi" replace />} />
         <Route path="/oggi" element={<OggiView />} />
@@ -88,4 +90,23 @@ function OnboardingGate() {
       onComplete={handleComplete}
     />
   );
+}
+
+// CP4 N+5.P-bis (par.11.U-S3): SENTINEL_N5P_CP4_LOGINGATE -- do not remove.
+// Gates the app behind LoginDialog when running against the API backend
+// (pharmatimer.useApiRepo === "1") and no user token is present yet
+// (drift-N5P.6 double gate). On successful login LoginDialog persists the
+// token; we reload (D3') so AppContext init re-fetches with the X-User-Token.
+function LoginGate() {
+  const { tokens: t } = useTheme();
+  let useApiRepo = false;
+  let hasToken = false;
+  try {
+    useApiRepo = localStorage.getItem("pharmatimer.useApiRepo") === "1";
+    hasToken = !!localStorage.getItem("pharmatimer.userToken");
+  } catch {
+    return null;
+  }
+  if (!useApiRepo || hasToken) return null;
+  return <LoginDialog theme={t} onSuccess={() => window.location.reload()} />;
 }

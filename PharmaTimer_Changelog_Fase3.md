@@ -7068,3 +7068,94 @@ Esecutiva mista CP1 design pre-emit ApiRepository hybrid X-User-Token + CP2 patc
 #### Sessione successiva post-N+5.P
 
 **N+5.Q candidate (C) rc promotion v3.2.0-alpha.10 -> v3.2.0-rc.1** prereq 24-72h stabilita post-Login + cleanup batch demandato N+5.R+.
+
+---
+
+### par.22.104 -- Closing N+5.P-ter INTERIM (pre-cementazione) -- CP6 smoke autoritativo + CP7-partial bump + commit LOCALE 12c2313
+
+<!-- par.22.104 R1 emit Fase 3 closing N+5.P-ter SENTINEL_N5P_CLOSING_PAR_22_104 interim pre-ratifica drift-N44/N5P.12 -- ratifiche N+5.Q in paragrafo nuovo par.22.105 (immutabilita par.6.71/85) -->
+
+**Stato sessione:** N+5.P split bis/ter (pattern par.22.55). Chiusura a milestone reversibile: commit LOCALE, NO tag, NO push, NO rsync. Cementazione cumulativa + tag + push + Spec v1.11 DEFERITI N+5.Q (prereq: dump empirici a sorgente).
+
+#### DONE N+5.P-bis (carry-forward consolidato)
+- CP0 ri-validato: HEAD pre-sessione 3845cf1, tag v3.2.0-alpha.9, branch fase-3-backend 0 ahead. vitest 581. package.json 3.2.0-alpha.2 (frontend invariato fino a fine).
+- CP4 src/App.jsx LoginGate (gate useApiRepo=='1' AND !userToken -> reload, D3').
+- CP5 src/components/config/ImpostazioniTab.jsx bottone "Esci (DEV)" in SezioneAvanzate gated import.meta.env.DEV (SENTINEL_N5P_CP5_LOGOUT, Opzione A). Patcher idempotente sandbox-verificato. Suite 581/581 invariata (reload non testabile jsdom).
+- CP4-bis (N+5.P.G auto-clear UNAUTHORIZED) DEFERITO N+5.Q (prereq dump canale errori non svolto).
+
+#### DONE N+5.P-ter (questa parte)
+- CP6 smoke Studio-side autoritativo VERDE via Tailscale HTTPS marketreader-server.taila127de.ts.net:
+  - Test 1 token valido (Keychain pharmatimer-owner-token) GET /api/farmaci -> 200 + [] (scoping multi-tenant corretto, owner senza farmaci propri).
+  - Test 2 header X-User-Token assente -> 422 (Pydantic required) [vedi drift-N5P.12].
+  - Test 3 token invalido -> 401 + body vocabulary error code UNAUTHORIZED severity error [vedi drift-N44 closure].
+  - iPhone end-to-end via LoginDialog DEFERITO N+5.Q (accoppiato deploy gh-pages N+5.Q-C; frontend nuovo non servito altrove). Test 1-bis token paziente non-vuoto opzionale N+5.Q.
+- CP7-partial:
+  - bump backend/pyproject.toml 0.7.1 -> 0.7.2 via patcher idempotente content-anchored (Run1 APPLIED + Run2 SKIP + fail-loud 0/2-match, 3 negative test verdi). Commento storico N+5.O inline su riga version PRESERVATO (Opzione A: marker idempotenza di quel bump, non asserzione valore corrente; immutabilita par.6.71/85) -> stale-comment da annotare N+5.Q. Seconda riga minversion=9.0 (pytest) NON toccata (univocita confermata empiricamente).
+  - rimozione patcher cp5+cp7 (mai in git). git ls-files -o espansione dir auth. git add selettivo 5 file. commit LOCALE 12c2313 (ahead 1): src/App.jsx + src/components/config/ImpostazioniTab.jsx + src/components/auth/LoginDialog.jsx + src/components/auth/LoginDialog.test.jsx + backend/pyproject.toml. Messaggio s.22.104 PROVVISORIO amendabile pre-push N+5.Q (git commit --amend se rif. sezione diverso).
+
+#### FINDINGS PROVVISORI (NON cementati -- ratificare a sorgente N+5.Q)
+- drift-N5P.12 (NEW): X-User-Token assente -> 422 non 401 (contraddice Spec sez.11.6.11). Ipotesi edge-only irraggiungibile da PWA (token-assente gestito client-side pre-fetch) -- DA CONFERMARE via dump guardia pre-fetch apiClient. Nessun MOD backend (VIETATO oltre Login).
+- drift-N44 closure empirica + Spec sez.11.6.11 stale: body 401 ora vocabulary error{}, non detail plain. DA CONFERMARE via dump dependencies.py get_current_user + handler exceptions.py. Esito possibile: correzione Spec, non codice.
+- stale inline-comment riga version pyproject (suffisso _0_7_1 + tag v3.2.0-alpha.9 accanto a 0.7.2). Opzione A (preservato). Da annotare.
+
+#### LESSON candidate -- reinforcement #27 (metodo, registrabile subito)
+- Lesson #27 esteso al canale RUNTIME: lo smoke empirico (curl reale) rivela discrepanze doc/impl non visibili da analisi statica ne da lettura sorgente (drift-N44/N5P.12 emersi solo eseguendo). Regola: prima di documentare/cementare il contratto runtime di un endpoint, verificarlo con chiamata reale. Promozione/numerazione definitiva a discrezione N+5.Q.
+
+#### Workflow (NUOVO da N+5.P-ter -- ripristino + miglioramento)
+- Ripristinato aggiornamento Changelog via script di append a fine sessione (era saltato in N+5.P-bis/ter, gestito a carry-forward manuale -> drift Changelog fermo a par.11.U-S3).
+- Introdotto STATO_CORRENTE.md (repo root, KB-only, mai in git): puntatore MUTABILE sovrascritto a ogni chiusura (HEAD/tag/versioni/test/findings/VIETATO/one-liner). Sostituisce il carry-forward incollato a mano; a nuova sessione si carica quello.
+- Introdotto cp0_baseline.sh (repo root, KB-only/tooling, mai in git): check CP0 standard in un solo run (git state + versioni + vitest + pytest; DB server_uuid Lesson #18/#21 aggiunto nelle sessioni DB).
+- Rituale fisso fine sessione: ultimi artefatti = append Changelog (questo) + sovrascrittura STATO_CORRENTE.md.
+
+#### DEFERITI N+5.Q (ordine obbligato)
+1. PRIMA -- dump empirici a sorgente (Lesson #27): dependencies.py get_current_user + handler exceptions.py 401 (ratifica drift-N44); guardia pre-fetch apiClient (ratifica drift-N5P.12).
+2. POI -- rsync Studio->Mini (drift-N5P.3) + tag annotato v3.2.0-alpha.10 LOCALE+REMOTO (HEAD 12c2313) + push atomico + closing finale par.22.105 + cementazione cumulativa (11 drift N5P.1-11 + N5P.12 + FF1 + D1/D2/D3' + defer CP4-bis + iPhone e2e + CP5 Opzione A + deviazione s.6.NN token-key pharmatimer.userToken + drift-N44 closure + assenza App.test.jsx + split N+5.P-bis/ter + Lesson) + Spec v1.11.
+3. iPhone end-to-end via LoginDialog + deploy gh-pages (N+5.Q-C); CP4-bis auto-clear UNAUTHORIZED (N+5.P.G); Test 1-bis opzionale.
+
+#### VIETATO invariato N+5.Q
+MOD apiClient/ApiRepository (cementata N+5.I-pre); rc promotion v3.2.0-rc.1 (DEFERRED N+5.Q-C prereq 24-72h stabilita post-Login); cleanup batch drift residui (DEFERRED N+5.R+); patcher Python f-string con graffe (Lesson #17/#20).
+
+**One-liner apertura N+5.Q:** Esegui par.11.U-S3 -- N+5.Q post-12c2313: dump empirici drift-N44/N5P.12 -> ratifica -> rsync + tag + push + closing par.22.105 + cementazione + Spec v1.11.
+
+---
+
+### par.22.105 -- Closing N+5.Q FINALE -- ratifica drift-N44/N5P.12 (Spec-only) + drift-N5P.3 sync pyproject Mini + tag v3.2.0-alpha.10 + push atomico + milestone F3 fully-completed
+
+<!-- par.22.105 R1 emit Fase 3 closing N+5.Q FINALE SENTINEL_N5Q_CLOSING_PAR_22_105 -- ratifica findings provvisori par.22.104 (immutabile, NON corretto retroattivamente par.6.71/85) -->
+
+**Stato sessione:** N+5.Q apertura post-12c2313 (closing INTERIM par.22.104). Ratifica empirica a sorgente (Lesson #27) dei findings provvisori + sync residuo Mini + cementazione milestone + tag + push. CP0 PASS (12c2313, ahead 1, tag alpha.9, vitest 581/581, pytest 80/80 invariati).
+
+#### Ratifica findings provvisori par.22.104 (a sorgente, Lesson #27)
+- **drift-N44 (closure RATIFICATA): codice corretto, Spec stale.** dependencies.py::get_current_user su token invalido solleva RepositoryError(UNAUTHORIZED) (HTTPException rimossa, marker SENTINEL_N5K_CP1_DEPS_IMPORT_CLEANUP_HTTPEXCEPTION). exceptions.py::repository_error_handler registrato app.py:55 produce body error{code,severity,message}, UNAUTHORIZED->401 severity error. Chiusura avvenuta N+5.K par.22.93, non pendente. ESITO: NESSUN MOD codice. Spec sez.11.6.11 riga 836 (auth middleware detail plain + F3-S5-beta fix pendente) + descrizione riga 792 STALE -> allineate al codice in Spec v1.11 (la Spec era indietro rispetto al codice: allineamento doc, NON deviazione).
+- **drift-N5P.12 (RATIFICATO): edge-only non-PWA-reachable.** apiClient.js::_request guardia if not token throw RepositoryError(UNAUTHORIZED) pre-fetch; header X-User-Token settato solo se token presente. Il 422 backend (header del tutto assente) e irraggiungibile da PWA (short-circuit client-side, Spec riga 788). Smoke Test 2 (422) era curl raw bypass guardia. ESITO: NESSUN MOD codice. Documentato edge-only in Spec v1.11. Distinto dal path token-presente-invalido -> 401 reachable (Test 3).
+- **stale inline-comment pyproject (Opzione A confermata):** riga version 0.7.2 con commento storico SENTINEL_N5O...BUMP_0_7_1 ... tag v3.2.0-alpha.9. Preservato (marker idempotenza di quel bump, NON asserzione valore corrente; immutabilita par.6.71/85). Annotato stale-comment noto. Commento in-code apiClient.js (401 detail ... drift-N44) = doc-residuo path fallback Shape 2/3 tuttora valido; NON toccato (MOD apiClient VIETATO + innocuo).
+
+#### drift-N5P.3 (NEW + chiuso in-sessione): pyproject Mini out-of-sync
+Definito empiricamente via manifest SHA Studio<->Mini (backend 41 file py+toml no venv/pycache): unico file divergente backend/pyproject.toml (Studio 0.7.2 sha 7c75d215 vs Mini 0.7.0 sha 62ef74b0). Altri 40 file bit-identici -> auth N+5.K gia sul Mini (coerente smoke 401 error{}). Mini fermo 0.7.0: bump 0.7.1 (N+5.O, modifiche env-driven CORS escluse da rsync) e 0.7.2 (N+5.P-ter) mai propagati alla stringa versione. CHIUSO scope (a): rsync chirurgico solo pyproject.toml via ssh -o ClearAllForwardings=yes, nessun exclude/delete-excluded (drift-N81 evitato by-design), nessun reload (cambia solo stringa versione). SHA Mini post-rsync 7c75d215 bit-perfect Studio. ClearAllForwardings neutralizza zombie LF-3307 (deferred non-bloccante) per-connessione.
+
+#### Decisioni N+5.Q
+- **D-1 (Changelog F3 in git) = INCLUDERE (prassi voluta).** git log -- PharmaTimer_Changelog_Fase3.md -> 15+ commit, alcuni taggati (alpha.9/7/6), messaggi par.22.NNN closing. Tracciato per prassi deliberata. La convenzione Changelog mai tracciato vale per Spec (KB-only) / Changelog Fase2, NON per Changelog Fase3. Finding par.22.104 chiuso.
+- **D-2 (forma commit) = AMEND 12c2313** (pre-autorizzato par.22.104, unpushed). Aggiunge Changelog (questo par.22.105) + rititola ref s.22.104->s.22.105. Tag sul nuovo SHA. Pattern storico un-commit-milestone = bump+closing+tag (cfr 3845cf1).
+- **D-3 (sequencing) = pattern auto-referenziale** (par.22.105 documenta tag+push mentre e nel commit taggato/pushato; cfr par.22.103 in 3845cf1).
+
+#### Deviazione s.6.229 (NEW): token-key localStorage pharmatimer.userToken
+Chiave localStorage PWA-side per X-User-Token = pharmatimer.userToken (apiClient.js const TOKEN_STORAGE_KEY, cementata sub-AMB par.22.86). Ratifica formale come deviazione documentata (namespace dotted pharmatimer.*). Coerente client/server.
+
+#### Carry-forward par.22.104 (immutabile, NON riscritto)
+Dettagli granulari N+5.P-bis/ter (CP0-CP7, drift N5P.1-11, FF1, D1/D2, CP4-bis defer, iPhone e2e defer, CP5 Opzione A, assenza App.test.jsx, split bis/ter) restano cementati in par.22.104 (immutabilita par.6.71/85). par.22.105 NON li ri-enumera (Rule 2 anti-fabbricazione: ID granulari tracciati live in bis/ter con append Changelog saltato, vedi nota workflow par.22.104; non presenti nei file KB).
+
+#### Lesson #27-runtime (promozione da candidate par.22.104)
+Lesson #27 esteso al canale RUNTIME, promosso formale: lo smoke empirico (curl reale) rivela discrepanze doc/impl non visibili da analisi statica ne da sola lettura sorgente. drift-N44/N5P.12 emersi solo eseguendo; le ratifiche N+5.Q (dump sorgente) hanno confermato codice corretto + Spec stale. Regola: prima di cementare il contratto runtime di un endpoint, verificarlo con (1) chiamata reale + (2) dump sorgente del punto che genera la risposta. Numerazione: reinforcement #27 (non nuovo numero).
+
+#### Milestone F3 fully-completed end-to-end production-ready
+Full Tailscale HTTPS + Login (LoginDialog/LoginGate/logout DEV) + multi-tenant scoped data + auth vocabulary uniform. tag annotato v3.2.0-alpha.10 su nuovo SHA (amend 12c2313) LOCALE+REMOTO + push atomico (AMB-11.B.7-bis tredicesima applicazione cumulativa Fase 3). Spec v1.11 KB-only emit.
+
+#### DEFERITI post-N+5.Q
+1. iPhone end-to-end via LoginDialog + deploy gh-pages (N+5.Q-C); CP4-bis auto-clear UNAUTHORIZED (N+5.P.G); Test 1-bis opzionale.
+2. rc promotion v3.2.0-alpha.10 -> v3.2.0-rc.1 (prereq 24-72h stabilita post-Login).
+3. cleanup batch drift residui (N+5.R+).
+
+#### VIETATO invariato
+MOD apiClient/ApiRepository (cementata N+5.I-pre); rc promotion v3.2.0-rc.1; cleanup batch drift residui; patcher Python f-string con graffe (Lesson #17/#20).
+
+**One-liner apertura prossima sessione:** N+5.Q-C deploy gh-pages + iPhone e2e via LoginDialog (prereq frontend servito).
