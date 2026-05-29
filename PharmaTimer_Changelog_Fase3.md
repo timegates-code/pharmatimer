@@ -7159,3 +7159,44 @@ Full Tailscale HTTPS + Login (LoginDialog/LoginGate/logout DEV) + multi-tenant s
 MOD apiClient/ApiRepository (cementata N+5.I-pre); rc promotion v3.2.0-rc.1; cleanup batch drift residui; patcher Python f-string con graffe (Lesson #17/#20).
 
 **One-liner apertura prossima sessione:** N+5.Q-C deploy gh-pages + iPhone e2e via LoginDialog (prereq frontend servito).
+
+### par.22.106 -- Closing N+5.Q-bis (solo-Spec) -- ratifica drift-SPEC-VER + drift-SPEC-KB + ricostruzione catena Spec v1.8 -> v1.9 reale
+
+<!-- par.22.106 R1 emit Fase 3 SENTINEL_N5QBIS_CLOSING_PAR_22_106 -- closing N+5.Q-bis solo-Spec; rettifica intento v1.11 di par.22.105 (immutabile, NON corretto retroattivamente par.6.71/85) -->
+
+**Stato sessione:** N+5.Q-bis solo-Spec, zero codice, zero commit codice, zero tag, zero push runtime. Unico effetto: emissione file Spec **v1.9** reale + refresh KB. HEAD `6e7bc2d` invariato, tag `v3.2.0-alpha.10` invariato, pyproject `0.7.2` invariato, test 581+80 invariati.
+
+#### Rettifica intento par.22.105 (non retroattiva)
+par.22.105 dichiara come milestone-intento la emissione di **Spec v1.11 KB-only**. Tale emissione **non e mai avvenuta come file** e il numero 1.11 era inventato su un buco documentale. par.22.105 resta immutabile (par.6.71/85): la rettifica e qui. Il prossimo file Spec reale **e v1.9** (salto unico da v1.8), NON v1.11.
+
+#### drift-SPEC-VER (RATIFICATO)
+La numerazione Spec citata nel Changelog Fase 3 era avanti rispetto all'ultimo file Spec reale. File piu avanzato realmente esistito su disco = **v1.8** (`~/Downloads/PharmaTimer_Project_Spec_v1.8.md`, sha16 `bb5fed86176d9bad`, 868 righe, ultima sez 11.6.11). Le versioni **1.9 e 1.10** citate (par.22.94 -> par.22.103, es. `commit 3c9c72c` Lesson 30 sez 11.6.13; sez 12 deploy Mini/Tailscale) e la **1.11** (intento par.22.104/22.105) erano **emissioni fantasma**: il Changelog le attestava cementate ma il file Spec non era mai stato rigenerato/consegnato. Causa-radice: sessioni doc-only hanno aggiornato il Changelog con 'Spec vX cementata' SENZA poi rigenerare+consegnare il file. ESITO: ricostruita la catena reale v1.8 -> v1.9 (vedi sotto).
+
+#### drift-SPEC-KB (RATIFICATO + chiuso)
+La Spec caricata in KB era **v1.7**, mentre su disco esisteva gia **v1.8** (consegna file != refresh KB). Chiuso in N+5.Q-bis: dopo l'emissione di v1.9, KB refreshata al file v1.9 reale. Nota sha: STATO_CORRENTE annotava v1.8 come `71a8b92da72233d4`, valore **stale**; sha reale v1.8 = `bb5fed86176d9bad`.
+
+#### Contenuto Spec v1.9 emessa (modalita alpha-lite, file sha16 `921957b3cf1db488`)
+Patcher Python content-anchored su v1.8 (sha-assert input + univocita 1-match per ancora + SENTINEL idempotenza), 11 OP APPLIED verde, sandbox-verificato pre-emit. Consolida in salto unico l'arretrato 1.9+1.10+1.11:
+- **Header + changelog v1.9**: disclaimer esplicito fantasma 1.9/1.10/1.11 (mai emesse come file) + nota re-mapping sezioni (vedi sotto) + nota sha stale.
+- **drift-N44 (closure Spec)**: sez. 11.6.9 apiClient riallineata da 3 a **2 body shape** (rimosso item 3 '401 plain HTTPException'); la sez. 11.6.11 era gia corretta (non toccata). Nota: la 'riga 836' citata par.22.105 era mira imprecisa; l'edit reale era su sez. 11.6.9 (~riga 792).
+- **drift-N5P.12 (edge-only)**: sez. 11.6.9 nota inline: il 422 backend (header X-User-Token del tutto assente) e irraggiungibile da PWA (guardia client-side pre-fetch); edge-only via curl raw.
+- **drift-N86 (schema)**: NUOVA sez. 3.0 (inventario canonico 8 tabelle, fonte-di-verita DDL `v01_init.sql`+`v03`+`v02`: `utenti`, `permessi`, `push_subscriptions`, `profilo_utente`, `farmaci`, `orari_base`, `log_assunzioni`, `impostazioni_app`; nome canonico `orari_base`; `utenti.ruolo` 3-val; `log_assunzioni.stato` 5-val; UNIQUE idx_log_slot_unique) + NUOVA sez. 3.12 `impostazioni_app` (era assente dalla Spec). Le sottosezioni 3.1-3.11 non rivalidate colonna-per-colonna (alpha-lite).
+- **Lesson 11.6.12-11.6.18 NUOVE (stub + rimando)**: #29 (par.22.94), #30 (par.22.95/96), #31 (par.22.98/99), #32 (par.22.100/101), #33 (par.22.101), #34 (par.22.101-ter), #35-#38 candidate + reinforcement #17-bis/#27-runtime (par.22.103/105).
+- **Sez. 13 Deployment NUOVA (stub)**: 13.1 gamma nativo Mini + 13.2 config.py DB_DEFAULTS_FILE (s.6.226) + 13.3 Tailscale HTTPS.
+
+#### Deviazioni N+5.Q-bis
+- **Re-mapping sezione deployment**: il Changelog Fase 3 cita 'Spec sez. 12 / 12.4' per il deployment, ma la sez. 12 'Riferimenti' preesisteva in v1.8. In v1.9 il deployment e collocato in **sez. 13**. Le citazioni 'sez.12' del Changelog Fase 3 restano immutabili (par.6.71/85); il re-map e documentato nel changelog v1.9.
+- **sha-anchor live**: patcher ancorato allo sha v1.8 reale `bb5fed86176d9bad`; lo stale `71a8b92da72233d4` (STATO_CORRENTE) annotato, non usato.
+
+#### Lesson candidate -- consegna-file != refresh-KB / cementazione-senza-rigenerazione (registrabile)
+Due pattern-causa del drift documentale, da prevenire nelle sessioni future: (1) scrivere 'Spec vX cementata' nel Changelog impone di **rigenerare e consegnare** il file Spec nella stessa sessione, altrimenti la versione e fantasma; (2) consegnare un file Spec **non rinfresca** la KB: il refresh KB e un passo esplicito di fine sessione. Promozione/numerazione a discrezione sessione futura.
+
+#### Deferiti post-N+5.Q-bis
+1. **N+5.Q-ter (doc-only)**: corpo esteso sez. 13 (deploy gamma/Tailscale) + corpo esteso Lesson 11.6.12-11.6.18 (oggi stub).
+2. **Sessione DB dedicata**: audit colonnare integrale sez. 3.1-3.11 vs DDL (alpha-lite non rivalidato).
+3. **N+5.Q-C**: iPhone end-to-end via LoginDialog + deploy gh-pages (invariato, prereq frontend servito).
+
+#### Numerazione
+Prossimo file Spec reale dopo v1.9 = **v1.10** (NON v1.12). La catena fantasma e chiusa.
+
+**One-liner apertura prossima sessione:** N+5.Q-C deploy gh-pages + iPhone e2e via LoginDialog; oppure N+5.Q-ter doc-only corpo esteso sez. 13 + Lesson 11.6.12-11.6.18.
