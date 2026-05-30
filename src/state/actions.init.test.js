@@ -206,3 +206,34 @@ describe('actions.init() — presoStack rehydration cross-day (Sessione 8-pre, �
     ).toBe(false);
   });
 });
+
+// SENTINEL_N5QC_CP4BIS_INIT_CODE_TEST -- drift-N53 (M1): il catch di init()
+// deve PROPAGARE err.code (es. UNAUTHORIZED) in INIT_ERROR.payload.code, cosi
+// SessionExpiryGate puo auto-clear un token stale al reload. Rami preesistenti
+// NO_ACTIVE_PROFILE / INIT_FAILED preservati (verificati dai test sopra).
+describe('actions.init() — propagazione err.code nel catch (CP4-bis drift-N53)', () => {
+  it('propaga UNAUTHORIZED in INIT_ERROR.payload.code', async () => {
+    const repo = makeRepo([]);
+    const authErr = new Error('Token non valido');
+    authErr.code = 'UNAUTHORIZED';
+    repo.getProfili = vi.fn().mockRejectedValue(authErr);
+
+    const dispatched = await runInit({ repo });
+
+    const initError = dispatched.find((a) => a.type === 'INIT_ERROR');
+    expect(initError).toBeDefined();
+    expect(initError.payload.code).toBe('UNAUTHORIZED');
+    expect(initError.payload.message).toBe('Token non valido');
+  });
+
+  it('ripiega su INIT_FAILED quando err non ha code', async () => {
+    const repo = makeRepo([]);
+    repo.getProfili = vi.fn().mockRejectedValue(new Error('boom generico'));
+
+    const dispatched = await runInit({ repo });
+
+    const initError = dispatched.find((a) => a.type === 'INIT_ERROR');
+    expect(initError).toBeDefined();
+    expect(initError.payload.code).toBe('INIT_FAILED');
+  });
+});

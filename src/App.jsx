@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import CronologiaView from "./components/cronologia/CronologiaView.jsx";
 import OggiView from "./components/oggi/OggiView.jsx";
@@ -12,6 +13,7 @@ import LoginDialog from "./components/auth/LoginDialog.jsx";
 import { useTheme } from "./hooks/useTheme.js";
 import { useApp } from "./state/AppContext.jsx";
 import { selectImpostazione, selectFarmaciAttivi } from "./state/selectors.js";
+import { shouldUseApiRepo } from "./data/repository/index.js"; // SENTINEL_N5QC_CP1_LOGINGATE_SHARED_GATE
 
 // Shell with bottom nav and route outlets.
 // Oggi, Config, and Cronologia are functional; Export route redirects to Cronologia (s.6.216 N+3, ratifica N+4).
@@ -50,6 +52,7 @@ export default function App() {
       <Toast />
       <OnboardingGate />
       <LoginGate />
+      <SessionExpiryGate />
       <Routes>
         <Route path="/" element={<Navigate to="/oggi" replace />} />
         <Route path="/oggi" element={<OggiView />} />
@@ -102,11 +105,41 @@ function LoginGate() {
   let useApiRepo = false;
   let hasToken = false;
   try {
-    useApiRepo = localStorage.getItem("pharmatimer.useApiRepo") === "1";
+    useApiRepo = shouldUseApiRepo(); // env (build Mini) OR localStorage (dev) -- gate condiviso
     hasToken = !!localStorage.getItem("pharmatimer.userToken");
   } catch {
     return null;
   }
   if (!useApiRepo || hasToken) return null;
   return <LoginDialog theme={t} onSuccess={() => window.location.reload()} />;
+}
+
+// SENTINEL_N5QC_CP4BIS_AUTOCLEAR -- drift-N53: auto-clear di un token stale.
+// Pure helper (testabile senza mockare reload): l'auto-clear scatta SOLO se
+// l'errore corrente e UNAUTHORIZED E un token e presente in localStorage.
+//   - token assente (S-A): no-op -> LoginGate mostra LoginDialog (niente loop).
+//   - token presente invalido (S-B) o 401 mid-sessione (S-C): clear + reload.
+//   - DB_UNAVAILABLE / NO_ACTIVE_PROFILE con token valido: no-op (nessun logout indebito).
+export function shouldAutoClearUnauthorized(errorCode, hasToken) {
+  return errorCode === 'UNAUTHORIZED' && hasToken === true;
+}
+
+function SessionExpiryGate() {
+  const { state } = useApp();
+  useEffect(() => {
+    let hasToken = false;
+    try {
+      hasToken = !!localStorage.getItem("pharmatimer.userToken");
+    } catch {
+      return;
+    }
+    if (!shouldAutoClearUnauthorized(state.error?.code, hasToken)) return;
+    try {
+      localStorage.removeItem("pharmatimer.userToken");
+    } catch {
+      /* localStorage non disponibile: nulla da ripulire */
+    }
+    window.location.reload();
+  }, [state.error]);
+  return null;
 }

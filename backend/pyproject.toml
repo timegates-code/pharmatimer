@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pharmatimer-api"
-version = "0.7.2"  # SENTINEL_N5O_TAILSCALE_HTTPS_APPLY_CP6_PYPROJECT_BUMP_0_7_1 CORS dual-origin tailnet + .env.dev MOD + tailscale serve HTTPS smoke verde + tag v3.2.0-alpha.9
+version = "0.7.3"  # SENTINEL_N5O_TAILSCALE_HTTPS_APPLY_CP6_PYPROJECT_BUMP_0_7_1 CORS dual-origin tailnet + .env.dev MOD + tailscale serve HTTPS smoke verde + tag v3.2.0-alpha.9
 description = "PharmaTimer backend API (FastAPI + MySQL nativo Studio + multi-tenant)"
 readme = "README.md"
 requires-python = ">=3.12"

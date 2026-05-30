@@ -5,10 +5,13 @@ Lifespan: init mysql-connector pool at startup, close at shutdown.
 CORS dev permissive (sub-AMB F3-S1.D); prod restrictive deferred F3-S6.
 RepositoryError exception handler deferred CP3 (vocabulary mapping with router).
 """
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from pharmatimer_api.config import settings
 from pharmatimer_api.db.connection import close_pool, init_pool
@@ -64,3 +67,25 @@ app.include_router(utenti.router)
 # F3-S4-beta N+5.E-beta CP1 -- CRUD permessi caregiver
 from pharmatimer_api.routers import permessi as _permessi_module  # noqa: E402
 app.include_router(_permessi_module.router)
+
+# SENTINEL_N5QC_CP1_STATIC_SERVE -- Q-W.5 Pattern A static-serve PWA prod (Arch-1/A1-fastapi).
+# Registrato DOPO tutti i router /api/*. Guard isdir: auto-disabilitato
+# se la web dir non esiste (Studio dev/test invariati, pytest 80).
+_WEB_DIR = os.path.normpath(
+    os.environ.get("PHARMATIMER_WEB_DIR", "/Users/marketreader/PharmaTimer/web")
+)
+if os.path.isdir(_WEB_DIR):
+    _assets_dir = os.path.join(_WEB_DIR, "assets")
+    if os.path.isdir(_assets_dir):
+        app.mount("/assets", StaticFiles(directory=_assets_dir), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def _serve_spa(full_path: str):
+        candidate = os.path.normpath(os.path.join(_WEB_DIR, full_path))
+        if (
+            full_path
+            and candidate.startswith(_WEB_DIR + os.sep)
+            and os.path.isfile(candidate)
+        ):
+            return FileResponse(candidate)
+        return FileResponse(os.path.join(_WEB_DIR, "index.html"))

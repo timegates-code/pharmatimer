@@ -7200,3 +7200,573 @@ Due pattern-causa del drift documentale, da prevenire nelle sessioni future: (1)
 Prossimo file Spec reale dopo v1.9 = **v1.10** (NON v1.12). La catena fantasma e chiusa.
 
 **One-liner apertura prossima sessione:** N+5.Q-C deploy gh-pages + iPhone e2e via LoginDialog; oppure N+5.Q-ter doc-only corpo esteso sez. 13 + Lesson 11.6.12-11.6.18.
+
+---
+
+### par.22.107 -- Closing N+5.Q-C-alpha (milestone reversibile) -- deploy gh-pages alpha.2 + smoke HTTPS 5/5 + STOP beta regola critica #2 (3 gate deploy bloccanti drift-N121/N122/N123)
+
+<!-- par.22.107 R1 emit Fase 3 SENTINEL_N5QC_ALPHA_CLOSING_PAR_22_107 -- closing ramo alpha del split N+5.Q-C; beta scorporata sub-sessione analisi-first par.11.V-S3 -->
+
+**Stato sessione:** N+5.Q-C split safety-first (pattern par.22.55-Fase2). Eseguito **solo ramo alpha** (deploy + smoke). Chiusura a milestone reversibile: deploy isolato su branch `gh-pages` (worktree orphan), `fase-3-backend` mai toccato, NO commit codice, NO tag, NO bump, NO push su `fase-3-backend`. Beta (iPhone e2e) STOP regola critica #2 per 3 gate deploy bloccanti confermati empiricamente.
+
+#### CP0 + CP0-ext (Lesson #27 runtime + sorgente)
+- Riconciliazione stale-note `STATO_CORRENTE.md`: HEAD `6e7bc2d` -> `2f65280` (append par.22.106 committato in N+5.Q-bis, commit doc-only). 0 ahead origin, sincronizzato. Tag `v3.2.0-alpha.10` su `6e7bc2d` invariato. pyproject `0.7.2`, package `3.2.0-alpha.2`, vitest 581, pytest 80 invariati. Working tree: `?? STATO_CORRENTE.md`, `?? cp0_baseline.sh` (attesi).
+- 3 gate beta verificati empiricamente (CP0 preflight live + CP0-ext dump sorgente). Esito: tutti bloccanti.
+
+#### DONE N+5.Q-C-alpha
+- **Build produzione alpha.2 verde**: `npm run build`, vite 5.4.21, 106 moduli, `base: /pharmatimer/` bakeato negli asset, VitePWA generateSW (precache 17 entries 490 KiB), `dist/index.html` presente.
+- **Deploy gh-pages via worktree orphan isolato**: `git worktree add /tmp/pt-ghpages origin/gh-pages` -> pulizia contenuto vecchio (preserva `.git`) -> copia `dist/.` -> `.nojekyll` aggiunto -> commit `7f51299` ("Deploy v3.2.0-alpha.2 (N+5.Q-C-alpha)") -> `git push --force-with-lease origin HEAD:gh-pages` verde `0f93b63..7f51299`. Worktree rimosso post-smoke. `fase-3-backend` verificato intatto su `2f65280` pre e post.
+- **Smoke HTTPS 5/5 verde** su `https://timegates-code.github.io/pharmatimer/`: index.html 200 text/html (last-modified deploy-fresco), asset JS hashed 200 application/javascript, manifest.webmanifest 200 application/manifest+json, sw.js 200, .nojekyll 200.
+
+#### STOP beta -- regola critica #2 (3 gate deploy bloccanti)
+La PWA servita da GitHub Pages NON puo raggiungere il backend sul tailnet con l'architettura cementata. Radice comune: **origin gh-pages != origin backend tailnet**. Tre finding distinti convergono. Cementati empiricamente (Lesson #27 soddisfatta: preflight reale + dump sorgente):
+
+| Finding | Descrizione | Evidenza empirica |
+|---|---|---|
+| **drift-N121** (CORS gh-pages) | backend Mini rifiuta origin `https://timegates-code.github.io` | preflight OPTIONS live -> HTTP/2 400, nessun `access-control-allow-origin`. CORS dual-origin live = `localhost:5173` + FQDN tailnet (gh-pages droppato in N+5.O CP3 par.22.103, drift-N117) |
+| **drift-N122** (apiClient relative base) | `apiClient._request` chiama `fetch(path, opts)` senza base URL -> path relativo all'origin | dump `src/data/repository/apiClient.js`: nessun host. In dev via proxy Vite; su gh-pages statico nessun proxy -> `/api/...` colpisce github.io non il Mini. Retarget richiede MOD `apiClient` -> collide VIETATO "MOD apiClient/ApiRepository" (cementato N+5.I-pre) |
+| **drift-N123** (API mode toggle DEV-gated) | API mode attivo solo se `localStorage.pharmatimer.useApiRepo === "1"`; il toggle vive in `SezioneAvanzate` gated `import.meta.env.DEV` | dump `index.js` (`getRepository` default LocalRepository) + `ImpostazioniTab` riga 522 (`import.meta.env.DEV && <SezioneAvanzate />`). In build prod SezioneAvanzate non renderizzata -> nessuna UI per attivare API mode -> LoginDialog mai mostrato su fresh-install prod. Stesso gating su logout (SENTINEL_N5P_CP5) |
+
+beta richiede una scelta architetturale (non patchabile al volo): **Arch-1 tailnet same-origin** (servire la dist statica dal Mini via `tailscale serve` sullo stesso origin dell'API -> azzera drift-N121 + N122, resta drift-N123) vs **Arch-2 gh-pages + base URL** (CORS add github.io + base URL build-time in apiClient con sblocco VIETATO ratificato + toggle prod-visibile). Decisione demandata sub-sessione analisi-first par.11.V-S3.
+
+#### Nota procedura deploy
+- Il deploy v3.1.0 (par.22.73-Fase2) fu manuale ad-hoc, NON scriptato (verificato CP0-ext: `scripts/` contiene solo `genera-icone.mjs`, nessun npm script gh-pages/deploy/orphan). Procedura N+5.Q-C-alpha definita esplicitamente (worktree orphan + force-with-lease), NON ricostruita a memoria (Lesson #26).
+- **`.nojekyll`** aggiunto alla dist deployata (assente nel deploy v3.1.0): serve asset hashed + cartelle senza processing Jekyll. Artefatto di deploy lato `gh-pages`, NON source tracciato su `fase-3-backend` -> nessuna deviazione di spec, nessun `s.6`.
+
+#### Stato git post-alpha
+- `fase-3-backend` HEAD **`2f65280`** invariato, 0 ahead origin (nessun commit codice in alpha).
+- `gh-pages` HEAD **`7f51299`** (sostituisce `0f93b63` Deploy v3.1.0), LOCALE+REMOTO.
+- Tag `v3.2.0-alpha.10` invariato. NO bump, NO tag NEW (demandati eventuale gamma post-arch-decision).
+
+#### NON implementato (deferito, per design)
+- **beta**: decisione Arch-1/Arch-2 + iPhone e2e via LoginDialog (login + GET /api/farmaci scoped via tailnet) -> sub-sessione par.11.V-S3.
+- **CP4-bis** auto-clear UNAUTHORIZED (N+5.P.G, drift-N53 closure formale) -> accoppiato beta.
+- **Test 1-bis** token paziente non-vuoto (opzionale) -> accoppiato beta.
+- **gamma**: bump + tag + push atomico -> applicabile solo se beta introduce MOD source su `fase-3-backend`.
+- Spec invariata (resta v1.9, sha16 `921957b3cf1db488`). Prossimo file Spec reale = **v1.10**.
+
+#### Versioni / Test (INVARIATI)
+- `backend/pyproject.toml` 0.7.2, `package.json` 3.2.0-alpha.2, vitest 581/581, pytest 80/80 (nessuna MOD source in alpha).
+
+#### Pattern par.22.55-Fase2
+- Split safety-first applicato: pre-dichiarato alpha/beta/gamma in apertura, chiusura a milestone alpha reversibile su emersione dipendenza architetturale (regola critica #2 + #5). beta scorporata fresh-context.
+
+#### Pre-frozen
+- `par.11.V-S3` emit (sub-sessione beta analisi-first sola: decisione Arch-1 vs Arch-2).
+
+**One-liner apertura prossima sessione:** N+5.Q-C-beta via par.11.V-S3 (analisi-first: decisione Arch-1 tailnet same-origin vs Arch-2 gh-pages+baseURL, gate drift-N121/N122/N123); oppure N+5.Q-ter doc-only corpo esteso Spec sez.13 + Lesson 11.6.12-11.6.18.
+
+---
+
+### par.11.V-S3 -- Prompt apertura N+5.Q-C-beta analisi-first sola: decisione architetturale serving PWA prod vs backend tailnet (Arch-1 vs Arch-2) + chiusura gate drift-N121/N122/N123
+
+**Scope alto livello.** Analisi-first sola doc-only. Decidere l'architettura di raggiungibilita backend dalla PWA in produzione, prerequisito non aggirabile per l'iPhone e2e. Zero source change, zero commit codice, zero bump, zero tag, zero push. Output: ratifica scelta Arch + design draft + pre-frozen `par.11.W-S3` esecutiva beta-exec.
+
+**Pre-letture obbligatorie.** par.22.107 (questo closing, 3 gate), par.22.103 (N+5.O CORS dual-origin + tailscale serve), Spec v1.9 sez.13.3 (Tailscale HTTPS), VIETATO `STATO_CORRENTE.md` (MOD apiClient/ApiRepository).
+
+**CP0 mandatory (Lesson #27 -- re-verifica runtime, NON assumere da questo closing).**
+- Re-preflight CORS live origin gh-pages (conferma drift-N121 ancora aperto).
+- Dump `tailscale serve status` Mini + `.env.dev` CORS_ORIGINS live via venv config (NON cat cieco, Lesson #21).
+- Dump `apiClient.js` sentinel + `index.js` factory (conferma drift-N122/N123).
+- `tailscale status` iPhone client `tag:pharmatimer-client` (riconferma N+5.O).
+
+**Q-batch upfront atteso.**
+- Q-V.1 scelta Arch: (a consigliato) Arch-1 tailnet same-origin -- serve dist dal Mini via `tailscale serve` su stesso origin API, azzera drift-N121+N122 senza toccare VIETATO; gh-pages resta distribuzione offline pubblica LocalRepository. (b) Arch-2 gh-pages + base URL build-time + CORS add github.io + sblocco VIETATO MOD apiClient ratificato `s.6.NN`.
+- Q-V.2 risoluzione drift-N123 (abilitazione API mode in prod senza DEV-gate): opzioni toggle prod-visibile vs gating automatico su presenza token vs env build-time. Default da definire post-Arch.
+- Q-V.3 token provisioning iPhone (come arriva il token nel localStorage del device: input manuale LoginDialog vs altro).
+- Q-V.4 carry-forward CP4-bis (auto-clear UNAUTHORIZED N+5.P.G drift-N53) + Test 1-bis: inclusione in beta-exec.
+
+**Limitazione scope.** NON eseguire MOD source in apertura analisi-first. NON applicare Arch-2 senza ratifica esplicita sblocco VIETATO. Dialogo turn-by-turn su sub-AMB non default-raccomandato (Lesson #30 strict).
+---
+
+### par.22.108 -- Closing N+5.Q-C-beta (analisi-first sola) -- decisione architetturale Arch-1 tailnet same-origin / A1-fastapi + 3 gate beta cementati + 4 decisioni ratificate Q-V.1/2/3/4 + design draft + pre-frozen par.11.W-S3
+
+<!-- par.22.108 R1 emit Fase 3 SENTINEL_N5QC_BETA_CLOSING_PAR_22_108 -- closing ramo beta del split N+5.Q-C (sub-sessione analisi-first par.11.V-S3); beta-exec scorporata par.11.W-S3 -->
+
+**Stato sessione:** N+5.Q-C-beta sub-sessione analisi-first sola (par.11.V-S3). Zero source change, zero commit codice, zero bump, zero tag, zero push (coerente scope). Output: decisione Arch ratificata + design draft A1-fastapi + pre-frozen esecutiva `par.11.W-S3`. CP0 mandatory Lesson #27 eseguito a runtime+sorgente (NON assunto da par.22.107).
+
+#### CP0 + CP0-ext (Lesson #27 runtime + sorgente, re-verifica completa)
+
+- **CP0.1 git** verde: HEAD `2f65280` invariato, 0 ahead origin, tag `v3.2.0-alpha.10`. Working tree: `M PharmaTimer_Changelog_Fase3.md` (append par.22.106/107 pre-esistente non committato) + `?? STATO_CORRENTE.md`. `cp0_baseline.sh` non piu presente (atteso, transitorio).
+- **CP0.3 drift-N122** CONFERMATO a sorgente: `src/data/repository/apiClient.js` riga 103 `fetch(path, opts)` base relativa, nessun host. Aperto.
+- **CP0.4+CP0.5 drift-N123** CONFERMATO a sorgente: `index.js` factory default `LocalRepository`, gate `localStorage.pharmatimer.useApiRepo === "1"`; `ImpostazioniTab.jsx` riga 522 `import.meta.env.DEV && <SezioneAvanzate />`. Aperto.
+- **CP0.8-retry drift-N121** CONFERMATO a runtime: preflight OPTIONS live origin `https://timegates-code.github.io` -> HTTP/2 400, nessun `access-control-allow-origin` (DENY). Controprova CP0.8-bis origin `http://localhost:5173` -> 200 + `access-control-allow-origin` presente (ALLOW). Conferma dual-origin gh-pages droppato.
+- **CP0.9 allow-list CORS runtime** verde (via venv Pydantic settings, env replicato da plist `com.pharmatimer.api-wrapper` -- Lesson #21, NO cat cieco): `cors_origins_list = ['http://localhost:5173', 'https://marketreader-server.taila127de.ts.net']`. github.io ASSENTE.
+- **Incongruenza CORS "F revised" RISOLTA**: il design F3-S1-bis prevedeva github.io nell'allow-list; la realta runtime lo droppa (coerente drift-N117 N+5.O CP3). Nessun `s.6` retroattivo (par.6.71/85), design superato.
+- **CP0.7 tailscale serve Mini** verde: `https://marketreader-server.taila127de.ts.net (tailnet only)` con `/ proxy http://localhost:8000` (tutto al backend, nessun mount statico). Fatto decisivo per la sub-AMB Arch-1.
+- **CP0 discovery runtime Mini** (plist `com.pharmatimer.api-wrapper`): `EnvironmentVariables` = `DB_DEFAULTS_FILE=/Users/marketreader/.my-pharmatimer.cnf` + `DB_NAME=pharmatimer` + `PATH`; `WorkingDirectory=/Users/marketreader/PharmaTimer`; `ProgramArguments=.../deploy/launchd/api-wrapper.sh`; wrapper `cd ${BACKEND_PATH}` + `.venv` + `uvicorn 0.0.0.0:8000` KeepAlive while-loop. `CORS_ORIGINS` NON in plist -> viene da `backend/.env.dev`.
+
+#### 3 gate beta -- verdetto finale (tutti cementati empirico, Lesson #27 soddisfatta)
+
+| Gate | Stato finale | Esito sotto Arch-1 |
+|---|---|---|
+| **drift-N121** (CORS gh-pages) | DENY runtime (preflight 400, no allow-origin) | **AZZERATO** (same-origin, nessun CORS sul path Mini-served) |
+| **drift-N122** (apiClient base relativa) | confermato sorgente (no host, riga 103) | **AZZERATO** (base relativa risolve su origin Mini, corretta) |
+| **drift-N123** (API mode DEV-gated) | confermato sorgente (riga 522) | **RESTA APERTO** -> risolto da Q-V.2 (env build-time) in beta-exec |
+
+#### 4 decisioni ratificate (Q-batch par.11.V-S3)
+
+| Q | Decisione | Motivazione sintetica |
+|---|---|---|
+| **Q-V.1** | **(a) Arch-1 tailnet same-origin** | Azzera N121+N122 senza toccare VIETATO. gh-pages resta distribuzione offline pubblica LocalRepository. |
+| **sub-AMB Arch-1** | **A1-fastapi** (serve invariato; FastAPI monta `StaticFiles(dist, html=True)` su `/` + catch-all SPA-fallback registrato DOPO router `/api/*`) | A1-serve scartata: `tailscale serve` statico non fa SPA rewrite (route React Router dirette -> 404), piu fragile, tocca infra. A1-fastapi: SPA-rewrite nativo, zero modifica serve, unico MOD `app.py`. |
+| **Q-V.2** | **Opzione 3 (env build-time `VITE_USE_API`)** | Si innesta sul profilo build "Mini" gia separato da gh-pages (`base:/` vs `base:/pharmatimer/`). MOD circoscritto a `index.js` factory (`VITE_USE_API === "1"` OR flag localStorage esistente, retrocompatibile dev) -- FUORI VIETATO (copre solo apiClient/ApiRepository). Zero toggle UI, gh-pages resta LocalRepository. |
+| **Q-V.3** | **(a) input manuale via LoginDialog**, token in `pharmatimer.userToken` | Verificato a sorgente: `LoginDialog.jsx` esiste; `apiClient.js` riga 88-95 LEGGE GIA `pharmatimer.userToken` da localStorage e inietta header `X-User-Token` con guard se assente. **Nessun MOD apiClient -> VIETATO INTATTO.** |
+| **Q-V.4** | **CP4-bis incluso** (auto-clear UNAUTHORIZED, drift-N53/N+5.P.G) + **Test 1-bis opzionale** (token paziente non-vuoto, incluso se costo basso) | CP4-bis accoppiato a correttezza login iPhone. |
+
+#### Drift NEW catalizzati N+5.Q-C-beta
+
+| ID | Categoria | Severita | Catched | Status |
+|---|---|---|---|---|
+| **N124** | iPhone tailnet membership | Operativo Roberto-side | CP0.6 + riconnessione | Risolto: era solo OFFLINE (non rimosso). Riconnesso `iphone-15-pro-max` `100.95.100.6` ONLINE su tailnet corretto `taila127de.ts.net` (account `timegates@gmail.com`). UI iPhone elenca peer per device-name, NON mostra tag. Verifica `tag:pharmatimer-client` rimandata ad admin console in beta-exec. |
+| **N125** | peer tag display CLI Studio | Cosmetic diagnostic | CP0.6 | Cementato carry-forward: `tailscale status` Studio mostra `marketreader-server` come `tagged-devices` e se stesso `-`; nessun device espone `tag:pharmatimer-client` leggibile via CLI Studio. iPhone non listato nei peer Studio post-riconnessione (NAT/no-direct-path), pur online. Non blocca analisi-first. Verifica admin console beta-exec. |
+| **micro-drift CORS X-User-Token** | auth header allow-list | TBD beta-exec | Q-V.3 sorgente | Annotato: apiClient usa header custom `X-User-Token` (NON `Authorization: Bearer`). CP0.8 preflight listava `access-control-allow-headers: authorization`. Da verificare in beta-exec che il CORS Mini permetta `x-user-token` nei preflight (con same-origin Arch-1 il browser non manda preflight cross-origin per PWA->API, ma verifica prudente). |
+
+#### Lesson reinforcement
+
+- **Lesson #35 (CLI symlink Tailscale assente headless Mini)** RICORRENZA confermata: CP0.7 `tailscale: command not found` sul Mini, funziona solo `/Applications/Tailscale.app/Contents/MacOS/Tailscale`. Candidata cementazione strong (2a ricorrenza dopo N+5.O CP1.2.5).
+
+#### Design draft Arch-1 / A1-fastapi (per beta-exec par.11.W-S3, NON eseguito)
+
+Obiettivo: PWA prod raggiunge backend tailnet same-origin -> abilita e2e iPhone. 8 componenti:
+
+1. **Build profile "Mini"**: `vite build` con `base:'/'` + `VITE_USE_API=1`, distinto dal profilo gh-pages (`base:'/pharmatimer/'`, no API). Due output, stesso sorgente. Meccanismo (mode Vite / `.env.mini` / flag CLI) da definire in design exec.
+2. **Factory `index.js`** (MOD, FUORI VIETATO): `getRepository()` valuta `import.meta.env.VITE_USE_API === "1"` OR flag localStorage esistente. Retrocompatibile dev. Unico source change frontend.
+3. **FastAPI static serving** (MOD `app.py`, source change su `fase-3-backend`): `StaticFiles(dist, html=True)` su `/` + catch-all SPA-fallback `/{full_path:path}` -> `index.html`, registrato DOPO router `/api/*` (ordine route critico). Conserva `/api/*`. Path dist Mini (es. `~/PharmaTimer/web/`) + deploy rsync da definire.
+4. **`tailscale serve` INVARIATO**: `/ -> proxy localhost:8000`. FastAPI serve statico + API same-origin. Zero modifica infra.
+5. **LoginDialog prod-visibile**: verificare a sorgente se DEV-gated (come SezioneAvanzate); se si, sganciare per profilo Mini. Token manuale -> `pharmatimer.userToken` -> apiClient.
+6. **CORS**: same-origin -> niente preflight cross-origin per PWA->API. localhost:5173 resta per dev. Verificare `x-user-token` accettato (micro-drift).
+7. **CP4-bis** (drift-N53 auto-clear UNAUTHORIZED) + **Test 1-bis** opzionale.
+8. **gamma**: MOD `app.py` + `index.js` = source change -> bump pyproject + package + tag + push atomico a fine beta-exec.
+
+Punti aperti che il design exec deve chiudere a sorgente (NON assunti): LoginDialog DEV-gating si/no; CORS `x-user-token` preflight; path dist Mini; meccanismo build profile Vite.
+
+#### Stato git post-beta (INVARIATO)
+
+- `fase-3-backend` HEAD `2f65280` invariato, 0 ahead (nessun commit codice in analisi-first).
+- `gh-pages` HEAD `7f51299` invariato.
+- Tag `v3.2.0-alpha.10` invariato. NO bump, NO tag NEW.
+
+#### Versioni / Test (INVARIATI)
+
+- `backend/pyproject.toml` 0.7.2, `package.json` 3.2.0-alpha.2, vitest 581/581, pytest 80/80 (nessuna MOD source).
+
+#### NON implementato (deferito, per design)
+
+- Tutto il source change -> beta-exec `par.11.W-S3` (analisi-first per definizione).
+- e2e iPhone login (iPhone ora online sul tailnet, prereq soddisfatto) -> beta-exec.
+- Verifiche a sorgente residue (LoginDialog DEV-gating, CORS x-user-token, path dist Mini, meccanismo build profile) -> CP0 di beta-exec.
+- Spec invariata (resta v1.9, sha16 `921957b3cf1db488`). Prossimo file Spec reale = v1.10.
+
+#### Pattern par.22.55-Fase2
+
+- Split safety-first: ramo beta (analisi-first) eseguito fresh-context post-alpha. beta-exec (source change) ulteriormente scorporata `par.11.W-S3` su emersione dipendenza source/build (regola critica #5 dimensionamento).
+
+#### Pre-frozen
+
+- `par.11.W-S3` emit (esecutiva beta-exec Arch-1/A1-fastapi).
+
+#### Riferimenti par.22.108
+
+- par.22.107 closing N+5.Q-C-alpha (deploy gh-pages alpha.2 + 3 gate STOP regola critica #2)
+- par.22.103 closing N+5.O (CORS dual-origin + tailscale serve, drift-N117 github.io drop)
+- par.22.55-Fase2 split safety-first (applicazione cumulativa Fase 3)
+- VIETATO MOD apiClient/ApiRepository (cementato N+5.I-pre) -- confermato INTATTO sotto Arch-1/A1-fastapi/Q-V.2/Q-V.3
+
+**One-liner apertura prossima sessione:** N+5.Q-C-beta-exec via par.11.W-S3 (esecutiva Arch-1/A1-fastapi: MOD index.js factory + app.py static-serve, build profile Mini, LoginDialog prod-visible, e2e iPhone, gamma); oppure N+5.Q-ter doc-only corpo esteso Spec sez.13 + Lesson 11.6.12-11.6.18.
+
+---
+
+### par.11.W-S3 -- Prompt apertura N+5.Q-C-beta-exec esecutiva Arch-1/A1-fastapi: serving same-origin PWA prod da backend tailnet + e2e iPhone + gamma
+
+<!-- par.11.W-S3 R1 emit Fase 3 post-N+5.Q-C-beta closing par.22.108 SENTINEL_N5QC_BETAEXEC_PROMPT_PAR_11_W_S3 -->
+
+**Scope alto livello.** Esecutiva. Implementare Arch-1/A1-fastapi ratificata in par.22.108: PWA prod same-origin sul backend tailnet Mini. Source change su `fase-3-backend` (`index.js` + `app.py`) + build profile Mini + deploy dist Mini + LoginDialog prod-visible + e2e iPhone. gamma (bump+tag+push) a chiusura.
+
+**Pre-letture obbligatorie.** par.22.108 (questo closing, decisione Arch + design draft 8 componenti), par.22.107 (3 gate origine), par.22.103 (CORS dual-origin + tailscale serve), Spec v1.9 sez.13.3, VIETATO `STATO_CORRENTE.md` (MOD apiClient/ApiRepository -- confermato NON necessario, apiClient legge gia `pharmatimer.userToken`).
+
+**CP0 mandatory (Lesson #27 -- re-verifica runtime+sorgente, NON assumere da par.22.108).**
+- Re-baseline git + versioni + test (vitest 581 / pytest 80).
+- Dump sorgente `index.js` factory + `app.py` route registration order + `LoginDialog.jsx` (DEV-gating si/no, punto aperto) + `apiClient.js` riga 88-95 (riconferma lettura `pharmatimer.userToken` + header `X-User-Token`).
+- Discovery a sorgente: path dist target Mini, meccanismo build profile Vite disponibile (mode / env file), CORS `x-user-token` in allow-headers preflight.
+- `tailscale status` Studio + admin console verifica `tag:pharmatimer-client` su `iphone-15-pro-max` (drift-N124/N125 chiusura) + Mini `tailscale serve status` (invariato `/ -> :8000`).
+
+**Q-batch upfront atteso (se emergono sub-AMB su punti aperti design).**
+- Meccanismo build profile Mini (mode Vite vs `.env.mini` vs flag) -- default da proporre post-CP0.
+- LoginDialog prod-visibility (se DEV-gated: come sganciare per profilo Mini) -- default post-dump.
+- Path dist sul Mini + strategia deploy (rsync vs altro) -- default post-discovery.
+
+**Sequenza CP proposta.** CP0 re-baseline+discovery -> CP1 MOD `index.js` factory + `app.py` static-serve (patcher Python content-based SENTINEL idempotent, pattern par.22.58-Fase2 + Lesson #20, .bak.cpN) -> CP2 build profile Mini + rsync dist -> CP3 LoginDialog prod-visible -> CP4 e2e iPhone (login + GET /api/farmaci scoped via tailnet) + CP4-bis (auto-clear UNAUTHORIZED drift-N53) + Test 1-bis opzionale -> CP5 gamma (bump pyproject + package + commit + tag NEW + push atomico) -> CP6 closing.
+
+**Limitazione scope.** VIETATO MOD apiClient/ApiRepository resta attivo (confermato non necessario). Patcher Python f-string con graffe vietati (Lesson #17/#20). Patcher heredoc PYEOF con markdown code-fence vietati (Lesson #38: consegnare patcher come file + mv, NO inline cat heredoc). Regole bash zsh (no `#` inline, no apostrofi italiani, single-quote echo). Dialogo turn-by-turn su sub-AMB non default-raccomandato (Lesson #30 strict). Chiudere early se la sessione si appesantisce (regola critica #5).
+
+---
+### par.22.109 -- Closing N+5.Q-C-beta-exec-CP0 (split safety-first da par.11.W-S3) -- CP0 discovery completo runtime+sorgente + 5 decisioni LOCKED Q-W.1/2/3/4/5 + scope deviation 3 file + pre-frozen par.11.X-S3 esecutiva pura
+
+<!-- par.22.109 R1 emit Fase 3 SENTINEL_N5QC_BETAEXEC_CP0_CLOSING_PAR_22_109 -- closing CP0 del ramo beta-exec (par.11.W-S3); source change CP1->CP6 scorporato par.11.X-S3 per dimensionamento (regola critica #5) -->
+
+**Stato sessione:** N+5.Q-C-beta-exec-CP0 = solo CP0 (discovery + decisioni) del ramo esecutivo par.11.W-S3. Source change scorporato a esecutiva pura par.11.X-S3 (regola critica #5: patcher 3 file + test = mezza sessione densa, CP0 ha consumato discovery multi-turn). Zero source change, zero commit codice, zero bump, zero tag, zero push.
+
+#### CP0 + CP0-bis (Lesson #27 runtime + sorgente, re-verifica completa)
+
+- **CP0.A git** verde: `fase-3-backend` HEAD `2f65280`, 0 ahead/0 behind, tag `v3.2.0-alpha.10`. Working tree: `M PharmaTimer_Changelog_Fase3.md` (append pre-esistenti) + `?? STATO_CORRENTE.md` + `?? .trash_append_22_108.md` (stray NEW, drift-N126) + `?? cp0_baseline.sh` (transitorio).
+- **CP0.B versioni** verde: pyproject `0.7.2`, package `3.2.0-alpha.2`.
+- **CP0.H test** verde (re-baseline): vitest 581/581 (70 file), pytest 80/80.
+- **CP0.C1 apiClient.js** (`src/data/repository/apiClient.js`): VIETATO INTATTO. Riga 27 `TOKEN_STORAGE_KEY="pharmatimer.userToken"`, riga 88-95 guard token assente + header `X-User-Token` (riga 95), riga 103 `fetch(path,opts)` base relativa (drift-N122 confermato). Nessun MOD.
+- **CP0.C2 factory index.js** (`src/data/repository/index.js`): gate attuale SOLO `localStorage['pharmatimer.useApiRepo']==='1'` (`_shouldUseApiRepo()` riga 23-29). Nessun `import.meta.env.VITE_USE_API`. Target MOD Q-W.2.
+- **CP0.C2-bis mount LoginDialog**: il dialog NON e DEV-gated internamente. Montato da `src/App.jsx` `LoginGate()`: predicato `useApiRepo = localStorage['pharmatimer.useApiRepo']==='1'` && `!hasToken`; `if (!useApiRepo || hasToken) return null`. **Legge SOLO localStorage**, non env. Incongruenza con Q-W.2: con `VITE_USE_API=1` ma localStorage assente, factory -> ApiRepository ma LoginGate -> null -> dialog mai montato -> login impossibile. Da cui scope deviation 3 file.
+- **CP0.C4 app.py** (`backend/pharmatimer_api/app.py`): `CORSMiddleware` riga 47-51 `allow_origins=settings.cors_origins_list`, `allow_headers=["*"]`. Router `health/farmaci/orari/log_assunzioni/utenti/permessi` (57-66). NESSUN `StaticFiles`/`app.mount`/catch-all. Anchor MOD = dopo `app.include_router(_permessi_module.router)` (ultima riga). `version` dinamica via importlib.metadata (Lesson #31).
+- **CP0.D Vite** (`vite.config.js`): `base:'/pharmatimer/'` hardcoded (riga 8), `manifest: buildPwaManifest("/pharmatimer/")` hardcoded (riga 14), `server.proxy '/api' -> :8000`. NESSUN file `.env*` presente. scripts: `dev/build/preview/test/build:tooling` (pattern inline-env gia in uso: `VITE_PT_TOOLING=1 vite build`).
+- **CP0.E CORS env** (`backend/.env.dev`): `CORS_ORIGINS=http://localhost:5173,https://marketreader-server.taila127de.ts.net`.
+- **CP0.F Studio**: `dist/` = artefatto gh-pages base `/pharmatimer/`; venv Studio = `backend/venv`.
+- **CP0.G tailscale Studio**: `marketreader-server` (Mini) `tagged-devices` online; iPhone non listato (NAT, atteso).
+- **CP0 Mini-side (via `ssh mini`)**: hostname `MarketReader-Server.local`, utente `marketreader`. `tailscale serve status` = `/ proxy http://localhost:8000` (VIVO). Backend Mini `/Users/marketreader/PharmaTimer/backend/` (pyproject + `pharmatimer_api/app.py`, path identico Studio, modulo `pharmatimer_api.app`). LaunchAgent `com.pharmatimer.api-wrapper` PID 83587 + `com.pharmatimer.backup` attivi. Wrapper `/Users/marketreader/PharmaTimer/deploy/launchd/api-wrapper.sh`. `~/PharmaTimer/` SENZA dir `web/`/`dist/` (da creare). Probe Studio->FQDN: `/` HTTP 404 (no static, atteso), `/api/farmaci` HTTP 422 (token assente, backend up).
+
+#### 5 decisioni LOCKED (Q-batch par.11.W-S3, ratifica "decidi tu")
+
+| Q | Decisione | Motivazione sintetica |
+|---|---|---|
+| **Q-W.1** | **`.env.mini` (`VITE_USE_API=1`) + script `build:mini`** = `vite build --mode mini --base=/ --outDir dist-mini` | `--mode mini` e l'unico modo affidabile per esporre `VITE_USE_API` a `import.meta.env` SOLO nella build Mini (shell-var inline NON entra in import.meta.env; `.env.production` contaminerebbe gh-pages). `--base=/` + `--outDir dist-mini` via CLI -> zero MOD vite.config.js, `dist/` gh-pages intatto. |
+| **Q-W.2** | **(a) helper condiviso `shouldUseApiRepo()`** in index.js = `import.meta.env.VITE_USE_API === "1" \|\| localStorage['pharmatimer.useApiRepo'] === "1"` (guard try/catch). Importato da factory + App.jsx LoginGate. | Single source of truth (§6.205 cross-path invariant): factory e gate non possono divergere. Risolve l'incongruenza CP0.C2-bis. Retrocompatibile dev (localStorage path invariato). |
+| **Q-W.3** | **dist Mini `/Users/marketreader/PharmaTimer/web/`**; app.py directory via `os.environ.get("PHARMATIMER_WEB_DIR", "/Users/marketreader/PharmaTimer/web")` + guard `os.path.isdir`; deploy `rsync -av --delete dist-mini/ mini:/Users/marketreader/PharmaTimer/web/` | Path assoluto (il wrapper fa `cd backend` -> CWD relativo fragile). Guard isdir -> static-serve auto-disabilitato su Studio (dir assente) -> pytest 80 invarianti. Nessuna MOD plist (fallback = path Mini). |
+| **Q-W.4** | **RISOLTA** (nessun MOD CORS) | `allow_headers=["*"]` copre `X-User-Token`; same-origin Arch-1 -> niente preflight cross-origin. micro-drift CORS X-User-Token (par.22.108) chiuso. |
+| **Q-W.5** | **Pattern A static-serve**: `StaticFiles` su `/assets` + `@app.get("/{full_path:path}")` (FileResponse se file esiste in web dir, else `index.html`), registrato DOPO i router | Il draft par.22.108 "mount `/` + catch-all dopo i router" e internamente incoerente: un Mount su `/` intercetta tutto e oscura il catch-all (stesso 404-su-route per cui A1-serve fu scartata). Pattern A: SPA deep-link OK, `/api/*` preservato. |
+
+#### Scope deviation ratificata (regola critica #3)
+
+Source-change effettivo = **3 file** (vs 2 del draft par.22.108):
+
+| File | MOD | In draft par.22.108? |
+|---|---|---|
+| `src/data/repository/index.js` | helper `shouldUseApiRepo()` export + factory usa helper | si |
+| `src/App.jsx` | `LoginGate` usa `shouldUseApiRepo()` (stesso predicato) | **NO -- deviazione** |
+| `backend/pharmatimer_api/app.py` | static-serve Pattern A dopo router | si |
+
+Motivo: CP0.C2-bis rivela che LoginGate e `useApiRepo`-gated solo via localStorage; senza MOD App.jsx il login iPhone sarebbe impossibile sotto `VITE_USE_API=1`.
+
+#### Deviazioni dalla specifica/draft introdotte (da committare con par.11.X-S3)
+
+1. **Scope 3 file** (App.jsx aggiunto) vs draft 2 — sopra.
+2. **PWA manifest/SW restano scope `/pharmatimer/`** sulla build Mini (`buildPwaManifest` hardcoded in vite.config, non toccato per rispettare "zero MOD vite.config.js" Q-W.1). PWA-install profilo Mini deferita; il login e2e (Safari-load + token) non richiede install. Alternativa (manifest/base mode-driven) deferita.
+3. **Static-serve auto-disabilitato se web dir assente** (guard `os.path.isdir`) — non nel draft; necessario per non rompere dev/test Studio.
+4. **Q-W.5 Pattern A** sostituisce il "mount `/` + catch-all" del draft (incoerente).
+
+#### Drift NEW catalizzati
+
+| ID | Categoria | Severita | Catched | Status |
+|---|---|---|---|---|
+| **N126** | working tree stray file | Housekeeping | CP0.A | `?? .trash_append_22_108.md` nel working tree Studio. Origine ignota (residuo append?). Regola critica #2 -> NON rimosso. Carry-forward cleanup N+5.R+ o ispezione Roberto-side. |
+
+#### Lesson reinforcement
+
+- **Lesson #35 (CLI Tailscale symlink assente headless)**: 3a ricorrenza (Mini via SSH richiede `/Applications/Tailscale.app/Contents/MacOS/Tailscale`). Candidata cementazione strong.
+- **Lesson #27/#30 strict applicate**: glob zsh non protetti (`--include=*.js`, `.env.*`) in CP0-R1 -> `no matches found` abort -> CP0-bis con glob quotati. Reminder: quotare sempre i pattern glob nei comandi find/grep incollati in zsh interattiva.
+- **§6.118**: "decidi tu" NON sostituisce ground-truth runtime mancante. Q-W.3 tenuta bloccata fino al dump Mini reale (un primo blocco SSH errato girava sullo Studio: `No serve config` + home inesistente erano artefatti, non guasti Mini).
+
+#### Stato git / versioni / test (INVARIATI)
+
+- `fase-3-backend` HEAD `2f65280`, 0 ahead. `gh-pages` `7f51299`. Tag `v3.2.0-alpha.10`. NO bump/tag/commit.
+- pyproject 0.7.2, package 3.2.0-alpha.2. vitest 581, pytest 80.
+
+#### NON implementato (deferito a par.11.X-S3)
+
+- Tutto il source change (3 file) + test (582) + build Mini + rsync deploy + LoginDialog prod + e2e iPhone + CP4-bis + gamma.
+- Verifica admin console `tag:pharmatimer-client` su `iphone-15-pro-max` -> prereq CP4.
+- Commit append Changelog 22.106/107/108/109 + pre-frozen -> atomico in par.11.X-S3 gamma.
+- Spec invariata (v1.9, sha16 `921957b3cf1db488`). Prossimo file Spec reale = v1.10.
+
+#### Pattern par.22.55-Fase2
+
+- Split safety-first ulteriore: CP0 (discovery+decisioni) eseguito e chiuso; CP1->CP6 (source change) scorporato a par.11.X-S3 fresh-context su densita patcher (regola critica #5).
+
+#### Pre-frozen
+
+- `par.11.X-S3` emit (esecutiva PURA CP1->CP6, decisioni LOCKED come input).
+
+#### Riferimenti par.22.109
+
+- par.22.108 closing N+5.Q-C-beta (decisione Arch-1/A1-fastapi + design draft)
+- par.22.107 closing N+5.Q-C-alpha (commit doc-only aggregato a sessione codice)
+- par.22.103 closing N+5.O (CORS dual-origin + tailscale serve)
+- VIETATO MOD apiClient/ApiRepository (cementato N+5.I-pre) -- confermato INTATTO
+
+**One-liner apertura prossima sessione:** N+5.Q-C-beta-exec-CP1 via par.11.X-S3 (esecutiva pura: patcher index.js+App.jsx+app.py, .env.mini+build:mini, rsync dist-mini->web Mini, LoginDialog prod via gate condiviso, e2e iPhone, gamma); oppure N+5.Q-ter doc-only corpo esteso Spec sez.13 + Lesson 11.6.12-11.6.18.
+
+---
+
+### par.11.X-S3 -- Prompt apertura N+5.Q-C-beta-exec-CP1 esecutiva PURA Arch-1/A1-fastapi: patcher 3 file + build Mini + deploy + e2e iPhone + gamma
+
+<!-- par.11.X-S3 R1 emit Fase 3 post-N+5.Q-C-beta-exec-CP0 closing par.22.109 SENTINEL_N5QC_BETAEXEC_CP1_PROMPT_PAR_11_X_S3 -->
+
+**Scope alto livello.** Esecutiva pura. Implementare Arch-1/A1-fastapi con tutte le decisioni gia LOCKED in par.22.109 (NON ri-decidere; CP0 si limita a re-validare a sorgente che il baseline non sia driftato, Lesson #27). Source change 3 file su `fase-3-backend` + build profile Mini + deploy dist Mini + LoginDialog prod-visible + e2e iPhone. gamma (bump+tag+push) a chiusura, con commit aggregato degli append Changelog pendenti.
+
+**Pre-letture obbligatorie.** par.22.109 (questo closing: CP0 + 5 decisioni LOCKED + scope deviation 3 file + 4 deviazioni), par.22.108 (decisione Arch), VIETATO `STATO_CORRENTE.md` (MOD apiClient/ApiRepository -- confermato NON necessario).
+
+**Decisioni LOCKED (input, NON ri-aprire salvo drift a sorgente):**
+- Q-W.1 `.env.mini` (`VITE_USE_API=1`) + script `build:mini` = `vite build --mode mini --base=/ --outDir dist-mini`. Zero MOD vite.config.js.
+- Q-W.2 (a) helper `shouldUseApiRepo()` in `index.js`, importato da factory + `App.jsx` LoginGate.
+- Q-W.3 dist Mini `/Users/marketreader/PharmaTimer/web/`; app.py `os.environ.get("PHARMATIMER_WEB_DIR", "/Users/marketreader/PharmaTimer/web")` + guard `os.path.isdir`; deploy `rsync -av --delete dist-mini/ mini:/Users/marketreader/PharmaTimer/web/`.
+- Q-W.4 CORS invariato (`allow_headers=["*"]`).
+- Q-W.5 Pattern A: `StaticFiles` su `/assets` + `@app.get("/{full_path:path}")` (FileResponse-o-index.html) dopo i router.
+
+**CP0 mandatory (Lesson #27 -- re-verifica leggera, baseline non driftato).**
+- git HEAD `2f65280` 0-ahead, tag `v3.2.0-alpha.10`, vitest 581, pytest 80.
+- Riconferma a sorgente i 3 anchor MOD: `index.js` `_shouldUseApiRepo()` riga 23-29 + factory riga 31-38; `App.jsx` `LoginGate()` predicato `useApiRepo`/`hasToken`; `app.py` ultima riga `app.include_router(_permessi_module.router)`.
+- Riconferma Mini serve VIVO + `~/PharmaTimer/web/` ancora assente.
+
+**Sequenza CP proposta.**
+- **CP1** patcher Python content-based (SENTINEL idempotent + univocita 1-match + `.bak.cp1`, consegnati come file + `mv` -- Lesson #38, NO heredoc inline):
+  - `index.js`: aggiungere `export function shouldUseApiRepo()` (env OR localStorage, guard); factory `getRepository()` usa l'helper al posto del `_shouldUseApiRepo()` privato (o l'helper sostituisce il privato mantenendo retrocompat test). Cautela Lesson #20 se old e substring di new.
+  - `App.jsx`: `LoginGate` importa `shouldUseApiRepo` e sostituisce il calcolo inline di `useApiRepo` (conserva `hasToken` + guard try/catch).
+  - `app.py`: import `os` + `from fastapi.staticfiles import StaticFiles` + `from fastapi.responses import FileResponse`; dopo l'ultima `include_router`, guard `_WEB_DIR=os.environ.get(...)` + `if os.path.isdir(_WEB_DIR):` mount `/assets` + catch-all `@app.get("/{full_path:path}")`. Ordine: DOPO tutti i router.
+  - test: `index.test.js` +1 test `VITE_USE_API` via `vi.stubEnv('VITE_USE_API','1')` (atteso vitest 582). Smoke pytest static-serve opzionale (TestClient senza context manager, Lesson #19; richiede web dir fittizia o skip se assente).
+- **CP2** `.env.mini` (file) + patcher `package.json` script `build:mini` + `vite build --mode mini --base=/ --outDir dist-mini` su Studio + `rsync -av --delete dist-mini/ mini:.../web/`.
+- **CP3** verifica LoginDialog prod-visible: build Mini -> `pharmatimer.useApiRepo` non serve piu (env-driven), LoginGate montato perche `shouldUseApiRepo()` true via env. Smoke `curl FQDN/` -> 200 + index.html (non piu 404).
+- **CP4** e2e iPhone (Safari -> FQDN -> LoginDialog -> incolla token -> GET /api/farmaci scoped) + **CP4-bis** auto-clear UNAUTHORIZED (drift-N53). Prereq: admin console `tag:pharmatimer-client` su `iphone-15-pro-max` verificato.
+- **CP5 gamma**: bump pyproject + package + sync `ImpostazioniTab.jsx` versione (par.6.200/205) + commit selettivo (3 file source + test + .env.mini + package.json + Changelog append 22.106..109 + 11.V/W/X aggregati) + tag NEW (`v3.2.0-alpha.11`?) + push atomico.
+- **CP6 closing**.
+
+**Limitazione scope.** VIETATO MOD apiClient/ApiRepository resta attivo. Patcher f-string con graffe vietati (Lesson #17/#20). Patcher heredoc PYEOF con code-fence vietati (Lesson #38: file + mv). Regole bash zsh (no `#` inline, no apostrofi italiani, single-quote echo, glob quotati). Dialogo turn-by-turn su sub-AMB non default-raccomandato (Lesson #30 strict). Chiudere early se la sessione si appesantisce (regola critica #5): possibile ulteriore split CP4/CP5 se il patcher CP1 consuma troppo.
+
+**Housekeeping aperto.** drift-N126 `.trash_append_22_108.md` (decidere ispezione/rimozione). `cp0_baseline.sh` transitorio.
+
+---
+
+### par.22.110 -- Closing N+5.Q-C-beta-exec-CP1 (esecutiva pura, milestone reversibile) -- CP1 patcher 3 file + test 582 + CP2 build:mini + CP2b/CP3 deploy Mini static-serve LIVE + smoke 200/422/200 + STOP split pre-CP4 (prereq tag admin) regola critica #5
+
+<!-- par.22.110 R1 emit Fase 3 SENTINEL_N5QC_BETAEXEC_CP1_CLOSING_PAR_22_110 -- closing CP1->CP3 ramo beta-exec; e2e iPhone + CP4-bis + gamma scorporati par.11.Y-S3 -->
+
+**Stato sessione:** N+5.Q-C-beta-exec-CP1 = esecutiva pura, decisioni Q-W.1/2/3/4/5 LOCKED da par.22.109 (mai riaperte). Eseguiti CP1->CP3. Milestone reversibile: tutto applicato+deployato, ZERO commit, ZERO bump, ZERO tag, ZERO push. Working tree Studio dirty; Mini gira `app.py` rsync'd uncommitted. gamma + e2e iPhone scorporati a par.11.Y-S3 (regola critica #5: prereq `tag:pharmatimer-client` admin console aperto + densita multi-turn).
+
+#### CP0 leggero (Lesson #27, baseline non driftato)
+- git `fase-3-backend` HEAD `2f65280`, 0-ahead, tag `v3.2.0-alpha.10`. vitest 581, pytest 80. 3 anchor riconfermati a sorgente identici a par.22.109 (`index.js` _shouldUseApiRepo 23-29 + factory; `App.jsx` LoginGate 100-112; `app.py` ultima include_router permessi 66). Mini serve VIVO, `web/` assente.
+- **drift-N126 AUTO-RISOLTO**: working tree non contiene piu `.trash_append_22_108.md` ne `cp0_baseline.sh` (rimossi tra le sessioni). Positivo, da ratificare in gamma.
+- drift benigno ricorrente: ssh `mini` LocalForward `:3307` already-in-use (tunnel MySQL preesistente) -- rumore innocuo, nessuna azione.
+
+#### CP1 -- source change 3 file + test (4 patcher applicati, sandbox-verificati)
+- `index.js`: helper esportato `shouldUseApiRepo()` (`import.meta.env.VITE_USE_API==='1'` OR localStorage, doppio guard); factory usa l'helper; `_shouldUseApiRepo()` ridotto a delega retrocompat (single source s.6.205). SENTINEL_N5QC_CP1_SHOULD_USE_API_REPO.
+- `App.jsx`: import `shouldUseApiRepo` + LoginGate lo usa al posto del calcolo inline (`hasToken` + try/catch invariati). SENTINEL_N5QC_CP1_LOGINGATE_SHARED_GATE.
+- `app.py`: import `os` + `StaticFiles` + `FileResponse`; static-serve Pattern A dopo i router, guard `isdir(_WEB_DIR)` + `isdir(assets)` + anti-traversal `startswith(_WEB_DIR+os.sep)`. SENTINEL_N5QC_CP1_STATIC_SERVE.
+- `index.test.js`: +1 test env `VITE_USE_API` via `vi.stubEnv` + `vi.unstubAllEnvs()` nel beforeEach. SENTINEL_N5QC_CP1_TEST_VITE_USE_API.
+- Test post-CP1: vitest **582/582** (70 file), pytest **80/80** (static-serve auto-disabilitato su Studio, `web/` assente -> pytest invarianti).
+
+#### CP2 -- build profile Mini (Q-W.1)
+- `package.json`: script `build:mini` = `vite build --mode mini --base=/ --outDir dist-mini` (patcher CP2, JSON-validato). marker idempotenza `"build:mini"`.
+- `.env.mini` creato (`VITE_USE_API=1`).
+- Build verde: 106 moduli, `dist-mini/` base `/` (index.html -> `/assets/...`, `/favicon.svg`, `/icons/...`). SW + manifest generati (manifest scope `/pharmatimer/` = deviazione attesa, PWA-install Mini deferita).
+
+#### CP2b/CP3 -- deploy Mini + restart + smoke (gap-fill sequenza, precedente par.22.101)
+- `rsync -av --delete dist-mini/ -> mini:/Users/marketreader/PharmaTimer/web/` (web/ creata).
+- rsync chirurgico `app.py` patchato -> Mini backend (NO `rsync backend/ --delete`: evita clobber venv Mini).
+- Restart LaunchAgent: `launchctl bootout` + `bootstrap com.pharmatimer.api-wrapper`. running pid=45365.
+- Smoke FQDN: `root=200` (index.html, era 404), `api_farmaci=422` (router preservato, catch-all non oscura `/api/*`), `oggi_spa=200` (SPA deep-link fallback), asset `/assets/index-*.js` servito. **Pattern A LIVE end-to-end**.
+
+#### Deviazioni introdotte (da committare in gamma)
+1. Scope 3 file source (App.jsx aggiunto vs draft 2) -- ereditata par.22.109.
+2. `_shouldUseApiRepo` mantenuto come delega vestigiale: NESSUN test lo importa (`index.test.js` usa solo `getRepository`) -> rimozione candidabile cleanup N+5.R+.
+3. `app.py` guard hardening entro Pattern A: `isdir(assets)` pre-mount + containment `startswith(_WEB_DIR+os.sep)` anti-traversal -- non cambia contratto Q-W.5.
+4. PWA manifest/SW scope `/pharmatimer/` su build Mini (buildPwaManifest hardcoded, zero MOD vite.config Q-W.1) -- PWA-install Mini deferita.
+5. Sequenza CP2b/CP3 estesa: deploy `app.py` + restart LaunchAgent sul Mini (gap prompt par.11.X-S3, precedente rsync-backend par.22.101). Deploy chirurgico single-file. Mini = mirror rsync, NON checkout git (origin riceve commit in gamma).
+
+#### NON implementato (deferito par.11.Y-S3)
+- CP4 e2e iPhone (Safari -> FQDN -> LoginDialog -> token -> GET /api/farmaci scoped) + CP4-bis auto-clear UNAUTHORIZED (drift-N53). PREREQ: admin console `tag:pharmatimer-client` su `iphone-15-pro-max` -- APERTO (azione manuale Roberto).
+- CP5 gamma: bump pyproject `0.7.2->0.7.3` + package `alpha.2->alpha.3` + sync `ImpostazioniTab.jsx` + commit selettivo + tag `v3.2.0-alpha.11` (da confermare) + push + Mini `pip install -e .` + restart.
+- CP6 closing + cleanup patcher untracked.
+
+#### Lesson reinforcement
+- Lesson #38: 5 patcher (4 CP1 + 1 CP2) + appender consegnati come file + mv + run, sandbox-verificati (idempotenza doppio-run + 1-match + ast.parse/json.loads/node --check), NO heredoc inline.
+- Lesson #27 leggera: 3 anchor riconfermati a sorgente prima dei patcher (no assunzione da par.22.109).
+- regola critica #2: gap sequenza backend-deploy segnalato, NON inventato; risolto con precedente par.22.101 documentato.
+- regola critica #5: split pre-CP4 a milestone reversibile (deploy LIVE smoke verde) per densita + prereq tag admin manuale.
+
+#### Stato git / versioni / test
+- `fase-3-backend` HEAD `2f65280`, 0-ahead. Tag `v3.2.0-alpha.10`. NO commit/bump/tag/push.
+- pyproject 0.7.2, package 3.2.0-alpha.2. vitest 582, pytest 80.
+
+#### Riferimenti par.22.110
+- par.22.109 closing CP0 (5 decisioni LOCKED Q-W)
+- par.22.108 decisione Arch-1/A1-fastapi
+- par.22.101 precedente deploy backend Mini (rsync + launchctl bootout/bootstrap)
+- VIETATO MOD apiClient/ApiRepository -- INTATTO
+
+**One-liner apertura prossima sessione:** N+5.Q-C-beta-exec-CP2 via par.11.Y-S3 (e2e iPhone CP4 + CP4-bis auto-clear + gamma bump/tag/push aggregato; PREREQ tag:pharmatimer-client admin console).
+
+---
+
+### par.11.Y-S3 -- Prompt apertura N+5.Q-C-beta-exec-CP2: e2e iPhone (CP4 + CP4-bis) + gamma (bump/tag/push aggregato)
+
+<!-- par.11.Y-S3 R1 emit Fase 3 post-N+5.Q-C-beta-exec-CP1 closing par.22.110 SENTINEL_N5QC_BETAEXEC_CP2_PROMPT_PAR_11_Y_S3 -->
+
+**Scope alto livello.** Validazione on-device + chiusura. CP1->CP3 gia applicati e deployati LIVE sul Mini (par.22.110), uncommitted. Questa sessione: e2e iPhone (CP4) + auto-clear UNAUTHORIZED (CP4-bis) + gamma (bump + commit aggregato + tag + push + Mini `pip install -e .` + restart). Nessun nuovo source change atteso salvo CP4-bis se drift.
+
+**PREREQ BLOCCANTE (verificare a CP0):** admin console Tailscale `tag:pharmatimer-client` su `iphone-15-pro-max` APPLICATO. Senza, CP4 non eseguibile (iPhone non in tailnet con tag client).
+
+**Pre-letture obbligatorie.** par.22.110 (questo closing: CP1->CP3 applicati+deployati), par.22.109 (5 decisioni LOCKED), VIETATO STATO_CORRENTE.md (MOD apiClient/ApiRepository -- confermato non necessario, INTATTO).
+
+**CP0 mandatory (Lesson #27 -- re-verifica leggera + stato deploy LIVE).**
+- git `fase-3-backend` HEAD `2f65280` 0-ahead, tag `v3.2.0-alpha.10` (NO bump ancora). Working tree dirty atteso (M sui 6 file + ?? .env.mini/dist-mini/STATO/5 patcher).
+- vitest 582, pytest 80.
+- Smoke FQDN ancora LIVE: `root=200`, `api_farmaci=422`, `/oggi=200`. Se il Mini e stato riavviato nel frattempo (LaunchAgent KeepAlive) lo static-serve resta attivo (web/ persiste su disco); se `app.py` Mini fosse stato sovrascritto, re-deploy chirurgico + restart.
+- Riconferma SENTINEL applicati: grep `SENTINEL_N5QC_CP1` nei 4 file + `"build:mini"` in package.json.
+- VERIFICA PREREQ tag admin (sopra).
+
+**Sequenza CP proposta.**
+- **CP4** e2e iPhone: Safari iPhone -> `https://marketreader-server.taila127de.ts.net/` -> LoginDialog visibile (env-driven: `shouldUseApiRepo()` true via VITE_USE_API build Mini) -> incolla owner token (Keychain `pharmatimer-owner-token`: `security find-generic-password -s pharmatimer-owner-token -w`) -> reload -> GET /api/farmaci scoped 200 con header `X-User-Token`. Verifica Oggi/liste popolate.
+- **CP4-bis** auto-clear UNAUTHORIZED (drift-N53): token invalido -> 401 -> auto-clear `pharmatimer.userToken` -> LoginDialog ricompare. Verificare se gia implementato a sorgente. **ATTENZIONE: VIETATO MOD apiClient/ApiRepository** -> se la fix tocca apiClient, STOP regola critica #2 + ridiscutere scope (gestire lato LoginGate/App).
+- **CP5 gamma**: bump pyproject `0.7.2->0.7.3` + package `3.2.0-alpha.2->alpha.3` + sync `src/components/config/ImpostazioniTab.jsx` (par.6.200/205) + git add selettivo (`src/data/repository/index.js` + `src/App.jsx` + `backend/pharmatimer_api/app.py` + `src/data/repository/index.test.js` + `.env.mini` + `package.json` + `PharmaTimer_Changelog_Fase3.md`) + commit + tag annotato `v3.2.0-alpha.11` (da confermare) + push atomico + Mini `cd ~/PharmaTimer/backend && pip install -e .` + `launchctl bootout`/`bootstrap` (pickup `__version__`) + smoke `/openapi.json` info.version 0.7.3.
+- **CP6** closing + cleanup patcher `.py` untracked + `.bak.cp1`/`.bak.cp2`.
+
+**Limitazione scope.** VIETATO MOD apiClient/ApiRepository attivo (se CP4-bis lo richiede -> STOP). Patcher f-string graffe vietati (#17/#20). Lesson #38 (file+mv, no heredoc inline). Regole bash zsh (no `#` inline, no apostrofi italiani, single-quote echo, glob quotati). Chiudere early se densita (regola critica #5).
+
+**Housekeeping aperto.** drift-N126 auto-risolto (ratificare gamma). cleanup `.bak`/patcher `.py` untracked. manifest/SW scope Mini deferito (PWA-install). `dist-mini/` artefatto build (valutare gitignore o commit).
+
+---
+### par.22.111 -- Closing N+5.Q-C-beta-exec-CP2 (parziale) -- prereq tailnet iPhone risolto alla fonte + CP4 login e2e iPhone GREEN (meccanismo login+scoping) + STOP split pre-CP4-bis (regola critica #5)
+
+<!-- par.22.111 R1 emit Fase 3 SENTINEL_N5QC_BETAEXEC_CP2_CLOSING_PAR_22_111 -- closing prereq + CP4 login; recon 401 + CP4-bis + CP5 gamma scorporati par.11.Z-S3 -->
+
+**Stato sessione:** N+5.Q-C-beta-exec-CP2 = validazione on-device parziale. CP0 leggero verde (baseline `2f65280`, 4 SENTINEL, build:mini, smoke 200/422/200, vitest 582, pytest 80, zero drift). Risolto il prereq tailnet bloccante e completato CP4 (login). Milestone ANCORA reversibile: zero commit/bump/tag/push, source identico a par.22.110. recon 401 + CP4-bis + CP5 gamma scorporati a par.11.Z-S3 (regola critica #5: densita diagnostica accumulata + recon 401 mai eseguito).
+
+#### Prereq tailnet -- risolto alla fonte (verifica empirica, non memoria)
+- Diagnosi: telefono "Tailscale attivo" ma `tailscale status` dal Mac Studio non elencava l'iPhone; `tailscale ping 100.95.100.6` -> `no matching peer`. Verifica account: iPhone e Studio stesso tailnet (`timegates@gmail.com` / `taila127de.ts.net`), confermato via `.CurrentTailnet.Name`.
+- Causa reale = ACL by-design: unica regola accept `tag:pharmatimer-client -> tag:pharmatimer-server:8000` + SSH, default-deny, NESSUNA regola client<->client. Studio<->iPhone invisibili e' corretto e NON serve a CP4 (rotta che conta = iPhone client -> Mini server).
+- Azione: admin console -> `iphone-15-pro-max` Edit ACL tags -> `tag:pharmatimer-client` salvato (expiry disabled atteso). iPad `ipad-pro-12-9-gen-3` rimosso (3 machines residue).
+- **Correzione errore intra-sessione:** claim "tag:pharmatimer-server assente in ACL KB -> drift" emesso a meta sessione era da grep incompleto. L'ACL reale corrisponde a `03-tailscale-acl.hujson` (entrambi i tag + client->server:8000 + SSH + default-deny). NESSUN drift ACL. Ritrattato esplicitamente. Lesson reinforcement: verificare grep su pattern completo prima di dichiarare drift.
+
+#### CP4 -- e2e iPhone login (GREEN su meccanismo)
+- Safari iPhone -> `https://marketreader-server.taila127de.ts.net/` -> PWA same-origin LIVE (static-serve Pattern A). LoginDialog visibile (`shouldUseApiRepo()` true su bundle Mini, `VITE_USE_API=1`). Banner "Token utente assente in localStorage (pharmatimer.userToken)" a primo accesso (atteso).
+- Incollato owner token (Keychain `pharmatimer-owner-token`) -> Entra -> gate superato (token in localStorage; GET /api/farmaci con `X-User-Token` non 401, altrimenti il dialog sarebbe riapparso). **Login + scoping verificati end-to-end da iOS.**
+
+#### FINDING -- owner Mini: onboarding completato, seed demo placeholder (NON grave, ratificato)
+- Onboarding COMPLETATO su iPhone (nome inserito + step 2 "lista farmaci di esempio"/demo). Risultato: `nome_utente` scritto (2 setSetting, verosimilmente persistito sul Mini via API repo) ma **0 farmaci**. Causa NOTA: `completeOnboarding` mode='demo' (par.6.168) e' placeholder CP4 ("2 setSetting + no seed I/O") -> non semina. Anomalia gia presente in versione iPhone-only, ratificata non-bloccante da Roberto. CP4 sotto-verifica "liste popolate" INCONCLUDENTE (seed demo non popola). Conseguenza: milestone reversibile su git/source resta intatta, ma DATA-STATE Mini cambiato (owner ha `nome_utente`). CP0 prossima sessione verifichi empiricamente (baseline DB via venv). Da decidere: seed reale owner vs lasciare placeholder.
+
+#### NON implementato (deferito par.11.Z-S3)
+- recon logica 401 (blocco 3) -- MAI eseguito questa sessione; prerequisito CP0 prossima sessione.
+- CP4-bis auto-clear UNAUTHORIZED (drift-N53).
+- CP5 gamma (bump + commit aggregato + tag + push + Mini install + restart) + CP6 closing + housekeeping.
+
+#### Lesson reinforcement
+- Verifica empirica fonte-autorevole su stato infrastruttura (admin console per tag, `tailscale status/ping` per netmap) > memoria, anche quando "praticamente certi".
+- ACL same-origin: visibilita peer e' funzione delle regole, non solo dei tag; client<->client non implica visibilita se non c'e' regola dedicata.
+- regola critica #2 applicata all'errore proprio: ritrattazione esplicita del falso-drift ACL invece di propagarlo nel Changelog.
+- regola critica #5: split a milestone reversibile (login verde) per densita + recon mancante.
+
+#### Stato git / versioni / test
+- `fase-3-backend` HEAD `2f65280`, 0-ahead. Tag `v3.2.0-alpha.10`. NO commit/bump/tag/push.
+- pyproject 0.7.2, package 3.2.0-alpha.2. vitest 582, pytest 80.
+
+#### Riferimenti par.22.111
+- par.22.110 closing CP1->CP3 (applicati+deployati)
+- par.11.Y-S3 prompt sorgente di questa sessione
+- `03-tailscale-acl.hujson` ACL policy (confermata corretta, no drift)
+- VIETATO MOD apiClient/ApiRepository -- INTATTO
+
+**One-liner apertura prossima sessione:** N+5.Q-C-beta-exec-CP3 via par.11.Z-S3 (CP0 recon logica 401 -> CP4-bis auto-clear -> CP5 gamma bump/tag/push aggregato; CP4 login gia verde).
+
+---
+
+### par.22.112 -- Closing N+5.Q-C-beta-exec-CP3 (parziale) -- CP4-bis auto-clear UNAUTHORIZED applicato App-side (M1 init catch + M2 SessionExpiryGate) + 589 vitest verde + STOP split pre-CP5 gamma (milestone ANCORA reversibile, regola critica #5)
+
+<!-- par.22.112 R1 emit Fase 3 post-N+5.Q-C-beta-exec-CP2 closing par.22.111 SENTINEL_N5QC_BETAEXEC_CP3_CLOSING_PAR_22_112 -- closing CP4-bis; CP5 gamma re-entry par.11.Z-S3 step gamma -->
+
+**Stato sessione:** N+5.Q-C-beta-exec-CP3 = CP4-bis applicato (auto-clear UNAUTHORIZED, drift-N53). CP0 verde (baseline `2f65280`, 4 SENTINEL_N5QC_CP1, build:mini, smoke FQDN 200/422/200, vitest 582, pytest 80, zero drift). Recon 401 (4 round): chokepoint errori in `actions.js`; detection 401 -> UNAUTHORIZED gia in `apiClient.js` (INTATTO). CP4-bis implementato App/actions-side (NESSUN tocco apiClient/ApiRepository -> VIETATO rispettato, niente STOP regola critica #2). Milestone ANCORA reversibile: ZERO commit/bump/tag/push. CP5 gamma scorporato (regola critica #5).
+
+#### Implementato (CP4-bis: 2 source + 2 test)
+- **M1 `src/state/actions.js`** catch di `init()` (SENTINEL_N5QC_CP4BIS_INIT_PROPAGATE_CODE): propaga `err.code` (es. `UNAUTHORIZED`) in `INIT_ERROR.payload.code`. Rami `NO_ACTIVE_PROFILE` + `INIT_FAILED` preservati. Prima mascherava ogni RepositoryError in `INIT_FAILED` (asimmetria vs altri thunk che gia preservavano `err?.code`).
+- **M2 `src/App.jsx`** (SENTINEL_N5QC_CP4BIS_AUTOCLEAR): helper puro esportato `shouldAutoClearUnauthorized(errorCode, hasToken)` + `SessionExpiryGate` montato in ThemedShell dopo LoginGate. Auto-clear `pharmatimer.userToken` + reload SOLO se `UNAUTHORIZED` E token presente. Import `useEffect` aggiunto.
+- **Test +7 (582 -> 589):** `src/App.autoclear.test.js` NEW (5 test helper) + `src/state/actions.init.test.js` +2 (UNAUTHORIZED propagato / INIT_FAILED fallback). vitest 589/589, pytest invariato 80.
+
+#### Matrice scenari validata (par.6.118)
+- S-A token assente (build Mini): helper false -> no-op -> LoginGate mostra LoginDialog (loop-safe).
+- S-B token presente invalido al reload (caso dominante drift-N53): init -> UNAUTHORIZED propagato (M1) -> hasToken true -> removeItem + reload -> dialog. Singolo reload.
+- S-C 401 mid-sessione: SET_ERROR code UNAUTHORIZED -> removeItem + reload -> dialog.
+- DB_UNAVAILABLE / NO_ACTIVE_PROFILE con token valido: no-op, token preservato (nessun logout indebito).
+
+#### Deviazione (regola critica #3)
+- **s.6.227:** CP4-bis tocca anche `actions.js` (catch init) oltre `App.jsx`, inquadrata come bug-fix di propagazione errore (allineamento all'asimmetria preesistente con gli altri thunk), non scostamento di design. drift-N53 chiuso PWA-side anche sul caso init/reload (prima chiuso solo sul ramo runtime SET_ERROR).
+
+#### NON implementato (deferito)
+- Copertura unit del gate React `SessionExpiryGate` (mount + reload): richiede mock `window.location.reload`, deferita. Coperto helper puro + scenari e2e on-device beta.
+- Messaggio "sessione scaduta" in LoginDialog post-reload: finding UX deferito (dialog neutro, superficie minima).
+- commit / bump / tag / push: CP5 gamma (sessione separata).
+- baseline DB `nome_utente` owner Mini + finding seed demo placeholder (par.6.168): carry-over invariato.
+
+#### Stato git (milestone reversibile)
+- `fase-3-backend` HEAD `2f65280`, 0-ahead, tag `v3.2.0-alpha.10`. NO commit/bump/tag/push. Working tree dirty: +M `actions.js` +M `App.jsx` +M `actions.init.test.js` +?? `App.autoclear.test.js` (+ append Changelog par.22.112) oltre al diff CP1->CP3 preesistente. `.bak.cp4bis` gitignored; patcher `.py` untracked (cleanup CP6 gamma).
+- pyproject 0.7.2, package 3.2.0-alpha.2 (bump in gamma). vitest 589, pytest 80.
+
+#### Riferimenti par.22.112
+- par.22.111 closing CP2 parziale (prereq tailnet + CP4 login)
+- par.11.Z-S3 prompt sorgente di questa sessione (CP4-bis + CP5 gamma)
+- VIETATO MOD apiClient/ApiRepository -- INTATTO
+- drift-N53 (s.6.223) auto-clear UNAUTHORIZED -- chiuso PWA-side runtime + init
+
+**One-liner apertura prossima sessione:** N+5.Q-C-beta-exec-CP4 via par.11.Z-S3 (CP0 re-valida CP4-bis gia applicato -> verify-only -> CP5 gamma bump 0.7.3/alpha.3 + commit aggregato + tag + push + Mini pip install -e . + restart + CP6 housekeeping).
+
+---
+
+### par.11.Z-S3 -- Prompt apertura N+5.Q-C-beta-exec-CP3: recon 401 + CP4-bis auto-clear + gamma (bump/tag/push aggregato)
+
+<!-- par.11.Z-S3 R1 emit Fase 3 post-N+5.Q-C-beta-exec-CP2 closing par.22.111 SENTINEL_N5QC_BETAEXEC_CP3_PROMPT_PAR_11_Z_S3 -->
+
+**Scope alto livello.** Chiusura ramo beta-exec. CP1->CP3 applicati+deployati LIVE (par.22.110), CP4 login e2e verde (par.22.111), tutto uncommitted. Questa sessione: recon 401 -> CP4-bis auto-clear UNAUTHORIZED -> gamma (bump + commit aggregato + tag + push + Mini `pip install -e .` + restart). Nessun nuovo source change atteso salvo CP4-bis se la fix e necessaria E permessa.
+
+**Pre-letture obbligatorie.** par.22.111 (questo closing: prereq tailnet + CP4 login verde + finding owner vuoto), par.22.110 (CP1->CP3), par.22.109 (5 decisioni LOCKED). VIETATO STATO_CORRENTE.md (MOD apiClient/ApiRepository).
+
+**CP0 mandatory (Lesson #27 + recon 401 BLOCCANTE).**
+- git `fase-3-backend` HEAD `2f65280` 0-ahead, tag `v3.2.0-alpha.10` (no bump). Working tree dirty atteso. vitest 582, pytest 80.
+- Smoke FQDN ancora LIVE (root=200, api=422, oggi=200); se Mini riavviato lo static-serve persiste (web/ su disco).
+- 4 SENTINEL_N5QC_CP1 + `build:mini` ancora presenti.
+- **RECON 401 (era blocco 3, mai eseguito in CP2):** grep `401|unauthorized|clearToken|removeItem|userToken` su `src/App.jsx`, `src/data/repository/index.js`, `src/data/repository/apiClient.js`. Stabilire DOVE vive la gestione UNAUTHORIZED prima di toccare alcunche.
+- Prereq tailnet GIA risolto (iPhone `tag:pharmatimer-client`, 3 machines) -- non riaprire.
+
+**Sequenza CP proposta.**
+- **CP4-bis** auto-clear UNAUTHORIZED (drift-N53): token invalido -> 401 -> auto-clear `pharmatimer.userToken` -> LoginDialog ricompare. Se gia a sorgente -> verifica e basta. Se da implementare -> SOLO lato LoginGate/App. **VIETATO MOD apiClient/ApiRepository -> se la fix lo richiede, STOP regola critica #2 + ridiscutere scope.**
+- **CP5 gamma:** bump pyproject `0.7.2->0.7.3` + package `3.2.0-alpha.2->alpha.3` + sync `src/components/config/ImpostazioniTab.jsx` (runtime version line 484, par.6.200/205) + git add selettivo (`index.js` + `App.jsx` + `app.py` + `index.test.js` + `.env.mini` + `package.json` + `PharmaTimer_Changelog_Fase3.md`) + commit `s.6.NN` + tag annotato `v3.2.0-alpha.11` (da confermare) + push atomico + Mini `cd ~/PharmaTimer/backend && pip install -e .` + `launchctl bootout`/`bootstrap` + smoke `/openapi.json` info.version 0.7.3.
+- **CP6** closing + housekeeping: `git rm cp_n5b_changelog_g_s3_append.py` (orfano), ratifica drift-N126, cleanup `.bak.cp1/2` + 5 patcher `.py` untracked, decisione gitignore vs commit `dist-mini/`.
+
+**Finding da gestire.** Seed demo placeholder: `completeOnboarding` mode='demo' (par.6.168) non semina farmaci -> owner Mini ha `nome_utente` ma 0 farmaci (NON grave, ratificato). Decidere se implementare seed reale owner o lasciare placeholder. Indipendente da CP4-bis/CP5. CP0 verifichi `nome_utente` owner sul Mini (baseline DB via venv).
+
+**Limitazione scope.** VIETATO MOD apiClient/ApiRepository. Patcher f-string graffe vietati (#17/#20). Lesson #38 (file+mv, no heredoc inline). Regole bash zsh (no `#` inline, no apostrofi italiani, single-quote echo, glob quotati). Chiudere early se densita (regola critica #5).
+
+---
+
+---
+
+<!-- par.22.113 R1 emit Fase 3 post-N+5.Q-C-beta-exec-CP3 closing par.22.112 SENTINEL_N5QC_BETAEXEC_CP4_CLOSING_PAR_22_113 -- closing ramo beta-exec: CP5 gamma (bump/commit/tag/push aggregato) + CP6 housekeeping -->
+
+### par.22.113 -- Closing N+5.Q-C-beta-exec-CP4: CP5 gamma (commit aggregato + tag) + CP6 housekeeping
+
+**Stato sessione:** N+5.Q-C-beta-exec-CP4 = re-entry verify-only allo step gamma. CP0 conforme (HEAD `2f65280`, 0-ahead, tag `v3.2.0-alpha.10`; 4 SENTINEL_N5QC_CP1 + 4 SENTINEL_N5QC_CP4BIS a sorgente; helper `shouldAutoClearUnauthorized` + `SessionExpiryGate` + propagazione `err.code` in `init()` confermati; vitest 589/589, pytest 80/80). CP4-bis verificato a sorgente, nessun nuovo source change. Chiuso il ramo beta-exec con commit aggregato + tag + push + reinstall backend Mini.
+
+#### Implementato (CP5 gamma + CP6)
+- **Bump versioni:** `backend/pyproject.toml` 0.7.2 -> 0.7.3; `package.json` 3.2.0-alpha.2 -> alpha.3; runtime literal `src/components/config/ImpostazioniTab.jsx` alpha.2 -> alpha.3 (riga reale 498, NON 484 -> vedi s.6.228).
+- **Commit aggregato `s.6.228`:** intero diff CP1->CP4bis (12 file) reso atomico: static-serve `app.py` (CP1, Q-W.5 Pattern A), shared gate `index.js`/`App.jsx` (CP1), auto-clear UNAUTHORIZED `App.jsx`/`actions.js` (CP4-bis, drift-N53), test (`index.test.js`, `actions.init.test.js`, `App.autoclear.test.js` NEW), `.env.mini`, bump pyproject/package/ImpostazioniTab.
+- **Tag annotato `v3.2.0-alpha.11`** + push atomico (branch + tag) su origin.
+- **Mini reinstall backend-only:** `pip install -e .` (0.7.3) + `launchctl bootout`/`bootstrap` + smoke `/openapi.json` info.version (esito registrato in STATO_CORRENTE). Rebuild/redeploy `dist-mini/` con CP4-bis DEFERITO (validazione S-B/S-C on-device, item separato).
+- **CP6 housekeeping:** `git rm cp_n5b_changelog_g_s3_append.py` (orfano TRACKED). `.gitignore` += `dist-mini/`, `patch_*.py`, `append_*.py`, `*.bak.cp*`. Rimossi 9 patcher untracked + residui `.bak.cp*`. `dist-mini/` gitignored (build artifact, deploy via rsync mirror, NON checkout git).
+
+#### Deviazione (regola critica #3)
+- **s.6.228 (line-drift doc-only):** il runtime version literal di `ImpostazioniTab.jsx` indicato dal prompt par.11.Z-S3 (e par.6.200/205) a riga 484 e stale; il literal renderizzato vive a riga 498 (`PharmaTimer 3.2.0-alpha.2 -> alpha.3`). Bump applicato alla riga reale. Nessuna correzione retroattiva al prompt par.11.Z-S3 (par.6.71/85). Nessun version-desync collaterale: il literal era gia allineato a package.json (il `3.0.0` a riga 480 e solo commento storico di sezione).
+
+#### NON implementato (deferito)
+- Rebuild/redeploy `dist-mini/` con CP4-bis (validazione S-B/S-C on-device) -- DEFERITO (opzionale, prereq rc promotion).
+- Seed demo owner reale (par.6.168, mode='demo' non semina farmaci) -- placeholder mantenuto, scope indipendente.
+- Copertura unit gate React `SessionExpiryGate` (mock `window.location.reload`) -- deferita (par.22.112).
+- Messaggio "sessione scaduta" LoginDialog post-reload -- finding UX deferito.
+- rc promotion alpha.x -> rc.1 -- prereq validazione S-B/S-C on-device.
+
+#### Stato git (post-push)
+- `fase-3-backend` commit aggregato `s.6.228`, tag annotato `v3.2.0-alpha.11`, pushato su origin. pyproject 0.7.3, package alpha.3. vitest 589/589, pytest 80/80.
+
+#### Riferimenti par.22.113
+- par.22.112 closing CP4-bis (drift-N53, s.6.227)
+- par.22.110 CP1->CP3 (Arch-1/A1-fastapi static-serve + shared gate)
+- par.22.109 5 decisioni LOCKED Q-W.1-5
+- par.11.Z-S3 prompt sorgente (recon 401 + CP4-bis + gamma)
+- VIETATO MOD apiClient/ApiRepository -- INTATTO per intero ramo beta-exec
+- s.6.228 line-drift ImpostazioniTab 484 -> 498
+
+**One-liner apertura prossima sessione:** nuova sessione su carry-over Fase 3 (sync layer + copertura API completa); prereq opzionale: rebuild/redeploy `dist-mini/` con CP4-bis + validazione S-B/S-C on-device per rc promotion. CP0 mandatory: baseline DB `nome_utente` owner Mini via venv + decisione seed demo reale.
+
+---

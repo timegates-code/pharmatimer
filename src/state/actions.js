@@ -220,12 +220,21 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
       // successful boot. No-op if notifiche_attive !== 1.
       maybeReschedule(getState());
     } catch (err) {
-      const code =
-        err?.message === 'NO_ACTIVE_PROFILE' ? 'NO_ACTIVE_PROFILE' : 'INIT_FAILED';
-      const message =
-        code === 'NO_ACTIVE_PROFILE'
-          ? 'Nessun profilo attivo. Attivane uno per continuare.'
-          : (err?.message ?? 'Errore di inizializzazione');
+      // SENTINEL_N5QC_CP4BIS_INIT_PROPAGATE_CODE -- drift-N53: propaga err.code
+      // (es. UNAUTHORIZED) cosi App puo auto-clear un token stale al reload.
+      // Rami NO_ACTIVE_PROFILE + INIT_FAILED preservati (allineamento agli altri thunk).
+      let code;
+      let message;
+      if (err?.message === 'NO_ACTIVE_PROFILE') {
+        code = 'NO_ACTIVE_PROFILE';
+        message = 'Nessun profilo attivo. Attivane uno per continuare.';
+      } else if (err?.code) {
+        code = err.code;
+        message = err?.message ?? 'Errore di inizializzazione';
+      } else {
+        code = 'INIT_FAILED';
+        message = err?.message ?? 'Errore di inizializzazione';
+      }
       dispatch({
         type: 'INIT_ERROR',
         payload: { code, message },

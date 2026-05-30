@@ -11,6 +11,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 describe('repository factory toggle (par.22.90 sub-AMB O + EMP-1)', () => {
   beforeEach(() => {
     vi.resetModules();
+    vi.unstubAllEnvs();
     localStorage.clear();
   });
 
@@ -34,5 +35,14 @@ describe('repository factory toggle (par.22.90 sub-AMB O + EMP-1)', () => {
     const r1 = getRepository();
     const r2 = getRepository();
     expect(r1).toBe(r2);
+  });
+
+  // SENTINEL_N5QC_CP1_TEST_VITE_USE_API -- Q-W.1/Q-W.2: env-driven gate (build Mini), nessun flag localStorage.
+  it('env VITE_USE_API=1 (no localStorage flag): getRepository returns ApiRepository', async () => {
+    vi.stubEnv('VITE_USE_API', '1');
+    const { getRepository } = await import('./index.js');
+    const { ApiRepository } = await import('./ApiRepository.js');
+    const repo = getRepository();
+    expect(repo).toBeInstanceOf(ApiRepository);
   });
 });

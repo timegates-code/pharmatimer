@@ -20,7 +20,16 @@ let _instance = null;
 
 const USE_API_REPO_FLAG = "pharmatimer.useApiRepo";
 
-function _shouldUseApiRepo() {
+// SENTINEL_N5QC_CP1_SHOULD_USE_API_REPO -- Q-W.2 single source of truth (env OR localStorage), cross-path invariant s.6.205.
+// Build-time env (VITE_USE_API=1, profilo Mini) OR runtime localStorage toggle (dev).
+export function shouldUseApiRepo() {
+  try {
+    if (import.meta.env && import.meta.env.VITE_USE_API === "1") {
+      return true;
+    }
+  } catch {
+    // import.meta.env non disponibile -- prosegui con localStorage
+  }
   try {
     return localStorage.getItem(USE_API_REPO_FLAG) === "1";
   } catch {
@@ -28,9 +37,14 @@ function _shouldUseApiRepo() {
   }
 }
 
+// Retrocompat: delega all'unica fonte sopra cosi factory e legacy non divergono.
+function _shouldUseApiRepo() {
+  return shouldUseApiRepo();
+}
+
 export function getRepository() {
   if (!_instance) {
-    _instance = _shouldUseApiRepo()
+    _instance = shouldUseApiRepo()
       ? new ApiRepository()
       : new LocalRepository();
   }
