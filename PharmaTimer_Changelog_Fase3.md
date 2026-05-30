@@ -7770,3 +7770,78 @@ Motivo: CP0.C2-bis rivela che LoginGate e `useApiRepo`-gated solo via localStora
 **One-liner apertura prossima sessione:** nuova sessione su carry-over Fase 3 (sync layer + copertura API completa); prereq opzionale: rebuild/redeploy `dist-mini/` con CP4-bis + validazione S-B/S-C on-device per rc promotion. CP0 mandatory: baseline DB `nome_utente` owner Mini via venv + decisione seed demo reale.
 
 ---
+
+---
+
+<!-- par.11.AA-S3 R1 emit Fase 3 post-N+5.Q-C-beta-exec-CP4 closing par.22.113 SENTINEL_N5R_CARRYOVER_PROMPT_PAR_11_AA_S3 -- apertura nuova sessione carry-over; append DOC-ONLY uncommitted (aggregato al primo commit della prossima sessione) -->
+
+### par.11.AA-S3 -- Prompt apertura nuova sessione Fase 3 (carry-over post-ramo beta-exec)
+
+**Nota stato append.** Questo paragrafo e DOC-ONLY e NON committato al momento della scrittura (nessuna milestone aperta a fine N+5.Q-C-beta-exec-CP4). Verra aggregato al primo commit della prossima sessione, da convenzione. Il CP0 prossimo lo tratti come tale (working tree con `M PharmaTimer_Changelog_Fase3.md` atteso solo per questo append + `?? STATO_CORRENTE.md`).
+
+**Scope alto livello.** Ramo beta-exec chiuso (par.22.113): Arch-1/A1-fastapi CP1->CP4bis committato `b2a9132`, tag `v3.2.0-alpha.11`, Mini backend 0.7.3 live. Questa sessione riparte sul carry-over Fase 3. NESSUNO step incatenato: la prima azione dopo CP0 e far ratificare la priorita (vedi sotto), poi analisi-first sul blocco scelto. Zero codice prima di approvazione (regola critica #1).
+
+**Pre-letture obbligatorie.** par.22.113 (closing beta-exec + s.6.228), par.22.110 (CP1->CP3), par.22.109 (5 decisioni LOCKED Q-W.1-5). STATO_CORRENTE.md (puntatore live). VIETATO MOD apiClient/ApiRepository (cementata).
+
+**CP0 mandatory (Lesson #27 — baseline empirica, non fidarsi del declared-state).**
+- git `fase-3-backend` HEAD atteso `b2a9132`, 0-ahead origin, tag `v3.2.0-alpha.11`. Working tree pulito salvo `?? STATO_CORRENTE.md` (+ `M` Changelog per questo append uncommitted).
+- pyproject `0.7.3`, package `3.2.0-alpha.3`, ImpostazioniTab runtime literal (riga ~498) `3.2.0-alpha.3`. vitest 589/589, pytest 80/80.
+- Mini backend `0.7.3` live: smoke `/openapi.json` info.version (via `importlib.metadata`) + root 200. **Mini = mirror rsync NON checkout git -> verifica versione EMPIRICAMENTE** (drift 0.7.0 emerso in par.22.113, sanato).
+- Baseline DB owner Mini: `nome_utente` via venv `pharmatimer_api.config.settings` (Lesson #21, NON `mysql -e -p`). Verificare se owner ha farmaci (finding seed demo par.6.168).
+- SENTINEL attese a sorgente: 4x SENTINEL_N5QC_CP1 + 4x SENTINEL_N5QC_CP4BIS.
+
+**Ratifica priorita (consigliata per prima) -- prima di qualsiasi codice.**
+1. **Sync layer + copertura API completa** (lavoro principale Fase 3 residuo).
+2. **Rebuild + redeploy `dist-mini/` con CP4-bis** + validazione S-B/S-C on-device (prereq rc promotion; piu piccolo, chiude il loop on-device del drift-N53).
+3. **Seed demo owner reale** (par.6.168, mode='demo' non semina farmaci) vs mantenere placeholder.
+
+**Limitazione scope.** VIETATO MOD apiClient/ApiRepository. rc promotion DEFERRED (prereq validazione S-B/S-C on-device). Patcher f-string graffe vietati (#17/#20). Lesson #38 (file+mv, no heredoc inline). Regole bash zsh (no `#` inline, no apostrofi italiani, single-quote echo, glob quotati). Chiudere early se densita (regola critica #5).
+
+---
+
+
+<!-- par.22.114 R1 emit Fase 3 post-N+5.Q-C-beta-exec-CP4 closing par.22.113 SENTINEL_N5R_CP1_CLOSING_PAR_22_114 -- CP-doc + CP-deploy: guard /api SPA catch-all (s.6.230) + bump 0.7.4 -->
+### par.22.114 -- Closing N+5.R CP-doc + CP-deploy: guard /api prefix nel catch-all SPA (s.6.230 404-non-fallthrough) + audit copertura API + bump 0.7.4 + tag v3.2.0-alpha.12
+
+**Stato sessione:** N+5.R apertura su carry-over Fase 3 (prompt par.11.AA-S3). CP0 mandatory: riconciliato drift di stato (commit `6bb0b9e` 1-ahead NON documentato in par.22.113 ne in STATO_CORRENTE; pytest 80 -> 86 per `test_static_serve_guard.py` NEW). Baseline empirica verde: HEAD `6bb0b9e`, tag base `v3.2.0-alpha.11` (describe `...-1-g6bb0b9e`, 1-ahead), Mini 0.7.3 live (verifica via `/openapi.json`, mirror rsync NON checkout git). Sessione = CP-doc (documentazione del fix gia committato) + CP-deploy (reinstall Mini 0.7.4 + tag). Zero codice nuovo (regola critica #1 non attivata).
+
+**Implementato (CP-doc):**
+- Fix guard `/api` nel catch-all SPA `_serve_spa` di `backend/pharmatimer_api/app.py` (gia in `6bb0b9e`): `if full_path == "api" or full_path.startswith("api/"): raise HTTPException(404)`. SENTINEL `SENTINEL_N5R_CP1_API_PREFIX_GUARD`. Import esteso `HTTPException`. +5/-1.
+- Test `backend/tests/test_static_serve_guard.py` NEW (84 righe, S1/S2/S3): pytest 86/86 (era 80/80).
+- Correzione titolo commit `6bb0b9e` via AMEND: tag deviazione `[s.6.229]` -> `[s.6.230]` (collisione: s.6.229 gia assegnato a token-key localStorage par.22.105). Solo titolo, contenuto invariato. Precedente AMEND: par.22.105.
+- Bump `backend/pyproject.toml` 0.7.3 -> 0.7.4 (aggregato nell amend).
+
+**Deviazione s.6.230 (NEW): path `/api/*` senza handler -> 404 esplicito (non 200 SPA-fallthrough).**
+Con lo static-serve Pattern A (Q-W.5, par.22.109) il catch-all GET `@app.get("/{full_path:path}")` registrato dopo i router intercettava qualunque path non gestito, inclusi i path sotto `/api/*` privi di handler per quel metodo (es. GET `/api/utenti`: il router utenti espone solo POST/DELETE). Risultato pre-fix: 200 + `index.html`, silenzioso e fuorviante per un consumer ApiRepository. Il guard forza 404 esplicito coerente col vocabolario RepositoryError (NOT_FOUND). Nota: per i path `/api/*` esistenti ma con metodo errato il comportamento Starlette nativo (405) NON e alterato; il guard agisce solo sui path che cadrebbero nel catch-all. Motivazione: un endpoint API mancante deve essere distinguibile lato client (404) dal contenuto SPA (200).
+
+**Nota divergenza numerazione deviazioni (doc-only, nessuna correzione retroattiva par.6.71/85).**
+L header del Changelog F3 (riga 13) dichiara "ultima emessa in Fase 2: s.6.240, prossime in Fase 3 a partire da s.6.241+". Il corpo F3 usa di fatto la sequenza s.6.222..s.6.230. La divergenza e annotata qui senza riscrittura ne dell header ne delle deviazioni esistenti. Numerazione operativa autoritativa = sequenza reale del corpo (prossima libera dopo questa = s.6.231).
+
+**Audit copertura API (snapshot 19 endpoint, 6 router):**
+
+| risorsa | GET | POST | PUT | DELETE | osservazione |
+|---|---|---|---|---|---|
+| health | si | - | - | - | diagnostico |
+| utenti | NO | si | NO | si (soft) | GET list deferred F3-S5-beta; PUT assente |
+| permessi | si | si | si | si | CRUD completo |
+| farmaci | si | si | si | si (soft) | CRUD completo |
+| orari | si | NO | si (upsert) | NO | create/delete via PUT upsert |
+| log | si | si (5 verbi) | NO | NO | mutazioni via verbi POST (presa/saltata/sospesa/undo/recupero) |
+
+Endpoint totali: health 1 + utenti 2 + permessi 4 + farmaci 4 + orari 2 + log 6 = 19.
+Gap da ratificare (NON risolti in questa sessione, regola critica #2): (GAP-B) PUT `/api/utenti/{id}` assente -> defer?; (GAP-C) orari senza POST/DELETE espliciti -> intenzionale?; (GAP-D) log senza PUT/DELETE diretti -> coerente append-only?. GAP-A (GET `/api/utenti` -> ora 404) chiuso dal guard s.6.230.
+
+**NON implementato / deferito:**
+- Deprecazione legacy: OMESSA (Q4 chiusa: scope non definito).
+- Risoluzione GAP-B/C/D: deferita a sessione dedicata (sola annotazione qui).
+- par.11.AB-S3 prompt prossima sessione: non emesso in questo turno.
+
+**Deviazioni introdotte in questo step:** s.6.230 (guard /api 404) + nota doc-only divergenza numerazione header/corpo.
+
+**CP-deploy (step successivo, gated su approvazione):** rsync `backend/` -> Mini, `pip install -e .` 0.7.4, restart LaunchAgent, smoke `/api/utenti` 404 + `/openapi.json` 0.7.4 + root 200, tag annotato `v3.2.0-alpha.12`, push atomico.
+
+#### Riferimenti par.22.114
+- par.22.113 closing beta-exec (b2a9132, tag alpha.11, Mini 0.7.3)
+- par.22.109 Q-W.5 Pattern A static-serve (origine del fallthrough)
+- par.22.105 s.6.229 token-key localStorage (collisione ID risolta -> s.6.230)
+- Lesson #27 (dump sorgente + smoke runtime pre-cementazione)

@@ -8,7 +8,7 @@ RepositoryError exception handler deferred CP3 (vocabulary mapping with router).
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -81,6 +81,9 @@ if os.path.isdir(_WEB_DIR):
 
     @app.get("/{full_path:path}")
     async def _serve_spa(full_path: str):
+        # SENTINEL_N5R_CP1_API_PREFIX_GUARD -- F-3: /api/* non deve cadere nel catch-all SPA.
+        if full_path == "api" or full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not Found")
         candidate = os.path.normpath(os.path.join(_WEB_DIR, full_path))
         if (
             full_path
