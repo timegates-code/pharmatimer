@@ -18,3 +18,6 @@ dist-mini/
 patch_*.py
 append_*.py
 *.bak.cp*
+PharmaTimer_Changelog_Fase2.md
+PharmaTimer_Changelog_Fase3.md
+STATO_CORRENTE.md
