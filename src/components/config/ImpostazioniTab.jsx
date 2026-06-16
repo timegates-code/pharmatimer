@@ -495,7 +495,7 @@ function SezioneInfo() {
       style={{ borderTopColor: t.headerBorder }}
     >
       <p className="text-xs" style={{ color: t.textPrimary, opacity: 0.6 }}>
-        PharmaTimer 3.2.0-alpha.3 · <em className="italic">by timegates</em>
+        PharmaTimer 3.2.0-alpha.4 · <em className="italic">by timegates</em>
       </p>
     </section>
   );

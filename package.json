@@ -1,7 +1,7 @@
 {
   "name": "pharmatimer",
   "private": true,
-  "version": "3.2.0-alpha.3",
+  "version": "3.2.0-alpha.4",
   "type": "module",
   "description": "PWA per la gestione della terapia farmacologica quotidiana",
   "scripts": {
@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "test": "vitest",
     "build:tooling": "VITE_PT_TOOLING=1 vite build",
-    "build:mini": "vite build --mode mini --base=/ --outDir dist-mini"
+    "build:mini": "vite build --mode mini --base=/ --outDir dist-mini && node scripts/fix-mini-pwa-base.mjs dist-mini"
   },
   "dependencies": {
     "dexie": "^4.0.8",
