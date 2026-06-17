@@ -9,7 +9,7 @@
 //          rows re-rendered with only matching farmaco_id.
 // ============================================================
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { renderWithProvider } from "../../test/renderHelpers.jsx";
 
@@ -50,9 +50,21 @@ const LOG_FIXTURE = [
 ];
 
 beforeEach(() => {
+  // s.6.243 (F12): pin ONLY the Date clock (not the timers), so that
+  // @testing-library waitFor keeps polling on real timers. CronologiaView
+  // builds its default window as [today-30, today] from new Date(); the
+  // fixtures below are dated 2026-05-14/15 and only fall inside that window
+  // relative to the authoring date. Pinned to 2026-05-17 (authoring/green
+  // window [2026-04-17, 2026-05-17]). Without this the test was a date-bomb.
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-05-17T12:00:00"));
   hoist.repo = {
     getLogByRange: vi.fn(async () => LOG_FIXTURE),
   };
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("CronologiaView (s.6.215 vista Log)", () => {
