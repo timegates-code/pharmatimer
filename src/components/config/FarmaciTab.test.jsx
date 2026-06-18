@@ -619,3 +619,44 @@ describe('FarmaciTab — CP2-iter Sessione 14 par.6.211 hint footer asterisco', 
     expect(star).toHaveTextContent('*');
   });
 });
+
+// SENTINEL_BUGK_S6246_TEST
+// s.6.246 BUG-k fix (Opzione B) — regression guard.
+// Il payload orari verso addFarmaco DEVE includere ora_prevista calcolato
+// PWA-side: senza, PUT /api/farmaci/{id}/orari risponde 422 (OrarioCreate
+// .ora_prevista non nullable) e gli orari non vengono persistiti (farmaco
+// orfano, orari=[]). Vedi BUG-k diagnosi sessione s.6.246.
+describe('FarmaciTab — s.6.246 BUG-k fix: ora_prevista nel payload orari', () => {
+  it('create-mode: ogni item orari passato ad addFarmaco ha ora_prevista HH:MM', async () => {
+    const user = userEvent.setup();
+    const addFarmaco = vi.fn().mockResolvedValue({ ok: true, id: 99 });
+    const showToast = vi.fn();
+
+    renderWithProvider(<FarmaciTab />, {
+      stateOverrides: {
+        farmaci: buildFarmaci(),
+        profili: [buildProfiloAttivo()],
+      },
+      actions: { addFarmaco, showToast },
+    });
+
+    await user.click(screen.getByRole('button', { name: /nuovo farmaco/i }));
+    const drawer = screen.getByTestId('farmaco-drawer');
+
+    await user.type(within(drawer).getByLabelText(/^Nome/), 'TestBugK');
+    await user.click(within(drawer).getByLabelText('Fisso'));
+    fireEvent.change(within(drawer).getByLabelText(/^Relazione/), {
+      target: { value: 'indifferente' },
+    });
+
+    await user.click(within(drawer).getByRole('button', { name: /^salva$/i }));
+
+    await waitFor(() => expect(addFarmaco).toHaveBeenCalledTimes(1));
+    const orariArg = addFarmaco.mock.calls[0][1];
+    expect(Array.isArray(orariArg)).toBe(true);
+    expect(orariArg.length).toBeGreaterThanOrEqual(1);
+    for (const o of orariArg) {
+      expect(o.ora_prevista).toMatch(/^[0-9]{2}:[0-9]{2}$/);
+    }
+  });
+});

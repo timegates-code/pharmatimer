@@ -602,6 +602,25 @@ function FarmacoDrawer({
       offset_minuti: Number(o.offset_minuti) || 0,
       ancora_riferimento: o.ancora_riferimento,
       descrizione_momento: trimOrNull(o.descrizione_momento),
+      // BUG-k fix (s.6.246, Opzione B): include the PWA-computed
+      // ora_prevista snapshot in the bulk-replace payload. The backend
+      // OrarioCreate model requires ora_prevista (non-nullable); without
+      // it PUT /api/farmaci/{id}/orari returns 422 and the orari are never
+      // persisted (farmaco left orphaned with orari=[]). profiloAttivo is
+      // guaranteed present here: the drawer is only reachable when
+      // status==='ready', which init() reaches only with an active profilo
+      // (else NO_ACTIVE_PROFILE), so computeOraPrevista always returns
+      // 'HH:MM'. In Dexie/local mode the snapshot is harmless: planBuilder
+      // recomputes ora_prevista at read time.
+      // SENTINEL_BUGK_S6246_ORA_PREVISTA
+      ora_prevista: computeOraPrevista(
+        {
+          dose_numero: Number(o.dose_numero),
+          offset_minuti: Number(o.offset_minuti) || 0,
+          ancora_riferimento: o.ancora_riferimento,
+        },
+        profiloAttivo,
+      ),
     }));
     return { farmacoData, orari };
   }
