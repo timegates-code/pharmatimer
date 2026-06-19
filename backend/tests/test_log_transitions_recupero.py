@@ -4,7 +4,7 @@ PharmaTimer F3-S3-beta CP1
 Pytest /recupero transitions (4 test): happy, eccesso gap, stato non ricalcolata,
 gap=0.
 """
-from datetime import date, datetime, time as dtime
+from datetime import date, datetime, time as dtime, timedelta
 from typing import Callable, Tuple
 
 from fastapi.testclient import TestClient
@@ -42,7 +42,7 @@ def _setup_interval_drug_with_gap(
             "dose_numero": 2,
             "data": today.isoformat(),
             "ora_prevista": "16:00:00",
-            "ora_ricalcolata": f"16:{gap_minutes:02d}:00" if gap_minutes < 60 else "17:00:00",
+            "ora_ricalcolata": datetime.combine(today, dtime(16, gap_minutes) if gap_minutes < 60 else dtime(17, 0)).isoformat(),
             "gap_minuti": gap_minutes,
         },
     }
@@ -85,7 +85,7 @@ def test_post_recupero_happy(
             "dose_numero": 2,
             "data": today.isoformat(),
             "ora_prevista": "16:00:00",
-            "ora_ricalcolata": "17:00:00",
+            "ora_ricalcolata": datetime.combine(today, dtime(17, 0)).isoformat(),
             "gap_minuti": 60,
         },
     }
@@ -108,7 +108,7 @@ def test_post_recupero_happy(
     body = r_rec.json()
     assert body["stato"] == "ricalcolata"
     assert body["recupero_minuti"] == 30
-    assert body["ora_ricalcolata"] == "16:30:00"
+    assert body["ora_ricalcolata"] == datetime.combine(today, dtime(16, 30)).isoformat()
 
 
 def test_post_recupero_exceeds_gap(
@@ -199,7 +199,7 @@ def test_post_recupero_no_gap(
             "dose_numero": 2,
             "data": today.isoformat(),
             "ora_prevista": "16:00:00",
-            "ora_ricalcolata": "16:00:00",
+            "ora_ricalcolata": datetime.combine(today, dtime(16, 0)).isoformat(),
             "gap_minuti": 0,
         },
     }
@@ -221,3 +221,80 @@ def test_post_recupero_no_gap(
     assert r_rec.status_code == 409
     msg = r_rec.json()["error"]["message"].lower()
     assert "gap" in msg or "recuperare" in msg
+
+def test_post_recupero_cross_midnight_no_false_anticipation(
+    client: TestClient,
+    seed_owner_test: Tuple[str, int],
+    insert_test_farmaco: Callable[..., int],
+) -> None:
+    """Q-D (migration v04): dose 'ricalcolata' cross-midnight.
+
+    ora_prevista 23:30 (giorno D), ora_ricalcolata 01:30 (giorno D+1), gap 120.
+    /recupero 60 -> 200: nuova ora_ricalcolata 00:30 (D+1), che in confronto
+    ASSOLUTO resta >= TIMESTAMP(data, 23:30). La vecchia logica time-of-day dava
+    un falso 409 (01:30 < 23:30); il 200 prova R1 (INTERVAL cross-midnight) + R2
+    (no-anticipation SQL-side full-datetime).
+
+    Boundary: /recupero 121 -> 409. Nota: sotto l'invariante normale
+    (ora_ricalcolata = pianificato + gap_minuti) questo 409 scatta sul gap-check
+    (121 > gap 120), non sul post-check R2; R2 e' difesa in profondita'.
+    """
+    token, owner_id = seed_owner_test
+    farmaco_id = insert_test_farmaco(
+        utente_id=owner_id,
+        nome="CrossMidnight",
+        tipo_frequenza="intervallo",
+        intervallo_ore="8.0",
+        intervallo_minimo_ore="4.0",
+        dosi_giornaliere=3,
+    )
+    today = date.today()
+    planned = datetime.combine(today, dtime(23, 30))
+    presa_payload = {
+        "data": today.isoformat(),
+        "dose_numero": 1,
+        "ora_prevista": "20:00:00",
+        "ora_effettiva": datetime.combine(today, dtime(22, 0)).isoformat(),
+        "delta_minuti": 120,
+        "gap_minuti": 120,
+        "recupero_minuti": 0,
+        "ricalcolo_dose_successiva": {
+            "dose_numero": 2,
+            "data": today.isoformat(),
+            "ora_prevista": "23:30:00",
+            "ora_ricalcolata": (planned + timedelta(minutes=120)).isoformat(),
+            "gap_minuti": 120,
+        },
+    }
+    r_presa = client.post(
+        f"/api/farmaci/{farmaco_id}/log/presa",
+        json=presa_payload,
+        headers={"X-User-Token": token},
+    )
+    assert r_presa.status_code == 201
+
+    r_ok = client.post(
+        f"/api/farmaci/{farmaco_id}/log/recupero",
+        json={
+            "data": today.isoformat(),
+            "dose_numero": 2,
+            "recupero_minuti": 60,
+        },
+        headers={"X-User-Token": token},
+    )
+    assert r_ok.status_code == 200
+    body = r_ok.json()
+    assert body["stato"] == "ricalcolata"
+    assert body["ora_ricalcolata"] == (planned + timedelta(minutes=60)).isoformat()
+
+    r_over = client.post(
+        f"/api/farmaci/{farmaco_id}/log/recupero",
+        json={
+            "data": today.isoformat(),
+            "dose_numero": 2,
+            "recupero_minuti": 121,
+        },
+        headers={"X-User-Token": token},
+    )
+    assert r_over.status_code == 409
+

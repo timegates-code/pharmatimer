@@ -9,9 +9,10 @@ LogAssunzioneResponse: GET response, all 14 columns.
 ENUM stato: 5 values DDL aligned Spec sez. 3.6.
 
 CP2-fix (drift-N39): mysql-connector-python returns MySQL TIME columns as
-datetime.timedelta; field_validator(mode='before') coerces ora_prevista and
-ora_ricalcolata to datetime.time on Response model only (Create models receive
-ISO string from JSON and use Pydantic native parser).
+datetime.timedelta; field_validator(mode='before') coerces ora_prevista to
+datetime.time on Response model only (Create models receive ISO string from
+JSON and use Pydantic native parser). ora_ricalcolata is now DATETIME (migration
+v04) and is parsed natively by Pydantic (no timedelta coercion needed).
 """
 from datetime import date, datetime, time, timedelta
 from typing import Literal, Optional
@@ -43,14 +44,15 @@ class RicalcoloDoseSuccessivaPayload(BaseModel):
     """Optional nested payload for batch upsert dose D+1 in same /presa transaction.
 
     PWA provides both ora_prevista (original, NOT NULL DDL) and ora_ricalcolata
-    (PWA-computed new time after gap-aware recalc per F3-S3.C). Backend persists
+    (PWA-computed new datetime after gap-aware recalc per F3-S3.C; full ISO
+    datetime per migration v04, cross-midnight safe). Backend persists
     'ricalcolata' state atomically with /presa (CP1.C).
     """
 
     dose_numero: int = Field(..., ge=1)
     data: date
     ora_prevista: time
-    ora_ricalcolata: time
+    ora_ricalcolata: datetime
     gap_minuti: int
 
 
@@ -88,7 +90,7 @@ class LogAssunzioneResponse(BaseModel):
     ora_prevista: time
     ora_effettiva: Optional[datetime] = None
     delta_minuti: Optional[int] = None
-    ora_ricalcolata: Optional[time] = None
+    ora_ricalcolata: Optional[datetime] = None
     gap_minuti: int
     recupero_minuti: int
     stato: StatoAssunzione
@@ -96,9 +98,6 @@ class LogAssunzioneResponse(BaseModel):
     created_at: datetime
 
     _coerce_ora_prevista = field_validator("ora_prevista", mode="before")(
-        _coerce_timedelta_to_time
-    )
-    _coerce_ora_ricalcolata = field_validator("ora_ricalcolata", mode="before")(
         _coerce_timedelta_to_time
     )
 

@@ -83,7 +83,7 @@ def test_post_undo_from_presa_intervallo_rolls_back_d_plus_one(
             "dose_numero": 2,
             "data": today.isoformat(),
             "ora_prevista": "16:00:00",
-            "ora_ricalcolata": "16:30:00",
+            "ora_ricalcolata": datetime.combine(today, dtime(16, 30)).isoformat(),
             "gap_minuti": 30,
         },
     }

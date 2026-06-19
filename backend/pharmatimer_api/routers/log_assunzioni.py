@@ -541,7 +541,7 @@ def post_recupero(
     Q5 = A (minimal scope): only 1 target dose, no cascade D+1..D+N.
     Q-RES-2 = A constraints:
       - recupero_minuti <= row.gap_minuti
-      - resulting ora_ricalcolata >= ora_prevista (no anticipation)
+      - resulting ora_ricalcolata >= TIMESTAMP(data, ora_prevista) (no anticipation)
     TODO F3-S3-gamma+: intervallo_minimo_ore enforcement (Q-RES-2 deferred).
 
     DRIFT-NEW.3 = A: read row.gap_minuti directly (no TIMESTAMPDIFF inline).
@@ -585,22 +585,27 @@ def post_recupero(
                 ),
             )
 
-        # Apply via SUBTIME (DDL stores ora_ricalcolata as TIME).
+        # Apply via INTERVAL MINUTE (ora_ricalcolata is DATETIME, migration v04;
+        # cross-midnight safe, unlike time-of-day SUBTIME).
         cur.execute(
             "UPDATE log_assunzioni SET "
             "recupero_minuti = %s, "
-            "ora_ricalcolata = SUBTIME(ora_ricalcolata, SEC_TO_TIME(%s * 60)) "
+            "ora_ricalcolata = ora_ricalcolata - INTERVAL %s MINUTE "
             "WHERE id = %s",
             (payload.recupero_minuti, payload.recupero_minuti, existing["id"]),
         )
 
-        # Post-check: nuova ora_ricalcolata >= ora_prevista (no anticipation).
+        # Post-check: ora_ricalcolata >= TIMESTAMP(data, ora_prevista) (no
+        # anticipation). Computed SQL-side because ora_ricalcolata is DATETIME
+        # but ora_prevista is TIME (Q-A): re-anchor to the row date for a
+        # homogeneous comparison (migration v04, Q-C full-datetime).
         cur.execute(
-            "SELECT ora_prevista, ora_ricalcolata FROM log_assunzioni WHERE id = %s",
+            "SELECT (ora_ricalcolata < TIMESTAMP(data, ora_prevista)) "
+            "AS anticipates FROM log_assunzioni WHERE id = %s",
             (existing["id"],),
         )
         check_row = cur.fetchone()
-        if check_row["ora_ricalcolata"] < check_row["ora_prevista"]:
+        if check_row["anticipates"]:
             raise RepositoryError(
                 code=RepositoryErrorCode.CONSTRAINT_VIOLATION,
                 message="Recupero anticipa oltre l'orario base previsto",

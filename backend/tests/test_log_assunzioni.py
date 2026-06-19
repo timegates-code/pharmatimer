@@ -101,7 +101,7 @@ def test_post_presa_with_ricalcolo(
             "dose_numero": 2,
             "data": today.isoformat(),
             "ora_prevista": "16:00:00",
-            "ora_ricalcolata": "16:30:00",
+            "ora_ricalcolata": datetime.combine(today, dtime(16, 30)).isoformat(),
             "gap_minuti": 30,
         },
     }
@@ -126,7 +126,7 @@ def test_post_presa_with_ricalcolo(
     assert len(items) == 2
     dose2 = next(i for i in items if i["dose_numero"] == 2)
     assert dose2["stato"] == "ricalcolata"
-    assert dose2["ora_ricalcolata"] == "16:30:00"
+    assert dose2["ora_ricalcolata"] == datetime.combine(today, dtime(16, 30)).isoformat()
     assert dose2["gap_minuti"] == 30
 
 
