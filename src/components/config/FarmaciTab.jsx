@@ -948,6 +948,7 @@ function FarmacoDrawer({
         <fieldset className="flex flex-col gap-1">
           <legend className="text-sm font-medium" style={{ color: t.textPrimary }}>
             Tipo frequenza
+            <span aria-hidden="true" className="text-red-500 ml-1">*</span>
           </legend>
           <div className="flex gap-4 py-1">
             <label className="flex items-center gap-2" style={{ color: t.textPrimary }}>

@@ -746,23 +746,19 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
   }
 
   async function addFarmaco(farmacoData, orari) {
+    // BUG-l F14 post-commit best-effort: commit and post-commit refresh are
+    // separated. A successful withTransaction means the farmaco IS persisted,
+    // so we MUST return {ok:true}; a failure in the post-commit refresh
+    // (refetch / rebuildPlan / reschedule) is surfaced as a non-fatal warning
+    // but never reports the save as failed (which caused silent duplicates).
+    let newId;
     try {
-      let newId;
       await repo.withTransaction('rw', ['farmaci', 'orari_base'], async () => {
         newId = await repo.addFarmaco({ ...farmacoData, attivo: 1 });
         if (Array.isArray(orari) && orari.length > 0) {
           await repo.replaceOrariForFarmaco(newId, orari);
         }
       });
-      const [farmaci, orariAll] = await Promise.all([
-        repo.getFarmaci({ soloAttivi: GET_FARMACI_SOLO_ATTIVI }),
-        repo.getAllOrari(),
-      ]);
-      dispatch({ type: 'SET_FARMACI', payload: farmaci });
-      dispatch({ type: 'SET_ORARI', payload: orariAll });
-      await rebuildPlanFromFresh({ farmaci, orari: orariAll });
-      maybeReschedule(getState()); // §6.126 trigger 5.4 (addFarmaco)
-      return { ok: true, id: newId };
     } catch (err) {
       dispatch({
         type: 'SET_ERROR',
@@ -775,9 +771,32 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
       });
       return { ok: false };
     }
+    try {
+      const [farmaci, orariAll] = await Promise.all([
+        repo.getFarmaci({ soloAttivi: GET_FARMACI_SOLO_ATTIVI }),
+        repo.getAllOrari(),
+      ]);
+      dispatch({ type: 'SET_FARMACI', payload: farmaci });
+      dispatch({ type: 'SET_ORARI', payload: orariAll });
+      await rebuildPlanFromFresh({ farmaci, orari: orariAll });
+      maybeReschedule(getState()); // §6.126 trigger 5.4 (addFarmaco)
+    } catch (postErr) {
+      dispatch({
+        type: 'SET_ERROR',
+        payload: {
+          kind: 'repo',
+          severity: 'warning',
+          code: postErr?.code,
+          message: postErr?.message ?? 'Farmaco salvato; aggiornamento vista non riuscito',
+        },
+      });
+    }
+    return { ok: true, id: newId };
   }
 
   async function updateFarmaco(id, patch, orari) {
+    // BUG-l F14 post-commit best-effort: see addFarmaco. Commit success must
+    // return {ok:true}; post-commit refresh failure is a non-fatal warning.
     try {
       await repo.withTransaction('rw', ['farmaci', 'orari_base'], async () => {
         await repo.updateFarmaco(id, patch);
@@ -787,15 +806,6 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
           await repo.replaceOrariForFarmaco(id, orari);
         }
       });
-      const [farmaci, orariAll] = await Promise.all([
-        repo.getFarmaci({ soloAttivi: GET_FARMACI_SOLO_ATTIVI }),
-        repo.getAllOrari(),
-      ]);
-      dispatch({ type: 'SET_FARMACI', payload: farmaci });
-      dispatch({ type: 'SET_ORARI', payload: orariAll });
-      await rebuildPlanFromFresh({ farmaci, orari: orariAll });
-      maybeReschedule(getState()); // §6.126 trigger 5.5 (updateFarmaco)
-      return { ok: true };
     } catch (err) {
       dispatch({
         type: 'SET_ERROR',
@@ -808,6 +818,27 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
       });
       return { ok: false };
     }
+    try {
+      const [farmaci, orariAll] = await Promise.all([
+        repo.getFarmaci({ soloAttivi: GET_FARMACI_SOLO_ATTIVI }),
+        repo.getAllOrari(),
+      ]);
+      dispatch({ type: 'SET_FARMACI', payload: farmaci });
+      dispatch({ type: 'SET_ORARI', payload: orariAll });
+      await rebuildPlanFromFresh({ farmaci, orari: orariAll });
+      maybeReschedule(getState()); // §6.126 trigger 5.5 (updateFarmaco)
+    } catch (postErr) {
+      dispatch({
+        type: 'SET_ERROR',
+        payload: {
+          kind: 'repo',
+          severity: 'warning',
+          code: postErr?.code,
+          message: postErr?.message ?? 'Farmaco aggiornato; aggiornamento vista non riuscito',
+        },
+      });
+    }
+    return { ok: true };
   }
 
   async function deleteFarmaco(id) {
