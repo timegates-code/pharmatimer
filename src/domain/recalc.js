@@ -26,7 +26,7 @@
  * + FarmaciTab impedisce trigger user-side per farmaci extended.
  */
 
-import { calcolaDelta, composeIsoDateTime, addMinutesToIso } from '../utils/time.js';
+import { calcolaDelta, composeIsoDateTime, addMinutesToIso, parseIsoDateTime } from '../utils/time.js';
 import { SOGLIA_PROMPT_RECUPERO } from './constants.js';
 import { DomainError } from './errors.js';
 import { computeOraPrevista } from './orarioResolver.js';
@@ -327,12 +327,28 @@ export function applyAssunzione(plan, input) {
     target.orario.dose_numero
   );
 
-  // Step 2: compute delta against the effective planned time (ricalcolata
-  // wins over prevista) on the target's dateStr.
-  const plannedTime = target.ora_ricalcolata || target.ora_prevista;
+  // Step 2: compute delta against the effective planned time. When the dose
+  // is already 'ricalcolata', ora_ricalcolata is a full ISO 'YYYY-MM-DDTHH:MM'
+  // (spec sez. 6.115b): derive BOTH date and time from it -- its own dateStr
+  // may be the next calendar day for cross-midnight recalcs, so target.dateStr
+  // must NOT be reused. Otherwise fall back to the entry's dateStr + ora_prevista
+  // (HH:MM). Fixes BUG-n: an ISO passed as oraPrevista produced
+  // 'YYYY-MM-DDT<ISO>:00' -> Invalid Date -> delta = NaN (par.22.141).
+  let dataPrevistaDelta;
+  let oraPrevistaDelta;
+  if (target.ora_ricalcolata) {
+    const { dateStr: ricalcDate, hhmm: ricalcTime } = parseIsoDateTime(
+      target.ora_ricalcolata
+    );
+    dataPrevistaDelta = ricalcDate;
+    oraPrevistaDelta = ricalcTime;
+  } else {
+    dataPrevistaDelta = target.dateStr;
+    oraPrevistaDelta = target.ora_prevista;
+  }
   const delta = calcolaDelta({
-    dataPrevista: target.dateStr,
-    oraPrevista: plannedTime,
+    dataPrevista: dataPrevistaDelta,
+    oraPrevista: oraPrevistaDelta,
     dataEffettiva,
     oraEffettiva,
   });

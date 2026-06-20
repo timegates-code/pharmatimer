@@ -1360,3 +1360,97 @@ describe('CP3 §6.115b — recalc cross-midnight ISO propagation (Sessione 9-A)'
     expect(skippedLog.ora_ricalcolata).toBe('2026-04-27T05:00');
   });
 });
+
+
+// ============================================================
+// BUG-n (par.22.141) -- applyAssunzione su dose gia 'ricalcolata' (no NaN)
+// Step 2 passava ora_ricalcolata (ISO completo) a calcolaDelta come HH:MM
+// -> 'YYYY-MM-DDT<ISO>:00' -> Invalid Date -> delta=NaN. Nessun test
+// pre-esistente prendeva una dose con ora_ricalcolata != null. Prerequisito
+// P3 round-trip lato client.
+// ============================================================
+
+describe('BUG-n -- applyAssunzione su dose gia ricalcolata (no NaN)', () => {
+  let farmaco, orario1, orario2;
+
+  beforeEach(() => {
+    farmaco = makeFarmaco({
+      id: 1,
+      tipo_frequenza: 'intervallo',
+      intervallo_ore: 8,
+      intervallo_minimo_ore: 4,
+      dosi_giornaliere: 2,
+    });
+    orario1 = makeOrario(1, 1);
+    orario2 = makeOrario(1, 2);
+  });
+
+  it('same-day: dose ricalcolata a 18:00 presa alle 18:05 -> delta +5 (non NaN)', () => {
+    const e1 = makeEntry(farmaco, orario1, '2026-04-16', '08:00', {
+      stato: 'presa',
+      ora_effettiva: '2026-04-16T10:00:00',
+      delta_minuti: 120,
+    });
+    const e2 = makeEntry(farmaco, orario2, '2026-04-16', '16:00', {
+      stato: 'ricalcolata',
+      ora_ricalcolata: '2026-04-16T18:00',
+      ora_ricalcolata_originale: '2026-04-16T18:00',
+      gap_minuti: 120,
+      gap_originale: 120,
+    });
+    const result = applyAssunzione([e1, e2], {
+      entryKey: e2.key,
+      dataEffettiva: '2026-04-16',
+      oraEffettiva: '18:05',
+    });
+    const d2 = result.plan.find((e) => e.key === e2.key);
+    expect(d2.stato).toBe('presa');
+    expect(Number.isNaN(d2.delta_minuti)).toBe(false);
+    expect(d2.delta_minuti).toBe(5);
+  });
+
+  it('cross-midnight: dose ricalcolata 2026-04-27T07:00 presa alle 07:10 del 27 -> delta +10', () => {
+    const e1 = makeEntry(farmaco, makeOrario(1, 1), '2026-04-26', '23:00', {
+      stato: 'presa',
+      ora_effettiva: '2026-04-26T23:00:00',
+      delta_minuti: 0,
+    });
+    const e2 = makeEntry(farmaco, makeOrario(1, 1), '2026-04-27', '07:00', {
+      stato: 'ricalcolata',
+      ora_ricalcolata: '2026-04-27T07:00',
+      ora_ricalcolata_originale: '2026-04-27T07:00',
+      gap_minuti: 0,
+      gap_originale: 0,
+    });
+    const result = applyAssunzione([e1, e2], {
+      entryKey: e2.key,
+      dataEffettiva: '2026-04-27',
+      oraEffettiva: '07:10',
+    });
+    const d2 = result.plan.find((e) => e.key === e2.key);
+    expect(d2.stato).toBe('presa');
+    expect(d2.delta_minuti).toBe(10);
+  });
+
+  it('round-trip P3: dose1 in ritardo -> dose2 ricalcolata -> presa dose2 -> delta +30 (no NaN)', () => {
+    const e1 = makeEntry(farmaco, orario1, '2026-04-16', '08:00');
+    const e2 = makeEntry(farmaco, orario2, '2026-04-16', '16:00');
+    const r1 = applyAssunzione([e1, e2], {
+      entryKey: e1.key,
+      dataEffettiva: '2026-04-16',
+      oraEffettiva: '10:00',
+    });
+    const d2recalc = r1.plan.find((e) => e.key === e2.key);
+    expect(d2recalc.stato).toBe('ricalcolata');
+    expect(d2recalc.ora_ricalcolata).toBe('2026-04-16T18:00');
+    const r2 = applyAssunzione(r1.plan, {
+      entryKey: e2.key,
+      dataEffettiva: '2026-04-16',
+      oraEffettiva: '18:30',
+    });
+    const d2presa = r2.plan.find((e) => e.key === e2.key);
+    expect(d2presa.stato).toBe('presa');
+    expect(Number.isNaN(d2presa.delta_minuti)).toBe(false);
+    expect(d2presa.delta_minuti).toBe(30);
+  });
+});
