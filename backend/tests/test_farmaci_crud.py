@@ -269,3 +269,33 @@ def test_delete_then_get_filters_out(
     assert get_response.status_code == 200
     ids = [f["id"] for f in get_response.json()]
     assert farmaco_id not in ids
+
+
+def test_post_happy_fisso_date(
+    client: TestClient, seed_owner_test: Tuple[str, int]
+) -> None:
+    """T13: POST fisso_date con intervallo_ore None -> 201."""
+    token, _ = seed_owner_test
+    payload = _payload_fisso(nome="TestFissoDate", tipo_frequenza="fisso_date")
+    response = client.post(
+        "/api/farmaci", json=payload, headers={"X-User-Token": token}
+    )
+    assert response.status_code == 201
+    body = response.json()
+    assert body["tipo_frequenza"] == "fisso_date"
+    assert body["intervallo_ore"] is None
+
+
+def test_post_fail_fisso_date_with_intervallo_ore(
+    client: TestClient, seed_owner_test: Tuple[str, int]
+) -> None:
+    """T14: POST fisso_date + intervallo_ore valorizzato -> 422 (cross-field validator)."""
+    token, _ = seed_owner_test
+    payload = _payload_fisso(
+        nome="FissoDateKo", tipo_frequenza="fisso_date", intervallo_ore="8.0"
+    )
+    response = client.post(
+        "/api/farmaci", json=payload, headers={"X-User-Token": token}
+    )
+    assert response.status_code == 422
+    assert "intervallo_ore deve essere NULL" in str(response.json())

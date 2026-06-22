@@ -14,7 +14,7 @@ from typing import Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
-TipoFrequenza = Literal["intervallo", "fisso"]
+TipoFrequenza = Literal["intervallo", "fisso", "fisso_date"]
 RelazionePasto = Literal[
     "prima", "durante", "dopo", "stomaco_pieno", "lontano", "indifferente"
 ]
@@ -42,19 +42,22 @@ class FarmacoBase(BaseModel):
     def _validate_frequenza_consistency(self) -> "FarmacoBase":
         """Enforce tipo_frequenza vs intervallo_ore/intervallo_minimo_ore (F3-S2 CP1).
 
-        Rules (DDL v01_init.sql + Spec sez. 3.1 + F3-S2.D-bis ratified par.11.D-S2):
-        - tipo_frequenza='fisso': intervallo_ore AND intervallo_minimo_ore MUST be None.
+        Rules (DDL v05_fisso_date.sql + Spec sez. 3.1 + F14 Blocco 2 par.22.148):
+        - tipo_frequenza='fisso' OR 'fisso_date': intervallo_ore AND
+          intervallo_minimo_ore MUST be None.
         - tipo_frequenza='intervallo': intervallo_ore MUST be set AND > 0.
         - dosi_giornaliere is always required (DDL NOT NULL); ge=1 enforced in Field().
         """
-        if self.tipo_frequenza == "fisso":
+        if self.tipo_frequenza in ("fisso", "fisso_date"):
             if self.intervallo_ore is not None:
                 raise ValueError(
-                    "intervallo_ore deve essere NULL per tipo_frequenza=fisso"
+                    "intervallo_ore deve essere NULL per "
+                    "tipo_frequenza=fisso/fisso_date"
                 )
             if self.intervallo_minimo_ore is not None:
                 raise ValueError(
-                    "intervallo_minimo_ore deve essere NULL per tipo_frequenza=fisso"
+                    "intervallo_minimo_ore deve essere NULL per "
+                    "tipo_frequenza=fisso/fisso_date"
                 )
         else:
             if self.intervallo_ore is None or self.intervallo_ore <= 0:

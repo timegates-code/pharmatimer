@@ -55,10 +55,10 @@ def list_orari(
         _verify_farmaco_ownership(cur, farmaco_id, current_user.id)
         cur.execute(
             "SELECT id, utente_id, farmaco_id, dose_numero, offset_minuti, "
-            "ancora_riferimento, ora_prevista, descrizione_momento "
+            "ancora_riferimento, ora_prevista, descrizione_momento, data_specifica "
             "FROM orari_base "
             "WHERE utente_id = %s AND farmaco_id = %s "
-            "ORDER BY dose_numero ASC",
+            "ORDER BY data_specifica ASC, dose_numero ASC",
             (current_user.id, farmaco_id),
         )
         rows = cur.fetchall()
@@ -97,8 +97,8 @@ def replace_orari(
             cur.executemany(
                 "INSERT INTO orari_base ("
                 "utente_id, farmaco_id, dose_numero, offset_minuti, "
-                "ancora_riferimento, ora_prevista, descrizione_momento"
-                ") VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                "ancora_riferimento, ora_prevista, descrizione_momento, data_specifica"
+                ") VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
                 [
                     (
                         current_user.id,
@@ -108,16 +108,17 @@ def replace_orari(
                         o.ancora_riferimento,
                         o.ora_prevista,
                         o.descrizione_momento,
+                        o.data_specifica,
                     )
                     for o in orari
                 ],
             )
         cur.execute(
             "SELECT id, utente_id, farmaco_id, dose_numero, offset_minuti, "
-            "ancora_riferimento, ora_prevista, descrizione_momento "
+            "ancora_riferimento, ora_prevista, descrizione_momento, data_specifica "
             "FROM orari_base "
             "WHERE utente_id = %s AND farmaco_id = %s "
-            "ORDER BY dose_numero ASC",
+            "ORDER BY data_specifica ASC, dose_numero ASC",
             (current_user.id, farmaco_id),
         )
         rows = cur.fetchall()

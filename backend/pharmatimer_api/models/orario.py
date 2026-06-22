@@ -1,6 +1,6 @@
 """
 PharmaTimer F3-S3alpha CP2-fix
-Pydantic models for orari_base resource (8 columns DDL).
+Pydantic models for orari_base resource (9 columns DDL).
 
 OrarioBase: shared writable fields (DRY).
 OrarioCreate: single bulk-replace item payload (utente/farmaco injected server-side).
@@ -13,7 +13,7 @@ CP2-fix (drift-N39): mysql-connector-python returns MySQL TIME as datetime.timed
 field_validator(mode='before') coerces to datetime.time. String/time input from
 JSON pass through to Pydantic native parser.
 """
-from datetime import time, timedelta
+from datetime import date, time, timedelta
 from typing import Literal, Optional
 
 from pydantic import (
@@ -56,6 +56,7 @@ class OrarioBase(BaseModel):
     ancora_riferimento: AncoraRiferimento
     ora_prevista: time
     descrizione_momento: Optional[str] = Field(default=None, max_length=100)
+    data_specifica: Optional[date] = None
 
     _coerce_ora_prevista = field_validator("ora_prevista", mode="before")(
         _coerce_timedelta_to_time
@@ -70,7 +71,7 @@ class OrarioCreate(OrarioBase):
 
 
 class OrarioResponse(OrarioBase):
-    """GET response payload. All 8 columns from orari_base."""
+    """GET response payload. All 9 columns from orari_base."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -88,21 +89,76 @@ class OrariBulkPayload(RootModel[list[OrarioCreate]]):
 
     @model_validator(mode="after")
     def _validate_bulk(self) -> "OrariBulkPayload":
+        """Cross-item validation (par.22.148 F14 Blocco 2).
+
+        data_specifica drives the branch (farmaco is mono-tipo, Q-F):
+        - all-NULL  -> recurring rows: global univocity + sequentiality 1..N (legacy).
+        - all-valued-> fisso_date occurrences (Pattern S): anchor 'assoluto' (Q-H),
+          <=30 distinct dates (Q-G), per-date dose_numero 1..M with constant M.
+        - mixed     -> rejected.
+        Time equality across dates is NOT enforced here (Q-I=form responsibility).
+        """
         orari = self.root
         if not orari:
             return self
-        dose_numbers = [o.dose_numero for o in orari]
-        seen = set()
-        for dn in dose_numbers:
-            if dn in seen:
-                raise ValueError(
-                    f"dose_numero duplicato: {dn} (deve essere univoco per farmaco)"
-                )
-            seen.add(dn)
-        sorted_dn = sorted(dose_numbers)
-        expected = list(range(1, len(sorted_dn) + 1))
-        if sorted_dn != expected:
+        valued = [o for o in orari if o.data_specifica is not None]
+        null_rows = [o for o in orari if o.data_specifica is None]
+        # Q-F: mixed population rejected.
+        if valued and null_rows:
             raise ValueError(
-                f"dose_numero deve essere sequenziale 1..N, ricevuto {sorted_dn}"
+                "data_specifica deve essere valorizzata su tutte le righe "
+                "o su nessuna (farmaco mono-tipo)"
             )
+
+        if not valued:
+            # All-NULL: recurring rows. Global univocity + sequentiality 1..N.
+            dose_numbers = [o.dose_numero for o in orari]
+            seen = set()
+            for dn in dose_numbers:
+                if dn in seen:
+                    raise ValueError(
+                        f"dose_numero duplicato: {dn} (deve essere univoco per farmaco)"
+                    )
+                seen.add(dn)
+            sorted_dn = sorted(dose_numbers)
+            expected = list(range(1, len(sorted_dn) + 1))
+            if sorted_dn != expected:
+                raise ValueError(
+                    f"dose_numero deve essere sequenziale 1..N, ricevuto {sorted_dn}"
+                )
+            return self
+
+        # All-valued: fisso_date occurrences (Pattern S).
+        # Q-H: anchor MUST be 'assoluto' on every valued row.
+        for o in valued:
+            if o.ancora_riferimento != "assoluto":
+                raise ValueError(
+                    "ancora_riferimento deve essere 'assoluto' per righe "
+                    "con data_specifica"
+                )
+        # Q-G: at most 30 distinct dates.
+        distinct_dates = {o.data_specifica for o in valued}
+        if len(distinct_dates) > 30:
+            raise ValueError(
+                f"numero massimo di date superato: {len(distinct_dates)} (max 30)"
+            )
+        # Per-date dose_numero sequentiality 1..M with constant M across dates.
+        by_date: dict = {}
+        for o in valued:
+            by_date.setdefault(o.data_specifica, []).append(o.dose_numero)
+        expected_m = None
+        for d, dns in by_date.items():
+            m = len(dns)
+            if expected_m is None:
+                expected_m = m
+            elif m != expected_m:
+                raise ValueError(
+                    "numero di dosi per data non costante (Pattern S): "
+                    f"atteso {expected_m}, trovato {m} per la data {d}"
+                )
+            if sorted(dns) != list(range(1, m + 1)):
+                raise ValueError(
+                    f"dose_numero deve essere sequenziale 1..M per la data {d}, "
+                    f"ricevuto {sorted(dns)}"
+                )
         return self
