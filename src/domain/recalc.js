@@ -100,6 +100,21 @@ function findNextDose(plan, farmacoId, dateStr, doseNumero) {
   );
   if (sameDay) return sameDay;
 
+  // F14 fisso_date (flat-list, par.22.150): a dated target dose
+  // (orario.data_specifica != null) is an independent (date, time) occurrence
+  // with no recurrence, hence no cross-day successor. Suppress the cross-day
+  // fallback to avoid spurious dose_prec_saltata and false DOWNSTREAM_USER_EDITS
+  // across unrelated dates. The signature is unchanged (the 4 callers stay
+  // untouched): the target is located in the plan by (farmacoId, dateStr,
+  // doseNumero). A NULL/absent data_specifica preserves the recurring path.
+  const targetEntry = plan.find(
+    (e) =>
+      e.farmaco.id === farmacoId &&
+      e.dateStr === dateStr &&
+      e.orario.dose_numero === doseNumero
+  );
+  if (targetEntry && targetEntry.orario.data_specifica != null) return null;
+
   // Cross-day: first following day whose dose_numero === 1 for the same farmaco.
   // We iterate forward day by day because the plan may span multiple days and
   // we want the earliest occurrence.

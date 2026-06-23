@@ -1454,3 +1454,48 @@ describe('BUG-n -- applyAssunzione su dose gia ricalcolata (no NaN)', () => {
     expect(d2presa.delta_minuti).toBe(30);
   });
 });
+
+
+// ============================================================
+// F14 Blocco 2 (par.22.150) — fisso_date / lista piatta
+// Guard cross-data in findNextDose: una dose datata (data_specifica != null) non
+// ha successore cross-day -> nessun dose_prec_saltata fra date scollegate.
+// Same-day resta attivo. Modello LISTA PIATTA, NON Pattern S.
+// ============================================================
+
+describe('F14 fisso_date — lista piatta (guard cross-data findNextDose)', () => {
+  function makeOrarioDatato(farmaco_id, dose_numero, offset_minuti, data_specifica) {
+    return { ...makeOrario(farmaco_id, dose_numero, offset_minuti), data_specifica };
+  }
+
+  it('E — salto puntuale 25 -> 27: la dose del 27 NON riceve dose_prec_saltata (no cross-data)', () => {
+    const farmaco = makeFarmaco({ id: 54, tipo_frequenza: 'fisso_date', dosi_giornaliere: 1 });
+    const o25 = makeOrarioDatato(54, 1, 480, '2026-06-25');
+    const o27 = makeOrarioDatato(54, 1, 540, '2026-06-27');
+    const e25 = makeEntry(farmaco, o25, '2026-06-25', '08:00');
+    const e27 = makeEntry(farmaco, o27, '2026-06-27', '09:00');
+    const plan = [e25, e27];
+    const result = applySalto(plan, e25.key);
+    const target = result.plan.find((e) => e.key === e25.key);
+    const cross = result.plan.find((e) => e.key === e27.key);
+    expect(target.stato).toBe('saltata');
+    expect(cross.dose_prec_saltata).toBe(false); // guard: nessun successore cross-data
+    expect(result.logWrites).toHaveLength(1);     // solo il target
+    expect(result.prompt).toBeNull();
+  });
+
+  it('F — due dosi stessa data 25 (08:00 + 20:00), salto 08:00: la 20:00 riceve il marker', () => {
+    const farmaco = makeFarmaco({ id: 55, tipo_frequenza: 'fisso_date', dosi_giornaliere: 2 });
+    const o1 = makeOrarioDatato(55, 1, 480, '2026-06-25');
+    const o2 = makeOrarioDatato(55, 2, 1200, '2026-06-25');
+    const e1 = makeEntry(farmaco, o1, '2026-06-25', '08:00');
+    const e2 = makeEntry(farmaco, o2, '2026-06-25', '20:00');
+    const plan = [e1, e2];
+    const result = applySalto(plan, e1.key);
+    const next = result.plan.find((e) => e.key === e2.key);
+    expect(next.dose_prec_saltata).toBe(true);  // same-day: successore trovato
+    expect(next.gap_minuti).toBe(0);            // fisso_date: nessuna propagazione gap
+    expect(result.logWrites).toHaveLength(2);
+    expect(result.prompt).toBeNull();
+  });
+});

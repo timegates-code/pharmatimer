@@ -352,3 +352,109 @@ describe('CP3 §6.115b — mergeLogIntoEntry invariante ora_ricalcolata ISO opaq
     expect(merged2.ora_ricalcolata).toBe(merged1.ora_ricalcolata);
   });
 });
+
+
+// ============================================================
+// F14 Blocco 2 (par.22.150) — fisso_date / lista piatta
+// Predicato per-data in buildMultiDayPlan (ramo standard). Modello LISTA PIATTA:
+// coppie (data, ora) arbitrarie, NON Pattern S. Il dominio filtra solo per data.
+// ============================================================
+
+describe('F14 fisso_date — lista piatta (predicato per-data)', () => {
+  // Helper locale: orario assoluto con data_specifica (occorrenza singola).
+  function makeOrarioDatato(farmaco_id, dose_numero, offset_minuti, data_specifica) {
+    return {
+      ...makeOrario(farmaco_id, dose_numero, offset_minuti, 'assoluto'),
+      data_specifica,
+    };
+  }
+
+  it('A — puntuale: materializza solo nelle date valorizzate (25 e 27), nulla nei giorni vuoti', () => {
+    const farmaco = makeFarmaco({
+      id: 50,
+      nome: 'Vitamina D',
+      tipo_frequenza: 'fisso_date',
+      dosi_giornaliere: 1,
+      data_inizio: '2026-06-25',
+      data_fine: '2026-06-27',
+    });
+    const orari = [
+      makeOrarioDatato(50, 1, 480, '2026-06-25'), // 08:00 il 25
+      makeOrarioDatato(50, 1, 540, '2026-06-27'), // 09:00 il 27
+    ];
+    const ctx = {
+      profilo: profiloStandard,
+      farmaci: [farmaco],
+      orari,
+      logAssunzioni: [],
+      startDate: '2026-06-24',
+      numDays: 8, // 24 giu .. 1 lug
+    };
+    const plan = buildMultiDayPlan(ctx);
+    expect(plan.map((e) => e.dateStr)).toEqual(['2026-06-25', '2026-06-27']);
+    expect(plan.find((e) => e.dateStr === '2026-06-26')).toBeUndefined();
+    expect(plan).toHaveLength(2);
+    expect(plan[0].ora_prevista).toBe('08:00');
+    expect(plan[1].ora_prevista).toBe('09:00');
+  });
+
+  it('B — due dosi sulla stessa data (08:00 + 20:00): entrambe, ordinate', () => {
+    const farmaco = makeFarmaco({
+      id: 51,
+      tipo_frequenza: 'fisso_date',
+      dosi_giornaliere: 2,
+      data_inizio: '2026-06-25',
+      data_fine: '2026-06-25',
+    });
+    const orari = [
+      makeOrarioDatato(51, 1, 480, '2026-06-25'),  // 08:00
+      makeOrarioDatato(51, 2, 1200, '2026-06-25'), // 20:00
+    ];
+    const ctx = {
+      profilo: profiloStandard,
+      farmaci: [farmaco],
+      orari,
+      logAssunzioni: [],
+      startDate: '2026-06-25',
+      numDays: 1,
+    };
+    const plan = buildMultiDayPlan(ctx);
+    expect(plan).toHaveLength(2);
+    expect(plan.map((e) => e.dateStr)).toEqual(['2026-06-25', '2026-06-25']);
+    expect(plan.map((e) => e.ora_prevista)).toEqual(['08:00', '20:00']);
+  });
+
+  it('C — regressione: data_specifica esplicitamente null = riga ricorrente (ogni giorno)', () => {
+    const farmaco = makeFarmaco({ id: 52, tipo_frequenza: 'fisso', dosi_giornaliere: 1 });
+    const orari = [
+      { ...makeOrario(52, 1, 0, 'colazione'), data_specifica: null }, // 07:30 std
+    ];
+    const ctx = {
+      profilo: profiloStandard,
+      farmaci: [farmaco],
+      orari,
+      logAssunzioni: [],
+      startDate: '2026-06-25',
+      numDays: 3,
+    };
+    const plan = buildMultiDayPlan(ctx);
+    expect(plan.map((e) => e.dateStr)).toEqual(['2026-06-25', '2026-06-26', '2026-06-27']);
+    expect(plan.every((e) => e.ora_prevista === '07:30')).toBe(true);
+  });
+
+  it('D — locale: campo data_specifica ASSENTE (undefined) = riga ricorrente (ogni giorno)', () => {
+    const farmaco = makeFarmaco({ id: 53, tipo_frequenza: 'fisso', dosi_giornaliere: 1 });
+    const orari = [makeOrario(53, 1, 0, 'colazione')]; // nessun campo data_specifica
+    const ctx = {
+      profilo: profiloStandard,
+      farmaci: [farmaco],
+      orari,
+      logAssunzioni: [],
+      startDate: '2026-06-25',
+      numDays: 3,
+    };
+    const plan = buildMultiDayPlan(ctx);
+    expect(plan).toHaveLength(3);
+    expect(plan.map((e) => e.dateStr)).toEqual(['2026-06-25', '2026-06-26', '2026-06-27']);
+  });
+});

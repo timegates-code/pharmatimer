@@ -117,6 +117,13 @@ export function buildMultiDayPlan(ctx) {
       if (isExtendedInterval(farmaco)) continue;
       const orariF = orariByFarmaco.get(farmaco.id) || [];
       for (const orario of orariF) {
+        // F14 fisso_date flat-list per-date predicate (par.22.150): a valued
+        // orario.data_specifica materializes the row ONLY on its own dateStr;
+        // NULL/absent = recurring row (fisso / intervallo behaviour unchanged).
+        // Direct ISO 'YYYY-MM-DD' string compare; nullish-safe (!= null) so a
+        // Dexie local-mode row lacking the column is treated as recurring.
+        // Model-agnostic: indifferent to Pattern S vs flat list.
+        if (orario.data_specifica != null && orario.data_specifica !== dateStr) continue;
         /** @type {import('./types.js').PlanEntry} */
         const entry = {
           key: entryKey(dateStr, farmaco.id, orario.dose_numero),

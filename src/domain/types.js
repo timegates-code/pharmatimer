@@ -10,7 +10,7 @@
  * @property {string} nome
  * @property {string} [principio_attivo]
  * @property {string} funzione
- * @property {'intervallo'|'fisso'} tipo_frequenza
+ * @property {'intervallo'|'fisso'|'fisso_date'} tipo_frequenza
  * @property {number|null} intervallo_ore           - Hours between doses (only if tipo_frequenza='intervallo').
  * @property {number|null} intervallo_minimo_ore    - Minimum safety interval when applying gap recovery.
  * @property {number} dosi_giornaliere
@@ -31,6 +31,9 @@
  * @property {number} offset_minuti                 - Offset in minutes from anchor.
  * @property {'sveglia'|'colazione'|'pranzo'|'cena'|'sonno'|'assoluto'} ancora_riferimento
  * @property {string|null} [descrizione_momento]
+ * @property {string|null} [data_specifica]        - F14 (par.22.150): null/absent = recurring row;
+ *                                                    valued = single occurrence on that ISO 'YYYY-MM-DD' date
+ *                                                    (ancora='assoluto', offset = minutes from midnight). Flat-list model.
  */
 
 /**
