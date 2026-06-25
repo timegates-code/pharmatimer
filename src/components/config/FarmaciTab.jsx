@@ -138,6 +138,7 @@ const EMPTY_FORM = {
   data_inizio: tomorrowIso(),
   data_fine: '',
   orari: [makeDefaultOrario(1)],
+  occorrenze: [],
 };
 
 function todayIso() {
@@ -210,6 +211,117 @@ function formatFrequencyLabel(intervalloOre) {
   const ore = Math.round((intervalloOre - giorni * 24) * 10) / 10;
   if (ore === 0) return giorni === 1 ? 'ogni giorno' : `ogni ${giorni} giorni`;
   return `ogni ${giorni}g ${ore}h`;
+}
+
+// ------------------------------------------------------------
+// fisso_date helpers (F14 Blocco 2, Spec v1.16 — lista piatta).
+// SENTINEL_PAR_22_154_FISSODATE
+// ------------------------------------------------------------
+
+const OCCORRENZE_MAX_DATES = 30;
+
+function makeEmptyOccorrenza() {
+  return { data: '', ora: '' };
+}
+
+/** 'HH:MM' -> minuti da mezzanotte, null se malformato. */
+function hhmmToOffset(hhmm) {
+  if (typeof hhmm !== 'string') return null;
+  const m = /^(\d{2}):(\d{2})$/.exec(hhmm);
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h < 0 || h > 23 || min < 0 || min > 59) return null;
+  return h * 60 + min;
+}
+
+/** minuti da mezzanotte -> 'HH:MM'. */
+function offsetToHHMM(offset) {
+  const o = Number.isFinite(offset) ? ((offset % 1440) + 1440) % 1440 : 0;
+  const h = Math.floor(o / 60);
+  const m = o % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+/**
+ * Ricostruisce le occorrenze form [{data,ora}] dalle righe orari datate
+ * (data_specifica valorizzata). Usato in init edit. Ordinato (data, ora).
+ */
+function occorrenzeFromOrari(rows) {
+  return (rows || [])
+    .filter((o) => o.data_specifica != null)
+    .map((o) => ({
+      data: String(o.data_specifica),
+      ora: offsetToHHMM(Number(o.offset_minuti) || 0),
+    }))
+    .sort((a, b) => (a.data === b.data ? a.ora.localeCompare(b.ora) : a.data.localeCompare(b.data)));
+}
+
+/**
+ * Derivazione pura dalle occorrenze. Raggruppa per data, ordina per ora,
+ * assegna dose_numero 1..k_D per data (lista piatta, validatore par.153).
+ * Righe incomplete (data/ora mancante o ora invalida) scartate qui;
+ * la completezza e validata a parte per il gating di canSave.
+ */
+function deriveOccorrenzePayload(occorrenze) {
+  const clean = (occorrenze || []).filter(
+    (oc) => oc && oc.data && oc.ora && hhmmToOffset(oc.ora) != null,
+  );
+  const byDate = {};
+  for (const oc of clean) {
+    (byDate[oc.data] = byDate[oc.data] || []).push(oc.ora);
+  }
+  const dates = Object.keys(byDate).sort();
+  const orari = [];
+  let maxK = 0;
+  for (const d of dates) {
+    const ore = byDate[d].slice().sort((a, b) => a.localeCompare(b));
+    maxK = Math.max(maxK, ore.length);
+    ore.forEach((ora, idx) => {
+      orari.push({
+        dose_numero: idx + 1,
+        offset_minuti: hhmmToOffset(ora),
+        ancora_riferimento: 'assoluto',
+        ora_prevista: ora,
+        descrizione_momento: null,
+        data_specifica: d,
+      });
+    });
+  }
+  return {
+    orari,
+    dataInizio: dates.length ? dates[0] : null,
+    dataFine: dates.length ? dates[dates.length - 1] : null,
+    dosiGiornaliere: maxK || 1,
+    distinctDates: dates.length,
+  };
+}
+
+/**
+ * Branch di normalizeForm per tipo_frequenza === 'fisso_date'.
+ * farmacoData con data_inizio/fine/dosi derivati + orari lista piatta.
+ */
+function normalizeFissoDate(f) {
+  const trimOrNull = (s) => {
+    const v = (s ?? '').trim();
+    return v === '' ? null : v;
+  };
+  const d = deriveOccorrenzePayload(f.occorrenze);
+  const farmacoData = {
+    nome: (f.nome ?? '').trim(),
+    principio_attivo: trimOrNull(f.principio_attivo),
+    funzione: trimOrNull(f.funzione),
+    tipo_frequenza: 'fisso_date',
+    intervallo_ore: null,
+    intervallo_minimo_ore: null,
+    dosi_giornaliere: d.dosiGiornaliere,
+    relazione_pasto: f.relazione_pasto,
+    dettaglio_pasto: trimOrNull(f.dettaglio_pasto),
+    note: trimOrNull(f.note),
+    data_inizio: d.dataInizio,
+    data_fine: d.dataFine,
+  };
+  return { farmacoData, orari: d.orari };
 }
 
 // ============================================================
@@ -402,6 +514,11 @@ function FarmacoDrawer({
         const orariInit = filtered.length > 0
           ? filtered
           : [makeDefaultOrario(1)];
+        // F14 Blocco 2 (fisso_date): ricostruzione occorrenze (data,ora) dalle
+        // righe datate. SENTINEL_PAR_22_154_FISSODATE.
+        const occorrenzeInit = occorrenzeFromOrari(
+          (state.orari || []).filter((o) => o.farmaco_id === editingId),
+        );
         const dosi = filtered.length > 0
           ? String(filtered.length)
           : (f.dosi_giornaliere != null ? String(f.dosi_giornaliere) : '1');
@@ -427,6 +544,7 @@ function FarmacoDrawer({
           data_inizio: f.data_inizio ?? todayIso(),
           data_fine: f.data_fine ?? '',
           orari: orariInit,
+          occorrenze: occorrenzeInit,
         };
       }
     }
@@ -506,6 +624,30 @@ function FarmacoDrawer({
     setDirty(true);
   }
 
+  // F14 Blocco 2 (fisso_date): handler repeater occorrenze. SENTINEL_PAR_22_154_FISSODATE.
+  function addOccorrenza() {
+    setForm((f) => ({ ...f, occorrenze: [...(f.occorrenze || []), makeEmptyOccorrenza()] }));
+    setDirty(true);
+  }
+
+  function updateOccorrenza(index, name, value) {
+    setForm((f) => {
+      const occorrenze = (f.occorrenze || []).map((oc, i) => (
+        i === index ? { ...oc, [name]: value } : oc
+      ));
+      return { ...f, occorrenze };
+    });
+    setDirty(true);
+  }
+
+  function removeOccorrenza(index) {
+    setForm((f) => ({
+      ...f,
+      occorrenze: (f.occorrenze || []).filter((_, i) => i !== index),
+    }));
+    setDirty(true);
+  }
+
   function undoTrim() {
     if (!removedOrari.length) return;
     setForm((f) => ({
@@ -519,13 +661,18 @@ function FarmacoDrawer({
 
   function updateTipoFrequenza(value) {
     setForm((f) => {
+      const clearsIntervallo = value === 'fisso' || value === 'fisso_date';
       const next = {
         ...f,
         tipo_frequenza: value,
-        intervallo_giorni: value === 'fisso' ? '' : f.intervallo_giorni,
-        intervallo_ore_residue: value === 'fisso' ? '' : f.intervallo_ore_residue,
-        custom_minimo: value === 'fisso' ? false : f.custom_minimo,
-        intervallo_minimo_ore: value === 'fisso' ? '' : f.intervallo_minimo_ore,
+        intervallo_giorni: clearsIntervallo ? '' : f.intervallo_giorni,
+        intervallo_ore_residue: clearsIntervallo ? '' : f.intervallo_ore_residue,
+        custom_minimo: clearsIntervallo ? false : f.custom_minimo,
+        intervallo_minimo_ore: clearsIntervallo ? '' : f.intervallo_minimo_ore,
+        // F14 Blocco 2: seed una occorrenza vuota all'ingresso in fisso_date.
+        occorrenze: value === 'fisso_date' && (f.occorrenze || []).length === 0
+          ? [makeEmptyOccorrenza()]
+          : f.occorrenze,
       };
       // If switching to fisso, also unlock dosi (no longer extended).
       // If switching to intervallo with previously-set extended values,
@@ -571,6 +718,10 @@ function FarmacoDrawer({
       return Number.isFinite(n) ? n : null;
     };
     const tipo = f.tipo_frequenza;
+    // F14 Blocco 2 (fisso_date, Spec v1.16): lista piatta (data,ora). SENTINEL_PAR_22_154_FISSODATE.
+    if (tipo === 'fisso_date') {
+      return normalizeFissoDate(f);
+    }
     // CP8 §6.183: rebuild DB column intervallo_ore from form split.
     let intervalloOre = null;
     if (tipo === 'intervallo') {
@@ -652,7 +803,7 @@ function FarmacoDrawer({
         : await actions.updateFarmaco(editingId, farmacoData, orari);
       if (result?.ok) {
         if (mode === 'create') {
-          const oraPrevista = orariPreview[0];
+          const oraPrevista = isFissoDate ? (orari[0]?.ora_prevista ?? null) : orariPreview[0];
           if (oraPrevista) {
             const today = todayIso();
             actions.showToast(
@@ -780,16 +931,62 @@ function FarmacoDrawer({
 
   const dataInizioValid = mode === 'edit' || form.data_inizio >= todayIso();
 
-  const allRequiredFilled =
-    form.nome.trim().length > 0 &&
-    form.tipo_frequenza !== '' &&
-    form.dosi_giornaliere !== '' && Number(form.dosi_giornaliere) > 0 &&
-    form.relazione_pasto !== '' &&
-    form.data_inizio !== '' &&
-    dataInizioValid &&
-    hasIntervalloOreRequired &&
-    intervalloGiorniValid &&
-    intervalloOreResidueValid;
+  const isFissoDate = form.tipo_frequenza === 'fisso_date';
+
+  // F14 Blocco 2 (fisso_date): derivazioni read-only + validazione. SENTINEL_PAR_22_154_FISSODATE.
+  const fissoDateDerived = useMemo(() => {
+    const occ = form.occorrenze || [];
+    const filled = occ.filter((oc) => oc.data && oc.ora);
+    const allFilled =
+      occ.length > 0 &&
+      filled.length === occ.length &&
+      occ.every((oc) => hhmmToOffset(oc.ora) != null);
+    const seen = new Set();
+    let hasDuplicate = false;
+    for (const oc of filled) {
+      const key = `${oc.data}T${oc.ora}`;
+      if (seen.has(key)) { hasDuplicate = true; break; }
+      seen.add(key);
+    }
+    const distinctDates = new Set(filled.map((oc) => oc.data)).size;
+    const today = todayIso();
+    const hasPastInCreate = mode === 'create' && filled.some((oc) => oc.data < today);
+    const d = deriveOccorrenzePayload(occ);
+    const valid =
+      occ.length > 0 &&
+      allFilled &&
+      !hasDuplicate &&
+      distinctDates <= OCCORRENZE_MAX_DATES &&
+      !hasPastInCreate;
+    return {
+      dataInizio: d.dataInizio,
+      dataFine: d.dataFine,
+      dosiGiornaliere: d.dosiGiornaliere,
+      distinctDates,
+      hasDuplicate,
+      hasPastInCreate,
+      allFilled,
+      valid,
+    };
+  }, [form.occorrenze, mode]);
+
+  const allRequiredFilled = isFissoDate
+    ? (
+        form.nome.trim().length > 0 &&
+        form.relazione_pasto !== '' &&
+        fissoDateDerived.valid
+      )
+    : (
+        form.nome.trim().length > 0 &&
+        form.tipo_frequenza !== '' &&
+        form.dosi_giornaliere !== '' && Number(form.dosi_giornaliere) > 0 &&
+        form.relazione_pasto !== '' &&
+        form.data_inizio !== '' &&
+        dataInizioValid &&
+        hasIntervalloOreRequired &&
+        intervalloGiorniValid &&
+        intervalloOreResidueValid
+      );
 
   const duplicateMatch = useMemo(() => {
     const q = form.nome.trim().toLowerCase();
@@ -844,8 +1041,17 @@ function FarmacoDrawer({
 
   const isDirty = useMemo(() => {
     for (const k of Object.keys(EMPTY_FORM)) {
-      if (k === 'orari') continue;
+      if (k === 'orari' || k === 'occorrenze') continue;
       if (form[k] !== initial[k]) return true;
+    }
+    // F14 Blocco 2 (fisso_date): diff contenuto occorrenze. SENTINEL_PAR_22_154_FISSODATE.
+    {
+      const ao = form.occorrenze || [];
+      const bo = initial.occorrenze || [];
+      if (ao.length !== bo.length) return true;
+      for (let i = 0; i < ao.length; i++) {
+        if (!bo[i] || ao[i].data !== bo[i].data || ao[i].ora !== bo[i].ora) return true;
+      }
     }
     if (form.orari.length !== initial.orari.length) return true;
     for (let i = 0; i < form.orari.length; i++) {
@@ -971,6 +1177,16 @@ function FarmacoDrawer({
               />
               <span>A intervallo</span>
             </label>
+            <label className="flex items-center gap-2" style={{ color: t.textPrimary }}>
+              <input
+                type="radio"
+                name="tipo_frequenza"
+                value="fisso_date"
+                checked={form.tipo_frequenza === 'fisso_date'}
+                onChange={() => updateTipoFrequenza('fisso_date')}
+              />
+              <span>Date specifiche</span>
+            </label>
           </div>
         </fieldset>
 
@@ -1067,6 +1283,66 @@ function FarmacoDrawer({
           />
         )}
 
+        {isFissoDate && (
+          <>
+            {/* --- Sezione 3 (fisso_date): Date e orari ----------- */}
+            <SectionHeading theme={t}>Date e orari</SectionHeading>
+
+            <p className="text-xs italic" style={{ color: t.textSecondary }}>
+              Aggiungi una riga per ogni assunzione: scegli la data e l’orario.
+            </p>
+
+            <div className="flex flex-col gap-2">
+              {form.occorrenze.map((oc, i) => (
+                <OccorrenzaRow
+                  key={`occ-${i}`}
+                  index={i}
+                  occorrenza={oc}
+                  onChange={(name, value) => updateOccorrenza(i, name, value)}
+                  onRemove={() => removeOccorrenza(i)}
+                  theme={t}
+                />
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={addOccorrenza}
+              className="self-start text-sm font-medium px-3 py-1.5 rounded-md border"
+              style={{ background: t.modalBg, color: t.textPrimary, borderColor: t.tapBd }}
+            >
+              + Aggiungi data
+            </button>
+
+            {form.occorrenze.length > 0 && fissoDateDerived.allFilled && !fissoDateDerived.hasDuplicate && (
+              <p className="text-xs" role="status" style={{ color: t.textSecondary }}>
+                Periodo: {fissoDateDerived.dataInizio} → {fissoDateDerived.dataFine}
+                {' · '}Max dosi in un giorno: {fissoDateDerived.dosiGiornaliere}
+              </p>
+            )}
+
+            {fissoDateDerived.hasDuplicate && (
+              <p className="text-xs" role="status" style={{ color: t.red }}>
+                Data e orario duplicati: ogni assunzione deve essere distinta.
+              </p>
+            )}
+
+            {fissoDateDerived.distinctDates > OCCORRENZE_MAX_DATES && (
+              <p className="text-xs" role="status" style={{ color: t.red }}>
+                Troppe date: massimo {OCCORRENZE_MAX_DATES}.
+              </p>
+            )}
+
+            {fissoDateDerived.hasPastInCreate && (
+              <p className="text-xs" role="status" style={{ color: t.red }}>
+                Le date non possono essere nel passato.
+              </p>
+            )}
+          </>
+        )}
+
+        {!isFissoDate && (
+        <>
         <div className="flex flex-col gap-1">
           <label
             htmlFor="farmaco-dosi-giornaliere"
@@ -1157,6 +1433,8 @@ function FarmacoDrawer({
             {orariOrderWarning}
           </p>
         )}
+        </>
+        )}
 
         {/* --- Sezione 4: Avanzate ------------------------------ */}
         <SectionHeading theme={t}>Avanzate</SectionHeading>
@@ -1185,6 +1463,8 @@ function FarmacoDrawer({
           onChange={(v) => updateField('note', v)}
           theme={t}
         />
+        {!isFissoDate && (
+        <>
         <FormField
           id="farmaco-data-inizio"
           label="Data inizio"
@@ -1206,6 +1486,8 @@ function FarmacoDrawer({
           type="date"
           theme={t}
         />
+        </>
+        )}
 
         <footer className="flex flex-col gap-2 mt-4">
           {mode === 'edit' && (
@@ -1437,6 +1719,59 @@ function OrarioRow({ index, orario, oraPreview, onChange, theme: t }) {
           }}
         />
       </div>
+    </div>
+  );
+}
+
+// ============================================================
+// OccorrenzaRow — riga singola (data, ora) per fisso_date.
+// SENTINEL_PAR_22_154_FISSODATE
+// ============================================================
+
+function OccorrenzaRow({ index, occorrenza, onChange, onRemove, theme: t }) {
+  const dataId = `occ-data-${index}`;
+  const oraId = `occ-ora-${index}`;
+  return (
+    <div
+      data-testid={`occorrenza-row-${index}`}
+      className="rounded border p-3 flex items-end gap-2"
+      style={{ background: t.modalBg, borderColor: t.tapBd }}
+    >
+      <div className="flex flex-col gap-1 flex-1">
+        <label htmlFor={dataId} className="text-xs font-medium" style={{ color: t.textPrimary }}>
+          Data
+        </label>
+        <input
+          id={dataId}
+          type="date"
+          value={occorrenza.data || ''}
+          onChange={(e) => onChange('data', e.target.value)}
+          className="rounded px-2 py-1.5 border text-sm"
+          style={{ background: t.modalBg, color: t.textPrimary, borderColor: t.tapBd }}
+        />
+      </div>
+      <div className="flex flex-col gap-1 flex-1">
+        <label htmlFor={oraId} className="text-xs font-medium" style={{ color: t.textPrimary }}>
+          Orario
+        </label>
+        <input
+          id={oraId}
+          type="time"
+          value={occorrenza.ora || ''}
+          onChange={(e) => onChange('ora', e.target.value)}
+          className="rounded px-2 py-1.5 border text-sm tabular-nums"
+          style={{ background: t.modalBg, color: t.textPrimary, borderColor: t.tapBd }}
+        />
+      </div>
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Rimuovi data ${index + 1}`}
+        className="px-2 py-1.5 text-sm rounded border"
+        style={{ background: t.modalBg, color: t.red, borderColor: t.red }}
+      >
+        ✕
+      </button>
     </div>
   );
 }
