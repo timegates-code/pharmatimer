@@ -220,6 +220,22 @@ function formatFrequencyLabel(intervalloOre) {
 
 const OCCORRENZE_MAX_DATES = 30;
 
+// SENTINEL_PAR_22_157_UXG_GROUPING -- F14 Blocco 4 (par.22.157), UX-g A-flat/visual.
+// Re-layout presentazionale della sezione "Date e orari": grouping per data.
+// Modello lista-piatta, helper di derivazione, validazione e OccorrenzaRow
+// restano INVARIATI. Nessuna deviazione.
+const MESI_IT = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
+
+/** 'YYYY-MM-DD' -> 'D mmm YYYY' (italiano), parsing per-parte (no timezone). */
+function formatDataHeader(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+  if (!m) return iso || '';
+  const [, y, mm, dd] = m;
+  const idx = Number(mm) - 1;
+  const mese = idx >= 0 && idx < 12 ? MESI_IT[idx] : mm;
+  return `${Number(dd)} ${mese} ${y}`;
+}
+
 function makeEmptyOccorrenza() {
   return { data: '', ora: '' };
 }
@@ -648,6 +664,12 @@ function FarmacoDrawer({
     setDirty(true);
   }
 
+  // F14 Blocco 4 (par.22.157, UX-g): aggiunge un orario al gruppo-data esistente.
+  function addOccorrenzaForData(data) {
+    setForm((f) => ({ ...f, occorrenze: [...(f.occorrenze || []), { data, ora: '' }] }));
+    setDirty(true);
+  }
+
   function undoTrim() {
     if (!removedOrari.length) return;
     setForm((f) => ({
@@ -969,6 +991,30 @@ function FarmacoDrawer({
       valid,
     };
   }, [form.occorrenze, mode]);
+
+  // F14 Blocco 4 (par.22.157, UX-g): sequenza di RENDER raggruppata per data.
+  // Produce una lista PIATTA di item (header | row | add) renderizzati come
+  // fratelli in UN UNICO parent: cosi una OccorrenzaRow che cambia data viene
+  // SPOSTATA (non rimontata) da React -> il nodo resta montato (focus + il
+  // riferimento DOM catturato dai test restano validi). Le righe datate sono
+  // raggruppate per valore `data` (date ascending), ordine-array dentro il
+  // gruppo; le righe senza data restano in coda (A-flat). Nessun re-sort
+  // dell'array di stato form.occorrenze.
+  const occorrenzeGroups = useMemo(() => {
+    const indexed = (form.occorrenze || []).map((oc, i) => ({ oc, i }));
+    const datate = indexed.filter(({ oc }) => oc.data);
+    const senzaData = indexed.filter(({ oc }) => !oc.data);
+    const dateOrd = Array.from(new Set(datate.map(({ oc }) => oc.data))).sort();
+    const items = [];
+    for (const d of dateOrd) {
+      const righe = datate.filter(({ oc }) => oc.data === d);
+      items.push({ kind: 'header', data: d, count: righe.length });
+      for (const r of righe) items.push({ kind: 'row', i: r.i, oc: r.oc });
+      items.push({ kind: 'add', data: d });
+    }
+    for (const r of senzaData) items.push({ kind: 'row', i: r.i, oc: r.oc });
+    return items;
+  }, [form.occorrenze]);
 
   const allRequiredFilled = isFissoDate
     ? (
@@ -1293,16 +1339,47 @@ function FarmacoDrawer({
             </p>
 
             <div className="flex flex-col gap-2">
-              {form.occorrenze.map((oc, i) => (
-                <OccorrenzaRow
-                  key={`occ-${i}`}
-                  index={i}
-                  occorrenza={oc}
-                  onChange={(name, value) => updateOccorrenza(i, name, value)}
-                  onRemove={() => removeOccorrenza(i)}
-                  theme={t}
-                />
-              ))}
+              {occorrenzeGroups.map((item) => {
+                if (item.kind === 'header') {
+                  return (
+                    <div
+                      key={`occ-hdr-${item.data}`}
+                      className="flex items-center justify-between mt-2 pb-1 border-b"
+                      style={{ borderColor: t.tapBd }}
+                    >
+                      <span className="text-sm font-semibold" style={{ color: t.textPrimary }}>
+                        {formatDataHeader(item.data)}
+                      </span>
+                      <span className="text-xs" style={{ color: t.textSecondary }}>
+                        {item.count} {item.count === 1 ? 'orario' : 'orari'}
+                      </span>
+                    </div>
+                  );
+                }
+                if (item.kind === 'add') {
+                  return (
+                    <button
+                      key={`occ-add-${item.data}`}
+                      type="button"
+                      onClick={() => addOccorrenzaForData(item.data)}
+                      className="self-start text-xs font-medium px-2 py-1 rounded border"
+                      style={{ background: t.modalBg, color: t.textPrimary, borderColor: t.tapBd }}
+                    >
+                      + Aggiungi orario
+                    </button>
+                  );
+                }
+                return (
+                  <OccorrenzaRow
+                    key={`occ-${item.i}`}
+                    index={item.i}
+                    occorrenza={item.oc}
+                    onChange={(name, value) => updateOccorrenza(item.i, name, value)}
+                    onRemove={() => removeOccorrenza(item.i)}
+                    theme={t}
+                  />
+                );
+              })}
             </div>
 
             <button

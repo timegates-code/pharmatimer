@@ -212,3 +212,36 @@ describe('FarmaciTab — F14 Blocco 2 fisso_date (validazione)', () => {
     expect(addFarmaco).not.toHaveBeenCalled();
   });
 });
+
+// SENTINEL_PAR_22_157_T5_GROUPING -- F14 Blocco 4 (par.22.157): UX-g grouping per data.
+describe('FarmaciTab — F14 Blocco 4 fisso_date (grouping UX-g)', () => {
+  it('(T5) 3 occorrenze su 2 date: due header con badge-conteggio, righe per testid', async () => {
+    const user = userEvent.setup();
+
+    renderWithProvider(<FarmaciTab />, {
+      stateOverrides: { farmaci: [], profili: [buildProfiloAttivo()] },
+    });
+
+    const drawer = await openCreateDrawer(user);
+    await user.type(within(drawer).getByLabelText(/^Nome/), 'Gruppi');
+    await user.click(within(drawer).getByLabelText('Date specifiche'));
+
+    const dateA = isoOffset(10);
+    const dateB = isoOffset(11);
+
+    setOccorrenza(drawer, 0, dateA, '08:00');
+    await user.click(within(drawer).getByRole('button', { name: /aggiungi data/i }));
+    setOccorrenza(drawer, 1, dateA, '20:00');
+    await user.click(within(drawer).getByRole('button', { name: /aggiungi data/i }));
+    setOccorrenza(drawer, 2, dateB, '09:00');
+
+    // Grouping per data: dateA (2 dosi) e dateB (1 dose) -> badge conteggio.
+    expect(within(drawer).getByText('2 orari')).toBeInTheDocument();
+    expect(within(drawer).getByText('1 orario')).toBeInTheDocument();
+
+    // Le 3 righe restano raggiungibili per testid (parent unico, no remount).
+    expect(within(drawer).getByTestId('occorrenza-row-0')).toBeInTheDocument();
+    expect(within(drawer).getByTestId('occorrenza-row-1')).toBeInTheDocument();
+    expect(within(drawer).getByTestId('occorrenza-row-2')).toBeInTheDocument();
+  });
+});
