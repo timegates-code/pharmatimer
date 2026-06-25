@@ -245,3 +245,59 @@ describe('FarmaciTab — F14 Blocco 4 fisso_date (grouping UX-g)', () => {
     expect(within(drawer).getByTestId('occorrenza-row-2')).toBeInTheDocument();
   });
 });
+
+// SENTINEL_PAR_22_160_UXF_WIZARD -- F14 Blocco 4 (par.22.160): UX-f flusso guidato anziani.
+describe('FarmaciTab — F14 Blocco 4 fisso_date (flusso guidato UX-f)', () => {
+  it('(T6) Compilazione guidata: 1 giorno x 2 orari -> 2 occorrenze nel repeater, Salva abilitato', async () => {
+    const user = userEvent.setup();
+    const addFarmaco = vi.fn().mockResolvedValue({ ok: true, id: 101 });
+
+    renderWithProvider(<FarmaciTab />, {
+      stateOverrides: { farmaci: [], profili: [buildProfiloAttivo()] },
+      actions: { addFarmaco },
+    });
+
+    const drawer = await openCreateDrawer(user);
+    await user.type(within(drawer).getByLabelText(/^Nome/), 'Guidato');
+    await user.click(within(drawer).getByLabelText('Date specifiche'));
+    fireEvent.change(within(drawer).getByLabelText(/^Relazione/), {
+      target: { value: 'indifferente' },
+    });
+
+    const dateA = isoOffset(10);
+
+    // P0 avvio
+    await user.click(within(drawer).getByTestId('occorrenze-wizard-start'));
+    const panel = within(drawer).getByTestId('occorrenze-wizard');
+
+    // P1 giorno
+    fireEvent.change(within(panel).getByLabelText('Giorno'), { target: { value: dateA } });
+    await user.click(within(panel).getByRole('button', { name: /avanti/i }));
+
+    // P2 quante volte -> 2
+    await user.click(within(panel).getByRole('button', { name: /aumenta/i }));
+    expect(within(panel).getByTestId('wizard-k-value')).toHaveTextContent('2');
+    await user.click(within(panel).getByRole('button', { name: /avanti/i }));
+
+    // P3 orario 1 di 2
+    fireEvent.change(within(panel).getByLabelText('Orario'), { target: { value: '08:00' } });
+    await user.click(within(panel).getByRole('button', { name: /avanti/i }));
+    // P3 orario 2 di 2
+    fireEvent.change(within(panel).getByLabelText('Orario'), { target: { value: '20:00' } });
+    await user.click(within(panel).getByRole('button', { name: /avanti/i }));
+
+    // P4 riepilogo
+    await user.click(within(panel).getByRole('button', { name: /va bene/i }));
+    // P5 altra data -> no
+    await user.click(within(panel).getByRole('button', { name: /ho finito/i }));
+
+    // Panel chiuso; seed vuota rimossa (merge A) -> 2 righe.
+    expect(within(drawer).queryByTestId('occorrenze-wizard')).toBeNull();
+    expect(within(drawer).getByTestId('occorrenza-row-0')).toBeInTheDocument();
+    expect(within(drawer).getByTestId('occorrenza-row-1')).toBeInTheDocument();
+    expect(within(drawer).queryByTestId('occorrenza-row-2')).toBeNull();
+
+    const salva = within(drawer).getByRole('button', { name: /^salva$/i });
+    expect(salva).not.toBeDisabled();
+  });
+});

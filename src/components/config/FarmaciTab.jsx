@@ -670,6 +670,79 @@ function FarmacoDrawer({
     setDirty(true);
   }
 
+  // F14 Blocco 4 (par.22.160, UX-f): merge additivo delle coppie raccolte
+  // dal flusso guidato. Semantica A: rimuove le righe INTERAMENTE vuote
+  // (seed placeholder) e appende le coppie; le righe gia compilate a mano
+  // sopravvivono. Nessun dose_numero qui (resta a deriveOccorrenzePayload).
+  // SENTINEL_PAR_22_160_UXF_WIZARD.
+  function mergeOccorrenzeFromWizard(pairs) {
+    if (!pairs || pairs.length === 0) return;
+    setForm((f) => {
+      const kept = (f.occorrenze || []).filter((oc) => oc.data || oc.ora);
+      return { ...f, occorrenze: [...kept, ...pairs] };
+    });
+    setDirty(true);
+  }
+
+  function wizardStart() {
+    setWizard({ step: 'data', data: '', k: 1, orari: [''], oraIdx: 0, pending: [] });
+  }
+  function wizardCancel() {
+    setWizard(null);
+  }
+  function wizardPatch(patch) {
+    setWizard((w) => (w ? { ...w, ...patch } : w));
+  }
+  function wizardSetOra(value) {
+    setWizard((w) => (
+      w ? { ...w, orari: w.orari.map((o, i) => (i === w.oraIdx ? value : o)) } : w
+    ));
+  }
+  function wizardGoNext() {
+    setWizard((w) => {
+      if (!w) return w;
+      if (w.step === 'data') return { ...w, step: 'quante' };
+      if (w.step === 'quante') {
+        const k = Math.max(1, w.k);
+        const orari = Array.from({ length: k }, (_, i) => w.orari[i] || '');
+        return { ...w, k, orari, oraIdx: 0, step: 'orari' };
+      }
+      if (w.step === 'orari') {
+        if (w.oraIdx < w.k - 1) return { ...w, oraIdx: w.oraIdx + 1 };
+        return { ...w, step: 'riepilogo' };
+      }
+      return w;
+    });
+  }
+  function wizardGoBack() {
+    setWizard((w) => {
+      if (!w) return w;
+      if (w.step === 'quante') return { ...w, step: 'data' };
+      if (w.step === 'orari') {
+        if (w.oraIdx > 0) return { ...w, oraIdx: w.oraIdx - 1 };
+        return { ...w, step: 'quante' };
+      }
+      if (w.step === 'riepilogo') return { ...w, step: 'orari', oraIdx: Math.max(0, w.k - 1) };
+      return w;
+    });
+  }
+  function wizardConfirmDay() {
+    setWizard((w) => {
+      if (!w) return w;
+      const pairs = w.orari.filter((o) => o).map((o) => ({ data: w.data, ora: o }));
+      return { ...w, pending: [...w.pending, ...pairs], step: 'altra' };
+    });
+  }
+  function wizardAnotherDay() {
+    setWizard((w) => (
+      w ? { ...w, step: 'data', data: '', k: 1, orari: [''], oraIdx: 0 } : w
+    ));
+  }
+  function wizardFinish() {
+    if (wizard && wizard.pending.length) mergeOccorrenzeFromWizard(wizard.pending);
+    setWizard(null);
+  }
+
   function undoTrim() {
     if (!removedOrari.length) return;
     setForm((f) => ({
@@ -812,6 +885,10 @@ function FarmacoDrawer({
   const [cascadePendingPayload, setCascadePendingPayload] = useState(null);
   const [cascadeOrariCount, setCascadeOrariCount] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+
+  // F14 Blocco 4 (par.22.160, UX-f): stato locale del flusso guidato
+  // ("Compilazione guidata"). null = chiuso. SENTINEL_PAR_22_160_UXF_WIZARD.
+  const [wizard, setWizard] = useState(null);
 
   function isoToday() {
     return todayIso();
@@ -1338,6 +1415,163 @@ function FarmacoDrawer({
             <p className="text-xs italic" style={{ color: t.textSecondary }}>
               Aggiungi una riga per ogni assunzione: scegli la data e l’orario.
             </p>
+
+            {/* SENTINEL_PAR_22_160_UXF_WIZARD -- UX-f: flusso guidato anziani (parallelo opt-in, inline) */}
+            {!wizard && (
+              <button
+                type="button"
+                onClick={wizardStart}
+                data-testid="occorrenze-wizard-start"
+                className="self-start text-sm font-semibold px-3 py-2 rounded-md border min-h-[44px]"
+                style={{ background: t.modalBg, color: t.textPrimary, borderColor: t.textPrimary }}
+              >
+                Compilazione guidata
+              </button>
+            )}
+
+            {wizard && (
+              <div
+                data-testid="occorrenze-wizard"
+                role="group"
+                aria-label="Compilazione guidata"
+                className="rounded-md border p-4 flex flex-col gap-4"
+                style={{ background: t.modalBg, borderColor: t.textPrimary }}
+              >
+                {wizard.step === 'data' && (
+                  <>
+                    <p className="text-base font-semibold" style={{ color: t.textPrimary }}>
+                      In quale giorno lo prende?
+                    </p>
+                    <input
+                      type="date"
+                      aria-label="Giorno"
+                      value={wizard.data}
+                      onChange={(e) => wizardPatch({ data: e.target.value })}
+                      className="rounded px-3 py-2.5 border text-base min-h-[44px]"
+                      style={{ background: t.modalBg, color: t.textPrimary, borderColor: t.tapBd }}
+                    />
+                    <div className="flex justify-between gap-2">
+                      <button type="button" onClick={wizardCancel}
+                        className="text-sm px-3 py-2 rounded-md min-h-[44px]"
+                        style={{ color: t.textSecondary }}>
+                        Annulla
+                      </button>
+                      <button type="button" onClick={wizardGoNext} disabled={!wizard.data}
+                        className="text-base font-semibold px-4 py-2 rounded-md border min-h-[44px]"
+                        style={{ background: t.textPrimary, color: t.modalBg, borderColor: t.textPrimary, opacity: wizard.data ? 1 : 0.5 }}>
+                        Avanti
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {wizard.step === 'quante' && (
+                  <>
+                    <p className="text-base font-semibold" style={{ color: t.textPrimary }}>
+                      Quante volte lo prende quel giorno?
+                    </p>
+                    <div className="flex items-center gap-4">
+                      <button type="button" aria-label="Diminuisci"
+                        onClick={() => wizardPatch({ k: Math.max(1, wizard.k - 1) })}
+                        className="flex items-center justify-center min-h-[44px] min-w-[44px] text-xl rounded-md border"
+                        style={{ background: t.modalBg, color: t.textPrimary, borderColor: t.tapBd }}>
+                        -
+                      </button>
+                      <span data-testid="wizard-k-value" className="text-xl font-semibold tabular-nums"
+                        style={{ color: t.textPrimary }}>
+                        {wizard.k}
+                      </span>
+                      <button type="button" aria-label="Aumenta"
+                        onClick={() => wizardPatch({ k: wizard.k + 1 })}
+                        className="flex items-center justify-center min-h-[44px] min-w-[44px] text-xl rounded-md border"
+                        style={{ background: t.modalBg, color: t.textPrimary, borderColor: t.tapBd }}>
+                        +
+                      </button>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <button type="button" onClick={wizardGoBack}
+                        className="text-sm px-3 py-2 rounded-md min-h-[44px]"
+                        style={{ color: t.textSecondary }}>
+                        Indietro
+                      </button>
+                      <button type="button" onClick={wizardGoNext}
+                        className="text-base font-semibold px-4 py-2 rounded-md border min-h-[44px]"
+                        style={{ background: t.textPrimary, color: t.modalBg, borderColor: t.textPrimary }}>
+                        Avanti
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {wizard.step === 'orari' && (
+                  <>
+                    <p className="text-base font-semibold" style={{ color: t.textPrimary }}>
+                      A che ora? (orario {wizard.oraIdx + 1} di {wizard.k})
+                    </p>
+                    <input
+                      type="time"
+                      aria-label="Orario"
+                      value={wizard.orari[wizard.oraIdx] || ''}
+                      onChange={(e) => wizardSetOra(e.target.value)}
+                      className="rounded px-3 py-2.5 border text-base min-h-[44px] tabular-nums"
+                      style={{ background: t.modalBg, color: t.textPrimary, borderColor: t.tapBd }}
+                    />
+                    <div className="flex justify-between gap-2">
+                      <button type="button" onClick={wizardGoBack}
+                        className="text-sm px-3 py-2 rounded-md min-h-[44px]"
+                        style={{ color: t.textSecondary }}>
+                        Indietro
+                      </button>
+                      <button type="button" onClick={wizardGoNext} disabled={!wizard.orari[wizard.oraIdx]}
+                        className="text-base font-semibold px-4 py-2 rounded-md border min-h-[44px]"
+                        style={{ background: t.textPrimary, color: t.modalBg, borderColor: t.textPrimary, opacity: wizard.orari[wizard.oraIdx] ? 1 : 0.5 }}>
+                        Avanti
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {wizard.step === 'riepilogo' && (
+                  <>
+                    <p className="text-base font-semibold" style={{ color: t.textPrimary }}>
+                      Il {formatDataHeader(wizard.data)}: {wizard.orari.filter((o) => o).join(', ')}. Va bene?
+                    </p>
+                    <div className="flex justify-between gap-2">
+                      <button type="button" onClick={wizardGoBack}
+                        className="text-sm px-3 py-2 rounded-md min-h-[44px]"
+                        style={{ color: t.textSecondary }}>
+                        Correggi
+                      </button>
+                      <button type="button" onClick={wizardConfirmDay}
+                        className="text-base font-semibold px-4 py-2 rounded-md border min-h-[44px]"
+                        style={{ background: t.textPrimary, color: t.modalBg, borderColor: t.textPrimary }}>
+                        Va bene
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {wizard.step === 'altra' && (
+                  <>
+                    <p className="text-base font-semibold" style={{ color: t.textPrimary }}>
+                      Aggiungere un altro giorno?
+                    </p>
+                    <div className="flex justify-between gap-2">
+                      <button type="button" onClick={wizardFinish}
+                        className="text-base font-semibold px-4 py-2 rounded-md border min-h-[44px]"
+                        style={{ background: t.modalBg, color: t.textPrimary, borderColor: t.tapBd }}>
+                        No, ho finito
+                      </button>
+                      <button type="button" onClick={wizardAnotherDay}
+                        className="text-base font-semibold px-4 py-2 rounded-md border min-h-[44px]"
+                        style={{ background: t.textPrimary, color: t.modalBg, borderColor: t.textPrimary }}>
+                        Si, aggiungi
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
 
             <div className="flex flex-col gap-2">
               {occorrenzeGroups.map((item) => {
