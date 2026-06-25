@@ -93,8 +93,8 @@ class OrariBulkPayload(RootModel[list[OrarioCreate]]):
 
         data_specifica drives the branch (farmaco is mono-tipo, Q-F):
         - all-NULL  -> recurring rows: global univocity + sequentiality 1..N (legacy).
-        - all-valued-> fisso_date occurrences (Pattern S): anchor 'assoluto' (Q-H),
-          <=30 distinct dates (Q-G), per-date dose_numero 1..M with constant M.
+        - all-valued-> fisso_date occurrences (flat list, Spec v1.16): anchor 'assoluto'
+          (Q-H), <=30 distinct dates (Q-G), per-date dose_numero 1..k_D (variable k_D).
         - mixed     -> rejected.
         Time equality across dates is NOT enforced here (Q-I=form responsibility).
         """
@@ -128,7 +128,7 @@ class OrariBulkPayload(RootModel[list[OrarioCreate]]):
                 )
             return self
 
-        # All-valued: fisso_date occurrences (Pattern S).
+        # All-valued: fisso_date occurrences (flat list, Spec v1.16).
         # Q-H: anchor MUST be 'assoluto' on every valued row.
         for o in valued:
             if o.ancora_riferimento != "assoluto":
@@ -142,23 +142,15 @@ class OrariBulkPayload(RootModel[list[OrarioCreate]]):
             raise ValueError(
                 f"numero massimo di date superato: {len(distinct_dates)} (max 30)"
             )
-        # Per-date dose_numero sequentiality 1..M with constant M across dates.
+        # Per-date dose_numero sequentiality 1..k_D (flat list, Spec v1.16; SENTINEL_PAR_22_153_FLATLIST).
         by_date: dict = {}
         for o in valued:
             by_date.setdefault(o.data_specifica, []).append(o.dose_numero)
-        expected_m = None
         for d, dns in by_date.items():
-            m = len(dns)
-            if expected_m is None:
-                expected_m = m
-            elif m != expected_m:
+            k = len(dns)
+            if sorted(dns) != list(range(1, k + 1)):
                 raise ValueError(
-                    "numero di dosi per data non costante (Pattern S): "
-                    f"atteso {expected_m}, trovato {m} per la data {d}"
-                )
-            if sorted(dns) != list(range(1, m + 1)):
-                raise ValueError(
-                    f"dose_numero deve essere sequenziale 1..M per la data {d}, "
+                    f"dose_numero deve essere sequenziale 1..k per la data {d}, "
                     f"ricevuto {sorted(dns)}"
                 )
         return self

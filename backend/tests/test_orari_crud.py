@@ -272,3 +272,58 @@ def test_put_orari_recurring_null_regression(
     body = response.json()
     assert len(body) == 2
     assert all(o["data_specifica"] is None for o in body)
+
+
+def test_put_orari_fisso_date_variable_kd_roundtrip(
+    client: TestClient,
+    seed_owner_test: Tuple[str, int],
+    insert_test_farmaco: Callable[..., int],
+) -> None:
+    """T11: k_D variabile per data (1 dose il 07-01, 2 dosi il 07-02) -> 200 (Spec v1.16).
+
+    Pre-rilassamento questo payload dava 422 (Pattern S, M costante). Lista piatta: 200.
+    """
+    token, owner_id = seed_owner_test
+    farmaco_id = insert_test_farmaco(utente_id=owner_id, nome="VarKd")
+    payload = [
+        _orario_assoluto(1, "2026-07-01", ora_prevista="08:00:00"),
+        _orario_assoluto(1, "2026-07-02", ora_prevista="08:00:00"),
+        _orario_assoluto(2, "2026-07-02", ora_prevista="20:00:00"),
+    ]
+    response = client.put(
+        f"/api/farmaci/{farmaco_id}/orari",
+        json=payload,
+        headers={"X-User-Token": token},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 3
+    assert [(o["data_specifica"], o["dose_numero"]) for o in body] == [
+        ("2026-07-01", 1),
+        ("2026-07-02", 1),
+        ("2026-07-02", 2),
+    ]
+
+
+def test_put_orari_fisso_date_variable_kd_broken_seq_422(
+    client: TestClient,
+    seed_owner_test: Tuple[str, int],
+    insert_test_farmaco: Callable[..., int],
+) -> None:
+    """T12: k_D variabile ma sequenza per-data con gap (07-02: 1,3) -> 422.
+
+    Prova che la sequenzialita per-data resta applicata anche fuori da Pattern S.
+    """
+    token, owner_id = seed_owner_test
+    farmaco_id = insert_test_farmaco(utente_id=owner_id, nome="VarKdGap")
+    payload = [
+        _orario_assoluto(1, "2026-07-01"),
+        _orario_assoluto(1, "2026-07-02"),
+        _orario_assoluto(3, "2026-07-02"),
+    ]
+    response = client.put(
+        f"/api/farmaci/{farmaco_id}/orari",
+        json=payload,
+        headers={"X-User-Token": token},
+    )
+    assert response.status_code == 422
