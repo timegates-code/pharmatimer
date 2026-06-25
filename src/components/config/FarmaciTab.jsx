@@ -1726,6 +1726,9 @@ function OrarioRow({ index, orario, oraPreview, onChange, theme: t }) {
 // ============================================================
 // OccorrenzaRow — riga singola (data, ora) per fisso_date.
 // SENTINEL_PAR_22_154_FISSODATE
+// Blocco 3 (par.22.155): input ora/data + bottone rimozione ingranditi
+// (min-h-[44px], text-base) per accessibilita anziani; type="time" nativo
+// invariato -> contratto 'HH:MM' preservato. SENTINEL_PAR_22_155_PICKER_A11Y
 // ============================================================
 
 function OccorrenzaRow({ index, occorrenza, onChange, onRemove, theme: t }) {
@@ -1738,7 +1741,7 @@ function OccorrenzaRow({ index, occorrenza, onChange, onRemove, theme: t }) {
       style={{ background: t.modalBg, borderColor: t.tapBd }}
     >
       <div className="flex flex-col gap-1 flex-1">
-        <label htmlFor={dataId} className="text-xs font-medium" style={{ color: t.textPrimary }}>
+        <label htmlFor={dataId} className="text-sm font-medium" style={{ color: t.textPrimary }}>
           Data
         </label>
         <input
@@ -1746,12 +1749,12 @@ function OccorrenzaRow({ index, occorrenza, onChange, onRemove, theme: t }) {
           type="date"
           value={occorrenza.data || ''}
           onChange={(e) => onChange('data', e.target.value)}
-          className="rounded px-2 py-1.5 border text-sm"
+          className="rounded px-3 py-2.5 border text-base min-h-[44px]"
           style={{ background: t.modalBg, color: t.textPrimary, borderColor: t.tapBd }}
         />
       </div>
       <div className="flex flex-col gap-1 flex-1">
-        <label htmlFor={oraId} className="text-xs font-medium" style={{ color: t.textPrimary }}>
+        <label htmlFor={oraId} className="text-sm font-medium" style={{ color: t.textPrimary }}>
           Orario
         </label>
         <input
@@ -1759,7 +1762,7 @@ function OccorrenzaRow({ index, occorrenza, onChange, onRemove, theme: t }) {
           type="time"
           value={occorrenza.ora || ''}
           onChange={(e) => onChange('ora', e.target.value)}
-          className="rounded px-2 py-1.5 border text-sm tabular-nums"
+          className="rounded px-3 py-2.5 border text-base min-h-[44px] tabular-nums"
           style={{ background: t.modalBg, color: t.textPrimary, borderColor: t.tapBd }}
         />
       </div>
@@ -1767,7 +1770,7 @@ function OccorrenzaRow({ index, occorrenza, onChange, onRemove, theme: t }) {
         type="button"
         onClick={onRemove}
         aria-label={`Rimuovi data ${index + 1}`}
-        className="px-2 py-1.5 text-sm rounded border"
+        className="flex items-center justify-center min-h-[44px] min-w-[44px] text-base rounded border"
         style={{ background: t.modalBg, color: t.red, borderColor: t.red }}
       >
         ✕
