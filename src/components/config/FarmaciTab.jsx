@@ -1333,6 +1333,7 @@ function FarmacoDrawer({
           <>
             {/* --- Sezione 3 (fisso_date): Date e orari ----------- */}
             <SectionHeading theme={t}>Date e orari</SectionHeading>
+            {/* SENTINEL_PAR_22_158_UXE_NESTING -- R1: nesting righe sotto data + gerarchia bottoni + box periodo (presentazionale) */}
 
             <p className="text-xs italic" style={{ color: t.textSecondary }}>
               Aggiungi una riga per ogni assunzione: scegli la data e l’orario.
@@ -1344,7 +1345,7 @@ function FarmacoDrawer({
                   return (
                     <div
                       key={`occ-hdr-${item.data}`}
-                      className="flex items-center justify-between mt-2 pb-1 border-b"
+                      className="flex items-center justify-between mt-4 pb-1 border-b"
                       style={{ borderColor: t.tapBd }}
                     >
                       <span className="text-sm font-semibold" style={{ color: t.textPrimary }}>
@@ -1362,22 +1363,27 @@ function FarmacoDrawer({
                       key={`occ-add-${item.data}`}
                       type="button"
                       onClick={() => addOccorrenzaForData(item.data)}
-                      className="self-start text-xs font-medium px-2 py-1 rounded border"
-                      style={{ background: t.modalBg, color: t.textPrimary, borderColor: t.tapBd }}
+                      className="self-start ml-3 text-xs font-medium px-1 py-0.5 rounded"
+                      style={{ background: 'transparent', color: t.textSecondary }}
                     >
-                      + Aggiungi orario
+                      + orario
                     </button>
                   );
                 }
                 return (
-                  <OccorrenzaRow
+                  <div
                     key={`occ-${item.i}`}
-                    index={item.i}
-                    occorrenza={item.oc}
-                    onChange={(name, value) => updateOccorrenza(item.i, name, value)}
-                    onRemove={() => removeOccorrenza(item.i)}
-                    theme={t}
-                  />
+                    className="pl-3"
+                    style={{ borderLeft: `2px solid ${t.tapBd}` }}
+                  >
+                    <OccorrenzaRow
+                      index={item.i}
+                      occorrenza={item.oc}
+                      onChange={(name, value) => updateOccorrenza(item.i, name, value)}
+                      onRemove={() => removeOccorrenza(item.i)}
+                      theme={t}
+                    />
+                  </div>
                 );
               })}
             </div>
@@ -1385,17 +1391,21 @@ function FarmacoDrawer({
             <button
               type="button"
               onClick={addOccorrenza}
-              className="self-start text-sm font-medium px-3 py-1.5 rounded-md border"
-              style={{ background: t.modalBg, color: t.textPrimary, borderColor: t.tapBd }}
+              className="self-start text-sm font-medium px-3 py-2 rounded-md border"
+              style={{ background: t.textPrimary, color: t.modalBg, borderColor: t.textPrimary }}
             >
               + Aggiungi data
             </button>
 
             {form.occorrenze.length > 0 && fissoDateDerived.allFilled && !fissoDateDerived.hasDuplicate && (
-              <p className="text-xs" role="status" style={{ color: t.textSecondary }}>
+              <div
+                role="status"
+                className="text-xs rounded-md border px-3 py-2"
+                style={{ background: t.modalBg, borderColor: t.tapBd, color: t.textSecondary }}
+              >
                 Periodo: {fissoDateDerived.dataInizio} → {fissoDateDerived.dataFine}
                 {' · '}Max dosi in un giorno: {fissoDateDerived.dosiGiornaliere}
-              </p>
+              </div>
             )}
 
             {fissoDateDerived.hasDuplicate && (
