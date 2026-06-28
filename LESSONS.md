@@ -266,41 +266,50 @@
 
 <!-- SENTINEL_MINT_50_55_PAR_22_170 -->
 
----
-
-## Candidate (pronte al mint, sbloccate dalla creazione del registro -- par.130)
-
-### L-discriminant-not-version
+### #56 -- L-discriminant-not-version
+- Stato: minted
 - Origine: par.22.162
 - Regola: quando `info.version` non viene bumpato (RC), il discriminante del deploy backend e lo SCHEMA openapi.
 - Contesto: verifica presenza marker (fisso_date/data_specifica) invece della versione.
 
-### L-prod-data-not-dev
+### #57 -- L-prod-data-not-dev
+- Stato: minted
 - Origine: par.22.162
 - Regola: lo stato dei dati prod NON si inferisce dallo stato dev.
 - Contesto: baseline dati va sempre letto sul prod reale.
 
-### L-memory-vs-grounding
+### #58 -- L-memory-vs-grounding
+- Stato: minted
 - Origine: par.22.157
 - Regola: le ipotesi di design basate sulla memoria vanno verificate contro il dump fisico del file.
 - Contesto: prima di emettere deviazioni o patch.
 
-### L-single-parent-no-remount
+### #59 -- L-single-parent-no-remount
+- Stato: minted
 - Origine: par.22.157
 - Regola: figli React keyed che cambiano parent vengono remountati; usare liste di sibling piatte.
 - Contesto: raggruppamenti UI (es. occorrenze per data) a parent singolo.
 
-### L-enumeration-canon
+### #60 -- L-enumeration-canon
+- Stato: minted
 - Origine: par.22.156
 - Regola: una sigla collettiva (es. UX-a..g) va sostenuta da enumerazione esplicita lettera->voce, non da ricostruzione posizionale.
 - Contesto: mappe lettera->item canoniche.
 
-### L-expected-output-calc
+### #61 -- L-expected-output-calc
+- Stato: minted
 - Origine: par.22.153
 - Regola: calcolare loutput esatto + pattern grep ANCORATI prima di dichiarare un atteso; mai `tail` per i conteggi quando il rumore puo spostare le righe di summary.
 - Contesto: CP0 e verifiche empiriche.
 
-### L-defaults-file-host-specific
+### #62 -- L-defaults-file-host-specific
+- Stato: minted
 - Origine: par.22.161
 - Regola: i path di config MySQL sono host-specific (`~/.my-pharmatimer.cnf` su Mini vs `~/.my.cnf` su dev).
 - Contesto: ogni comando mysql deve puntare al defaults-file giusto per host.
+
+<!-- SENTINEL_MINT_56_62_PAR_22_170 -->
+
+---
+
+## Candidate (pronte al mint, sbloccate dalla creazione del registro -- par.130)
