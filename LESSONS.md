@@ -10,9 +10,9 @@
 - Una candidate diventa `minted` solo per ratifica esplicita dellutente, ricevendo il numero `#NN` successivo.
 - Ogni voce: regola azionabile in una frase + contesto di applicazione + origine (par.X.Y, s.6.NN se da deviazione).
 
-## Back-port pendente (DEFERITO -- follow-up dedicato)
-- Le Lesson storiche #16..#38 (gia mintate in sessioni precedenti) NON sono ancora trascritte qui.
-- Vanno portate dalla loro sede autoritativa attuale per evitare divergenza; richiede turno dedicato.
+## Back-port #16..#38 -- COMPLETATO (par.169)
+- Le Lesson storiche #16..#38 sono trascritte in `## Minted` (back-port da Changelog F2/F3, ultima versione cementata, riga-fonte annotata).
+- Criteri: versione canonica = ultima cementata; #15 esclusa (declassata); editable PEP660 resta candidate `L-editable-pep660-rsync-source` distinta da #31.
 
 ---
 
@@ -23,6 +23,146 @@
 - Origine: par.22.166 (Step 4 deploy F14)
 - Regola: il redeploy frontend su Mini e SOLO rsync della build (`npm run build:mini` -> `rsync -avi --delete dist-mini/ -> mini:PharmaTimer/web/`); NESSUN restart del backend.
 - Contesto: smoke post-deploy = nuovo bundle 200 / vecchio 404 / openapi invariato. Il backend non si tocca perche il frontend e statico same-origin.
+
+<!-- SENTINEL_BACKPORT_16_38_PAR_169 -->
+
+### #16 -- L-mysql-redirect-cat
+- Stato: minted
+- Origine: F2 par.22.79-ter
+- Regola: Output MySQL sempre via redirect su file (`>/tmp/out 2>/tmp/err; cat`), mai `| grep` ne `2>/dev/null` non documentato.
+- Contesto: Ogni script bash che osserva output MySQL (baseline/diagnostico/delivery); self-audit pre-emit. Fonte: Changelog F2 riga ~17173.
+
+### #17 -- L-python-heredoc-no-c
+- Stato: minted
+- Origine: F2 par.22.79-ter
+- Regola: Python multi-riga via heredoc `PYEOF` o file dedicato, mai `python -c` con f-string e virgolette nidificate.
+- Contesto: Evita la classe di errori quoting+nesting (SyntaxError, comandi residui mescolati). Fonte: Changelog F2 riga ~17174.
+
+### #18 -- L-uuid-identity-baseline
+- Stato: minted
+- Origine: F2 par.22.79-ter
+- Regola: CP0 baseline multi-target DEVE confrontare `@@server_uuid` per confermare che il target reale coincide col dichiarato.
+- Contesto: Applicabile a stack MySQL/MariaDB/Postgres multi-host (host+container, host+remote). Fonte: Changelog F2 riga ~17175.
+
+### #19 -- L-testclient-no-context
+- Stato: minted
+- Origine: F2 par.22.80
+- Regola: FastAPI TestClient SENZA context manager (`yield TestClient(app)`): il lifespan re-inizializza il pool produzione sovrascrivendo quello test patchato.
+- Contesto: Fixture pytest con pool/risorse globali patchati session-scope. Fonte: Changelog F2 riga ~17895.
+
+### #20 -- L-patcher-idempotency-marker
+- Stato: minted
+- Origine: F3 par.22.84
+- Regola: Patcher content-anchored: se `old` e sottostringa di `new` serve un `idempotency_marker` esplicito + self-check.
+- Contesto: Re-exec del patcher = early-exit pulito. Fonte: Changelog F3 riga ~386.
+
+### #21 -- L-db-baseline-python-venv
+- Stato: minted
+- Origine: F3 par.22.82
+- Regola: Baseline DB del CP0 sempre via venv Python (`pharmatimer_api.config.settings`), mai `mysql -e -p` da CLI.
+- Contesto: Garantisce stesso target/credenziali del runtime. Fonte: Changelog F3 riga ~235.
+
+### #22 -- L-pydantic-timedelta-coerce
+- Stato: minted
+- Origine: F3 par.22.83
+- Regola: Response Pydantic con campi `time` letti da MySQL: `field_validator(mode='before')` con `_coerce_timedelta_to_time`.
+- Contesto: MySQL restituisce TIME come timedelta. Fonte: Changelog F3 riga ~1117 / models/orario.py riga ~2307.
+
+### #23 -- L-schema-first-introspect
+- Stato: minted
+- Origine: F3 par.22.81
+- Regola: `SHOW CREATE TABLE`/`information_schema` obbligatorio prima di SELECT con colonne specifiche su tabelle non toccate nella sessione (anche se il nome colonna sembra banale).
+- Contesto: Ogni script CP0-ext che legge utenti/farmaci/orari/log fuori scope. Fonte: Changelog F3 riga ~281.
+
+### #24 -- L-settings-uppercase-introspect
+- Stato: minted
+- Origine: F3 par.22.85
+- Regola: Leggere empiricamente la classe `Settings` (attributi UPPERCASE, `case_sensitive=True`) prima di usare `settings.<ATTR>`; estende #23 dal DB al config.
+- Contesto: Ogni script che importa `from pharmatimer_api.config import settings`. Fonte: Changelog F3 riga ~490.
+
+### #25 -- L-pool-autocommit-implicit
+- Stato: minted
+- Origine: F3 par.22.86
+- Regola: Pool `autocommit=False`: la transazione e implicita alla prima query -> niente `conn.start_transaction()` esplicito, solo `conn.commit()` finale.
+- Contesto: mysql-connector-python pool; `start_transaction()` da `ProgrammingError('Transaction already in progress')`. Fonte: Changelog F3 riga ~960.
+
+### #26 -- L-pre-emit-static-analysis
+- Stato: minted
+- Origine: F3 par.22.87
+- Regola: Static analysis dei file MOD (import structure / fixture pattern / scope semantics) PRIMA di emettere il patcher.
+- Contesto: Riduce drift di import e scope su file modificati. Fonte: Changelog F3 riga ~1115.
+
+### #27 -- L-doc-not-empirical
+- Stato: minted
+- Origine: F3 par.22.89
+- Regola: Dichiarare una lesson 'applicata' senza `cat/grep/find/ls` reali e propaganda autoreferenziale: dump fisico dei source obbligatorio, mai assumere esistenza/path/contenuto da design draft.
+- Contesto: CP0 di ogni sessione che cita #26 deve dumpare fisicamente i source. Fonte: Changelog F3 riga ~1603.
+
+### #28 -- L-composition-over-inheritance
+- Stato: minted
+- Origine: F3 par.22.91
+- Regola: `ApiRepository` (e ogni wrapper Repository) NON estende `LocalRepository`: possiede `this._local = local ?? new LocalRepository()` con injection opzionale via constructor.
+- Contesto: Dexie mutation isolation + test granularity (`vi.spyOn(repo._local, X)`) + contract 31 metodi esplicito. Fonte: Changelog F3 riga ~2596.
+
+### #29 -- L-file-based-delivery
+- Stato: minted
+- Origine: F3 par.22.94
+- Regola: Artefatti documentali/script consegnati come FILE (mai inline shell-incollante): evita leak di ENV e hang del terminale.
+- Contesto: Catalizzata da leak ANTHROPIC_API_KEY via heredoc Dockerfile. Fonte: Changelog F3 riga ~3233.
+
+### #30 -- L-deferred-decisions-immutable
+- Stato: minted
+- Origine: F3 par.22.95
+- Regola: Le decisioni architetturali ratificate sono immutabili: Claude non le sovrascrive con default; ri-verifica in apertura CP0 (es. vincolo deploy nativo gamma).
+- Contesto: Proporre alternative gia scartate senza ri-ratifica = regola critica #2 violata. Fonte: Changelog F3 riga ~3569.
+
+### #31 -- L-hidden-assumptions-install-state
+- Stato: minted
+- Origine: F3 par.22.99
+- Regola: Pre-emit del patcher elencare le assunzioni nascoste di ogni MOD/file NEW e validarle empiricamente; CP0-ext Parte D = dump stato venv runtime (`pip list`/`pip show <pkg>|grep Location`) se il codice dipende dallo stato di installazione.
+- Contesto: Per `importlib.metadata`, `pkg_resources`, entry_points, editable install. Applicazione: editable PEP660 (`pip install -e --no-deps`, metadati congelati) = candidate L-editable-pep660-rsync-source distinta. Estende #27. Fonte: Changelog F3 riga ~5056.
+
+### #32 -- L-self-skepticism-checkpoint
+- Stato: minted
+- Origine: F3 par.22.99
+- Regola: Al closing di ogni CP esecutivo elencare esplicitamente le assunzioni NON validate empiricamente; pre-emit del CP successivo validarle (INV check) o ratificarle come accettabili.
+- Contesto: Cattura i drift sistemici nel turno corrente, non al CP successivo. Fonte: Changelog F3 riga ~5060.
+
+### #33 -- L-subsystem-consumer-audit
+- Stato: minted
+- Origine: F3 par.22.101-bis
+- Regola: Un refactor che cambia il contract di un sub-system (es. connection.py defaults-file vs credenziali dirette) richiede audit batch di TUTTI i consumer, non solo router/test.
+- Contesto: Health endpoint, backup, script: stesso pattern hardcoded vs source-of-truth. Fonte: Changelog F3 riga ~5724.
+
+### #34 -- L-stop-runtime-patching-rootcause
+- Stato: minted
+- Origine: F3 par.22.101
+- Regola: Quando iterazioni di patch nello stesso cluster falliscono, STOP runtime-patching: analizza la root cause architetturale unificata ed emetti un refactor canonico in un singolo CP atomico.
+- Contesto: Es. `--single-transaction` (RELOAD) e `--no-tablespaces` (PROCESS) entrambi richiedono privilegi globali che lapp-user least-privilege non ha. Fonte: Changelog F3 riga ~6346.
+
+### #35 -- L-cli-symlink-verify
+- Stato: minted
+- Origine: F3 par.22.102
+- Regola: App GUI/.pkg (Mac App Store) NON espongono il symlink CLI su host headless senza un run GUI: verificare empiricamente lesistenza del symlink prima di assumere il comando CLI.
+- Contesto: Catalizzata CP1.2.5 Mini (Tailscale.app .pkg). Fonte: Changelog F3 riga ~6909.
+
+### #36 -- L-tailscale-tag-autoapproval
+- Stato: minted
+- Origine: F3 par.22.102
+- Regola: `--advertise-tags` con `tagOwners autogroup:admin` + utente admin del tailnet = tag auto-approvato server-side, senza approvazione manuale.
+- Contesto: Default raccomandato 'manual approval' risulta pessimistico. Fonte: Changelog F3 riga ~6910.
+
+### #37 -- L-tailscale-serve-persist
+- Stato: minted
+- Origine: F3 par.22.102
+- Regola: `tailscale serve --bg` persiste la config Mini-side anche prima del feature-flag tailnet-side; all'enable la config diventa attiva (provisioning ACME asincrono possibile pre-enable).
+- Contesto: Catalizzata CP2.2.x. Fonte: Changelog F3 riga ~6911.
+
+### #38 -- L-patcher-no-inline-fence-heredoc
+- Stato: minted
+- Origine: F3 par.22.102
+- Regola: Patcher con heredoc `PYEOF` contenente code-fence triple-backtick destabilizza il parsing zsh (modalita continuazione heredoc>): consegnare il patcher come file + `mv` in /tmp, mai inline cat heredoc. Estende #17.
+- Contesto: Catalizzata CP6.2 hang Roberto-side. Fonte: Changelog F3 riga ~6912.
 
 ---
 
