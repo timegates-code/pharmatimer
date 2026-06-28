@@ -190,39 +190,47 @@
 
 <!-- SENTINEL_MINT_40_43_PAR_22_170 -->
 
----
-
-## Candidate (pronte al mint, sbloccate dalla creazione del registro -- par.130)
-
-### L-attivo-guard-orari
+### #44 -- L-attivo-guard-orari
+- Stato: minted
 - Origine: par.22.166
 - Regola: loader orari e DELETE farmaco filtrano `attivo = TRUE`.
 - Contesto: un farmaco inattivo e invisibile a /orari e non hard-cancellabile via API; per e2e usare attivo=true, per cleanup completo SQL diretto.
 
-### L-soft-delete-api
+### #45 -- L-soft-delete-api
+- Stato: minted
 - Origine: par.22.166
 - Regola: `DELETE /api/farmaci/{id}` e soft-delete (attivo=0), preserva storia/log.
 - Contesto: il ripristino baseline richiede hard-delete SQL guardato per nome.
 
-### L-e2e-prod-self-cleaning
+### #46 -- L-e2e-prod-self-cleaning
+- Stato: minted
 - Origine: par.22.166
 - Regola: un e2e prod che scrive dati di test deve essere auto-pulente con guard sul nome + verifica baseline prima di dichiararsi chiuso.
 - Contesto: verifica righe + precondizione rollback (es. enum a 0) prima del GO.
 
-### L-editable-pep660-rsync-source
+### #47 -- L-editable-pep660-rsync-source
+- Stato: minted
 - Origine: par.22.165
 - Regola: con editable PEP 660 limport risolve alla sorgente in-repo; rsync della sorgente aggiorna il runtime, `pip install -e --no-deps` refresha solo i metadati.
 - Contesto: deploy backend su Mini.
 
-### L-kb-snapshot-staleness
+### #48 -- L-kb-snapshot-staleness
+- Stato: minted
 - Origine: par.22.165
 - Regola: lo snapshot KB del progetto puo restare indietro rispetto al disco, generando un CP0 falso-drift.
 - Contesto: diagnosi via recent_chats + sentinel su disco; rimedio = ricaricare la KB dalla versione su disco.
 
-### L-implicit-commit-ddl
+### #49 -- L-implicit-commit-ddl
+- Stato: minted
 - Origine: par.22.164
 - Regola: in MySQL ogni ALTER fa commit implicito.
 - Contesto: affidarsi a guard + idempotenza per-statement + backup verificato, non alle transazioni.
+
+<!-- SENTINEL_MINT_44_49_PAR_22_170 -->
+
+---
+
+## Candidate (pronte al mint, sbloccate dalla creazione del registro -- par.130)
 
 ### L-pipestatus-capture
 - Origine: par.22.164
