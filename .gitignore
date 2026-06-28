@@ -31,3 +31,6 @@ CLAUDE.md
 backups_dev/
 apply_*.py
 introspect_*.py
+/patcher_*.py
+/cp0_*.sh
+/*.bak-pre-*
