@@ -228,39 +228,47 @@
 
 <!-- SENTINEL_MINT_44_49_PAR_22_170 -->
 
----
-
-## Candidate (pronte al mint, sbloccate dalla creazione del registro -- par.130)
-
-### L-pipestatus-capture
+### #50 -- L-pipestatus-capture
+- Stato: minted
 - Origine: par.22.164
 - Regola: `${PIPESTATUS[n]}` va catturato in un colpo solo (`arr=("${PIPESTATUS[@]}")`) subito dopo la pipe.
 - Contesto: gate atomici sui rc di una pipe (es. mysqldump | gzip).
 
-### L-identity-on-writing-conn
+### #51 -- L-identity-on-writing-conn
+- Stato: minted
 - Origine: par.22.164
 - Regola: il guard `@@server_uuid` piu forte e quello asserito sulla stessa connessione che esegue gli ALTER.
 - Contesto: applier prod a doppia fase con guard di identita.
 
-### L-applier-minimal-derivation
+### #52 -- L-applier-minimal-derivation
+- Stato: minted
 - Origine: par.22.164
 - Regola: un applier prod si deriva da quello dev gia provato, con differenze minime ratificate.
 - Contesto: riduce il rischio introdotto da codice nuovo su prod.
 
-### L-gtid-restorability
+### #53 -- L-gtid-restorability
+- Stato: minted
 - Origine: par.22.163
 - Regola: `mysqldump` default su `gtid_mode=ON` emette GTID_PURGED + SQL_LOG_BIN=0; usare `--set-gtid-purged=OFF`.
 - Contesto: backup ripristinabili senza privilegi elevati.
 
-### L-additive-migration-rollback-layered
+### #54 -- L-additive-migration-rollback-layered
+- Stato: minted
 - Origine: par.22.162
 - Regola: migration additiva applicata PRIMA del backend; layer di rollback indipendenti; reverse-ALTER enum richiede count(valore_nuovo)=0.
 - Contesto: sequenza deploy multi-layer.
 
-### L-backup-privilege-aware
+### #55 -- L-backup-privilege-aware
+- Stato: minted
 - Origine: par.22.162-163
 - Regola: la modalita di backup dipende dai privilegi reali del ruolo E dallemissione GTID/SQL_LOG_BIN.
 - Contesto: pharmatimer_app senza *_VARIABLES_ADMIN ne RELOAD.
+
+<!-- SENTINEL_MINT_50_55_PAR_22_170 -->
+
+---
+
+## Candidate (pronte al mint, sbloccate dalla creazione del registro -- par.130)
 
 ### L-discriminant-not-version
 - Origine: par.22.162
