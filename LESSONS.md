@@ -164,6 +164,32 @@
 - Regola: Patcher con heredoc `PYEOF` contenente code-fence triple-backtick destabilizza il parsing zsh (modalita continuazione heredoc>): consegnare il patcher come file + `mv` in /tmp, mai inline cat heredoc. Estende #17.
 - Contesto: Catalizzata CP6.2 hang Roberto-side. Fonte: Changelog F3 riga ~6912.
 
+### #40 -- L-baseline-total-vs-active
+- Stato: minted
+- Origine: par.22.167
+- Regola: un conteggio baseline di record va sempre qualificato totali-vs-attivi (vivi vs soft-deleted).
+- Contesto: in par.166 il "5 farmaci" era un TOTALE; la stessa query con attivo=TRUE dava 0. Disambiguazione read-only previene falsi-RED in CP0 e falsi allarmi di perdita dati. Fonte: Changelog F3 riga ~9750.
+
+### #41 -- L-unknown-tree-change-halt
+- Stato: minted
+- Origine: par.22.167
+- Regola: una modifica nel working tree di provenienza ignota impone STOP; identificare lautore via mtime/artefatti prima di committare o scartare.
+- Contesto: es. M .gitignore non attribuibile alla sessione -> indagine (.claude/, settings, mtime) prima di assumere benignita. Fonte: Changelog F3 riga ~9763.
+
+### #42 -- L-gitignore-not-delete
+- Stato: minted
+- Origine: par.22.167
+- Regola: preferire gitignore alla cancellazione fisica di un file: lignore e reversibile, il rm e distruttivo.
+- Contesto: es. CLAUDE.md ignorato e non cancellato; default quando il file potrebbe ancora servire. Fonte: Changelog F3 riga ~9764.
+
+### #43 -- L-inventory-before-destructive
+- Stato: minted
+- Origine: par.22.168
+- Regola: inventario fisico read-only del filesystem prima di ogni rm; i path ricostruiti da memoria/DEFERITI possono driftare.
+- Contesto: in par.168 i dump DB e .last_predeploy_v05 stavano in ~/PharmaTimer/backups/, non in root come da memoria. Estende #27. Fonte: Changelog F3 righe ~9785/9800/9808.
+
+<!-- SENTINEL_MINT_40_43_PAR_22_170 -->
+
 ---
 
 ## Candidate (pronte al mint, sbloccate dalla creazione del registro -- par.130)
