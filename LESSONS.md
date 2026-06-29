@@ -313,3 +313,17 @@
 ---
 
 ## Candidate (pronte al mint, sbloccate dalla creazione del registro -- par.130)
+
+### L-backslashG-no-e-local
+- Stato: candidate
+- Origine: par.22.171
+- Regola: `\G` non sopravvive a `mysql -e` nemmeno in locale (Studio); per output verticale usare `--table`/`--vertical` o query su `information_schema`, mai `\G` con `-e`.
+- Contesto: comandi mysql diagnostici/CP0 che vogliono colonne verticali; con `-e` il terminatore `\G` resta letterale e rompe la query.
+
+### L-paste-echo-mismatch-halt
+- Stato: candidate
+- Origine: par.22.170
+- Regola: se l'output incollato non corrisponde al comando emesso (hash o echo-attesi divergenti), STOP e richiedi la ri-esecuzione del blocco corretto; non assumere.
+- Contesto: sessioni multi-batch in cui si re-incolla per errore l'output di un batch al posto di un altro; riconoscimento via mismatch hash/echo vs comando emesso.
+
+<!-- SENTINEL_SEED_CANDIDATE_PAR_22_172 -->
