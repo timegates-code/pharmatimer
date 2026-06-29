@@ -24,7 +24,7 @@ class UtenteCreate(BaseModel):
     nome_visualizzato: str = Field(
         ...,
         min_length=1,
-        max_length=100,
+        max_length=50,
         description="Nome visualizzato utente (strip whitespace, non vuoto)",
     )
     ruolo: Literal["paziente", "caregiver"] = Field(

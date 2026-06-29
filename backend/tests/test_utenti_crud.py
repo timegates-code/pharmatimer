@@ -163,6 +163,26 @@ def test_post_utente_token_plain_one_shot_format(client, seed_owner_test):
     assert len(tokens) == 3, "Tokens must be unique"
 
 
+def test_post_utente_nome_visualizzato_boundary(client, seed_owner_test):
+    """nome_visualizzato boundary allineato a DB varchar(50): 50 ok, 51 -> 422."""
+    owner_token, _ = seed_owner_test
+
+    ok_resp = client.post(
+        "/api/utenti",
+        headers={"X-User-Token": owner_token},
+        json={"nome_visualizzato": "x" * 50},
+    )
+    assert ok_resp.status_code == 201, ok_resp.text
+    assert ok_resp.json()["nome_visualizzato"] == "x" * 50
+
+    too_long_resp = client.post(
+        "/api/utenti",
+        headers={"X-User-Token": owner_token},
+        json={"nome_visualizzato": "x" * 51},
+    )
+    assert too_long_resp.status_code == 422
+
+
 # ----- DELETE happy + idempotent -----
 
 
