@@ -331,3 +331,20 @@
 > Vuota: le 2 candidate seedate in par.172 sono state mintate in par.173 (#63 L-backslashG-no-e-local, #64 L-paste-echo-mismatch-halt).
 
 <!-- SENTINEL_SEED_CANDIDATE_PAR_22_172 -->
+
+### #65 -- Verifica identita multi-utente PWA = hash-match SHA-256, non UI
+**Contesto:** par.179, esecuzione §B (attivazione `Roberto | paziente | id=2` su prod). La verifica e2e "quale utente e loggato nella PWA" via interfaccia e risultata inaffidabile: per due volte la sessione Safari era loggata come **owner id=1** invece del paziente id=2.
+
+**Causa:** (1) la PWA persiste il token in `localStorage` (`pharmatimer.userToken`) + cache service-worker -> una sessione preesistente entra diretta senza LoginGate; (2) l'header "Ciao <nome>" e ambiguo quando owner e paziente sono **omonimi**, e "0 farmaci" e coerente con entrambi per via del self-scope; (3) in Safari la **finestra privata non e pulita** se altre tab private sono aperte (storage condiviso); (4) `clipboard.readText()` da console e bloccato senza gesto utente.
+
+**Regola:** la prova autoritativa di identita e l'**hash-match SHA-256**, non l'UI. Procedura:
+1. `localStorage.getItem('pharmatimer.userToken')` -> `crypto.subtle.digest('SHA-256', ...)` -> prefix esadecimale.
+2. confronto con `SELECT LEFT(token_hash,12) FROM utenti WHERE id=<atteso>` sul DB.
+3. l'UI ("Ciao ...", conteggio farmaci) vale solo come segnale collaterale, **mai** come prova.
+
+**Corollari operativi:**
+- per un test isolato della sessione: chiudere tutte le tab private oppure `localStorage.removeItem('pharmatimer.userToken')` prima del paste del token atteso;
+- quando serve confrontare un token, leggerlo dal **Keychain** (`security find-generic-password -s 'pharmatimer-token-<id>' -w`), non dalla clipboard;
+- inversione d'ordine: prima hash-match, poi (eventuale) conferma visiva.
+
+**Natura:** rimedio di processo/runbook, non di prodotto. Nessuna modifica a codice/schema/VIETATO, nessuna deviazione `s.6`. Aggancio: il passo di verifica e2e del runbook §B (DESIGN §7) cita esplicitamente l'hash-match come gate.
