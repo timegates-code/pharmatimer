@@ -359,7 +359,7 @@
 **Regola:** all'inizio di CP0 (blocco Studio) imporre e verificare la umask:
 ```
 umask 022
-[ "$(umask)" = "0022" ] || echo 'WARN CP0: umask != 0022 (corretta a 022)'
+case "$(umask)" in 0022|022) echo OK ;; *) echo DRIFT ;; esac
 ```
 Se vitest riporta "N unhandled errors" con 0 test eseguiti, o pytest da `PermissionError`/`EACCES` su path in `/var/folders/.../T/`, sospettare **subito** la umask prima di ipotizzare codice/dipendenze/git. Rimedio: `umask 022` nella shell + rimozione temp corrotti (`rm -rf "$TMPDIR/pytest-of-<user>" "$TMPDIR"/vitest-*`), poi ri-run nella **stessa** shell.
 
