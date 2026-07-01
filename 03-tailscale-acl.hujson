@@ -1,0 +1,29 @@
+// PharmaTimer Tailscale ACL policy (par.189: S1 ssh src ristretto
+//     via tag:pharmatimer-admin + S2 sharee scoped tcp:443)
+{
+	"tagOwners": {
+		"tag:pharmatimer-server": ["autogroup:admin"],
+		"tag:pharmatimer-client": ["autogroup:admin"],
+		"tag:pharmatimer-admin":  ["autogroup:admin"],
+	},
+	"grants": [
+		{
+			"src": ["tag:pharmatimer-client"],
+			"dst": ["tag:pharmatimer-server"],
+			"ip":  ["tcp:443", "tcp:8000"],
+		},
+		{
+			"src": ["autogroup:shared"],
+			"dst": ["tag:pharmatimer-server"],
+			"ip":  ["tcp:443"],
+		},
+	],
+	"ssh": [
+		{
+			"action": "accept",
+			"src":    ["tag:pharmatimer-admin"],
+			"dst":    ["tag:pharmatimer-server"],
+			"users":  ["autogroup:nonroot"],
+		},
+	],
+}
