@@ -348,3 +348,19 @@
 - inversione d'ordine: prima hash-match, poi (eventuale) conferma visiva.
 
 **Natura:** rimedio di processo/runbook, non di prodotto. Nessuna modifica a codice/schema/VIETATO, nessuna deviazione `s.6`. Aggancio: il passo di verifica e2e del runbook §B (DESIGN §7) cita esplicitamente l'hash-match come gate.
+
+### #66 -- umask != 022 rompe vitest/pytest via $TMPDIR
+**Contesto:** apertura par.184, CP0 RED su Studio: vitest 74 unhandled errors (0 test eseguiti), pytest 6 errors in `test_static_serve_guard.py`. Codice tracciato identico a baseline (HEAD 45715ff), prod (Mini) integro. Il guasto era solo lato ambiente dev.
+
+**Causa:** la shell corrente aveva `umask 0177`. Con 0177 ogni file/dir nasce senza permessi di gruppo/altri e, per le dir, **senza bit di esecuzione** (`x`) per il proprietario a valle della creazione ricorsiva -> la dir viene creata ma non e attraversabile/scrivibile. Sia vitest (mkdir `.../ssr` dentro la propria base temp) sia pytest (`.lock` in `pytest-of-<user>/pytest-NN`) creano una dir e subito dopo scrivono al suo interno -> `EACCES` / `PermissionError` dentro `$TMPDIR`.
+
+**Diagnosi decisiva:** `mkdir` a un livello passa, ma creare un **file dentro** una sottodir appena creata fallisce; `umask` risulta `0177`. La sorgente non era in alcun dotfile zsh, launchd o MDM: `zsh -c 'umask'` e `zsh -ic 'umask'` restituiscono `022` -> la 0177 era **transitoria alla singola finestra**, non ereditata all'avvio (fantasma non riproducibile).
+
+**Regola:** all'inizio di CP0 (blocco Studio) imporre e verificare la umask:
+```
+umask 022
+[ "$(umask)" = "0022" ] || echo 'WARN CP0: umask != 0022 (corretta a 022)'
+```
+Se vitest riporta "N unhandled errors" con 0 test eseguiti, o pytest da `PermissionError`/`EACCES` su path in `/var/folders/.../T/`, sospettare **subito** la umask prima di ipotizzare codice/dipendenze/git. Rimedio: `umask 022` nella shell + rimozione temp corrotti (`rm -rf "$TMPDIR/pytest-of-<user>" "$TMPDIR"/vitest-*`), poi ri-run nella **stessa** shell.
+
+**Natura:** rimedio di processo/ambiente, non di prodotto. Nessuna modifica a codice/schema/VIETATO, nessuna deviazione `s.6`.
