@@ -21,7 +21,7 @@ import { runSeedIfNeeded } from '../data/seed.js';
 // thunk transaction (clear+re-add atomic). The repo abstraction does
 // not expose a clear-all primitive, and adding one for a single
 // 1-shot use-case would be scope-creep. Documented as deviation.
-import { db } from '../data/db.js';
+import { db, ONBOARDING_LS_KEY } from '../data/db.js'; // BUG-m fix s.6.251
 import { addDays } from '../utils/time.js';
 import { resolveNow } from '../utils/now.js';
 import {
@@ -990,6 +990,17 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     const r2 = await setSetting('onboarding_completed', 1);
     if (!r2?.ok) return r2;
 
+    // BUG-m fix (s.6.251): mirror the flag to localStorage so the
+    // OnboardingGate survives mobile reloads where IndexedDB is wiped
+    // (Finding #10). Best-effort: storage failures must not block
+    // onboarding (IDB flag above remains authoritative in-session).
+    // SENTINEL_BUGM_S6251_COMPLETE_LS
+    try {
+      localStorage.setItem(ONBOARDING_LS_KEY, '1');
+    } catch {
+      /* ignore storage errors */
+    }
+
     // par.6.168 closure (CP4 par.6.175): demo seed via opt-in.
     if (mode === 'demo') {
       try {
@@ -1068,6 +1079,15 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
           });
         }
       );
+      // BUG-m fix (s.6.251): clear the localStorage mirror so the
+      // onboarding wizard re-opens after a full reset, preserving the
+      // §6.180 "Ricomincia da capo" contract (step 3 of its flow).
+      // SENTINEL_BUGM_S6251_RESET_LS
+      try {
+        localStorage.removeItem(ONBOARDING_LS_KEY);
+      } catch {
+        /* ignore storage errors */
+      }
       // Defensive prompt clear before re-init (any open prompt is now
       // semantically stale — its entryKey no longer resolves).
       dispatch({ type: 'DISMISS_PROMPT' });

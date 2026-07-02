@@ -36,6 +36,7 @@ export default function OnboardingModal({
   open,
   defaultNome = '',
   farmaciAttiviCount = 0,
+  apiMode = false, // BUG-m fix s.6.251: API-mode disables the demo seed card
   onComplete,
 }) {
   const { tokens: t } = useTheme();
@@ -59,7 +60,10 @@ export default function OnboardingModal({
 
   const trimmed = nome.trim();
   const canAdvance = trimmed.length > 0;
-  const demoDisabled = farmaciAttiviCount > 0;
+  // BUG-m fix (s.6.251): in API-mode the demo seed would write 3 REAL
+  // farmaci to the backend (production) — the card is disabled outright.
+  // SENTINEL_BUGM_S6251_DEMO_GUARD
+  const demoDisabled = farmaciAttiviCount > 0 || apiMode;
 
   const handleAvanti = () => {
     if (canAdvance) setStep(2);
@@ -167,7 +171,7 @@ export default function OnboardingModal({
               data-testid="onboarding-card-demo"
               aria-pressed={selectedMode === 'demo'}
               aria-disabled={demoDisabled}
-              title={demoDisabled ? 'Hai già farmaci configurati' : undefined}
+              title={demoDisabled ? (apiMode ? 'Non disponibile in modalità online' : 'Hai già farmaci configurati') : undefined}
               className={`w-full text-left p-4 rounded-lg border-2 mb-6 transition-colors ${
                 selectedMode === 'demo'
                   ? 'border-blue-600'

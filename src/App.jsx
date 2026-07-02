@@ -14,6 +14,7 @@ import { useTheme } from "./hooks/useTheme.js";
 import { useApp } from "./state/AppContext.jsx";
 import { selectImpostazione, selectFarmaciAttivi } from "./state/selectors.js";
 import { shouldUseApiRepo } from "./data/repository/index.js"; // SENTINEL_N5QC_CP1_LOGINGATE_SHARED_GATE
+import { ONBOARDING_LS_KEY } from "./data/db.js"; // SENTINEL_BUGM_S6251_LS_IMPORT
 
 // Shell with bottom nav and route outlets.
 // Oggi, Config, and Cronologia are functional; Export route redirects to Cronologia (s.6.216 N+3, ratifica N+4).
@@ -67,6 +68,18 @@ export default function App() {
   );
 }
 
+// BUG-m fix (s.6.251): pure decision core of OnboardingGate (pattern
+// loginGateAction / parseMagicLinkToken — testable without DOM).
+// Opens ONLY when init is complete AND neither the IndexedDB flag nor
+// the localStorage mirror marks onboarding as completed.
+// SENTINEL_BUGM_S6251_HELPER
+export function shouldOpenOnboarding(status, onboardingCompleted, lsValue) {
+  if (status !== "ready") return false;
+  if (onboardingCompleted === 1) return false;
+  if (lsValue === "1") return false;
+  return true;
+}
+
 function OnboardingGate() {
   const { state, actions } = useApp();
   const onboardingCompleted = selectImpostazione(state, "onboarding_completed");
@@ -74,7 +87,18 @@ function OnboardingGate() {
 
   // Gate: only when init is complete AND onboarding flag not set.
   // par.6.167: mounted in App.jsx (not AppProvider, which is a state-only shell).
-  const open = state.status === "ready" && onboardingCompleted !== 1;
+  // BUG-m fix (s.6.251): dual-read gate — IndexedDB flag OR the
+  // localStorage mirror written by completeOnboarding. The mirror
+  // survives mobile reloads where IndexedDB is wiped (Finding #10).
+  // Pure helper for testability (pattern parseMagicLinkToken).
+  // SENTINEL_BUGM_S6251_GATE
+  let lsOnboarding = null;
+  try {
+    lsOnboarding = localStorage.getItem(ONBOARDING_LS_KEY);
+  } catch {
+    /* ignore storage errors */
+  }
+  const open = shouldOpenOnboarding(state.status, onboardingCompleted, lsOnboarding);
   if (!open) return null;
 
   // Q-UX.3 (migration users): pre-populate nome from existing setting
@@ -90,6 +114,7 @@ function OnboardingGate() {
       open={open}
       defaultNome={defaultNome}
       farmaciAttiviCount={farmaciAttivi.length}
+      apiMode={shouldUseApiRepo()}
       onComplete={handleComplete}
     />
   );

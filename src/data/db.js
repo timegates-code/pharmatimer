@@ -221,3 +221,14 @@ export const SETTINGS_KEYS = {
   NOTIFICHE_ATTIVE: "notifiche_attive", // 0/1: master switch for Wave B notifications (§6.129)
   ONBOARDING_COMPLETED: "onboarding_completed" // 0/1: gates OnboardingModal mount (§6.165, CP2 v3.0.0 Step 1)
 };
+
+// BUG-m fix (s.6.251, par.22.193): localStorage mirror of the
+// onboarding_completed flag. On mobile WebKit the IndexedDB flag does
+// not survive reloads (Finding #10), so the no-skip OnboardingModal
+// (§22.43) re-appeared at every launch and sealed the whole UI
+// (BUG-m). localStorage DOES persist there (same store as
+// pharmatimer.userToken, proven par.182-192). Dual-write in
+// completeOnboarding, dual-read in OnboardingGate, cleared by
+// resetAllData ("Ricomincia da capo" keeps its §6.180 contract).
+// SENTINEL_BUGM_S6251_ONBOARDING_LS
+export const ONBOARDING_LS_KEY = "pharmatimer.onboardingCompleted";
