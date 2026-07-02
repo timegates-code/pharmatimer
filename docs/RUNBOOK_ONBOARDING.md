@@ -2,8 +2,8 @@
 
 > **Origine:** par.22.190 (M1). Decisioni ratificate: trasporto token = magic link via fragment (E-1-alt);
 > fallback = paste manuale (E-1-rev); collocazione onboarding familiari = **M5, post-rilascio**.
-> **Prerequisiti di esecuzione:** M2a (magic link LIVE in LoginGate), M2b (BUG-m corretto),
-> **V2 risolta** su device id=2 (vedi §Incognite).
+> **Prerequisiti di esecuzione:** M2a (magic link LIVE in LoginGate, par.191); M2b (BUG-m corretto
+> + LoginGate paste-tolerant, DEC par.192); **V2 RISOLTA par.192: CONFERMATA** (vedi §2).
 > File git-tracked (`docs/RUNBOOK_ONBOARDING.md`): ogni scioglimento di placeholder `[PENDENTE Vx]`
 > va committato nella stessa sessione che produce il dato empirico (pattern par.189).
 
@@ -27,11 +27,18 @@
 - **V1 — Franco/cross-tailnet:** MagicDNS `marketreader-server.taila127de.ts.net` + cert HTTPS
   dal tailnet di Franco via grant S2. Verificabile SOLO dal suo device → resta il primo passo
   empirico del suo onboarding (§4, F2). Ramo FAIL: STOP, fallback B-con-switch da ratificare.
-- **V2 — iOS storage partizionato:** le web app standalone in Home hanno container di storage
-  separato da Safari. Il magic link aperto da WhatsApp atterra in Safari: il token potrebbe non
-  essere visibile all'app lanciata dall'icona Home. **Da verificare su id=2 (iPhone Roberto) in
-  M2a/M3.** Esiti mappati: ordine invertito (Home prima, poi paste nell'app) oppure uso in scheda
-  Safari senza icona standalone. `[PENDENTE V2: ordine definitivo dei passi S3/S4 e F2/F3]`
+- **V2 — iOS storage partizionato: CONFERMATA (par.192, empirica su id=2).** <!-- SENTINEL_V2_PAR_22_192 -->
+  Matrice: magic link in Safari GREEN (gate superata senza token a video, URL ripulito, fetch OK;
+  GREEN collaterale anche in Chrome-iOS); apertura standalone da icona Home = LoginGate ricompare
+  (container partizionato da QUALUNQUE browser, non solo Safari: su iOS ogni browser è WebKit);
+  paste E-1-rev in-app GREEN; persistenza token al riavvio GREEN (il wizard nome ricompare =
+  Finding #10, cosmetico). Ordine definitivo: **S3→S4→S5** (iOS) e **F2→F3** (Android, dove il
+  PWA Chrome CONDIVIDE lo storage col browser: V2 è iOS-specifica; conferma empirica in M5/R4).
+  **DEC browser (par.192):** iOS = Safari, Android = Chrome (Chrome-uniforme scartato: incognita
+  storage aggiuntiva + app non preinstallata su iOS). **DEC paste-tolerant (par.192):** post-M2b
+  la LoginGate accetta in paste anche il magic link completo; fino ad allora il token per il paste
+  va inviato come messaggio A SÉ STANTE, MAI come risposta/citazione (la copia iOS include il
+  testo citato → 401).
 
 ## 3. Runbook Silvana — percorso B (membro del tailnet)
 
@@ -44,9 +51,17 @@
 - S1. Tap sull'email di invito → segue il flusso guidato (login con account PROPRIO;
   l'installazione dell'app Tailscale fa parte del flusso).
 - S2. Attiva il toggle di connessione Tailscale (consenso alla configurazione VPN).
-- S3. Tap sul magic link (inviato da Roberto in quel momento, WhatsApp).
+- S3. Tap sul magic link (inviato da Roberto in quel momento, WhatsApp). **Solo iOS:** se il
+  link NON si apre in Safari (browser di default diverso): pressione lunga sul messaggio →
+  Copia → incolla nella barra indirizzi di Safari. Esito atteso: app aperta SENZA richiesta
+  token (il wizard nome è normale, Finding #6).
 - S4. Aggiunge l'app alla schermata Home (iOS: Condividi → Aggiungi a Home;
-  Android: menu ⋮ → Aggiungi a schermata Home). `[PENDENTE V2: ordine S3/S4]`
+  Android: menu ⋮ → Aggiungi a schermata Home).
+- S5. **Solo iOS (V2 confermata):** apre l'app dall'icona → ricompare la richiesta token
+  (ATTESO: storage standalone partizionato) → paste in LoginGate. Post-M2b: incollare lo STESSO
+  messaggio del magic link (gate paste-tolerant). Prima di M2b: Roberto invia il token come
+  messaggio a sé stante (MAI risposta/citazione) e Silvana lo copia e incolla. Poi verifica R4.
+  **Android:** S5 non serve (app da icona già autenticata; conferma empirica in M5).
 
 **Roberto, verifica (nessuna azione richiesta a Silvana):**
 - R3. Device visibile in Console → Machines → applica tag `pharmatimer-client`
@@ -71,7 +86,9 @@ installazione (app già presente), niente tagging (sharee coperti dalla grant S2
 - F2. **V1 empirica** — tap sul magic link: verifica in un colpo solo MagicDNS cross-tailnet,
   cert HTTPS e reachability 443 via S2. Se l'app si apre autenticata → V1 PASS.
   `[PENDENTE V1: esito]`
-- F3. Aggiunge l'app alla schermata Home. `[PENDENTE V2: ordine F2/F3]`
+- F3. Aggiunge l'app alla schermata Home (ordine F2→F3 CONFERMATO par.192: su Android il PWA
+  condivide lo storage con Chrome, V2 è iOS-specifica → l'app da icona nasce già autenticata;
+  conferma empirica in M5/R4).
 
 **Roberto, verifica:** come R3-R5 di Silvana, senza tagging (lo share risulta accettato in console).
 
@@ -117,6 +134,13 @@ NB: è una mutazione prod → eseguire con le guardie standard di sessione.
 - Device non raggiunge il Mini → toggle VPN attivo; tag applicato (B) / share accettato (A).
   Finding #8: verifica solo empirica dal device.
 - Link non autentica → fallback E-1-rev (paste manuale).
+- iOS, il tap apre un browser diverso da Safari → copia messaggio → incolla nella barra di
+  Safari. Il browser di default rileva SOLO al momento del tap sul link; dopo l'onboarding la
+  app standalone è autonoma e cambiarlo non ha alcun effetto.
+- Paste rifiutato con "Token non valido" → quasi sempre stringa sporca: copiato il messaggio
+  del link intero, oppure token inviato come risposta/citazione (la copia include il testo
+  citato). Rimedio: reinvio come messaggio a sé stante; post-M2b la gate accetta anche il
+  link intero.
 - V1 FAIL → STOP, riferire il sintomo, sessione fallback B-con-switch.
 - Nome scomparso dopo reload → cosmetico (Finding #10), ignorare.
 - MAI navigazione privata (Lesson #65 cor. a). Pulizia SW WebKit: eliminare solo `ts.net`
