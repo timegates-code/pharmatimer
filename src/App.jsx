@@ -95,6 +95,38 @@ function OnboardingGate() {
   );
 }
 
+// SENTINEL_M2A_MAGIC_LINK -- par.22.191 (magic link E-1-alt, ratified par.22.190).
+// Pure helpers (pattern shouldAutoClearUnauthorized): testable without DOM,
+// no mocks of location / localStorage / reload needed.
+//
+// parseMagicLinkToken: extracts the user token from a magic-link fragment.
+// Accepts ONLY '#token=<tok>' where <tok> is URL-safe base64 charset
+// [A-Za-z0-9_-], min length 20. Backend token_plain is empirically 43 chars
+// of exactly that charset (probe par.22.191); the 20 floor tolerates future
+// regeneration schemes while rejecting spurious fragments. Any malformed or
+// unknown hash returns null (Q3=A: total no-op, hash left untouched, the
+// pre-existing LoginDialog flow is unchanged). The token value is NEVER
+// logged, rendered, or included in error messages.
+export function parseMagicLinkToken(hash) {
+  if (typeof hash !== "string") return null;
+  const m = /^#token=([A-Za-z0-9_-]{20,})$/.exec(hash);
+  return m ? m[1] : null;
+}
+
+// loginGateAction: pure decision core of LoginGate.
+//   - "apply-magic": valid fragment token -> persist + clean URL + reload.
+//     Q1=A: the fragment OVERRIDES any stored token, enabling remote token
+//     revocation+regeneration (runbook par.5.4) with zero manual storage
+//     cleanup; a stale/revoked stored token is otherwise recovered by
+//     SessionExpiryGate (401 -> auto-clear -> reload -> LoginDialog).
+//   - "show-login": API repo active, no fragment token, no stored token.
+//   - "pass": gate renders nothing (local repo mode, or token already set).
+export function loginGateAction(useApiRepo, hash, hasToken) {
+  if (!useApiRepo) return "pass";
+  if (parseMagicLinkToken(hash) !== null) return "apply-magic";
+  return hasToken ? "pass" : "show-login";
+}
+
 // CP4 N+5.P-bis (par.11.U-S3): SENTINEL_N5P_CP4_LOGINGATE -- do not remove.
 // Gates the app behind LoginDialog when running against the API backend
 // (pharmatimer.useApiRepo === "1") and no user token is present yet
@@ -110,7 +142,22 @@ function LoginGate() {
   } catch {
     return null;
   }
-  if (!useApiRepo || hasToken) return null;
+  const action = loginGateAction(useApiRepo, window.location.hash, hasToken);
+  if (action === "apply-magic") {
+    // SENTINEL_M2A_MAGIC_LINK ingress: fragment -> localStorage, then the URL
+    // is cleaned via history.replaceState BEFORE reload -> no reload loop, no
+    // history entry; the fragment never reaches the server -> no uvicorn log.
+    const magicToken = parseMagicLinkToken(window.location.hash);
+    try {
+      localStorage.setItem("pharmatimer.userToken", magicToken);
+    } catch {
+      return null; // storage unavailable: nothing persisted, render nothing
+    }
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    window.location.reload(); // D3' reuse: AppContext init re-fetches with X-User-Token
+    return null;
+  }
+  if (action !== "show-login") return null;
   return <LoginDialog theme={t} onSuccess={() => window.location.reload()} />;
 }
 
