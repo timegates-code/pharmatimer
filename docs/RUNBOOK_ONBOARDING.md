@@ -2,8 +2,9 @@
 
 > **Origine:** par.22.190 (M1). Decisioni ratificate: trasporto token = magic link via fragment (E-1-alt);
 > fallback = paste manuale (E-1-rev); collocazione onboarding familiari = **M5, post-rilascio**.
-> **Prerequisiti di esecuzione:** M2a (magic link LIVE in LoginGate, par.191); M2b (BUG-m corretto
-> + LoginGate paste-tolerant, DEC par.192); **V2 RISOLTA par.192: CONFERMATA** (vedi §2).
+> **Prerequisiti di esecuzione — TUTTI SODDISFATTI:** M2a (magic link LIVE, par.191);
+> M2b-1 (BUG-m corretto, par.193); M2b-2 (LoginGate paste-tolerant LIVE, par.194);
+> **V2 RISOLTA par.192: CONFERMATA** (vedi §2). <!-- SENTINEL_M2B2_RUNBOOK_PREREQ -->
 > File git-tracked (`docs/RUNBOOK_ONBOARDING.md`): ogni scioglimento di placeholder `[PENDENTE Vx]`
 > va committato nella stessa sessione che produce il dato empirico (pattern par.189).
 
@@ -14,8 +15,10 @@
   Il fragment non viene trasmesso al server (zero log, zero proxy). LoginGate legge `location.hash`,
   scrive `pharmatimer.userToken` in localStorage, pulisce l'URL con `history.replaceState`.
   UX: un solo tap dal messaggio.
-- **Fallback — E-1-rev (paste manuale):** copiare il testo dopo `#token=` e incollarlo in LoginGate.
-  Un solo copia, un solo incolla.
+- **Fallback — E-1-rev (paste manuale):** copiare il messaggio del magic link e incollarlo
+  TALE E QUALE in LoginGate (gate paste-tolerant LIVE par.194: accetta link intero, solo
+  fragment `#token=...` o token nudo). Un solo copia, un solo incolla, un solo messaggio.
+  <!-- SENTINEL_M2B2_RUNBOOK_FALLBACK -->
 - **Compensazioni igiene:** invio del link solo a ridosso della chiamata; verifica immediata;
   cancellazione del messaggio da entrambi i lati post-verifica; revoca+rigenerazione su dubbio (§5.4).
 - **Razionale sicurezza:** il token da solo è inutilizzabile fuori dal tailnet (ACL default-deny);
@@ -35,10 +38,11 @@
   Finding #10, cosmetico). Ordine definitivo: **S3→S4→S5** (iOS) e **F2→F3** (Android, dove il
   PWA Chrome CONDIVIDE lo storage col browser: V2 è iOS-specifica; conferma empirica in M5/R4).
   **DEC browser (par.192):** iOS = Safari, Android = Chrome (Chrome-uniforme scartato: incognita
-  storage aggiuntiva + app non preinstallata su iOS). **DEC paste-tolerant (par.192):** post-M2b
-  la LoginGate accetta in paste anche il magic link completo; fino ad allora il token per il paste
-  va inviato come messaggio A SÉ STANTE, MAI come risposta/citazione (la copia iOS include il
-  testo citato → 401).
+  storage aggiuntiva + app non preinstallata su iOS). **DEC paste-tolerant (par.192) — IMPLEMENTATA par.194:**
+  la LoginGate accetta in paste anche il magic link completo (o il solo fragment `#token=...`).
+  Il messaggio A SÉ STANTE resta la pratica raccomandata: una risposta/citazione che AGGIUNGE
+  testo DOPO il link viene ancora rifiutata (regex ancorata); testo PRIMA del link è tollerato.
+  <!-- SENTINEL_M2B2_RUNBOOK_DEC -->
 
 ## 3. Runbook Silvana — percorso B (membro del tailnet)
 
@@ -58,9 +62,9 @@
 - S4. Aggiunge l'app alla schermata Home (iOS: Condividi → Aggiungi a Home;
   Android: menu ⋮ → Aggiungi a schermata Home).
 - S5. **Solo iOS (V2 confermata):** apre l'app dall'icona → ricompare la richiesta token
-  (ATTESO: storage standalone partizionato) → paste in LoginGate. Post-M2b: incollare lo STESSO
-  messaggio del magic link (gate paste-tolerant). Prima di M2b: Roberto invia il token come
-  messaggio a sé stante (MAI risposta/citazione) e Silvana lo copia e incolla. Poi verifica R4.
+  (ATTESO: storage standalone partizionato) → incolla lo STESSO messaggio del magic link
+  nel campo token (gate paste-tolerant LIVE par.194: messaggio UNICO, nessun secondo invio).
+  Poi verifica R4. <!-- SENTINEL_M2B2_RUNBOOK_S5 -->
   **Android:** S5 non serve (app da icona già autenticata; conferma empirica in M5).
 
 **Roberto, verifica (nessuna azione richiesta a Silvana):**
@@ -137,10 +141,13 @@ NB: è una mutazione prod → eseguire con le guardie standard di sessione.
 - iOS, il tap apre un browser diverso da Safari → copia messaggio → incolla nella barra di
   Safari. Il browser di default rileva SOLO al momento del tap sul link; dopo l'onboarding la
   app standalone è autonoma e cambiarlo non ha alcun effetto.
-- Paste rifiutato con "Token non valido" → quasi sempre stringa sporca: copiato il messaggio
-  del link intero, oppure token inviato come risposta/citazione (la copia include il testo
-  citato). Rimedio: reinvio come messaggio a sé stante; post-M2b la gate accetta anche il
-  link intero.
+- S4, "Aggiungi a Home" può fallire SILENZIOSAMENTE al primo tentativo (osservato par.193):
+  prima di proseguire con S5 verificare la presenza dell'icona (ricerca Spotlight o
+  scorrimento Home); se assente, ripetere S4. <!-- SENTINEL_M2B2_RUNBOOK_TS_S4 -->
+- Paste rifiutato con "Token non valido" → la gate accetta link intero, fragment e token
+  nudo (par.194); il rifiuto residuo è quasi sempre testo AGGIUNTO DOPO il link
+  (risposta/citazione: la copia iOS include il testo citato). Rimedio: reinvio come
+  messaggio a sé stante. <!-- SENTINEL_M2B2_RUNBOOK_TS_PASTE -->
 - V1 FAIL → STOP, riferire il sintomo, sessione fallback B-con-switch.
 - Nome scomparso dopo reload → cosmetico (Finding #10), ignorare.
 - MAI navigazione privata (Lesson #65 cor. a). Pulizia SW WebKit: eliminare solo `ts.net`

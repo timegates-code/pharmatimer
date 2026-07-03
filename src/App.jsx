@@ -15,6 +15,7 @@ import { useApp } from "./state/AppContext.jsx";
 import { selectImpostazione, selectFarmaciAttivi } from "./state/selectors.js";
 import { shouldUseApiRepo } from "./data/repository/index.js"; // SENTINEL_N5QC_CP1_LOGINGATE_SHARED_GATE
 import { ONBOARDING_LS_KEY } from "./data/db.js"; // SENTINEL_BUGM_S6251_LS_IMPORT
+import { parseMagicLinkToken } from "./components/auth/magicLink.js"; // SENTINEL_M2B2_MAGICLINK_IMPORT
 
 // Shell with bottom nav and route outlets.
 // Oggi, Config, and Cronologia are functional; Export route redirects to Cronologia (s.6.216 N+3, ratifica N+4).
@@ -124,19 +125,13 @@ function OnboardingGate() {
 // Pure helpers (pattern shouldAutoClearUnauthorized): testable without DOM,
 // no mocks of location / localStorage / reload needed.
 //
-// parseMagicLinkToken: extracts the user token from a magic-link fragment.
-// Accepts ONLY '#token=<tok>' where <tok> is URL-safe base64 charset
-// [A-Za-z0-9_-], min length 20. Backend token_plain is empirically 43 chars
-// of exactly that charset (probe par.22.191); the 20 floor tolerates future
-// regeneration schemes while rejecting spurious fragments. Any malformed or
-// unknown hash returns null (Q3=A: total no-op, hash left untouched, the
-// pre-existing LoginDialog flow is unchanged). The token value is NEVER
-// logged, rendered, or included in error messages.
-export function parseMagicLinkToken(hash) {
-  if (typeof hash !== "string") return null;
-  const m = /^#token=([A-Za-z0-9_-]{20,})$/.exec(hash);
-  return m ? m[1] : null;
-}
+// parseMagicLinkToken MOVED to components/auth/magicLink.js (M2b-2
+// par.22.194): LoginDialog.jsx needs it too and App.jsx imports
+// LoginDialog.jsx, so a direct import LoginDialog -> App.jsx would be
+// circular. Re-exported here so the existing import surface
+// (App.magiclink.test.js, loginGateAction below) stays unchanged.
+// SENTINEL_M2B2_REEXPORT
+export { parseMagicLinkToken };
 
 // loginGateAction: pure decision core of LoginGate.
 //   - "apply-magic": valid fragment token -> persist + clean URL + reload.

@@ -33,6 +33,7 @@
 import { useState } from 'react';
 import { repo } from '../../data/repository/index.js';
 import { RepositoryError } from '../../data/repository/RepositoryError.js';
+import { normalizePastedToken } from './magicLink.js'; // SENTINEL_M2B2_PASTE_IMPORT
 
 const TOKEN_STORAGE_KEY = 'pharmatimer.userToken';
 
@@ -54,7 +55,13 @@ export default function LoginDialog({ theme: t, onSuccess }) {
     try {
       // D2: write candidate token so the cemented apiClient injects it, then
       // probe a cheap owner-scoped endpoint to confirm it authenticates.
-      localStorage.setItem(TOKEN_STORAGE_KEY, trimmed);
+      // M2b-2 (par.22.194, DEC-paste-tolerant par.22.192): the paste field
+      // also accepts the FULL magic link (or the bare '#token=' fragment);
+      // normalizePastedToken extracts the token, falling back to the raw
+      // trimmed input so the pre-existing bare-token flow is byte-identical.
+      // SENTINEL_M2B2_CANDIDATE
+      const candidate = normalizePastedToken(tokenInput) ?? trimmed;
+      localStorage.setItem(TOKEN_STORAGE_KEY, candidate);
       await repo.getFarmaci();
       ok = true;
     } catch (err) {
@@ -105,7 +112,8 @@ export default function LoginDialog({ theme: t, onSuccess }) {
           Accesso PharmaTimer
         </h2>
         <p className="text-sm mb-4" style={{ color: t.textSecondary }}>
-          Inserisci il token utente del dispositivo per accedere ai tuoi dati.
+          Incolla il link ricevuto oppure il token utente del dispositivo per
+          accedere ai tuoi dati.
         </p>
 
         <label
@@ -128,7 +136,7 @@ export default function LoginDialog({ theme: t, onSuccess }) {
             autoCapitalize="off"
             autoCorrect="off"
             spellCheck={false}
-            placeholder="Incolla qui il token"
+            placeholder="Incolla qui il token o il link"
             className="w-full rounded-lg px-3 py-2 pr-20 text-sm outline-none"
             style={{
               background: t.pageBg,
