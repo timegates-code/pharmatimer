@@ -10,12 +10,22 @@ N+5.M-pivot-exec-beta-1 refactor (s.6.NN-Fase3 Q-I.1=(b)):
 
 SENTINEL_N5M_PIVOT_EXEC_BETA1_BACKEND_REFACTOR_APPLIED
 """
+import random
+import time
+
 from mysql.connector import pooling
+from mysql.connector.errors import PoolError
 from mysql.connector.pooling import MySQLConnectionPool, PooledMySQLConnection
 
 from pharmatimer_api.config import settings
 
 _pool: MySQLConnectionPool | None = None
+
+# ANOM-1 (par.196): bounded retry on pool exhaustion under burst load.
+# SENTINEL_ANOM1_PAR196_RETRY_APPLIED
+POOL_ACQUIRE_MAX_ATTEMPTS = 3
+POOL_ACQUIRE_BASE_DELAY_S = 0.05
+POOL_ACQUIRE_JITTER_S = 0.025
 
 
 def init_pool() -> None:
@@ -48,10 +58,25 @@ def close_pool() -> None:
 
 
 def get_connection() -> PooledMySQLConnection:
-    """Acquire a pooled connection. Caller MUST .close() to release back to pool."""
+    """Acquire a pooled connection with bounded retry on pool exhaustion.
+
+    Caller MUST .close() to release back to pool. On a transient PoolError
+    (pool exhausted under burst load, ANOM-1 par.196) retries up to
+    POOL_ACQUIRE_MAX_ATTEMPTS times with exponential backoff plus jitter,
+    then re-raises PoolError so the caller still surfaces the existing
+    500 DB_UNAVAILABLE response.
+    """
     if _pool is None:
         raise RuntimeError("Connection pool not initialized")
-    return _pool.get_connection()
+    for attempt in range(1, POOL_ACQUIRE_MAX_ATTEMPTS + 1):
+        try:
+            return _pool.get_connection()
+        except PoolError:
+            if attempt >= POOL_ACQUIRE_MAX_ATTEMPTS:
+                raise
+            delay = POOL_ACQUIRE_BASE_DELAY_S * (2 ** (attempt - 1))
+            delay += random.uniform(0.0, POOL_ACQUIRE_JITTER_S)
+            time.sleep(delay)
 
 
 def db_ping() -> bool:
