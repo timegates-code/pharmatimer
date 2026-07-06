@@ -196,6 +196,27 @@ export function formatDateLabel(dateStr, refDateStr) {
   return `${wk} ${dm}`;
 }
 
+/**
+ * Prepositional variant of `formatDateLabel` for "available from" copy
+ * (par.198-bis P10): 'da oggi' / 'da domani' / 'da <weekday> <day month>'.
+ * Weekday is NOT capitalised (same convention as formatDateLabel).
+ *
+ * @param {string} dateStr     'YYYY-MM-DD'
+ * @param {string} refDateStr  'YYYY-MM-DD'
+ * @returns {string}
+ */
+export function formatDateLabelFrom(dateStr, refDateStr) {
+  // Noon avoids TZ-driven day shifts on toISOString/locale parsing.
+  const d = new Date(dateStr + 'T12:00:00');
+  const r = new Date(refDateStr + 'T12:00:00');
+  const diff = Math.round((d - r) / 86400000);
+  if (diff === 0) return 'da oggi';
+  if (diff === 1) return 'da domani';
+  const wk = d.toLocaleDateString('it-IT', { weekday: 'long' });
+  const dm = d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
+  return `da ${wk} ${dm}`;
+}
+
 // ============================================================
 // Hybrid grouping for vista Oggi (Sessione 7b-1, AMB-7b.G / §6.29)
 // ============================================================

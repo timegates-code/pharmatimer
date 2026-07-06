@@ -40,6 +40,20 @@ import { useTheme } from '../../hooks/useTheme.js';
 
 const TOAST_DISMISS_MS = 4000;
 
+// par.198-bis P8 (ex B6): map RepositoryError codes to plain Italian copy.
+// Map-first: when the code is known, the mapped copy replaces the raw
+// error.message (often technical/English); unknown codes fall back to
+// error.message, then to the generic copy.
+const CODE_COPY = Object.freeze({
+  DB_UNAVAILABLE: 'Connessione al server non riuscita. Controlla la rete e riprova tra qualche istante.',
+  UNAUTHORIZED: 'Accesso non riconosciuto. Chiudi e riapri PharmaTimer.',
+  FORBIDDEN: 'Operazione non consentita per questo utente.',
+  NOT_FOUND: 'Elemento non trovato. Aggiorna la schermata e riprova.',
+  CONSTRAINT_VIOLATION: 'Dati non validi o in conflitto. Controlla i campi e riprova.',
+  TRANSACTION_ABORT: 'Salvataggio non completato. Nessuna modifica registrata: riprova.',
+  GENERIC: 'Si è verificato un errore. Riprova.',
+});
+
 export default function ErrorSurface() {
   const { state, dispatch } = useAppContext();
   const { tokens: t } = useTheme();
@@ -63,7 +77,8 @@ export default function ErrorSurface() {
 
   const severity = error.severity ?? 'error';
   const isCritical = severity === 'critical';
-  const message = error.message ?? 'Si è verificato un errore';
+  // par.198-bis P8: map-first copy resolution (known code -> Italian copy).
+  const message = CODE_COPY[error.code] ?? error.message ?? CODE_COPY.GENERIC;
 
   const handleDismiss = () => dispatch({ type: 'CLEAR_ERROR' });
 

@@ -677,7 +677,7 @@ export function DoseCard({
                   </span>
                 </button>
                 <div
-                  className="flex-shrink-0 w-px self-stretch rounded"
+                  className="flex-shrink-0 w-px self-stretch rounded mx-1.5"
                   style={{ background: t.headerBorder }}
                 />
               </>

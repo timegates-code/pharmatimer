@@ -100,26 +100,9 @@ export function formatGapLabel(min) {
   return `anticipo ${formatDuration(min)}`;
 }
 
-/**
- * Human-readable date label relative to reference date.
- * 'Oggi · lunedì 16 aprile' / 'Domani · martedì 17 aprile' / 'mercoledì 18 aprile'.
- *
- * Not covered by T01 (UI helper); kept here because it's a time utility.
- *
- * @param {string} dateStr 'YYYY-MM-DD'
- * @param {string} refDate 'YYYY-MM-DD'
- * @returns {string}
- */
-export function formatDateLabel(dateStr, refDate) {
-  const d = new Date(dateStr + 'T12:00:00');
-  const r = new Date(refDate + 'T12:00:00');
-  const diff = Math.round((d.getTime() - r.getTime()) / 86400000);
-  const wk = d.toLocaleDateString('it-IT', { weekday: 'long' });
-  const dm = d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
-  if (diff === 0) return `Oggi · ${wk} ${dm}`;
-  if (diff === 1) return `Domani · ${wk} ${dm}`;
-  return `${wk} ${dm}`;
-}
+// `formatDateLabel` duplicate removed (par.198-bis P10 consolidation,
+// N2/§6.205): canonical implementation lives in utils/uiState.js. This
+// copy had zero consumers and zero test coverage (verified probe W1).
 
 // ---------------------------------------------------------------------------
 // ISO datetime helpers — Sessione 9-A (§6.115a, AMB-9.A/D, fix §6.18 cross-midnight).

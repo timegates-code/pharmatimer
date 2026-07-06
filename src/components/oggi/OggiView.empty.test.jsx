@@ -8,7 +8,7 @@
 //
 // Coverage (3 scenari):
 //   T1  1 farmaco data_inizio futura (2030) -> L2-NEW renderizzato,
-//       testid + label "Piano disponibile dal" + 1 nome farmaco.
+//       testid + label "Piano disponibile da …" (par.198-bis P10) + 1 nome farmaco.
 //   T2  2 farmaci STESSA data_inizio futura -> L2-NEW renderizzato,
 //       2 nomi in ordine alfabetico it-IT.
 //   T3  1 farmaco con data_inizio === today (boundary del check
@@ -89,7 +89,7 @@ describe('OggiView empty state piano futuro (CP3-bis Opzione A)', () => {
     await waitForReady(ctxRef);
 
     expect(screen.getByTestId('empty-state-piano-futuro')).toBeInTheDocument();
-    expect(screen.getByText(/Piano disponibile dal/i)).toBeInTheDocument();
+    expect(screen.getByText(/Piano disponibile da /i)).toBeInTheDocument();
     expect(screen.getByText('Antibiotico')).toBeInTheDocument();
 
     unmount();

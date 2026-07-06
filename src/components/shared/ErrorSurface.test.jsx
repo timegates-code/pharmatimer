@@ -112,7 +112,8 @@ describe('ErrorSurface', () => {
 
     expect(screen.getByTestId('error-surface-banner')).toBeInTheDocument();
     expect(screen.queryByTestId('error-surface-toast')).toBeNull();
-    expect(screen.getByText('DB non disponibile')).toBeInTheDocument();
+    // par.198-bis P8: known code -> mapped Italian copy replaces raw message.
+    expect(screen.getByText('Connessione al server non riuscita. Controlla la rete e riprova tra qualche istante.')).toBeInTheDocument();
     expect(screen.getByTestId('error-surface-code')).toHaveTextContent('[DB_UNAVAILABLE]');
 
     // Wait well beyond toast dismiss window — no auto-dispatch

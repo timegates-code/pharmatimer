@@ -7,6 +7,7 @@ import {
   formatDuration,
   formatGapLabel,
   formatDateLabel,
+  formatDateLabelFrom,
   groupEntriesByDayAndMomento,
 } from './uiState.js';
 
@@ -167,6 +168,23 @@ describe('formatDateLabel', () => {
   it('prefixes "Oggi" when dateStr matches refDateStr', () => {
     const s = formatDateLabel('2026-04-19', '2026-04-19');
     expect(s.startsWith('Oggi ·')).toBe(true);
+  });
+});
+
+describe('formatDateLabelFrom', () => {
+  it('returns "da oggi" when dateStr matches refDateStr', () => {
+    expect(formatDateLabelFrom('2026-04-19', '2026-04-19')).toBe('da oggi');
+  });
+
+  it('returns "da domani" for the next day', () => {
+    expect(formatDateLabelFrom('2026-04-20', '2026-04-19')).toBe('da domani');
+  });
+
+  it('prefixes "da " with the weekday form for other days', () => {
+    const s = formatDateLabelFrom('2026-04-22', '2026-04-19');
+    expect(s.startsWith('da ')).toBe(true);
+    expect(s).not.toContain('oggi');
+    expect(s).not.toContain('domani');
   });
 });
 

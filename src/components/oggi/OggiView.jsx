@@ -89,6 +89,7 @@ import {
   groupEntriesByDayAndMomento,
   getCardState,
   formatDateLabel,
+  formatDateLabelFrom,
   formatDuration,
 } from '../../utils/uiState.js';
 import { minutesToTime, parseIsoDateTime } from '../../utils/time.js';
@@ -768,7 +769,7 @@ function PianoFuturoEmptyState({ farmaciFuturi, today, theme: t }) {
   return (
     <div className="text-center mt-8 px-4" data-testid="empty-state-piano-futuro">
       <p className="text-base mb-3" style={{ color: t.textSecondary }}>
-        📅 Piano disponibile dal {formatDateLabel(earliest.data_inizio, today)}
+        📅 Piano disponibile {formatDateLabelFrom(earliest.data_inizio, today)}
       </p>
       <ul className="text-sm" style={{ color: t.textPrimary }}>
         {earliest.farmaci.map((f) => (
