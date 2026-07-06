@@ -135,7 +135,11 @@ export default function CronologiaView() {
   };
 
   return (
-    <div className="min-h-screen p-4 max-w-3xl mx-auto" data-testid="log-view">
+    <div
+      className="min-h-screen p-4 max-w-3xl mx-auto"
+      style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}
+      data-testid="log-view"
+    >
       <h1 className="text-xl font-bold mb-3">Storico assunzioni</h1>
 
       <div className="flex flex-wrap gap-2 mb-4 items-end">

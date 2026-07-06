@@ -48,7 +48,7 @@ describe('ConfigTabBar', () => {
     renderAtPath('/config/impostazioni');
     expect(screen.getByRole('link', { name: 'Profili' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Farmaci' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Impostazioni' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Sistema' })).toBeInTheDocument();
   });
 
   it('click su "Profili" naviga a /config/profili', async () => {
@@ -68,7 +68,7 @@ describe('ConfigTabBar', () => {
       .toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', { name: 'Profili' }))
       .not.toHaveAttribute('aria-current');
-    expect(screen.getByRole('link', { name: 'Impostazioni' }))
+    expect(screen.getByRole('link', { name: 'Sistema' }))
       .not.toHaveAttribute('aria-current');
   });
 });

@@ -37,10 +37,12 @@ import { useTheme } from '../../hooks/useTheme.js';
 // role="tablist" + aria-label: semantic per screen reader,
 // coerente con la struttura di 3 tab navigazionali.
 
+// par.198-bis (P4+P5): order Farmaci/Profili/Sistema; sub-tab label
+// 'Sistema' replaces 'Impostazioni' (route unchanged, M3-B batch).
 const TABS = [
-  { to: '/config/profili',      label: 'Profili' },
   { to: '/config/farmaci',      label: 'Farmaci' },
-  { to: '/config/impostazioni', label: 'Impostazioni' },
+  { to: '/config/profili',      label: 'Profili' },
+  { to: '/config/impostazioni', label: 'Sistema' },
 ];
 
 export default function ConfigTabBar({ onTabClick } = {}) {
@@ -49,15 +51,19 @@ export default function ConfigTabBar({ onTabClick } = {}) {
     <nav
       role="tablist"
       aria-label="Sezioni Impostazioni"
-      className="flex items-center gap-6 px-4 py-3 border-b"
-      style={{ background: t.headerBg, borderColor: t.headerBorder }}
+      className="sticky top-0 z-30 flex items-center gap-6 px-4 py-3 border-b"
+      style={{
+        background: t.headerBg,
+        borderColor: t.headerBorder,
+        paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)',
+      }}
     >
       {TABS.map((tab) => (
         <NavLink
           key={tab.to}
           to={tab.to}
           onClick={(e) => onTabClick?.(tab.to, e)}
-          className="text-sm font-medium pb-1 outline-none"
+          className="text-sm font-medium px-2 -mx-2 py-2 -my-2 outline-none"
           style={({ isActive }) => ({
             color: isActive ? t.navActive : t.subTabInactive,
             borderBottom: isActive

@@ -4,9 +4,9 @@
 //
 // Scope CP2 Sessione 8a (§11 + AMB-8a.A + rettifica F5):
 //   - /config/impostazioni monta ImpostazioniTab
-//   - /config (index)      redirect → /config/impostazioni
+//   - /config (index)      redirect → /config/farmaci (par.198-bis P6)
 //   - /config/profili      monta ProfiliTab
-//   - /config/*            redirect → /config/impostazioni
+//   - /config/*            redirect → /config/farmaci (par.198-bis P6)
 //
 // Pattern: MemoryRouter supplied via `initialEntries` option on
 // `renderWithProvider` (AMB-8a.H, rettifica F5). The option is
@@ -41,12 +41,12 @@ describe('ConfigView — routing', () => {
     expect(screen.getByTestId('config-tab-impostazioni')).toBeInTheDocument();
   });
 
-  it('/config redirige all index → impostazioni', () => {
+  it('/config redirige all index → farmaci (par.198-bis P6)', () => {
     renderAtPath('/config');
-    expect(screen.getByTestId('config-tab-impostazioni')).toBeInTheDocument();
+    expect(screen.getByTestId('config-tab-farmaci')).toBeInTheDocument();
     // Negative assertion: non mostra altre tab.
     expect(screen.queryByTestId('config-tab-profili')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('config-tab-farmaci')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('config-tab-impostazioni')).not.toBeInTheDocument();
   });
 
   it('/config/profili monta ProfiliTab', () => {
@@ -56,8 +56,8 @@ describe('ConfigView — routing', () => {
     expect(screen.queryByTestId('config-tab-impostazioni')).not.toBeInTheDocument();
   });
 
-  it('/config/rotta-inesistente (catch-all) redirige a impostazioni', () => {
+  it('/config/rotta-inesistente (catch-all) redirige a farmaci (par.198-bis P6)', () => {
     renderAtPath('/config/qualcosa-che-non-esiste');
-    expect(screen.getByTestId('config-tab-impostazioni')).toBeInTheDocument();
+    expect(screen.getByTestId('config-tab-farmaci')).toBeInTheDocument();
   });
 });

@@ -80,14 +80,14 @@ export default function ConfigView() {
     <div className="pb-20">
       <ConfigTabBar onTabClick={handleTabClick} />
       <Routes>
-        <Route index element={<Navigate to="/config/impostazioni" replace />} />
+        <Route index element={<Navigate to="/config/farmaci" replace />} />
         <Route path="profili" element={<ProfiliTab dirty={dirty} setDirty={setDirty} />} />
         <Route path="farmaci" element={<FarmaciTab dirty={dirty} setDirty={setDirty} />} />
         <Route
           path="impostazioni"
           element={<ImpostazioniTab dirty={dirty} setDirty={setDirty} />}
         />
-        <Route path="*" element={<Navigate to="/config/impostazioni" replace />} />
+        <Route path="*" element={<Navigate to="/config/farmaci" replace />} />
       </Routes>
       <UnsavedChangesModal
         open={pendingNavTo !== null}
