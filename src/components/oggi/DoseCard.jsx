@@ -477,9 +477,11 @@ export function DoseCard({
             border={t.inRitardoBd}
           />
         )}
+        {/* par.198 S2 P13 — SENTINEL_PAR198_S2: label the recalc diff as
+            slippage, to disambiguate from the per-dose gap badge/modal. */}
         {isTimeDifferent && !isDone && recalcDiff !== null && (
           <Badge
-            label={formatDelta(recalcDiff)}
+            label={`slittamento ${formatDelta(recalcDiff)}`}
             bg={t.recalcBg}
             text={t.recalcTx}
             border={t.recalcBd}

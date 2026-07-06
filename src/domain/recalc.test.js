@@ -205,9 +205,11 @@ describe('T07 — applySalto farmaco a intervallo (pass-through gap)', () => {
     expect(next.dose_prec_saltata).toBe(true);
   });
 
-  it('dovrebbe produrre 2 logWrites (target + N+1) e nessun prompt anche se gap > SOGLIA', () => {
+  it('dovrebbe produrre 1 logWrite (solo target; N+1 plan-only, s.6.253) e nessun prompt anche se gap > SOGLIA', () => {
+    // SENTINEL_S6253_ANOM2: N+1 patch is plan-only, no N+1 logWrite (ANOM-2).
     const result = applySalto(plan, entry1.key);
-    expect(result.logWrites).toHaveLength(2);
+    expect(result.logWrites).toHaveLength(1);
+    expect(result.logWrites[0].stato).toBe('saltata');
     expect(result.prompt).toBeNull();
   });
 });
@@ -261,7 +263,7 @@ describe('T08 — applySalto farmaco fisso', () => {
     const next = result.plan.find((x) => x.key === e2.key);
     expect(next.dose_prec_saltata).toBe(true);
     expect(next.gap_minuti).toBe(0); // no gap propagation for fixed
-    expect(result.logWrites).toHaveLength(2);
+    expect(result.logWrites).toHaveLength(1); // N+1 plan-only (s.6.253, ANOM-2)
   });
 });
 
@@ -1495,7 +1497,7 @@ describe('F14 fisso_date — lista piatta (guard cross-data findNextDose)', () =
     const next = result.plan.find((e) => e.key === e2.key);
     expect(next.dose_prec_saltata).toBe(true);  // same-day: successore trovato
     expect(next.gap_minuti).toBe(0);            // fisso_date: nessuna propagazione gap
-    expect(result.logWrites).toHaveLength(2);
+    expect(result.logWrites).toHaveLength(1);   // N+1 plan-only (s.6.253, ANOM-2)
     expect(result.prompt).toBeNull();
   });
 });

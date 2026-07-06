@@ -91,6 +91,35 @@ describe('RecuperoModal', () => {
     expect(second.props.onClose).toHaveBeenCalledTimes(1);
   });
 
+  // --- par.198 S2 regression tests (ANOM-3) — SENTINEL_PAR198_S2 ---
+
+  it('ANOM-3: ISO ora_ricalcolata_originale renders HH:MM new time, no NaN', () => {
+    const isoEntry = {
+      ...RICALC_ENTRY,
+      ora_ricalcolata: '2026-04-19T16:30',
+      ora_ricalcolata_originale: '2026-04-19T16:30',
+    };
+    renderModal({ entry: isoEntry });
+    expect(screen.getByTestId('new-time')).toHaveTextContent('16:30');
+    expect(screen.getByTestId('new-time')).not.toHaveTextContent('NaN');
+    const slider = screen.getByLabelText('Minuti da recuperare');
+    fireEvent.change(slider, { target: { value: '20' } });
+    expect(screen.getByTestId('new-time')).toHaveTextContent('16:10');
+    expect(screen.getByTestId('new-time')).not.toHaveTextContent('NaN');
+  });
+
+  it('ANOM-3: "Orario attuale" shows the HH:MM part of an ISO base, not the raw ISO', () => {
+    const isoEntry = {
+      ...RICALC_ENTRY,
+      ora_ricalcolata: '2026-04-19T16:30',
+      ora_ricalcolata_originale: '2026-04-19T16:30',
+    };
+    renderModal({ entry: isoEntry });
+    // rec=0: both "Orario attuale" and "Nuovo orario" show 16:30.
+    expect(screen.getAllByText('16:30')).toHaveLength(2);
+    expect(screen.queryByText('2026-04-19T16:30')).toBeNull();
+  });
+
   // --- 7d-1 a11y smoke tests (AMB-7d-1.K) ---
 
   it('a11y: initial focus lands inside the dialog container', async () => {

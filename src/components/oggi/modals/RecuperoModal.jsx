@@ -39,7 +39,7 @@ import { useState } from 'react';
 import { useTheme } from '../../../hooks/useTheme.js';
 import { useModalA11y } from '../../../hooks/useModalA11y.js';
 import { IconX } from '../../shared/Icons.jsx';
-import { timeToMinutes, minutesToTime, formatDuration } from '../../../utils/time.js';
+import { timeToMinutes, minutesToTime, formatDuration, addMinutesToIso, parseIsoDateTime } from '../../../utils/time.js';
 import { calcolaRecuperoMax } from '../../../domain/recalc.js';
 
 const LABEL_ID = 'recupero-modal-title';
@@ -79,8 +79,16 @@ export function RecuperoModal({
   const gap = entry.gap_minuti;
   const safetyMax = calcolaRecuperoMax(f, gap);
 
+  // SENTINEL_PAR198_S2 (ANOM-3): ora_ricalcolata(_originale) carries an ISO
+  // datetime since §6.115b; HH:MM math on it produced NaN:NaN. Dual-shape:
+  // ISO -> addMinutesToIso + HH:MM part for display; legacy HH:MM
+  // (ora_prevista fallback, pre-§6.115b fixtures) -> original path.
   const baseT = entry.ora_ricalcolata_originale || entry.ora_ricalcolata || entry.ora_prevista;
-  const newT = minutesToTime(timeToMinutes(baseT) - rec);
+  const isIsoBase = baseT.includes('T');
+  const baseHHMM = isIsoBase ? parseIsoDateTime(baseT).hhmm : baseT;
+  const newT = isIsoBase
+    ? parseIsoDateTime(addMinutesToIso(baseT, -rec)).hhmm
+    : minutesToTime(timeToMinutes(baseT) - rec);
   const pct = safetyMax > 0 ? (rec / safetyMax) * 100 : 0;
   const residualGap = gap - rec;
   const hasExisting = entry.recupero_minuti > 0;
@@ -120,7 +128,7 @@ export function RecuperoModal({
         >
           <p className="text-sm font-medium" style={{ color: t.modalAlertTx }}>{f.nome}</p>
           <p className="text-xs mt-0.5" style={{ color: t.modalAlertSub }}>
-            Ritardo accumulato: {formatDuration(gap)}
+            Ritardo su questa dose: {formatDuration(gap)}
           </p>
         </div>
 
@@ -162,7 +170,7 @@ export function RecuperoModal({
         >
           <div className="flex justify-between items-center">
             <span className="text-xs" style={{ color: t.infoTx }}>Orario attuale</span>
-            <span className="text-sm font-medium" style={{ color: t.infoTxBold }}>{baseT}</span>
+            <span className="text-sm font-medium" style={{ color: t.infoTxBold }}>{baseHHMM}</span>
           </div>
           <div className="flex justify-between items-center mt-1">
             <span className="text-xs font-semibold" style={{ color: t.infoTx }}>Nuovo orario</span>

@@ -60,7 +60,8 @@ describe('DoseCard (read-only)', () => {
       <DoseCard entry={isoEntry} state="in_attesa" />,
       { stateOverrides: THEME_LIGHT }
     );
-    expect(screen.getByText('+30 min')).toBeInTheDocument();
+    // SENTINEL_PAR198_S2 (P13): badge label now prefixed with 'slittamento'.
+    expect(screen.getByText('slittamento +30 min')).toBeInTheDocument();
   });
 
   it('shows the "⚠ orario: domani" badge on a cross-midnight recalc (§6.116/§6.118)', () => {

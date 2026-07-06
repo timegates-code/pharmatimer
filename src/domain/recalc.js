@@ -14,6 +14,16 @@
  * touched by an operation do NOT generate logWrites. The order of logWrites
  * is not a contract.
  *
+ * EXCEPTION (s.6.253, ANOM-2 — SENTINEL_S6253_ANOM2): applySalto patches N+1
+ * (dose_prec_saltata flag + gap pass-through) in the PLAN ONLY, without a
+ * logWrite. The former N+1 write carried an unchanged stato
+ * ('prevista'/'ricalcolata') which ApiRepository maps to POST /log/undo:
+ * 404 on virgin slots (batch fail-fast + UI rollback with the saltata
+ * already persisted = ANOM-2 desync), spurious rollback on existing rows.
+ * buildLogWrite never serialized dose_prec_saltata/gap_originale and
+ * backend post_saltata touches only the target row, so the N+1 write
+ * never persisted anything.
+ *
  * See Changelog Fase 2 §6.8–6.16 for design decisions.
  * Sessione 9-A (§6.115b): `ora_ricalcolata` carries an ISO datetime
  * 'YYYY-MM-DDTHH:MM' instead of bare HH:MM, fixing §6.18 cross-midnight.
@@ -189,6 +199,8 @@ export function applySospensione(plan, entryKey) {
  *     UNCHANGED to the next dose (pass-through — no new delay added).
  *     Flag dose_prec_saltata=true on N+1.
  *   - fixed-schedule farmaci: only the dose_prec_saltata flag on N+1.
+ *   - N+1 is patched in the PLAN ONLY: no logWrite is emitted for it
+ *     (s.6.253, ANOM-2 — see the INVARIANT exception in the file header).
  *
  * DESIGN NOTE: applySalto does NOT emit an auto-prompt even if the propagated
  * gap exceeds SOGLIA_PROMPT_RECUPERO. Rationale: marking a dose as skipped and
@@ -234,9 +246,8 @@ export function applySalto(plan, entryKey) {
         dose_prec_saltata: true,
       };
     }
-    const { plan: p2, entry: nextPatched } = patchEntry(p, nextDose.key, nextPatch);
+    const { plan: p2 } = patchEntry(p, nextDose.key, nextPatch);
     p = p2;
-    logWrites.push(buildLogWrite(nextPatched));
   }
 
   return {
