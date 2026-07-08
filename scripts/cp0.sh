@@ -35,7 +35,15 @@ ck DESCRIBE "$DESCRIBE" "$(git describe --tags)"
 ck AHEAD "0" "$(git rev-list --count @{u}..HEAD)"
 ck TREE "0" "$(git status --porcelain | wc -l | tr -d ' ')"
 SENT_LIVE=$(head -1 STATO_CORRENTE.md | sed 's/<!-- //; s/ -->//')
-ck SENTINEL "$SENTINEL" "$SENT_LIVE"
+# SENTINEL_CP0_FORMCHECK_PAR198QUATER -- sonda di FORMA, non di valore (opzione A par.198-quater):
+# il sentinel STATO cambia a ogni GAMMA; pinnarlo in cp0.expected generava
+# un DRIFT sistematico post-chiusura. SENT_COUNT (sotto) verifica la coerenza
+# fra riga 1 e one-liner; qui si valida solo che la forma sia quella attesa.
+N=$((N+1))
+case "$SENT_LIVE" in
+  SENTINEL_STATO_PAR_[0-9]*) echo "OK    SENTINEL = $SENT_LIVE (forma valida)" ;;
+  *) echo "DRIFT SENTINEL forma inattesa trovato=$SENT_LIVE"; FAIL=1 ;;
+esac
 ck SENT_COUNT "2" "$(grep -c "$SENT_LIVE" STATO_CORRENTE.md)"
 ck LESSONS "$LESSONS" "$(grep -cE '^### #[0-9]+' LESSONS.md)"
 echo '...vitest in esecuzione (attendere)...'
