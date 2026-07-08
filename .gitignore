@@ -36,3 +36,4 @@ introspect_*.py
 /*.bak-pre-*
 DESIGN_multiutente_attivazione.md
 backend/rotate_owner_token_dev.py
+scripts/cp0.expected
