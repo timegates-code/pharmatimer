@@ -136,11 +136,22 @@ export default function CronologiaView() {
 
   return (
     <div
-      className="min-h-screen p-4 max-w-3xl mx-auto"
-      style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}
+      className="min-h-screen p-4 pt-0 max-w-3xl mx-auto"
       data-testid="log-view"
     >
-      <h1 className="text-xl font-bold mb-3">Storico assunzioni</h1>
+      {/* B23 par.22.198-ter (D6): title-only sticky header, pattern
+          OggiView (safe-area assorbita dal titolo).
+          SENTINEL_PAR_22_198_TER_B23 */}
+      <h1
+        className="text-xl font-bold mb-3 sticky top-0 z-20 -mx-4 px-4 pb-2"
+        style={{
+          paddingTop: 'calc(env(safe-area-inset-top) + 1rem)',
+          background: t.headerBg,
+          borderBottom: `1px solid ${t.headerBorder}`,
+        }}
+      >
+        Storico assunzioni
+      </h1>
 
       <div className="flex flex-wrap gap-2 mb-4 items-end">
         <label className="flex flex-col text-sm">

@@ -97,7 +97,7 @@ describe('FarmaciTab — CP8 extended UI giorni+ore', () => {
   // T2 — extended boundary auto-locks dosi_giornaliere
   // ----------------------------------------------------------
 
-  it('(T2) quando il totale supera 24h, dosi_giornaliere viene auto-impostata a 1 e disabilitata', async () => {
+  it('(T2) quando il totale supera 24h, dosi_giornaliere viene sostituita da riga statica a 1 (P2 par.22.198-ter)', async () => {
     const user = userEvent.setup();
 
     const farmaco = {
@@ -134,10 +134,11 @@ describe('FarmaciTab — CP8 extended UI giorni+ore', () => {
     // Push intervallo into extended territory: 2 days, 0 hours = 48h.
     fireEvent.change(within(drawer).getByLabelText('Giorni'), { target: { value: '2' } });
 
-    // dosi_giornaliere is now auto-locked to 1 and disabled.
-    expect(dosiInput).toHaveValue(1);
-    expect(dosiInput).toBeDisabled();
-    expect(within(drawer).getByText('Fissata a 1 per intervalli oltre le 24 ore.')).toBeInTheDocument();
+    // P2 par.22.198-ter: extended sostituisce l'input con una riga statica.
+    expect(within(drawer).queryByTestId('farmaco-dosi-giornaliere-input')).not.toBeInTheDocument();
+    const statica = within(drawer).getByTestId('farmaco-dosi-statica');
+    expect(statica).toHaveTextContent('Dosi giornaliere: 1');
+    expect(statica).toHaveTextContent('oltre le 24 ore');
   });
 
   // ----------------------------------------------------------

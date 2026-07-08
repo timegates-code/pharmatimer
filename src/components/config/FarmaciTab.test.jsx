@@ -154,6 +154,8 @@ describe('FarmaciTab — CP4 sezione Orari', () => {
       },
     });
     await user.click(screen.getByRole('button', { name: /nuovo farmaco/i }));
+    // P1 par.22.198-ter: sezioni gated sul tipo — selezionarlo subito.
+    await user.click(screen.getByLabelText('Fisso'));
 
     // Inizialmente 1 riga (default EMPTY_FORM.orari).
     expect(screen.getByTestId('orario-row-0')).toBeInTheDocument();
@@ -169,7 +171,7 @@ describe('FarmaciTab — CP4 sezione Orari', () => {
     expect(screen.getByTestId('orario-row-2')).toBeInTheDocument();
 
     const row2 = screen.getByTestId('orario-row-2');
-    const ancoraSelect = within(row2).getByLabelText('Ancora');
+    const ancoraSelect = within(row2).getByLabelText('Rispetto a');
     expect(ancoraSelect).toHaveValue('colazione');
     const offsetInput = within(row2).getByLabelText('Offset (min)');
     expect(offsetInput).toHaveValue(0);
@@ -184,6 +186,8 @@ describe('FarmaciTab — CP4 sezione Orari', () => {
       },
     });
     await user.click(screen.getByRole('button', { name: /nuovo farmaco/i }));
+    // P1 par.22.198-ter: sezioni gated sul tipo — selezionarlo subito.
+    await user.click(screen.getByLabelText('Fisso'));
 
     const dosi = screen.getByLabelText('Dosi giornaliere');
     // Porta a 3.
@@ -583,6 +587,8 @@ describe('FarmaciTab — CP2 Sessione 14 par.6.209 UX-N15 asterisco Relazione_pa
 
     await user.click(screen.getByRole('button', { name: /nuovo farmaco/i }));
     const drawer = screen.getByTestId('farmaco-drawer');
+    // P1 par.22.198-ter: sezioni gated sul tipo. SENTINEL_PAR_22_198_TER_UXN15
+    await user.click(within(drawer).getByLabelText('Fisso'));
 
     // Select semantically marked required (a11y).
     const relazioneSelect = within(drawer).getByLabelText(/^Relazione/);

@@ -120,6 +120,41 @@ function makeDefaultOrario(doseNumero) {
   };
 }
 
+// P3 par.22.198-ter: helpers modalita' 'orari specifici' (intervallo <=24h).
+// SENTINEL_PAR_22_198_TER_P3
+const SPECIFICI_PRIMA_DOSE_MIN = 8 * 60; // default prima dose 08:00
+
+function intervalloStepMinutes(form) {
+  const g = Number(form.intervallo_giorni) || 0;
+  const h = Number(form.intervallo_ore_residue) || 0;
+  const tot = g * 24 + h;
+  if (!(tot > 0) || tot > EXTENDED_THRESHOLD_HOURS) return null;
+  return Math.round(tot * 60);
+}
+
+function makeAssolutoOrario(doseNumero, offsetMinuti, descrizione = '') {
+  const norm = ((Math.round(Number(offsetMinuti) || 0) % 1440) + 1440) % 1440;
+  return {
+    dose_numero: doseNumero,
+    offset_minuti: norm,
+    ancora_riferimento: 'assoluto',
+    descrizione_momento: descrizione,
+  };
+}
+
+function minutesToHHMM(min) {
+  const m = ((Number(min) || 0) % 1440 + 1440) % 1440;
+  const h = String(Math.floor(m / 60)).padStart(2, '0');
+  const mm = String(m % 60).padStart(2, '0');
+  return `${h}:${mm}`;
+}
+
+function hhmmToMinutes(hhmm) {
+  if (typeof hhmm !== 'string' || !/^\d{2}:\d{2}$/.test(hhmm)) return 0;
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + m;
+}
+
 const EMPTY_FORM = {
   nome: '',
   principio_attivo: '',
@@ -379,7 +414,19 @@ export default function FarmaciTab(props) {
       className="p-4"
       style={{ color: t.textPrimary }}
     >
-      <header className="flex items-center justify-between mb-4">
+      {/* B24 par.22.198-ter (D5): sticky action header sotto la ConfigTabBar.
+          Offset = altezza bar: safe-area + py-3 (1.5rem) + line-height
+          text-sm (1.25rem) + border-b (1px) = safe-area + 2.75rem + 1px.
+          Se ConfigTabBar cambia padding/typography, aggiornare qui.
+          SENTINEL_PAR_22_198_TER_B24 */}
+      <header
+        className="flex items-center justify-between mb-4 sticky z-20 -mx-4 px-4 py-2"
+        style={{
+          top: 'calc(env(safe-area-inset-top) + 2.75rem + 1px)',
+          background: t.headerBg,
+          borderBottom: `1px solid ${t.headerBorder}`,
+        }}
+      >
         <h2 className="text-xl font-semibold">Farmaci</h2>
         <button
           type="button"
@@ -439,6 +486,10 @@ function FarmacoCard({ farmaco, theme: t, onOpen }) {
   const badgeLabel = cronico ? 'Cronico' : 'Temporaneo';
   const isIntervallo = farmaco.tipo_frequenza === 'intervallo';
   const frequencyLabel = isIntervallo ? formatFrequencyLabel(farmaco.intervallo_ore) : null;
+  // P12 par.22.198-ter: extended (>24h) card hides the misleading '1x/die'.
+  // SENTINEL_PAR_22_198_TER_P12
+  const isExtendedCard = isIntervallo &&
+    Number(farmaco.intervallo_ore) > EXTENDED_THRESHOLD_HOURS;
 
   return (
     <li
@@ -486,9 +537,9 @@ function FarmacoCard({ farmaco, theme: t, onOpen }) {
           className="text-xs font-mono tabular-nums"
           style={{ color: t.textSecondary }}
         >
-          {farmaco.dosi_giornaliere}×/die
+          {!isExtendedCard && <>{farmaco.dosi_giornaliere}×/die</>}
           {frequencyLabel && (
-            <span> · {frequencyLabel}</span>
+            <span>{isExtendedCard ? frequencyLabel : <> · {frequencyLabel}</>}</span>
           )}
         </p>
       </button>
@@ -609,9 +660,22 @@ function FarmacoDrawer({
         const desired = Math.max(1, Number(value) || 1);
         const current = f.orari.length;
         if (desired > current) {
+          // P3 par.22.198-ter: in modalita' 'orari specifici' (tutte le
+          // righe assoluto) le nuove righe continuano il passo di
+          // intervallo dall'ultima. SENTINEL_PAR_22_198_TER_P3_ADD
+          const allAssoluto = f.orari.length > 0 &&
+            f.orari.every((o) => o.ancora_riferimento === 'assoluto');
+          const stepMin = intervalloStepMinutes(next);
+          const lastOffset = f.orari.length > 0
+            ? Number(f.orari[f.orari.length - 1].offset_minuti) || 0
+            : SPECIFICI_PRIMA_DOSE_MIN;
           const added = [];
           for (let i = current + 1; i <= desired; i++) {
-            added.push(makeDefaultOrario(i));
+            added.push(
+              allAssoluto && stepMin
+                ? makeAssolutoOrario(i, lastOffset + (i - current) * stepMin)
+                : makeDefaultOrario(i),
+            );
           }
           next.orari = [...f.orari, ...added];
           setRemovedOrari([]);
@@ -634,6 +698,30 @@ function FarmacoDrawer({
     setForm((f) => {
       const orari = f.orari.map((o, i) => (
         i === index ? { ...o, [name]: value } : o
+      ));
+      return { ...f, orari };
+    });
+    setDirty(true);
+  }
+
+  // P3 par.22.198-ter: toggle 'ai pasti' / 'orari specifici'. La modalita'
+  // e' DERIVATA dalle righe (tutte assoluto -> specifici), nessuno stato
+  // extra. Prefill one-shot allo switch; righe poi liberamente editabili
+  // (nessun ricalcolo retroattivo). SENTINEL_PAR_22_198_TER_P3_SWITCH
+  function switchOrariMode(mode) {
+    setForm((f) => {
+      const step = intervalloStepMinutes(f) ?? 0;
+      const orari = f.orari.map((o, i) => (
+        mode === 'specifici'
+          ? makeAssolutoOrario(
+              o.dose_numero ?? i + 1,
+              SPECIFICI_PRIMA_DOSE_MIN + i * step,
+              o.descrizione_momento || '',
+            )
+          : {
+              ...makeDefaultOrario(o.dose_numero ?? i + 1),
+              descrizione_momento: o.descrizione_momento || '',
+            }
       ));
       return { ...f, orari };
     });
@@ -1032,6 +1120,10 @@ function FarmacoDrawer({
 
   const isFissoDate = form.tipo_frequenza === 'fisso_date';
 
+  // P1 par.22.198-ter: progressive disclosure flag (D1).
+  // SENTINEL_PAR_22_198_TER_P1_FLAG
+  const tipoSelected = form.tipo_frequenza !== '';
+
   // F14 Blocco 2 (fisso_date): derivazioni read-only + validazione. SENTINEL_PAR_22_154_FISSODATE.
   const fissoDateDerived = useMemo(() => {
     const occ = form.occorrenze || [];
@@ -1162,6 +1254,20 @@ function FarmacoDrawer({
       : null;
   }, [orariPreview]);
 
+  // P14 par.22.198-ter (D4): conteggio dosi odierne gia' trascorse in
+  // create-mode con data_inizio = oggi. SENTINEL_PAR_22_198_TER_P14
+  const pastDosesToday = useMemo(() => {
+    if (mode !== 'create' || isFissoDate) return 0;
+    if (form.data_inizio !== todayIso()) return 0;
+    const now = new Date();
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    return orariPreview.filter((x) => {
+      if (typeof x !== 'string' || !/^\d{2}:\d{2}$/.test(x)) return false;
+      const [h, m] = x.split(':').map(Number);
+      return h * 60 + m < nowMin;
+    }).length;
+  }, [mode, isFissoDate, form.data_inizio, orariPreview]);
+
   const isDirty = useMemo(() => {
     for (const k of Object.keys(EMPTY_FORM)) {
       if (k === 'orari' || k === 'occorrenze') continue;
@@ -1205,6 +1311,13 @@ function FarmacoDrawer({
 
   const isIntervallo = form.tipo_frequenza === 'intervallo';
 
+  // P3 par.22.198-ter: modalita' orari derivata dalle righe.
+  // SENTINEL_PAR_22_198_TER_P3_MODE
+  const orariMode = form.orari.length > 0 &&
+    form.orari.every((o) => o.ancora_riferimento === 'assoluto')
+    ? 'specifici'
+    : 'pasti';
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center"
@@ -1246,7 +1359,7 @@ function FarmacoDrawer({
 
         <FormField
           id="farmaco-nome"
-          label="Nome"
+          label="Nome farmaco"
           value={form.nome}
           onChange={(v) => updateField('nome', v)}
           type="text"
@@ -1254,6 +1367,9 @@ function FarmacoDrawer({
           required
           warning={duplicateMatch ? `Nome già usato da «${duplicateMatch}»` : null}
         />
+        {/* P1 par.22.198-ter: anagrafica estesa gated su tipoSelected (D1).
+            SENTINEL_PAR_22_198_TER_P1_ANAG */}
+        {tipoSelected && (<>
         <FormField
           id="farmaco-principio-attivo"
           label="Principio attivo"
@@ -1270,6 +1386,7 @@ function FarmacoDrawer({
           type="text"
           theme={t}
         />
+        </>)}
 
         {/* --- Sezione 2: Frequenza & Dosi ---------------------- */}
         <SectionHeading theme={t}>Frequenza & Dosi</SectionHeading>
@@ -1312,6 +1429,11 @@ function FarmacoDrawer({
             </label>
           </div>
         </fieldset>
+
+        {/* P1 par.22.198-ter (D1): tutte le sezioni successive restano
+            nascoste finche' non e' scelto un tipo frequenza.
+            SENTINEL_PAR_22_198_TER_P1_GATE */}
+        {tipoSelected && (<>
 
         {isIntervallo && (
           <div className="flex flex-col gap-1">
@@ -1664,37 +1786,81 @@ function FarmacoDrawer({
 
         {!isFissoDate && (
         <>
-        <div className="flex flex-col gap-1">
-          <label
-            htmlFor="farmaco-dosi-giornaliere"
-            className="text-sm font-medium"
-            style={{ color: t.textPrimary }}
-          >
-            Dosi giornaliere
-          </label>
-          <input
-            id="farmaco-dosi-giornaliere"
-            type="number"
-            value={form.dosi_giornaliere}
-            onChange={(e) => updateField('dosi_giornaliere', e.target.value)}
-            disabled={isExtendedForm}
-            data-testid="farmaco-dosi-giornaliere-input"
-            className="rounded px-3 py-2 border disabled:opacity-50"
+        {/* P2 par.22.198-ter: extended -> riga statica al posto dell'input
+            bloccato (input nascosto, non disabled).
+            SENTINEL_PAR_22_198_TER_P2 */}
+        {isExtendedForm ? (
+          <p
+            data-testid="farmaco-dosi-statica"
+            role="status"
+            className="text-sm rounded px-3 py-2 border"
             style={{
               background: t.modalBg,
-              color: t.textPrimary,
+              color: t.textSecondary,
               borderColor: t.tapBd,
             }}
-          />
-          {isExtendedForm && (
-            <p className="text-xs italic" style={{ color: t.textSecondary }}>
-              Fissata a 1 per intervalli oltre le 24 ore.
-            </p>
-          )}
-        </div>
+          >
+            Dosi giornaliere: 1 — fissata per intervalli oltre le 24 ore.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-1">
+            <label
+              htmlFor="farmaco-dosi-giornaliere"
+              className="text-sm font-medium"
+              style={{ color: t.textPrimary }}
+            >
+              Dosi giornaliere
+            </label>
+            <input
+              id="farmaco-dosi-giornaliere"
+              type="number"
+              value={form.dosi_giornaliere}
+              onChange={(e) => updateField('dosi_giornaliere', e.target.value)}
+              data-testid="farmaco-dosi-giornaliere-input"
+              className="rounded px-3 py-2 border"
+              style={{
+                background: t.modalBg,
+                color: t.textPrimary,
+                borderColor: t.tapBd,
+              }}
+            />
+          </div>
+        )}
 
         {/* --- Sezione 3: Orari di assunzione ------------------- */}
         <SectionHeading theme={t}>Orari di assunzione</SectionHeading>
+
+        {/* P3 par.22.198-ter: modalita' orari (solo intervallo <=24h, D3).
+            SENTINEL_PAR_22_198_TER_P3_UI */}
+        {isIntervallo && !isExtendedForm && (
+          <fieldset className="flex flex-col gap-1">
+            <legend className="text-sm font-medium" style={{ color: t.textPrimary }}>
+              Modalità orari
+            </legend>
+            <div className="flex gap-4 py-1">
+              <label className="flex items-center gap-2" style={{ color: t.textPrimary }}>
+                <input
+                  type="radio"
+                  name="orari_mode"
+                  value="pasti"
+                  checked={orariMode === 'pasti'}
+                  onChange={() => switchOrariMode('pasti')}
+                />
+                <span>Ai pasti</span>
+              </label>
+              <label className="flex items-center gap-2" style={{ color: t.textPrimary }}>
+                <input
+                  type="radio"
+                  name="orari_mode"
+                  value="specifici"
+                  checked={orariMode === 'specifici'}
+                  onChange={() => switchOrariMode('specifici')}
+                />
+                <span>Orari specifici</span>
+              </label>
+            </div>
+          </fieldset>
+        )}
 
         {!profiloAttivo && (
           <p
@@ -1777,13 +1943,6 @@ function FarmacoDrawer({
           type="text"
           theme={t}
         />
-        <FormTextarea
-          id="farmaco-note"
-          label="Note"
-          value={form.note}
-          onChange={(v) => updateField('note', v)}
-          theme={t}
-        />
         {!isFissoDate && (
         <>
         <FormField
@@ -1808,6 +1967,34 @@ function FarmacoDrawer({
           theme={t}
         />
         </>
+        )}
+
+        </>)}
+
+        {/* T1 par.22.198-ter (P1/D1): Note sempre visibile — spostata da
+            Avanzate per il form vergine Nome+Tipo+Note.
+            SENTINEL_PAR_22_198_TER_NOTE */}
+        <FormTextarea
+          id="farmaco-note"
+          label="Note"
+          value={form.note}
+          onChange={(v) => updateField('note', v)}
+          theme={t}
+        />
+
+        {/* P14 par.22.198-ter (D4): avviso non bloccante dosi gia' trascorse.
+            SENTINEL_PAR_22_198_TER_P14_UI */}
+        {pastDosesToday > 0 && (
+          <p
+            className="text-xs"
+            role="status"
+            data-testid="farmaco-past-doses-warning"
+            style={{ color: t.orange }}
+          >
+            {pastDosesToday === 1
+              ? '1 dose di oggi risulta già trascorsa: comparirà come arretrata nella vista Oggi.'
+              : `${pastDosesToday} dosi di oggi risultano già trascorse: compariranno come arretrate nella vista Oggi.`}
+          </p>
         )}
 
         <footer className="flex flex-col gap-2 mt-4">
@@ -1977,7 +2164,9 @@ function OrarioRow({ index, orario, oraPreview, onChange, theme: t }) {
             className="text-xs font-medium"
             style={{ color: t.textPrimary }}
           >
-            Ancora
+            {/* B20 par.22.198-ter (D7): 'Ancora' era gergo ambiguo per
+                utenti anziani. SENTINEL_PAR_22_198_TER_B20 */}
+            Rispetto a
           </label>
           <select
             id={ancoraId}
@@ -1996,27 +2185,54 @@ function OrarioRow({ index, orario, oraPreview, onChange, theme: t }) {
           </select>
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label
-            htmlFor={offsetId}
-            className="text-xs font-medium"
-            style={{ color: t.textPrimary }}
-          >
-            Offset (min)
-          </label>
-          <input
-            id={offsetId}
-            type="number"
-            value={orario.offset_minuti}
-            onChange={(e) => onChange('offset_minuti', e.target.value)}
-            className="rounded px-2 py-1.5 border text-sm tabular-nums"
-            style={{
-              background: t.modalBg,
-              color: t.textPrimary,
-              borderColor: t.tapBd,
-            }}
-          />
-        </div>
+        {/* P3 par.22.198-ter: con ancora=assoluto l'offset (minuti da
+            mezzanotte) si edita come input time — elderly-friendly.
+            SENTINEL_PAR_22_198_TER_P3_ROW */}
+        {orario.ancora_riferimento === 'assoluto' ? (
+          <div className="flex flex-col gap-1">
+            <label
+              htmlFor={offsetId}
+              className="text-xs font-medium"
+              style={{ color: t.textPrimary }}
+            >
+              Orario
+            </label>
+            <input
+              id={offsetId}
+              type="time"
+              value={minutesToHHMM(orario.offset_minuti)}
+              onChange={(e) => onChange('offset_minuti', hhmmToMinutes(e.target.value))}
+              className="rounded px-2 py-1.5 border text-sm tabular-nums"
+              style={{
+                background: t.modalBg,
+                color: t.textPrimary,
+                borderColor: t.tapBd,
+              }}
+            />
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1">
+            <label
+              htmlFor={offsetId}
+              className="text-xs font-medium"
+              style={{ color: t.textPrimary }}
+            >
+              Offset (min)
+            </label>
+            <input
+              id={offsetId}
+              type="number"
+              value={orario.offset_minuti}
+              onChange={(e) => onChange('offset_minuti', e.target.value)}
+              className="rounded px-2 py-1.5 border text-sm tabular-nums"
+              style={{
+                background: t.modalBg,
+                color: t.textPrimary,
+                borderColor: t.tapBd,
+              }}
+            />
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-1">

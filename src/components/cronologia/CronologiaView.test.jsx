@@ -68,6 +68,14 @@ afterEach(() => {
 });
 
 describe("CronologiaView (s.6.215 vista Log)", () => {
+  it("B23 par.22.198-ter: titolo sticky (title-only, pattern OggiView)", async () => {
+    renderWithProvider(<CronologiaView />);
+    await waitFor(() => expect(screen.getByTestId("log-table")).toBeInTheDocument());
+    const h1 = screen.getByRole("heading", { name: /storico assunzioni/i });
+    expect(h1.className).toMatch(/sticky/);
+    expect(h1.className).toMatch(/top-0/);
+  });
+
   it("T-LOG.4: renders 5-column table with all fixture entries (DESC sorted)", async () => {
     renderWithProvider(<CronologiaView />, {
       stateOverrides: { farmaci: FARMACI_FIXTURE },
