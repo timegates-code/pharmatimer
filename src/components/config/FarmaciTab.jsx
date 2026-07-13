@@ -82,6 +82,12 @@ import { computeOraPrevista } from '../../domain/planBuilder.js';
 import { formatPrimaDose } from '../../utils/copy.js';
 import ConfirmModal from '../shared/ConfirmModal.jsx';
 import UnsavedChangesModal from './UnsavedChangesModal.jsx';
+import OrarioRow from './OrarioRow.jsx';
+import OccorrenzaRow from './OccorrenzaRow.jsx';
+import FormField from './FormField.jsx';
+import FormSelect from './FormSelect.jsx';
+import FormTextarea from './FormTextarea.jsx';
+import FormCheckbox from './FormCheckbox.jsx';
 
 // ------------------------------------------------------------
 // Enums + defaults.
@@ -94,15 +100,6 @@ const RELAZIONE_PASTO_OPTIONS = [
   { value: 'stomaco_pieno', label: 'A stomaco pieno' },
   { value: 'lontano',       label: 'Lontano dai pasti' },
   { value: 'indifferente',  label: 'Indifferente' },
-];
-
-const ANCORA_OPTIONS = [
-  { value: 'sveglia',   label: 'Sveglia' },
-  { value: 'colazione', label: 'Colazione' },
-  { value: 'pranzo',    label: 'Pranzo' },
-  { value: 'cena',      label: 'Cena' },
-  { value: 'sonno',     label: 'Sonno' },
-  { value: 'assoluto',  label: 'Orario assoluto' },
 ];
 
 // CP8 §6.183: extended threshold strict > 24h (§22.42 EXT.3' Q2=a).
@@ -140,19 +137,6 @@ function makeAssolutoOrario(doseNumero, offsetMinuti, descrizione = '') {
     ancora_riferimento: 'assoluto',
     descrizione_momento: descrizione,
   };
-}
-
-function minutesToHHMM(min) {
-  const m = ((Number(min) || 0) % 1440 + 1440) % 1440;
-  const h = String(Math.floor(m / 60)).padStart(2, '0');
-  const mm = String(m % 60).padStart(2, '0');
-  return `${h}:${mm}`;
-}
-
-function hhmmToMinutes(hhmm) {
-  if (typeof hhmm !== 'string' || !/^\d{2}:\d{2}$/.test(hhmm)) return 0;
-  const [h, m] = hhmm.split(':').map(Number);
-  return h * 60 + m;
 }
 
 const EMPTY_FORM = {
@@ -2126,197 +2110,6 @@ function FarmacoDrawer({
 }
 
 // ============================================================
-// OrarioRow — single dose timing row.
-// ============================================================
-
-function OrarioRow({ index, orario, oraPreview, onChange, theme: t }) {
-  const ancoraId = `orario-ancora-${index}`;
-  const offsetId = `orario-offset-${index}`;
-  const descrId  = `orario-descr-${index}`;
-
-  return (
-    <div
-      data-testid={`orario-row-${index}`}
-      className="rounded border p-3 flex flex-col gap-2"
-      style={{ background: t.modalBg, borderColor: t.tapBd }}
-    >
-      <div className="flex items-center justify-between">
-        <span
-          className="text-xs font-mono uppercase tracking-wider"
-          style={{ color: t.textSecondary }}
-        >
-          Dose #{index + 1}
-        </span>
-        {oraPreview && (
-          <span
-            className="text-sm font-mono tabular-nums"
-            style={{ color: t.textPrimary }}
-          >
-            {oraPreview}
-          </span>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 gap-2">
-        <div className="flex flex-col gap-1">
-          <label
-            htmlFor={ancoraId}
-            className="text-xs font-medium"
-            style={{ color: t.textPrimary }}
-          >
-            {/* B20 par.22.198-ter (D7): 'Ancora' era gergo ambiguo per
-                utenti anziani. SENTINEL_PAR_22_198_TER_B20 */}
-            Rispetto a
-          </label>
-          <select
-            id={ancoraId}
-            value={orario.ancora_riferimento}
-            onChange={(e) => onChange('ancora_riferimento', e.target.value)}
-            className="rounded px-2 py-1.5 border text-sm"
-            style={{
-              background: t.modalBg,
-              color: t.textPrimary,
-              borderColor: t.tapBd,
-            }}
-          >
-            {ANCORA_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* P3 par.22.198-ter: con ancora=assoluto l'offset (minuti da
-            mezzanotte) si edita come input time — elderly-friendly.
-            SENTINEL_PAR_22_198_TER_P3_ROW */}
-        {orario.ancora_riferimento === 'assoluto' ? (
-          <div className="flex flex-col gap-1">
-            <label
-              htmlFor={offsetId}
-              className="text-xs font-medium"
-              style={{ color: t.textPrimary }}
-            >
-              Orario
-            </label>
-            <input
-              id={offsetId}
-              type="time"
-              value={minutesToHHMM(orario.offset_minuti)}
-              onChange={(e) => onChange('offset_minuti', hhmmToMinutes(e.target.value))}
-              className="rounded px-2 py-1.5 border text-sm tabular-nums"
-              style={{
-                background: t.modalBg,
-                color: t.textPrimary,
-                borderColor: t.tapBd,
-              }}
-            />
-          </div>
-        ) : (
-          <div className="flex flex-col gap-1">
-            <label
-              htmlFor={offsetId}
-              className="text-xs font-medium"
-              style={{ color: t.textPrimary }}
-            >
-              Offset (min)
-            </label>
-            <input
-              id={offsetId}
-              type="number"
-              value={orario.offset_minuti}
-              onChange={(e) => onChange('offset_minuti', e.target.value)}
-              className="rounded px-2 py-1.5 border text-sm tabular-nums"
-              style={{
-                background: t.modalBg,
-                color: t.textPrimary,
-                borderColor: t.tapBd,
-              }}
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label
-          htmlFor={descrId}
-          className="text-xs font-medium"
-          style={{ color: t.textPrimary }}
-        >
-          Descrizione (opz.)
-        </label>
-        <input
-          id={descrId}
-          type="text"
-          value={orario.descrizione_momento || ''}
-          onChange={(e) => onChange('descrizione_momento', e.target.value)}
-          className="rounded px-2 py-1.5 border text-sm"
-          style={{
-            background: t.modalBg,
-            color: t.textPrimary,
-            borderColor: t.tapBd,
-          }}
-        />
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
-// OccorrenzaRow — riga singola (data, ora) per fisso_date.
-// SENTINEL_PAR_22_154_FISSODATE
-// Blocco 3 (par.22.155): input ora/data + bottone rimozione ingranditi
-// (min-h-[44px], text-base) per accessibilita anziani; type="time" nativo
-// invariato -> contratto 'HH:MM' preservato. SENTINEL_PAR_22_155_PICKER_A11Y
-// ============================================================
-
-function OccorrenzaRow({ index, occorrenza, onChange, onRemove, theme: t }) {
-  const dataId = `occ-data-${index}`;
-  const oraId = `occ-ora-${index}`;
-  return (
-    <div
-      data-testid={`occorrenza-row-${index}`}
-      className="rounded border p-3 flex items-end gap-2"
-      style={{ background: t.modalBg, borderColor: t.tapBd }}
-    >
-      <div className="flex flex-col gap-1 flex-1">
-        <label htmlFor={dataId} className="text-sm font-medium" style={{ color: t.textPrimary }}>
-          Data
-        </label>
-        <input
-          id={dataId}
-          type="date"
-          value={occorrenza.data || ''}
-          onChange={(e) => onChange('data', e.target.value)}
-          className="rounded px-3 py-2.5 border text-base min-h-[44px]"
-          style={{ background: t.modalBg, color: t.textPrimary, borderColor: t.tapBd }}
-        />
-      </div>
-      <div className="flex flex-col gap-1 flex-1">
-        <label htmlFor={oraId} className="text-sm font-medium" style={{ color: t.textPrimary }}>
-          Orario
-        </label>
-        <input
-          id={oraId}
-          type="time"
-          value={occorrenza.ora || ''}
-          onChange={(e) => onChange('ora', e.target.value)}
-          className="rounded px-3 py-2.5 border text-base min-h-[44px] tabular-nums"
-          style={{ background: t.modalBg, color: t.textPrimary, borderColor: t.tapBd }}
-        />
-      </div>
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label={`Rimuovi data ${index + 1}`}
-        className="flex items-center justify-center min-h-[44px] min-w-[44px] text-base rounded border"
-        style={{ background: t.modalBg, color: t.red, borderColor: t.red }}
-      >
-        ✕
-      </button>
-    </div>
-  );
-}
-
-// ============================================================
 // Internal form helpers.
 // ============================================================
 
@@ -2332,118 +2125,5 @@ function SectionHeading({ children, theme: t }) {
     >
       {children}
     </h4>
-  );
-}
-
-function FormField({ id, label, value, onChange, type, theme: t, warning, required }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label
-        htmlFor={id}
-        className="text-sm font-medium"
-        style={{ color: t.textPrimary }}
-      >
-        {label}
-        {required && (
-          <span aria-hidden="true" className="text-red-500 ml-1">*</span>
-        )}
-      </label>
-      <input
-        id={id}
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        aria-required={required || undefined}
-        className="rounded px-3 py-2 border"
-        style={{
-          background: t.modalBg,
-          color: t.textPrimary,
-          borderColor: t.tapBd,
-        }}
-      />
-      {warning && (
-        <p className="text-xs" role="status" style={{ color: t.red }}>
-          {warning}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function FormSelect({ id, label, value, onChange, options, theme: t, required }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label
-        htmlFor={id}
-        className="text-sm font-medium"
-        style={{ color: t.textPrimary }}
-      >
-        {label}
-        {required && (
-          <span aria-hidden="true" className="text-red-500 ml-1">*</span>
-        )}
-      </label>
-      <select
-        id={id}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        aria-required={required || undefined}
-        className="rounded px-3 py-2 border"
-        style={{
-          background: t.modalBg,
-          color: t.textPrimary,
-          borderColor: t.tapBd,
-        }}
-      >
-        <option value="" disabled>— seleziona —</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-function FormTextarea({ id, label, value, onChange, theme: t }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label
-        htmlFor={id}
-        className="text-sm font-medium"
-        style={{ color: t.textPrimary }}
-      >
-        {label}
-      </label>
-      <textarea
-        id={id}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        rows={3}
-        className="rounded px-3 py-2 border resize-y"
-        style={{
-          background: t.modalBg,
-          color: t.textPrimary,
-          borderColor: t.tapBd,
-        }}
-      />
-    </div>
-  );
-}
-
-function FormCheckbox({ id, label, checked, onChange, theme: t }) {
-  return (
-    <label
-      htmlFor={id}
-      className="flex items-center gap-2 text-sm"
-      style={{ color: t.textPrimary }}
-    >
-      <input
-        id={id}
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-      />
-      {label}
-    </label>
   );
 }
