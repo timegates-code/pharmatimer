@@ -4,6 +4,7 @@ import {
   isExtendedInterval,
   computeExtendedOccurrencesInWindow,
 } from './extendedFrequency.js';
+import { computeTInizio } from './startBoundary.js';
 
 // Re-export for backward compatibility with existing consumers and tests
 // that import { computeOraPrevista } from './planBuilder.js'.
@@ -105,6 +106,17 @@ export function buildMultiDayPlan(ctx) {
     logByKey.set(entryKey(log.data, log.farmaco_id, log.dose_numero), log);
   }
 
+  // P20 par.4.8 (s.6.254): per-farmaco therapy-start boundary, computed
+  // ONCE per build (immutable rule on DATE(created_at), see
+  // startBoundary.js). Fallback (A): rows without created_at (Dexie)
+  // degrade to data_inizio 00:00 = the pre-P20 date bound already
+  // enforced by isFarmacoActiveOn -> filter inert in local mode.
+  // SENTINEL_P20_PLAN_TINIZIO
+  const tInizioByFarmaco = new Map();
+  for (const f of farmaci) {
+    tInizioByFarmaco.set(f.id, computeTInizio(f.data_inizio, f.created_at));
+  }
+
   /** @type {import('./types.js').Plan} */
   const plan = [];
 
@@ -124,13 +136,19 @@ export function buildMultiDayPlan(ctx) {
         // Dexie local-mode row lacking the column is treated as recurring.
         // Model-agnostic: indifferent to Pattern S vs flat list.
         if (orario.data_specifica != null && orario.data_specifica !== dateStr) continue;
+        const oraPrevista = computeOraPrevista(orario, profilo);
+        // P20 par.4.8 visibility rule: occurrence generated <=>
+        // T_dose >= T_inizio (ISO string compare, sub-day precision on
+        // the creation day). SENTINEL_P20_PLAN_SKIP
+        const tInizio = tInizioByFarmaco.get(farmaco.id);
+        if (tInizio != null && `${dateStr}T${oraPrevista}` < tInizio) continue;
         /** @type {import('./types.js').PlanEntry} */
         const entry = {
           key: entryKey(dateStr, farmaco.id, orario.dose_numero),
           dateStr,
           farmaco,
           orario,
-          ora_prevista: computeOraPrevista(orario, profilo),
+          ora_prevista: oraPrevista,
           ora_ricalcolata: null,
           ora_ricalcolata_originale: null,
           ora_effettiva: null,

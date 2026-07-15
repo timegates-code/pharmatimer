@@ -80,6 +80,8 @@ import { useModalA11y } from '../../hooks/useModalA11y.js';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges.js';
 import { computeOraPrevista } from '../../domain/planBuilder.js';
 import { formatPrimaDose } from '../../utils/copy.js';
+import { computeTInizio, firstDoseAfterTInizio } from '../../domain/startBoundary.js';
+import { TOLLERANZA_MIN } from '../../domain/constants.js';
 import ConfirmModal from '../shared/ConfirmModal.jsx';
 import UnsavedChangesModal from './UnsavedChangesModal.jsx';
 import OrarioRow from './OrarioRow.jsx';
@@ -966,6 +968,20 @@ function FarmacoDrawer({
     return todayIso();
   }
 
+  // P20 par.4.8 -- local wall-clock 'YYYY-MM-DDTHH:MM'. In create-mode
+  // the farmaco has no created_at yet: "now" is the proxy of the
+  // imminent insert (the same boundary the server-side created_at will
+  // pin, timezone invariant measured par.22.198-duodecies).
+  // SENTINEL_P20_NOW_PROXY
+  function localNowIsoMinutes(now = new Date()) {
+    const y = now.getFullYear();
+    const mo = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const h = String(now.getHours()).padStart(2, '0');
+    const mi = String(now.getMinutes()).padStart(2, '0');
+    return `${y}-${mo}-${d}T${h}:${mi}`;
+  }
+
   async function commitSave({ farmacoData, orari }) {
     setSubmitting(true);
     try {
@@ -974,12 +990,28 @@ function FarmacoDrawer({
         : await actions.updateFarmaco(editingId, farmacoData, orari);
       if (result?.ok) {
         if (mode === 'create') {
-          const oraPrevista = isFissoDate ? (orari[0]?.ora_prevista ?? null) : orariPreview[0];
-          if (oraPrevista) {
+          // R4 (deferito 44, P20 par.4.8): the toast announces the FIRST
+          // OCCURRENCE >= T_inizio, not data_inizio blindly. In create the
+          // boundary proxy is "now" (SENTINEL_P20_NOW_PROXY); payload rows
+          // carry ora_prevista (BUG-k s.6.246) and, for fisso_date,
+          // data_specifica. Null -> toast omitted.
+          // SENTINEL_P20_R4_PRIMADOSE
+          const tInizio = computeTInizio(
+            farmacoData.data_inizio, localNowIsoMinutes(),
+          );
+          const first = firstDoseAfterTInizio({
+            tInizio,
+            tipo: farmacoData.tipo_frequenza,
+            dataInizio: farmacoData.data_inizio,
+            dataFine: farmacoData.data_fine,
+            intervalloOre: farmacoData.intervallo_ore,
+            orari,
+          });
+          if (first) {
             const today = todayIso();
             actions.showToast(
               `✅ ${farmacoData.nome} aggiunto. Prima dose: ${
-                formatPrimaDose(farmacoData.data_inizio, oraPrevista, today)
+                formatPrimaDose(first.dateStr, first.hhmm, today)
               }.`
             );
           }
@@ -1238,19 +1270,36 @@ function FarmacoDrawer({
       : null;
   }, [orariPreview]);
 
-  // P14 par.22.198-ter (D4): conteggio dosi odierne gia' trascorse in
-  // create-mode con data_inizio = oggi. SENTINEL_PAR_22_198_TER_P14
+  // P14 (storico D4 par.22.198-ter, SENTINEL_PAR_22_198_TER_P14) --
+  // ridimensionata P20 par.4.8 (par.22.198-duodecies): predicato
+  // unificato su T_inizio (Q4=a), gate retrodatazione in edit
+  // (Q4-bis=1: solo se data_inizio e' cambiata in questa sessione di
+  // edit), soglia = badge "in ritardo" di Oggi (Q2: TOLLERANZA_MIN),
+  // extended e fisso_date esclusi (Q3). In create il proxy del confine
+  // e' "now" (SENTINEL_P20_NOW_PROXY): con data_inizio = oggi nessuna
+  // dose passata e' >= T_inizio (silenzio, le dosi sono escluse dal
+  // piano); con data_inizio nel passato il save e' comunque bloccato da
+  // dataInizioValid -> conteggio 0. SENTINEL_P20_P14_PREDICATE
   const pastDosesToday = useMemo(() => {
-    if (mode !== 'create' || isFissoDate) return 0;
-    if (form.data_inizio !== todayIso()) return 0;
+    if (isFissoDate || isExtendedForm) return 0;
+    const today = todayIso();
+    if (!form.data_inizio || form.data_inizio > today) return 0;
+    if (mode === 'create' && form.data_inizio < today) return 0;
+    if (mode === 'edit' && form.data_inizio === initial.data_inizio) return 0;
+    const createdAt = mode === 'edit'
+      ? (allFarmaci.find((x) => x.id === editingId)?.created_at ?? null)
+      : localNowIsoMinutes();
+    const tInizio = computeTInizio(form.data_inizio, createdAt);
+    if (tInizio == null) return 0;
     const now = new Date();
     const nowMin = now.getHours() * 60 + now.getMinutes();
     return orariPreview.filter((x) => {
       if (typeof x !== 'string' || !/^\d{2}:\d{2}$/.test(x)) return false;
+      if (`${today}T${x}` < tInizio) return false;
       const [h, m] = x.split(':').map(Number);
-      return h * 60 + m < nowMin;
+      return h * 60 + m < nowMin - TOLLERANZA_MIN;
     }).length;
-  }, [mode, isFissoDate, form.data_inizio, orariPreview]);
+  }, [mode, isFissoDate, isExtendedForm, form.data_inizio, initial, orariPreview, allFarmaci, editingId]);
 
   const isDirty = useMemo(() => {
     for (const k of Object.keys(EMPTY_FORM)) {
@@ -1976,8 +2025,8 @@ function FarmacoDrawer({
             style={{ color: t.orange }}
           >
             {pastDosesToday === 1
-              ? '1 dose di oggi risulta già trascorsa: comparirà come arretrata nella vista Oggi.'
-              : `${pastDosesToday} dosi di oggi risultano già trascorse: compariranno come arretrate nella vista Oggi.`}
+              ? '1 dose di oggi è già passata: nella vista Oggi comparirà come in ritardo.'
+              : `${pastDosesToday} dosi di oggi sono già passate: nella vista Oggi compariranno come in ritardo.`}
           </p>
         )}
 

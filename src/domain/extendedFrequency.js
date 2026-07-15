@@ -27,6 +27,7 @@
 
 import { timeToMinutes } from '../utils/time.js';
 import { computeOraPrevista } from './orarioResolver.js';
+import { computeTInizio } from './startBoundary.js';
 
 const MS_PER_HOUR = 3600 * 1000;
 
@@ -101,6 +102,14 @@ export function computeExtendedOccurrencesInWindow(
   const oraPrevista = computeOraPrevista(orario, profilo);
   const oraPrevistaMin = timeToMinutes(oraPrevista);
 
+  // P20 par.4.8 (s.6.254): therapy-start boundary -- filtered HERE, at
+  // the single generation point (Q3-P20=G): covers planBuilder AND the
+  // selectors' 365-day window (selectProssimaDoseFuoriPlan) alike.
+  // Fallback (A) sub-Q-P20: rows without created_at degrade to
+  // data_inizio 00:00 = the anchor itself is never excluded (pre-P20).
+  // SENTINEL_P20_EXT_TINIZIO
+  const tInizio = computeTInizio(farmaco.data_inizio, farmaco.created_at);
+
   // Anchor: data_inizio at oraPrevista (local time).
   const anchorBase = new Date(farmaco.data_inizio + 'T00:00:00');
   anchorBase.setMinutes(anchorBase.getMinutes() + oraPrevistaMin);
@@ -132,8 +141,11 @@ export function computeExtendedOccurrencesInWindow(
     if (tMs >= windowEndMs) break;
     if (tMs >= dataFineMs) break;
     const occDate = new Date(tMs);
+    const dateStr = isoDateLocal(occDate);
+    // SENTINEL_P20_EXT_SKIP -- visibility rule: T_dose >= T_inizio.
+    if (tInizio != null && `${dateStr}T${oraPrevista}` < tInizio) continue;
     out.push({
-      dateStr: isoDateLocal(occDate),
+      dateStr,
       orario,
       oraPrevista,
     });
