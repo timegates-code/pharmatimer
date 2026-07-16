@@ -7,52 +7,37 @@
  * Fase 2 §22.42 (opt B' modulare ratificata) e §22.43 (lista impl 18 punti,
  * voce 14: extendedFrequency.js helper + branch planBuilder).
  *
- * Anchor convention (EXT.1, §22.42): occurrences are computed as
+ * Anchor convention (EXT.1, §22.42 -- EMENDATA da P15-A,
+ * par.22.198-quindecies-bis): occurrences are computed as
  *
  *   anchor = (data_inizio at computeOraPrevista(orario, profilo))
- *   t_k    = anchor + k * intervallo_ore   (k = 0, 1, 2, ...)
+ *   t_k    = k-esima occorrenza dell ancora SECONDO IL CANONE
  *
  * for all t_k inside the window [windowStart, windowEnd) and not past
  * data_fine (if present). dosi_giornaliere = 1 is enforced upstream by
  * FarmaciTab UI (EXT.2, §22.42); the helper defensively uses the first
  * orario row only.
  *
- * Pure function: no Date.now(), no DB, no globals.
+ * LA CADENZA NON SI CALCOLA QUI: e delegata a extendedStride.js, canone
+ * unico condiviso con startBoundary.js (Q-P15-7=(A)). La formula EXT.1
+ * t_k = anchor + k * intervallo_ore vale ORA SOLO per il ramo ms: per
+ * intervallo_ore multiplo di 24 la cadenza e a GIORNI CIVILI a orario fisso
+ * (Q1=(a) / Q-P15-2=(A)).
  *
- * Known limitation: ms-arithmetic stride does not compensate for DST
- * transitions. For weekly intervals (168h), occurrences may shift by ±1h
- * across DST boundaries. Accepted by-design for v3.0.0; covered by §22.42
- * audit verdict "addMinutesToIso aritmeticamente corretto".
+ * La vecchia "Known limitation" era FALSA IN ENTRAMBE LE DIREZIONI e va
+ * letta nel canone, non qui: il difetto ms non era "+/-1h estetico" ma
+ * +/-1 GIORNO sulla data della dose (M2-M5, par.22.198-quindecies), e il
+ * verdetto §22.42 "addMinutesToIso aritmeticamente corretto" che la
+ * giustificava riguarda una funzione a semantica CIVILE (misattribuzione
+ * misurata M1). Vedi extendedStride.js.
+ *
+ * Pure function: no Date.now(), no DB, no globals.
  */
 
-import { timeToMinutes } from '../utils/time.js';
+import { addDays } from '../utils/time.js';
 import { computeOraPrevista } from './orarioResolver.js';
 import { computeTInizio } from './startBoundary.js';
-
-const MS_PER_HOUR = 3600 * 1000;
-
-/**
- * Add n days to 'YYYY-MM-DD'. Local duplicate of planBuilder's addDaysLocal
- * to avoid cross-domain coupling (§6.181 pattern: scope creep avoidance).
- */
-function addDaysLocal(dateStr, n) {
-  const d = new Date(dateStr + 'T12:00:00');
-  d.setDate(d.getDate() + n);
-  const y = d.getFullYear();
-  const mo = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${mo}-${day}`;
-}
-
-/**
- * Format a Date object back to 'YYYY-MM-DD' using its local components.
- */
-function isoDateLocal(d) {
-  const y = d.getFullYear();
-  const mo = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${mo}-${day}`;
-}
+import { firstKOnOrAfterIso, occurrenceDateAt } from './extendedStride.js';
 
 /**
  * Whether a farmaco follows the extended-frequency branch.
@@ -100,7 +85,6 @@ export function computeExtendedOccurrencesInWindow(
   const orario = orariFarmaco[0];
 
   const oraPrevista = computeOraPrevista(orario, profilo);
-  const oraPrevistaMin = timeToMinutes(oraPrevista);
 
   // P20 par.4.8 (s.6.254): therapy-start boundary -- filtered HERE, at
   // the single generation point (Q3-P20=G): covers planBuilder AND the
@@ -110,38 +94,27 @@ export function computeExtendedOccurrencesInWindow(
   // SENTINEL_P20_EXT_TINIZIO
   const tInizio = computeTInizio(farmaco.data_inizio, farmaco.created_at);
 
-  // Anchor: data_inizio at oraPrevista (local time).
-  const anchorBase = new Date(farmaco.data_inizio + 'T00:00:00');
-  anchorBase.setMinutes(anchorBase.getMinutes() + oraPrevistaMin);
-  const anchorMs = anchorBase.getTime();
+  // Cadenza: CANONE UNICO (extendedStride.js). Qui non si calcola piu ne
+  // ancora ne stride: si iterano DATE, non istanti. SENTINEL_P15A_EXT_CANONE
+  const ore = farmaco.intervallo_ore;
+  const windowEndDate = addDays(startDate, numDays); // esclusiva
 
-  // Window bounds: [startDate 00:00, startDate+numDays 00:00).
-  const windowStartMs = new Date(startDate + 'T00:00:00').getTime();
-  const windowEndMs = new Date(addDaysLocal(startDate, numDays) + 'T00:00:00').getTime();
-
-  // data_fine cutoff: inclusive of the day, so end-of-day = next day 00:00.
-  let dataFineMs = Infinity;
-  if (farmaco.data_fine) {
-    dataFineMs = new Date(addDaysLocal(farmaco.data_fine, 1) + 'T00:00:00').getTime();
-  }
-
-  const intervalMs = farmaco.intervallo_ore * MS_PER_HOUR;
-
-  // Compute starting k: smallest non-negative integer such that
-  // anchorMs + k * intervalMs >= windowStartMs.
-  // If anchor is in or after the window, k=0 is the first candidate.
-  const kStart =
-    anchorMs >= windowStartMs
-      ? 0
-      : Math.ceil((windowStartMs - anchorMs) / intervalMs);
-
+  // I due cutoff passano da istanti a stringa-data. EQUIVALENZA MISURATA
+  // (par.22.198-quindecies-bis, 34.680 casi, 0 mismatch): gli estremi sono
+  // sempre MEZZANOTTI, quindi
+  //   tMs >= windowEndMs        <=>  dateStr >= windowEndDate
+  //   tMs >= (data_fine+1)T00:00 <=>  dateStr >  data_fine
   const out = [];
-  for (let k = Math.max(0, kStart); ; k++) {
-    const tMs = anchorMs + k * intervalMs;
-    if (tMs >= windowEndMs) break;
-    if (tMs >= dataFineMs) break;
-    const occDate = new Date(tMs);
-    const dateStr = isoDateLocal(occDate);
+  let k = firstKOnOrAfterIso(
+    farmaco.data_inizio,
+    oraPrevista,
+    ore,
+    `${startDate}T00:00`,
+  );
+  for (; ; k += 1) {
+    const dateStr = occurrenceDateAt(farmaco.data_inizio, oraPrevista, ore, k);
+    if (dateStr >= windowEndDate) break;
+    if (farmaco.data_fine && dateStr > farmaco.data_fine) break;
     // SENTINEL_P20_EXT_SKIP -- visibility rule: T_dose >= T_inizio.
     if (tInizio != null && `${dateStr}T${oraPrevista}` < tInizio) continue;
     out.push({

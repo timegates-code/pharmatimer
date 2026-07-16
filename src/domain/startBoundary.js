@@ -25,20 +25,14 @@
  * SENTINEL_P20_STARTBOUNDARY
  */
 
+import { firstKOnOrAfterIso, occurrenceDateAt } from './extendedStride.js';
+
 const ISO_MIN_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 
 /** Add n days to 'YYYY-MM-DD' (noon anchor, DST-safe). */
 function addDaysIso(dateStr, n) {
   const d = new Date(dateStr + 'T12:00:00');
   d.setDate(d.getDate() + n);
-  const y = d.getFullYear();
-  const mo = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${mo}-${day}`;
-}
-
-/** 'YYYY-MM-DD' from a Date, local components. */
-function isoDateLocal(d) {
   const y = d.getFullYear();
   const mo = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
@@ -104,29 +98,16 @@ export function firstDoseAfterTInizio({
     intervalloOre > 24;
 
   if (isExt) {
-    // Mirrors extendedFrequency: anchor = data_inizio at the FIRST row's
-    // hour; occurrences carry the CONSTANT anchor hour (same convention
-    // as the plan-side filter, string-consistent by construction).
+    // Cadenza: CANONE UNICO, lo stesso che genera il piano (Q-P15-7=(A)).
+    // Il mirroring col generatore non e piu un contratto dichiarato in un
+    // commento: e la stessa funzione. SENTINEL_P15A_SB_CANONE
     if (!dataInizio) return null;
     const hhmm = rows[0].ora_prevista;
-    const anchorMs = new Date(`${dataInizio}T${hhmm}:00`).getTime();
-    const stepMs = intervalloOre * 3600 * 1000;
-    let k = 0;
-    if (tInizio != null) {
-      const tMs = new Date(`${tInizio.slice(0, 16)}:00`).getTime();
-      if (tMs > anchorMs) {
-        k = Math.max(0, Math.floor((tMs - anchorMs) / stepMs));
-      }
-      // String-verify against the FULL tInizio (seconds included) and
-      // bump: floor estimate + seconds truncation + DST rendering can be
-      // off by at most one step in practice; 4 is a hard safety cap.
-      for (let guard = 0; guard < 4; guard += 1) {
-        const cand = isoDateLocal(new Date(anchorMs + k * stepMs));
-        if (`${cand}T${hhmm}` >= tInizio) break;
-        k += 1;
-      }
-    }
-    const dateStr = isoDateLocal(new Date(anchorMs + k * stepMs));
+    const k =
+      tInizio != null
+        ? firstKOnOrAfterIso(dataInizio, hhmm, intervalloOre, tInizio)
+        : 0;
+    const dateStr = occurrenceDateAt(dataInizio, hhmm, intervalloOre, k);
     if (dataFine && dateStr > dataFine) return null;
     return { dateStr, hhmm };
   }
