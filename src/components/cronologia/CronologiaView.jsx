@@ -139,90 +139,113 @@ export default function CronologiaView() {
       className="min-h-screen p-4 pt-0 max-w-3xl mx-auto"
       data-testid="log-view"
     >
-      {/* B23 par.22.198-ter (D6): title-only sticky header, pattern
-          OggiView (safe-area assorbita dal titolo).
-          SENTINEL_PAR_22_198_TER_B23 */}
-      <h1
-        className="text-xl font-bold mb-3 sticky top-0 z-20 -mx-4 px-4 pb-2"
+      {/* B27 par.22.198-novodecies (Q1=A, design ratificato a par.22.198-decies):
+          blocco sticky UNICO -- titolo + filtri + Esporta CSV solidali per
+          costruzione. Un solo elemento sticky nella vista: zero offset
+          impilati, zero accoppiamenti di altezza da mantenere allineati.
+
+          Sostituisce il precedente header title-only (par.22.198-ter, D6):
+          safe-area e classi sticky sono MIGRATE dal titolo a questo wrapper,
+          e l h1 torna elemento semplice.
+
+          Lezione B26 in prevenzione: ZERO margini esterni verticali sul
+          wrapper. Il margine inferiore della riga filtri e diventato padding
+          del wrapper, cosi nessun margine puo collassare fuori dal box
+          dipinto lasciando un varco trasparente su cui il contenuto in
+          scroll transiterebbe.
+
+          Ritmo verticale invariante per costruzione:
+            titolo -> filtri  = 12px (mb-3, ora INTERNO al box dipinto)
+            filtri -> tabella = 16px (pb-4) + 1px di bordo inferiore
+
+          Costo dichiarato a design: ~180-190px di chrome persistente su
+          iPhone (filtri su due righe). Ripiego documentato se il collaudo
+          device lo giudica invadente: sticky impilati (opzione B), scartata
+          come prima scelta perche accoppia gli offset e contraddice il
+          requisito di solidarieta.
+          SENTINEL_PAR_22_198_NOVODECIES_B27 */}
+      <div
+        className="sticky top-0 z-20 -mx-4 px-4 pb-4"
         style={{
           paddingTop: 'calc(env(safe-area-inset-top) + 1rem)',
           background: t.headerBg,
           borderBottom: `1px solid ${t.headerBorder}`,
         }}
+        data-testid="log-sticky-header"
       >
-        Storico assunzioni
-      </h1>
+        <h1 className="text-xl font-bold mb-3">Storico assunzioni</h1>
 
-      <div className="flex flex-wrap gap-2 mb-4 items-end">
-        <label className="flex flex-col text-sm">
-          <span className="opacity-70 mb-1">Da</span>
-          <input
-            type="date"
-            value={from}
-            max={to}
-            onChange={(e) => setFrom(e.target.value)}
-            className="rounded px-2 py-1.5 border text-sm"
+        <div className="flex flex-wrap gap-2 items-end">
+          <label className="flex flex-col text-sm">
+            <span className="opacity-70 mb-1">Da</span>
+            <input
+              type="date"
+              value={from}
+              max={to}
+              onChange={(e) => setFrom(e.target.value)}
+              className="rounded px-2 py-1.5 border text-sm"
+              style={{
+                background: t.modalBg,
+                color: t.textPrimary,
+                borderColor: t.tapBd,
+                colorScheme: "light dark",
+              }}
+              data-testid="log-filter-from"
+            />
+          </label>
+          <label className="flex flex-col text-sm">
+            <span className="opacity-70 mb-1">A</span>
+            <input
+              type="date"
+              value={to}
+              min={from}
+              onChange={(e) => setTo(e.target.value)}
+              className="rounded px-2 py-1.5 border text-sm"
+              style={{
+                background: t.modalBg,
+                color: t.textPrimary,
+                borderColor: t.tapBd,
+                colorScheme: "light dark",
+              }}
+              data-testid="log-filter-to"
+            />
+          </label>
+          <label className="flex flex-col text-sm flex-1 min-w-[140px]">
+            <span className="opacity-70 mb-1">Farmaco</span>
+            <select
+              value={farmacoId}
+              onChange={(e) => setFarmacoId(e.target.value)}
+              className="rounded px-2 py-1.5 border text-sm"
+              style={{
+                background: t.modalBg,
+                color: t.textPrimary,
+                borderColor: t.tapBd,
+                colorScheme: "light dark",
+              }}
+              data-testid="log-filter-farmaco"
+            >
+              <option value="__all__">Tutti i farmaci</option>
+              {farmaci.map((f) => (
+                <option key={f.id} value={String(f.id)}>
+                  {f.nome}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={handleExport}
+            className="rounded px-3 py-1.5 border text-sm font-medium whitespace-nowrap"
             style={{
               background: t.modalBg,
               color: t.textPrimary,
               borderColor: t.tapBd,
-              colorScheme: "light dark",
             }}
-            data-testid="log-filter-from"
-          />
-        </label>
-        <label className="flex flex-col text-sm">
-          <span className="opacity-70 mb-1">A</span>
-          <input
-            type="date"
-            value={to}
-            min={from}
-            onChange={(e) => setTo(e.target.value)}
-            className="rounded px-2 py-1.5 border text-sm"
-            style={{
-              background: t.modalBg,
-              color: t.textPrimary,
-              borderColor: t.tapBd,
-              colorScheme: "light dark",
-            }}
-            data-testid="log-filter-to"
-          />
-        </label>
-        <label className="flex flex-col text-sm flex-1 min-w-[140px]">
-          <span className="opacity-70 mb-1">Farmaco</span>
-          <select
-            value={farmacoId}
-            onChange={(e) => setFarmacoId(e.target.value)}
-            className="rounded px-2 py-1.5 border text-sm"
-            style={{
-              background: t.modalBg,
-              color: t.textPrimary,
-              borderColor: t.tapBd,
-              colorScheme: "light dark",
-            }}
-            data-testid="log-filter-farmaco"
+            data-testid="log-export-csv"
           >
-            <option value="__all__">Tutti i farmaci</option>
-            {farmaci.map((f) => (
-              <option key={f.id} value={String(f.id)}>
-                {f.nome}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          onClick={handleExport}
-          className="rounded px-3 py-1.5 border text-sm font-medium whitespace-nowrap"
-          style={{
-            background: t.modalBg,
-            color: t.textPrimary,
-            borderColor: t.tapBd,
-          }}
-          data-testid="log-export-csv"
-        >
-          Esporta CSV
-        </button>
+            Esporta CSV
+          </button>
+        </div>
       </div>
 
       {loading && (

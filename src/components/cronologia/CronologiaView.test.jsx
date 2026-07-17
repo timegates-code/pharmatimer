@@ -68,12 +68,34 @@ afterEach(() => {
 });
 
 describe("CronologiaView (s.6.215 vista Log)", () => {
-  it("B23 par.22.198-ter: titolo sticky (title-only, pattern OggiView)", async () => {
+  it("B27 par.22.198-novodecies: blocco sticky unico (titolo + filtri + Esporta solidali)", async () => {
     renderWithProvider(<CronologiaView />);
     await waitFor(() => expect(screen.getByTestId("log-table")).toBeInTheDocument());
+
+    // Il wrapper e l unico elemento sticky della vista.
+    const block = screen.getByTestId("log-sticky-header");
+    expect(block.className).toMatch(/sticky/);
+    expect(block.className).toMatch(/top-0/);
+
+    // Migrazione avvenuta: il titolo NON e piu sticky di suo. Senza questa
+    // asserzione il test resterebbe verde anche sull header precedente, cioe
+    // certificherebbe la sopravvivenza dello stato che deve provare estinto.
     const h1 = screen.getByRole("heading", { name: /storico assunzioni/i });
-    expect(h1.className).toMatch(/sticky/);
-    expect(h1.className).toMatch(/top-0/);
+    expect(h1.className).not.toMatch(/sticky/);
+    expect(h1.className).not.toMatch(/top-0/);
+
+    // Solidarieta per costruzione: titolo, filtri ed Esporta nello stesso
+    // blocco. contains() e DOM nativo: nessuna dipendenza da matcher jest-dom.
+    expect(block.contains(h1)).toBe(true);
+    expect(block.contains(screen.getByTestId("log-filter-from"))).toBe(true);
+    expect(block.contains(screen.getByTestId("log-filter-to"))).toBe(true);
+    expect(block.contains(screen.getByTestId("log-filter-farmaco"))).toBe(true);
+    expect(block.contains(screen.getByTestId("log-export-csv"))).toBe(true);
+
+    // Lezione B26 in prevenzione: zero margini esterni verticali sul wrapper,
+    // altrimenti il varco trasparente si riaprirebbe sopra o sotto il box.
+    expect(block.className).not.toMatch(/(^|\s)mt-/);
+    expect(block.className).not.toMatch(/(^|\s)mb-/);
   });
 
   it("T-LOG.4: renders 5-column table with all fixture entries (DESC sorted)", async () => {
