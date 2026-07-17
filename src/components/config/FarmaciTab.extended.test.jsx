@@ -1,24 +1,37 @@
 // ============================================================
-// FarmaciTab — CP8 v3.0.0 Step 2 extended branch tests.
+// FarmaciTab — ramo intervallo esteso. RISCRITTO INTEGRALE da P15-B
+// (par.22.198-octodecies, Q-SEPT-3=(A)): prova di accettazione del
+// code-step. SENTINEL_P15B_EXTENDED_TESTS
 // ============================================================
 //
-// Additive test file (separate from FarmaciTab.test.jsx) covering the
-// CP8 §6.183-185 layer:
-//   T1: edit-load 168h farmaco renders form as 7d 0h; user changes
-//       to 0d 12h; save invokes updateFarmaco with intervallo_ore=12.
-//   T2: form switches into extended (giorni*24+ore_residue > 24);
-//       dosi_giornaliere input becomes disabled with value '1'
-//       (UI-only auto-lock; orari array left untouched until save).
-//   T3: edit standard (intervallo 8h, dosi 2, 2 orari) → user pushes
-//       intervallo to 1d 6h (= 30h, extended) → click Salva → cascade
-//       ConfirmModal opens with copy mentioning trim → Conferma →
-//       updateFarmaco called with dosi_giornaliere=1 and orari len=1.
+// Cosa e cambiato rispetto alla versione CP8 §6.183-185 di questo file.
+// Prima: due input numerici liberi, `intervallo_giorni` + `intervallo_ore_
+// residue`, letti come ADDENDI (giorni*24 + ore). Si potevano digitare
+// combinazioni fuori dal dominio del modello -- "1 giorno e 6 ore" (30h,
+// non rappresentabile come cadenza a giorni civili) o 365 giorni (8760h,
+// oltre la colonna DECIMAL(4,1): B28).
+// Ora (s.6.255): due RAMI MUTUAMENTE ESCLUSIVI selezionati da
+// `intervallo_modo` ('ore' -> select a dominio chiuso; 'giorni' -> intero
+// 2..41). Il modo NON e persistito: si DERIVA da `intervallo_ore` al load
+// (P4), e i valori legacy non classificabili finiscono in QUARANTENA.
 //
-// Pattern: `actions: { ... }` override on renderWithProvider (per
-// renderHelpers.jsx 7d-1 + §6.94). `fireEvent.change` for number
-// inputs (uniform with CP5 data_fine-past test pattern). Modal scope
-// via `confirm-modal` testid; the 3 ConfirmModal mounted in
-// FarmaciTab are mutually exclusive on `open=true`.
+//   T1'  edit 168h -> ramo 'giorni' con Giorni=7; switch a 'ore' + 12
+//        -> updateFarmaco con intervallo_ore=12.
+//   T2'  48h -> l input dosi e sostituito dalla riga statica (P2 198-ter).
+//   T3'  cascade §6.185: 2 orari sopravvivono al chokepoint (che MAPPA le
+//        righe, non le trimma) -> Salva apre il ConfirmModal -> Conferma
+//        -> payload dosi=1, orari=1, intervallo_ore=48.
+//   Tq   quarantena: 30h non e ne un valore del select ne un multiplo di
+//        24 -> nessun campo, avviso, Salva bloccato anche a form dirty.
+//   Ts   lo switch di ramo azzera SEMPRE il campo che si lascia.
+//   Tt   fisso -> intervallo rientra pulito (modo 'ore', campi vuoti).
+//   Td   dominio del select: placeholder disabilitato + 8 opzioni.
+//   Tcs5 REGRESSION CS-5 (D3 + chokepoint azione 1). Vedi la nota nel test.
+//
+// Pattern invariati dalla versione precedente: `actions: { ... }` override
+// su renderWithProvider (renderHelpers.jsx 7d-1 + §6.94); `fireEvent.change`
+// per input/select; ConfirmModal via testid `confirm-modal` (i 3 montati in
+// FarmaciTab sono mutuamente esclusivi su open=true).
 // ============================================================
 
 import { describe, it, expect, vi } from 'vitest';
@@ -36,105 +49,203 @@ function buildProfiloAttivo() {
   };
 }
 
-describe('FarmaciTab — CP8 extended UI giorni+ore', () => {
-  // ----------------------------------------------------------
-  // T1 — edit-load split (168h → 7d 0h) + save (0d 12h → 12)
-  // ----------------------------------------------------------
+// Farmaco a intervallo, campi non pertinenti ai test tenuti costanti.
+function buildFarmaco(overrides) {
+  return {
+    id: 1, nome: 'Test', principio_attivo: null, funzione: null,
+    tipo_frequenza: 'intervallo', intervallo_ore: 8, intervallo_minimo_ore: null,
+    dosi_giornaliere: 1, relazione_pasto: 'indifferente',
+    dettaglio_pasto: null, note: null,
+    data_inizio: '2026-04-01', data_fine: null, attivo: 1,
+    ...overrides,
+  };
+}
 
-  it('(T1) edit farmaco intervallo_ore=168 → form mostra 7 giorni 0 ore; cambio a 0g 12h → updateFarmaco invocato con intervallo_ore=12', async () => {
+function buildOrari(farmacoId, n) {
+  return Array.from({ length: n }, (_, i) => ({
+    id: farmacoId * 10 + i + 1,
+    farmaco_id: farmacoId,
+    dose_numero: i + 1,
+    offset_minuti: i * 480,
+    ancora_riferimento: 'colazione',
+    descrizione_momento: null,
+  }));
+}
+
+// Apre il drawer in edit sul farmaco indicato.
+async function openEdit(user, id) {
+  await user.click(within(screen.getByTestId(`farmaco-card-${id}`)).getByRole('button'));
+  return screen.getByTestId('farmaco-drawer');
+}
+
+function renderEdit(farmaco, orari, actions = {}) {
+  return renderWithProvider(<FarmaciTab />, {
+    stateOverrides: {
+      farmaci: [farmaco],
+      orari,
+      profili: [buildProfiloAttivo()],
+    },
+    actions,
+  });
+}
+
+describe('FarmaciTab — P15-B ramo intervallo: derivazione e switch', () => {
+  // ----------------------------------------------------------
+  // T1' — 168h si carica come 7 giorni; switch a 'ore' e salvataggio.
+  // ----------------------------------------------------------
+  it("(T1') edit intervallo_ore=168 carica il ramo 'giorni' a 7; switch a 'ore' + 12 -> updateFarmaco con intervallo_ore=12", async () => {
     const user = userEvent.setup();
     const updateFarmaco = vi.fn().mockResolvedValue({ ok: true });
 
-    const farmaco = {
+    const farmaco = buildFarmaco({
       id: 99, nome: 'Metotrexato', principio_attivo: 'metotrexato',
-      funzione: 'Antireumatico',
-      tipo_frequenza: 'intervallo', intervallo_ore: 168, intervallo_minimo_ore: null,
-      dosi_giornaliere: 1, relazione_pasto: 'durante', dettaglio_pasto: null, note: null,
-      data_inizio: '2026-04-01', data_fine: null, attivo: 1,
-    };
-    const orario = {
-      id: 991, farmaco_id: 99, dose_numero: 1,
-      offset_minuti: 0, ancora_riferimento: 'colazione',
-      descrizione_momento: null,
-    };
-
-    renderWithProvider(<FarmaciTab />, {
-      stateOverrides: {
-        farmaci: [farmaco],
-        orari: [orario],
-        profili: [buildProfiloAttivo()],
-      },
-      actions: { updateFarmaco },
+      funzione: 'Antireumatico', intervallo_ore: 168, relazione_pasto: 'durante',
     });
+    renderEdit(farmaco, buildOrari(99, 1), { updateFarmaco });
 
-    // Open drawer in edit mode.
-    await user.click(
-      within(screen.getByTestId('farmaco-card-99')).getByRole('button')
-    );
-    const drawer = screen.getByTestId('farmaco-drawer');
-    expect(drawer).toBeInTheDocument();
+    const drawer = await openEdit(user, 99);
 
-    // Form pre-populated with split values: 7 days, 0 hours.
-    const giorniInput = within(drawer).getByLabelText('Giorni');
-    const oreInput = within(drawer).getByLabelText('Ore');
-    expect(giorniInput).toHaveValue(7);
-    expect(oreInput).toHaveValue(0);
+    // 168 = 7 * 24 -> cadenza a giorni civili: ramo 'giorni', select assente.
+    expect(within(drawer).getByLabelText('Giorni')).toHaveValue(7);
+    expect(within(drawer).queryByLabelText('Ore')).not.toBeInTheDocument();
 
-    // Change to 0 days, 12 hours (no longer extended; standard 12h).
-    fireEvent.change(giorniInput, { target: { value: '0' } });
-    fireEvent.change(oreInput, { target: { value: '12' } });
+    await user.click(within(drawer).getByLabelText('Ogni tot ore'));
 
-    // Save.
+    // Lo switch azzera il campo lasciato: il select nasce sul placeholder.
+    const selectOre = within(drawer).getByLabelText('Ore');
+    expect(selectOre).toHaveValue('');
+    expect(within(drawer).queryByLabelText('Giorni')).not.toBeInTheDocument();
+
+    fireEvent.change(selectOre, { target: { value: '12' } });
     await user.click(within(drawer).getByRole('button', { name: /^salva$/i }));
 
-    await waitFor(() => expect(updateFarmaco).toHaveBeenCalled());
+    await waitFor(() => expect(updateFarmaco).toHaveBeenCalledTimes(1));
     const [calledId, farmacoData] = updateFarmaco.mock.calls[0];
     expect(calledId).toBe(99);
     expect(farmacoData.intervallo_ore).toBe(12);
   });
 
   // ----------------------------------------------------------
-  // T2 — extended boundary auto-locks dosi_giornaliere
+  // Ts — lo switch di ramo azzera il campo inattivo.
   // ----------------------------------------------------------
-
-  it('(T2) quando il totale supera 24h, dosi_giornaliere viene sostituita da riga statica a 1 (P2 par.22.198-ter)', async () => {
+  it('(Ts) lo switch di modalita azzera sempre il campo del ramo che si lascia', async () => {
     const user = userEvent.setup();
+    const farmaco = buildFarmaco({ id: 51, nome: 'Switch', intervallo_ore: 8 });
+    renderEdit(farmaco, buildOrari(51, 1));
 
-    const farmaco = {
-      id: 50, nome: 'Standard 8h', principio_attivo: null, funzione: null,
-      tipo_frequenza: 'intervallo', intervallo_ore: 8, intervallo_minimo_ore: null,
-      dosi_giornaliere: 3, relazione_pasto: 'indifferente',
-      dettaglio_pasto: null, note: null,
-      data_inizio: '2026-04-01', data_fine: null, attivo: 1,
-    };
-    const orari = [
-      { id: 501, farmaco_id: 50, dose_numero: 1, offset_minuti: 0,   ancora_riferimento: 'colazione', descrizione_momento: null },
-      { id: 502, farmaco_id: 50, dose_numero: 2, offset_minuti: 480, ancora_riferimento: 'colazione', descrizione_momento: null },
-      { id: 503, farmaco_id: 50, dose_numero: 3, offset_minuti: 960, ancora_riferimento: 'colazione', descrizione_momento: null },
-    ];
+    const drawer = await openEdit(user, 51);
+    expect(within(drawer).getByLabelText('Ore')).toHaveValue('8');
 
+    await user.click(within(drawer).getByLabelText('Ogni tot giorni'));
+    const giorni = within(drawer).getByLabelText('Giorni');
+    expect(giorni).toHaveValue(null);
+    fireEvent.change(giorni, { target: { value: '3' } });
+    expect(within(drawer).getByLabelText('Giorni')).toHaveValue(3);
+
+    // Tornando a 'ore' il valore 8 NON riaffiora: era stato azzerato al
+    // primo switch. Un campo inattivo che conserva il valore e un addendo
+    // fantasma in attesa di rientrare nel conto.
+    await user.click(within(drawer).getByLabelText('Ogni tot ore'));
+    expect(within(drawer).getByLabelText('Ore')).toHaveValue('');
+
+    // Simmetrico: il 3 dei giorni e stato azzerato a sua volta.
+    await user.click(within(drawer).getByLabelText('Ogni tot giorni'));
+    expect(within(drawer).getByLabelText('Giorni')).toHaveValue(null);
+  });
+
+  // ----------------------------------------------------------
+  // Tt — rientro pulito da fisso a intervallo.
+  // ----------------------------------------------------------
+  it("(Tt) tipo fisso azzera campi e modo; il rientro in intervallo riparte da 'ore' pulito", async () => {
+    const user = userEvent.setup();
+    const farmaco = buildFarmaco({ id: 52, nome: 'Rientro', intervallo_ore: 168 });
+    renderEdit(farmaco, buildOrari(52, 1));
+
+    const drawer = await openEdit(user, 52);
+    expect(within(drawer).getByLabelText('Giorni')).toHaveValue(7);
+
+    await user.click(within(drawer).getByLabelText('Fisso'));
+    expect(within(drawer).queryByLabelText('Giorni')).not.toBeInTheDocument();
+    expect(within(drawer).queryByLabelText('Ore')).not.toBeInTheDocument();
+
+    await user.click(within(drawer).getByLabelText('A intervallo'));
+
+    // Il 7 non riaffiora e il modo e tornato al default: nessuno stato
+    // extended sopravvive al passaggio da fisso.
+    expect(within(drawer).getByLabelText('Ore')).toHaveValue('');
+    expect(within(drawer).queryByLabelText('Giorni')).not.toBeInTheDocument();
+    expect(within(drawer).queryByTestId('intervallo-quarantena')).not.toBeInTheDocument();
+  });
+
+  // ----------------------------------------------------------
+  // Td — dominio chiuso del select.
+  // ----------------------------------------------------------
+  it('(Td) il ramo ore e un select a dominio chiuso: placeholder disabilitato + 8 opzioni', async () => {
+    const user = userEvent.setup();
     renderWithProvider(<FarmaciTab />, {
-      stateOverrides: {
-        farmaci: [farmaco],
-        orari,
-        profili: [buildProfiloAttivo()],
-      },
+      stateOverrides: { farmaci: [], profili: [buildProfiloAttivo()] },
     });
 
-    await user.click(
-      within(screen.getByTestId('farmaco-card-50')).getByRole('button')
-    );
+    await user.click(screen.getByRole('button', { name: /nuovo farmaco/i }));
     const drawer = screen.getByTestId('farmaco-drawer');
+    await user.click(within(drawer).getByLabelText('A intervallo'));
 
-    // Pre-condition: form loaded standard, dosi_giornaliere editable with value 3.
+    const select = within(drawer).getByLabelText('Ore');
+    const options = within(select).getAllByRole('option');
+    expect(options).toHaveLength(9);
+    expect(options.map((o) => o.value)).toEqual(
+      ['', '1', '2', '3', '4', '6', '8', '12', '24'],
+    );
+    expect(options[0]).toBeDisabled();
+  });
+});
+
+describe('FarmaciTab — P15-B quarantena dei valori legacy', () => {
+  // ----------------------------------------------------------
+  // Tq — 30h non e rappresentabile: nessun campo, avviso, Salva bloccato.
+  // ----------------------------------------------------------
+  it('(Tq) intervallo_ore=30 (ne opzione del select ne multiplo di 24) va in quarantena e blocca Salva', async () => {
+    const user = userEvent.setup();
+    const addFarmaco = vi.fn();
+    const updateFarmaco = vi.fn();
+
+    const farmaco = buildFarmaco({ id: 30, nome: 'Legacy 30h', intervallo_ore: 30 });
+    renderEdit(farmaco, buildOrari(30, 1), { addFarmaco, updateFarmaco });
+
+    const drawer = await openEdit(user, 30);
+
+    expect(within(drawer).getByTestId('intervallo-quarantena')).toBeInTheDocument();
+    expect(within(drawer).queryByLabelText('Ore')).not.toBeInTheDocument();
+    expect(within(drawer).queryByLabelText('Giorni')).not.toBeInTheDocument();
+
+    // Il form viene sporcato: cosi il Salva disabilitato prova la quarantena
+    // e non il semplice "nulla da salvare".
+    await user.type(within(drawer).getByLabelText(/^Nome/), 'X');
+    expect(within(drawer).getByRole('button', { name: /^salva$/i })).toBeDisabled();
+    expect(updateFarmaco).not.toHaveBeenCalled();
+  });
+});
+
+describe('FarmaciTab — P15-B confine extended (§6.184-185)', () => {
+  // ----------------------------------------------------------
+  // T2' — oltre le 24h l input dosi lascia il posto alla riga statica.
+  // ----------------------------------------------------------
+  it("(T2') Giorni=2 (48h) sostituisce l input dosi con la riga statica a 1", async () => {
+    const user = userEvent.setup();
+    const farmaco = buildFarmaco({
+      id: 50, nome: 'Standard 8h', intervallo_ore: 8, dosi_giornaliere: 3,
+    });
+    renderEdit(farmaco, buildOrari(50, 3));
+
+    const drawer = await openEdit(user, 50);
+
     const dosiInput = within(drawer).getByTestId('farmaco-dosi-giornaliere-input');
     expect(dosiInput).toHaveValue(3);
     expect(dosiInput).not.toBeDisabled();
 
-    // Push intervallo into extended territory: 2 days, 0 hours = 48h.
+    await user.click(within(drawer).getByLabelText('Ogni tot giorni'));
     fireEvent.change(within(drawer).getByLabelText('Giorni'), { target: { value: '2' } });
 
-    // P2 par.22.198-ter: extended sostituisce l'input con una riga statica.
     expect(within(drawer).queryByTestId('farmaco-dosi-giornaliere-input')).not.toBeInTheDocument();
     const statica = within(drawer).getByTestId('farmaco-dosi-statica');
     expect(statica).toHaveTextContent('Dosi giornaliere: 1');
@@ -142,61 +253,104 @@ describe('FarmaciTab — CP8 extended UI giorni+ore', () => {
   });
 
   // ----------------------------------------------------------
-  // T3 — cascade ConfirmModal trims orari extra at save-time
+  // T3' — cascade al salvataggio quando restano righe in eccesso.
   // ----------------------------------------------------------
-
-  it('(T3) standard dosi=2 → user porta intervallo a 1g 6h (extended) → Salva apre cascade ConfirmModal → Conferma chiama updateFarmaco con dosi=1 e orari length=1', async () => {
+  it("(T3') 2 orari + passaggio a 48h -> Salva apre il cascade -> Conferma salva dosi=1, orari=1, intervallo_ore=48", async () => {
     const user = userEvent.setup();
     const updateFarmaco = vi.fn().mockResolvedValue({ ok: true });
 
-    const farmaco = {
-      id: 70, nome: 'Test cascade', principio_attivo: null, funzione: null,
-      tipo_frequenza: 'intervallo', intervallo_ore: 8, intervallo_minimo_ore: null,
-      dosi_giornaliere: 2, relazione_pasto: 'indifferente',
-      dettaglio_pasto: null, note: null,
-      data_inizio: '2026-04-01', data_fine: null, attivo: 1,
-    };
-    const orari = [
-      { id: 701, farmaco_id: 70, dose_numero: 1, offset_minuti: 0,   ancora_riferimento: 'colazione', descrizione_momento: null },
-      { id: 702, farmaco_id: 70, dose_numero: 2, offset_minuti: 480, ancora_riferimento: 'colazione', descrizione_momento: null },
-    ];
-
-    renderWithProvider(<FarmaciTab />, {
-      stateOverrides: {
-        farmaci: [farmaco],
-        orari,
-        profili: [buildProfiloAttivo()],
-      },
-      actions: { updateFarmaco },
+    const farmaco = buildFarmaco({
+      id: 70, nome: 'Test cascade', intervallo_ore: 8, dosi_giornaliere: 2,
     });
+    renderEdit(farmaco, buildOrari(70, 2), { updateFarmaco });
 
-    await user.click(
-      within(screen.getByTestId('farmaco-card-70')).getByRole('button')
-    );
-    const drawer = screen.getByTestId('farmaco-drawer');
+    const drawer = await openEdit(user, 70);
 
-    // Push to 1 day 6 hours = 30h extended.
-    fireEvent.change(within(drawer).getByLabelText('Giorni'), { target: { value: '1' } });
-    fireEvent.change(within(drawer).getByLabelText('Ore'), { target: { value: '6' } });
+    // Le 2 righe restano 2: il chokepoint le RIMAPPA ad 'assoluto', non le
+    // trimma (il trim vive al save-time, §6.185).
+    await user.click(within(drawer).getByLabelText('Ogni tot giorni'));
+    fireEvent.change(within(drawer).getByLabelText('Giorni'), { target: { value: '2' } });
 
-    // Save → cascade ConfirmModal opens (updateFarmaco not yet called).
     await user.click(within(drawer).getByRole('button', { name: /^salva$/i }));
     expect(updateFarmaco).not.toHaveBeenCalled();
 
-    // ConfirmModal scoped via testid (mutually exclusive open).
     const confirm = await screen.findByTestId('confirm-modal');
     expect(within(confirm).getByText('Intervallo oltre le 24 ore')).toBeInTheDocument();
     expect(within(confirm).getByText(/Verrà rimosso 1 orario aggiuntivo/i)).toBeInTheDocument();
 
-    // Conferma: cascade closes, updateFarmaco called with trimmed payload.
     await user.click(within(confirm).getByRole('button', { name: /^conferma$/i }));
 
-    await waitFor(() => expect(updateFarmaco).toHaveBeenCalled());
+    await waitFor(() => expect(updateFarmaco).toHaveBeenCalledTimes(1));
     const [calledId, farmacoData, orariPayload] = updateFarmaco.mock.calls[0];
     expect(calledId).toBe(70);
     expect(farmacoData.dosi_giornaliere).toBe(1);
-    expect(farmacoData.intervallo_ore).toBe(30);
+    expect(farmacoData.intervallo_ore).toBe(48);
     expect(orariPayload).toHaveLength(1);
     expect(orariPayload[0].dose_numero).toBe(1);
+  });
+
+  // ----------------------------------------------------------
+  // Tcs5 — REGRESSION CS-5.
+  // ----------------------------------------------------------
+  //
+  // Il difetto (misurato su d6665e6, par.22.198-septdecies). Ridurre le dosi
+  // riempie `removedOrari` e accende un banner con il pulsante "Ripristina".
+  // Il flip a extended NON svuotava quello stato e il banner non e gated su
+  // extended: il pulsante restava li. Premendolo, `undoTrim` riscriveva
+  // `dosi_giornaliere` FUORI dal lock -- mentre la UI mostrava gia la riga
+  // statica "Dosi giornaliere: 1" -- e si sarebbe persistito un farmaco
+  // extended con dosi_giornaliere=3 e un solo orario.
+  //
+  // Il fix (D3) agisce A MONTE: il chokepoint svuota `removedOrari` sul
+  // fronte di salita. Il banner sparisce, "Ripristina" con lui, e la catena
+  // non ha piu un ingresso -- senza toccare i gate del banner (Q4 / C-1).
+  //
+  // Percio questo test NON attraversa il cascade: dopo il trim le righe sono
+  // gia 1, e `handleSalva` apre il ConfirmModal solo con orari.length > 1.
+  // L assenza del modal e essa stessa un asserto. Il cascade e coperto da T3'.
+  //
+  // Attribuzione (verbale par.22.198-octodecies): Tcs5 prova D3 e l azione (1)
+  // del chokepoint. D2 (hardening di normalizeForm) NON e esercitata qui -- il
+  // form arriva al Salva gia con dosi='1' -- e post-fix non e raggiungibile
+  // da UI: resta una cintura difensiva, non una regola coperta da test.
+  it('(Tcs5) il flip a extended estingue la catena undoTrim: banner e Ripristina spariscono, il payload resta a dosi=1', async () => {
+    const user = userEvent.setup();
+    const updateFarmaco = vi.fn().mockResolvedValue({ ok: true });
+
+    const farmaco = buildFarmaco({
+      id: 60, nome: 'Regression CS-5', intervallo_ore: 8, dosi_giornaliere: 3,
+    });
+    renderEdit(farmaco, buildOrari(60, 3), { updateFarmaco });
+
+    const drawer = await openEdit(user, 60);
+
+    // 3 -> 1: due righe finiscono in `removedOrari`, il banner si accende.
+    fireEvent.change(
+      within(drawer).getByTestId('farmaco-dosi-giornaliere-input'),
+      { target: { value: '1' } },
+    );
+    expect(within(drawer).getByText('2 orari rimossi')).toBeInTheDocument();
+    expect(within(drawer).getByRole('button', { name: /^ripristina$/i })).toBeInTheDocument();
+
+    // Fronte di salita verso extended.
+    await user.click(within(drawer).getByLabelText('Ogni tot giorni'));
+    fireEvent.change(within(drawer).getByLabelText('Giorni'), { target: { value: '2' } });
+
+    // D3: lo stato e svuotato, quindi non c e piu nulla da ripristinare.
+    expect(within(drawer).queryByText('2 orari rimossi')).not.toBeInTheDocument();
+    expect(within(drawer).queryByRole('button', { name: /^ripristina$/i })).not.toBeInTheDocument();
+    expect(within(drawer).getByTestId('farmaco-dosi-statica')).toHaveTextContent('Dosi giornaliere: 1');
+
+    await user.click(within(drawer).getByRole('button', { name: /^salva$/i }));
+
+    // Una sola riga: nessun cascade da intercettare.
+    expect(screen.queryByTestId('confirm-modal')).not.toBeInTheDocument();
+
+    await waitFor(() => expect(updateFarmaco).toHaveBeenCalledTimes(1));
+    const [calledId, farmacoData, orariPayload] = updateFarmaco.mock.calls[0];
+    expect(calledId).toBe(60);
+    expect(farmacoData.dosi_giornaliere).toBe(1);
+    expect(farmacoData.intervallo_ore).toBe(48);
+    expect(orariPayload).toHaveLength(1);
   });
 });

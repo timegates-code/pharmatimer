@@ -30,7 +30,17 @@ function hhmmToMinutes(hhmm) {
   return h * 60 + m;
 }
 
-export default function OrarioRow({ index, orario, oraPreview, onChange, theme: t }) {
+export default function OrarioRow({
+  index,
+  orario,
+  oraPreview,
+  onChange,
+  theme: t,
+  // P15-B (P6, DEV-2 s.6.255): in intervallo esteso l ancora-pasto e
+  // ammessa ma l offset e fisso a 0 e non editabile. Default false: i
+  // consumer che non lo passano conservano il comportamento odierno.
+  offsetLocked = false,
+}) {
   const ancoraId = `orario-ancora-${index}`;
   const offsetId = `orario-offset-${index}`;
   const descrId  = `orario-descr-${index}`;
@@ -89,6 +99,7 @@ export default function OrarioRow({ index, orario, oraPreview, onChange, theme: 
         {/* P3 par.22.198-ter: con ancora=assoluto l'offset (minuti da
             mezzanotte) si edita come input time — elderly-friendly.
             SENTINEL_PAR_22_198_TER_P3_ROW */}
+        {/* P15-B (P6): il ternario e a 3 vie. SENTINEL_P15B_OFFSET_LOCKED */}
         {orario.ancora_riferimento === 'assoluto' ? (
           <div className="flex flex-col gap-1">
             <label
@@ -110,6 +121,20 @@ export default function OrarioRow({ index, orario, oraPreview, onChange, theme: 
                 borderColor: t.tapBd,
               }}
             />
+          </div>
+        ) : offsetLocked ? (
+          <div className="flex flex-col justify-end gap-1">
+            <p
+              data-testid={`orario-offset-locked-${index}`}
+              className="rounded px-2 py-1.5 border text-xs"
+              style={{
+                background: t.modalBg,
+                color: t.textSecondary,
+                borderColor: t.tapBd,
+              }}
+            >
+              Offset fisso a 0 per intervalli oltre le 24 ore.
+            </p>
           </div>
         ) : (
           <div className="flex flex-col gap-1">

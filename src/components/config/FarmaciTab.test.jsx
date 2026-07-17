@@ -134,7 +134,11 @@ describe('FarmaciTab — CP3 drawer + form', () => {
 
     expect(screen.queryByLabelText('Giorni')).not.toBeInTheDocument();
     await user.click(screen.getByLabelText('A intervallo'));
-    expect(screen.getByLabelText('Giorni')).toBeInTheDocument();
+    // P15-B (P7): il ramo di default e 'ore' -> compare il select Ore, non
+    // l input Giorni (che appare solo scegliendo "Ogni tot giorni").
+    // SENTINEL_P15B_TEST_TOGGLE
+    expect(screen.getByLabelText('Ore')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Giorni')).not.toBeInTheDocument();
     await user.click(screen.getByLabelText('Fisso'));
     expect(screen.queryByLabelText('Giorni')).not.toBeInTheDocument();
   });

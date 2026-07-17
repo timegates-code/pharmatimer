@@ -27,10 +27,17 @@
 //
 // CP8 v3.0.0 Step 2 layer (§6.183-185):
 //   - §6.183: form-state internal split intervallo into
-//     `intervallo_giorni` (0..365 step 1) + `intervallo_ore_residue`
-//     (0..23.5 step 0.5). DB column `intervallo_ore` rebuilt at
-//     normalize-time as giorni*24 + ore_residue. Single source of
+//     `intervallo_giorni` + `intervallo_ore_residue`. DB column
+//     `intervallo_ore` rebuilt at normalize-time. Single source of
 //     truth on disk preserved (§22.42 EXT.3' Q1=b).
+//     P15-B (s.6.255) RESHAPED the pair: the old domains (giorni
+//     0..365 step 1, ore_residue 0..23.5 step 0.5) and the ADDITIVE
+//     reading giorni*24 + ore_residue are GONE. The two fields are now
+//     MUTUALLY EXCLUSIVE branches selected by `intervallo_modo` -- see
+//     the semantic note on EMPTY_FORM below. Q-SEPT-4: the historical
+//     name `intervallo_ore_residue` is kept although it no longer holds
+//     a "residue"; rename deferred to MOD-1/(R).
+//     SENTINEL_P15B_HEAD_NOTE
 //   - §6.184: `dosi_giornaliere` auto-locked to '1' (readonly) when
 //     form is extended (giorni*24 + ore_residue > 24 strict).
 //     Re-editable when user reverts under threshold (§22.42 EXT.2).
@@ -81,6 +88,11 @@ import { useUnsavedChanges } from '../../hooks/useUnsavedChanges.js';
 import { computeOraPrevista } from '../../domain/planBuilder.js';
 import { formatPrimaDose } from '../../utils/copy.js';
 import { computeTInizio, firstDoseAfterTInizio } from '../../domain/startBoundary.js';
+// P15-B (P4): PRIMO consumer esterno di `isCivilDayStride`. La regola
+// "rappresentabile come giorni civili" vive in extendedStride.js (P15-A) e
+// si RIUSA: riscriverla qui sarebbe LC-64. Nuovo arco UI -> domain; il
+// grafo resta ACICLICO (extendedStride importa solo utils/time).
+import { isCivilDayStride } from '../../domain/extendedStride.js';
 import { TOLLERANZA_MIN } from '../../domain/constants.js';
 import ConfirmModal from '../shared/ConfirmModal.jsx';
 import UnsavedChangesModal from './UnsavedChangesModal.jsx';
@@ -106,9 +118,27 @@ const RELAZIONE_PASTO_OPTIONS = [
 
 // CP8 §6.183: extended threshold strict > 24h (§22.42 EXT.3' Q2=a).
 const EXTENDED_THRESHOLD_HOURS = 24;
-const GIORNI_MAX = 365;
-const ORE_RESIDUE_MAX = 23.5;
-const ORE_RESIDUE_STEP = 0.5;
+// P15-B (P5): 41 = massimo giorni civili rappresentabili su
+// `intervallo_ore` DECIMAL(4,1): 41*24 = 984 <= 999.9. Chiude B28
+// strutturalmente (il dominio non puo piu eccedere la colonna).
+// Le due costanti del vecchio dominio ore-residue (max 23.5, passo 0.5)
+// sono MORTE: il ramo 'ore' e ora un select a dominio chiuso, non piu un
+// input numerico libero. SENTINEL_P15B_COSTANTI
+const GIORNI_MAX = 41;
+
+// P15-B (P5): dominio chiuso del ramo 'ore' (Q-P15-1-A', label neutre).
+// Sede unica: consumato dal <select> del widget e dalla derivazione al
+// load (P4). SENTINEL_P15B_ORE_OPTIONS
+const ORE_OPTIONS = [
+  { value: '1',  label: 'Ogni 1 ora' },
+  { value: '2',  label: 'Ogni 2 ore' },
+  { value: '3',  label: 'Ogni 3 ore' },
+  { value: '4',  label: 'Ogni 4 ore' },
+  { value: '6',  label: 'Ogni 6 ore' },
+  { value: '8',  label: 'Ogni 8 ore' },
+  { value: '12', label: 'Ogni 12 ore' },
+  { value: '24', label: 'Ogni 24 ore' },
+];
 
 function makeDefaultOrario(doseNumero) {
   return {
@@ -123,10 +153,11 @@ function makeDefaultOrario(doseNumero) {
 // SENTINEL_PAR_22_198_TER_P3
 const SPECIFICI_PRIMA_DOSE_MIN = 8 * 60; // default prima dose 08:00
 
+// P15-B (P2): sede 1 di 4 del totale, instradata sul lettore unico
+// `intervalloOreAttivo`. La somma a mano g*24+h e MORTA: i due campi non
+// sono piu addendi. SENTINEL_P15B_STEPMINUTES
 function intervalloStepMinutes(form) {
-  const g = Number(form.intervallo_giorni) || 0;
-  const h = Number(form.intervallo_ore_residue) || 0;
-  const tot = g * 24 + h;
+  const tot = intervalloOreAttivo(form);
   if (!(tot > 0) || tot > EXTENDED_THRESHOLD_HOURS) return null;
   return Math.round(tot * 60);
 }
@@ -146,8 +177,20 @@ const EMPTY_FORM = {
   principio_attivo: '',
   funzione: '',
   tipo_frequenza: '',
-  // CP8 §6.183: split intervallo in giorni + ore residue (form-only).
-  // Persisted in DB as giorni*24 + ore_residue via normalizeForm.
+  // P15-B (P1): `intervallo_modo` seleziona quale dei due campi sottostanti
+  // e ATTIVO. I due NON sono addendi: sono RAMI MUTUAMENTE ESCLUSIVI.
+  //   'ore'    -> `intervallo_ore_residue` = intervallo in ORE (dominio
+  //               chiuso ORE_OPTIONS);       `intervallo_giorni`      = ''
+  //   'giorni' -> `intervallo_giorni`      = intervallo in GIORNI civili
+  //               (2..GIORNI_MAX);           `intervallo_ore_residue` = ''
+  //   ''       -> QUARANTENA: valore DB non rappresentabile nel nuovo
+  //               dominio. Salva bloccato finche l utente non sceglie.
+  // INVARIANTE DI SEDE (Q-SEPT-1): '' e scrivibile SOLO dalla quarantena
+  // nel ramo edit di `initial`. Ogni altro scrittore scrive 'ore'/'giorni'.
+  // Form-only: il modo NON e persistito, si DERIVA da `intervallo_ore` (P4).
+  // Q-SEPT-4: `intervallo_ore_residue` non contiene piu un "residuo"; il
+  // rename e deferito a MOD-1/(R). SENTINEL_P15B_EMPTY_FORM_MODO
+  intervallo_modo: 'ore',
   intervallo_giorni: '',
   intervallo_ore_residue: '',
   intervallo_minimo_ore: '',
@@ -182,22 +225,11 @@ function tomorrowIso() {
 // Intervallo conversion helpers (CP8 §6.183).
 // ------------------------------------------------------------
 
-/**
- * Split a DB `intervallo_ore` (number, hours, may be decimal) into
- * { giorni, ore_residue } for form display. Inverse of
- * `joinIntervalloHours`.
- *
- * Round-trip safe: join(split(x)) === x for any non-negative finite x.
- */
-function splitIntervalloHours(totalHours) {
-  if (totalHours == null || !Number.isFinite(totalHours)) {
-    return { giorni: 0, ore_residue: 0 };
-  }
-  const giorni = Math.floor(totalHours / 24);
-  // Round residue to 1 decimal to absorb FP error from subtraction.
-  const ore_residue = Math.round((totalHours - giorni * 24) * 10) / 10;
-  return { giorni, ore_residue };
-}
+// P15-B (CS-9): lo splitter DB -> form e MORTO, con il suo jsdoc. Il suo
+// unico consumer era il ramo edit di `initial`, ora sostituito dalla
+// derivazione P4: il valore DB non si "spezza" piu in giorni+ore, si
+// CLASSIFICA in uno dei due rami. `joinIntervalloHours` SOPRAVVIVE: il suo
+// consumer e il lettore unico qui sotto.
 
 function joinIntervalloHours(giorni, oreResidue) {
   const g = Number.isFinite(giorni) ? giorni : 0;
@@ -207,18 +239,44 @@ function joinIntervalloHours(giorni, oreResidue) {
 }
 
 /**
- * Whether the current form represents an extended-frequency drug.
- * Strict: intervallo_ore_total > 24, tipo_frequenza === 'intervallo'.
+ * P15-B (P2) -- LETTORE UNICO dell intervallo attivo, in ore.
  *
- * Both intervallo_giorni and intervallo_ore_residue may be empty
- * strings while user is typing — treated as 0 for the threshold check.
+ * Sede unica che sappia QUALE dei due campi form vale: `intervallo_modo`
+ * seleziona il ramo, l altro campo e ignorato (e per invariante ''). Le
+ * QUATTRO sedi che calcolavano il totale a mano (stepMinutes,
+ * isExtendedFromForm, normalizeForm, intervalloOreTotal) sono instradate
+ * qui o sulla stessa regola: quattro implementazioni della stessa lettura
+ * erano una divergenza in attesa di accadere.
+ *
+ * Contratto: coercizione '' -> 0 come oggi. Ogni consumer CONSERVA il
+ * proprio guard odierno (difensivo).
+ *
+ * SENTINEL_P15B_ORE_ATTIVO
+ */
+function intervalloOreAttivo(form) {
+  const raw = form.intervallo_modo === 'giorni'
+    ? form.intervallo_giorni
+    : form.intervallo_ore_residue;
+  const n = raw === '' ? 0 : Number(raw);
+  return form.intervallo_modo === 'giorni'
+    ? joinIntervalloHours(n, 0)
+    : joinIntervalloHours(0, n);
+}
+
+/**
+ * Whether the current form represents an extended-frequency drug.
+ * Strict: intervallo attivo > 24, tipo_frequenza === 'intervallo'.
+ *
+ * P15-B (P2): sede 2 di 4, instradata sul lettore unico. Il campo del ramo
+ * inattivo NON entra piu nel conto. In quarantena (`intervallo_modo === ''`)
+ * il lettore ricade sul ramo 'ore', vuoto -> 0 -> non extended: corretto,
+ * perche un valore non classificabile non deve pilotare la UI.
+ * SENTINEL_P15B_ISEXTENDED
  */
 function isExtendedFromForm(form) {
   if (form.tipo_frequenza !== 'intervallo') return false;
-  const g = form.intervallo_giorni === '' ? 0 : Number(form.intervallo_giorni);
-  const o = form.intervallo_ore_residue === '' ? 0 : Number(form.intervallo_ore_residue);
-  if (!Number.isFinite(g) || !Number.isFinite(o)) return false;
-  return joinIntervalloHours(g, o) > EXTENDED_THRESHOLD_HOURS;
+  const tot = intervalloOreAttivo(form);
+  return Number.isFinite(tot) && tot > EXTENDED_THRESHOLD_HOURS;
 }
 
 /**
@@ -575,17 +633,48 @@ function FarmacoDrawer({
         const dosi = filtered.length > 0
           ? String(filtered.length)
           : (f.dosi_giornaliere != null ? String(f.dosi_giornaliere) : '1');
-        // CP8 §6.183: split intervallo_ore (DB) into giorni + ore_residue (form).
-        const split = f.intervallo_ore != null
-          ? splitIntervalloHours(Number(f.intervallo_ore))
-          : { giorni: 0, ore_residue: 0 };
-        const intervalloGiorniStr = f.intervallo_ore != null ? String(split.giorni) : '';
-        const intervalloOreResStr = f.intervallo_ore != null ? String(split.ore_residue) : '';
+        // P15-B (P4): DERIVAZIONE del ramo di inserimento dal valore DB.
+        // `intervallo_modo` non e persistito: `intervallo_ore` e la sola
+        // fonte. L ordine delle regole e VINCOLANTE.
+        // SENTINEL_P15B_INITIAL_DERIVA
+        let intervalloModoInit = 'ore';
+        let intervalloGiorniStr = '';
+        let intervalloOreResStr = '';
+        if (f.tipo_frequenza === 'intervallo') {
+          const oreDb = f.intervallo_ore != null ? Number(f.intervallo_ore) : null;
+          if (oreDb == null) {
+            // Nessun valore: campi vuoti, Salva bloccato da
+            // hasIntervalloOreRequired.
+          } else if (ORE_OPTIONS.some((opt) => Number(opt.value) === oreDb)) {
+            intervalloOreResStr = String(oreDb);
+          } else if (
+            oreDb > EXTENDED_THRESHOLD_HOURS &&
+            isCivilDayStride(oreDb) &&
+            Number.isInteger(oreDb / 24) &&
+            oreDb / 24 >= 2 &&
+            oreDb / 24 <= GIORNI_MAX
+          ) {
+            intervalloModoInit = 'giorni';
+            intervalloGiorniStr = String(oreDb / 24);
+          } else {
+            // QUARANTENA: valore fuori dal dominio rappresentabile (es. 30h,
+            // 26.4h, 1000h). UNICA sede autorizzata a scrivere '' nel modo
+            // (INVARIANTE DI SEDE, Q-SEPT-1). Il ramo ms di P15-A preserva
+            // il RUNTIME corretto di questi farmaci: la quarantena agisce al
+            // primo edit, non sul piano.
+            intervalloModoInit = '';
+          }
+        }
+        // NB (gate CS-6): con tipo_frequenza != 'intervallo' i campi restano
+        // vuoti e il valore DB e IGNORATO, coerente con normalizeForm che
+        // gia scrive null. La sentinella non dipende dalla popolazione.
         return {
           nome: f.nome ?? '',
           principio_attivo: f.principio_attivo ?? '',
           funzione: f.funzione ?? '',
           tipo_frequenza: f.tipo_frequenza ?? '',
+          // P15-B (P4). SENTINEL_P15B_INITIAL_RETURN
+          intervallo_modo: intervalloModoInit,
           intervallo_giorni: intervalloGiorniStr,
           intervallo_ore_residue: intervalloOreResStr,
           intervallo_minimo_ore: f.intervallo_minimo_ore != null ? String(f.intervallo_minimo_ore) : '',
@@ -612,32 +701,69 @@ function FarmacoDrawer({
   // and to gate the cascade ConfirmModal at save-time.
   const isExtendedForm = useMemo(() => isExtendedFromForm(form), [form]);
 
+  /**
+   * P15-B (P3) -- CHOKEPOINT UNICO della transizione verso extended.
+   *
+   * Scatta SOLO sul FRONTE DI SALITA (was=false, is=true). Sul fronte
+   * discendente NESSUNA azione: comportamento odierno preservato (le righe
+   * restano, l utente e libero di rimaneggiarle).
+   *
+   * Prima di P15-B la transizione era gestita in UNA sede (il blocco dentro
+   * `updateField`) mentre `updateTipoFrequenza` scriveva gli stessi campi
+   * SENZA passare di li (CS-2): due scrittori, un solo presidio. Ora ogni
+   * scrittore dei campi intervallo passa da qui.
+   *
+   * SENTINEL_P15B_CHOKEPOINT
+   */
+  function applyExtendedTransition(f, next) {
+    const was = isExtendedFromForm(f);
+    const is = isExtendedFromForm(next);
+    if (was || !is) return next;
+    const out = { ...next };
+    // (1) CP8 §6.184: dose unica per ciclo.
+    out.dosi_giornaliere = '1';
+    // (2) CP9 §6.187 EXT.4: il ramo extended non ha recupero gap. Cleanup
+    // per non lasciare valori fantasma che normalizeForm rileggerebbe se
+    // l utente tornasse sotto soglia.
+    out.custom_minimo = false;
+    out.intervallo_minimo_ore = '';
+    // (3) FIX CS-5 (D3, bug-fix di coerenza par.6.184/6.185, senza s.6.NN).
+    // Catena misurata: dosi 3->1 riempie `removedOrari` e accende il banner;
+    // il flip a extended NON lo svuotava e il banner non e gated su extended;
+    // `undoTrim` riscriveva allora dosi_giornaliere FUORI dal lock, mentre la
+    // UI mostra gia la riga statica -> si sarebbe persistito extended con
+    // dosi_giornaliere=3 e 1 orario. Svuotare lo stato AL FRONTE estingue la
+    // catena a monte, senza toccare i gate del banner (Q4/C-1).
+    setRemovedOrari([]);
+    // (4) Q-P15-5-A1: in extended le righe nascono TUTTE 'assoluto' @480 --
+    // ora CONTRATTO esplicito e non piu effetto accidentale di `null ?? 0`
+    // in switchOrariMode (CS-3). Poi liberamente editabili; l ancora-pasto
+    // resta ammessa con offset forzato a 0 (DEV-2, s.6.255).
+    out.orari = f.orari.map((o, i) => makeAssolutoOrario(
+      o.dose_numero ?? i + 1,
+      SPECIFICI_PRIMA_DOSE_MIN,
+      o.descrizione_momento || '',
+    ));
+    return out;
+  }
+
   function updateField(name, value) {
     setForm((f) => {
       let next = { ...f, [name]: value };
 
-      // CP8 §6.184: when a change pushes form into extended state,
-      // auto-lock dosi_giornaliere to '1' (UI-only; orari trim
-      // deferred to cascade ConfirmModal at save-time, §6.185).
-      // Consider both intervallo edits AND tipo_frequenza change
-      // since both can flip the extended boundary.
+      // P15-B (P3): ogni scrittura dei campi intervallo passa dal chokepoint.
+      // Il disgiunto `name === 'tipo_frequenza'` e MORTO (CS-1): i 3 radio
+      // chiamano `updateTipoFrequenza`, mai `updateField` -- censimento
+      // esaustivo dei 12 call-site, par.22.198-septdecies S6a/S6b/S10c. Il
+      // commento che descriveva quell ingresso descriveva un ingresso
+      // inesistente (LC-68). `intervallo_modo` e difensivo: la UI usa
+      // `updateIntervalloModo`. SENTINEL_P15B_UPDATEFIELD_CHOKE
       if (
         name === 'intervallo_giorni' ||
         name === 'intervallo_ore_residue' ||
-        name === 'tipo_frequenza'
+        name === 'intervallo_modo'
       ) {
-        if (isExtendedFromForm(next)) {
-          if (next.dosi_giornaliere !== '1') {
-            next = { ...next, dosi_giornaliere: '1' };
-          }
-          // CP9 §6.187 EXT.4: extended branch has no gap recovery, so
-          // custom_minimo / intervallo_minimo_ore fields are hidden in UI.
-          // Cleanup form state to avoid ghost values that could leak via
-          // normalizeForm when user toggles back to standard later.
-          if (next.custom_minimo || next.intervallo_minimo_ore !== '') {
-            next = { ...next, custom_minimo: false, intervallo_minimo_ore: '' };
-          }
-        }
+        next = applyExtendedTransition(f, next);
       }
 
       // Sync orari rows when dosi_giornaliere changes (AMB-8c.C).
@@ -682,9 +808,21 @@ function FarmacoDrawer({
 
   function updateOrarioField(index, name, value) {
     setForm((f) => {
-      const orari = f.orari.map((o, i) => (
-        i === index ? { ...o, [name]: value } : o
-      ));
+      // P15-B (P6) -- INVARIANTE DI STATO DEV-2 (s.6.255): in extended
+      // l ancora-pasto e ammessa, ma `offset_minuti` e forzato a 0. Un
+      // offset rispetto a un ancora-pasto in una cadenza a giorni civili
+      // non ha lettura univoca (l ancora ricorre ogni giorno, la dose no).
+      // Difensivo: la UI gia sostituisce l input con un testo statico (P6).
+      // SENTINEL_P15B_ORARIO_INVARIANTE
+      const ext = isExtendedFromForm(f);
+      const orari = f.orari.map((o, i) => {
+        if (i !== index) return o;
+        const row = { ...o, [name]: value };
+        if (ext && row.ancora_riferimento !== 'assoluto') {
+          row.offset_minuti = 0;
+        }
+        return row;
+      });
       return { ...f, orari };
     });
     setDirty(true);
@@ -696,7 +834,14 @@ function FarmacoDrawer({
   // (nessun ricalcolo retroattivo). SENTINEL_PAR_22_198_TER_P3_SWITCH
   function switchOrariMode(mode) {
     setForm((f) => {
-      const step = intervalloStepMinutes(f) ?? 0;
+      // P15-B (P5) -- CONTRATTO (CS-3): in extended il passo e 0, quindi le
+      // righe prefillate nascono TUTTE 'assoluto' @480 BY DESIGN. Prima di
+      // P15-B lo stesso esito era un ACCIDENTE: `intervalloStepMinutes`
+      // ritorna null sopra soglia e il `?? 0` lo assorbiva in silenzio,
+      // senza che alcun commento lo dichiarasse. Q4=(A) rende il radio
+      // "Modalita orari" raggiungibile anche in extended: l esito qui e
+      // ora enunciato, non dedotto. SENTINEL_P15B_SWITCH_CONTRATTO
+      const step = isExtendedFromForm(f) ? 0 : (intervalloStepMinutes(f) ?? 0);
       const orari = f.orari.map((o, i) => (
         mode === 'specifici'
           ? makeAssolutoOrario(
@@ -828,12 +973,41 @@ function FarmacoDrawer({
     setDirty(true);
   }
 
+  /**
+   * P15-B (P5) -- switch del ramo di inserimento.
+   *
+   * AZZERA sempre il campo del ramo che si lascia: l invariante e che il
+   * campo inattivo valga ''. Passa dal chokepoint P3 per uniformita -- qui
+   * il fronte di salita e impossibile (il campo del ramo entrante e vuoto,
+   * quindi il totale attivo e 0), ma non ci sono scrittori dei campi
+   * intervallo fuori dal chokepoint. Costo zero, una sede in meno da
+   * ricordare. SENTINEL_P15B_UPDATE_MODO
+   */
+  function updateIntervalloModo(value) {
+    setForm((f) => {
+      let next = { ...f, intervallo_modo: value };
+      if (value === 'ore') {
+        next = { ...next, intervallo_giorni: '' };
+      } else if (value === 'giorni') {
+        next = { ...next, intervallo_ore_residue: '' };
+      }
+      return applyExtendedTransition(f, next);
+    });
+    setDirty(true);
+  }
+
   function updateTipoFrequenza(value) {
     setForm((f) => {
       const clearsIntervallo = value === 'fisso' || value === 'fisso_date';
+      // P15-B (CS-2 + Q-SEPT-1): questa era la SECONDA sede di scrittura dei
+      // campi intervallo e non passava dal presidio della transizione. Ora vi
+      // passa (in coda) e resetta anche il modo a 'ore' su clearsIntervallo:
+      // il rientro in 'intervallo' avviene sempre da uno stato pulito, mai da
+      // '' (la quarantena e riservata al load). SENTINEL_P15B_TIPOFREQ_RESET
       const next = {
         ...f,
         tipo_frequenza: value,
+        intervallo_modo: clearsIntervallo ? 'ore' : f.intervallo_modo,
         intervallo_giorni: clearsIntervallo ? '' : f.intervallo_giorni,
         intervallo_ore_residue: clearsIntervallo ? '' : f.intervallo_ore_residue,
         custom_minimo: clearsIntervallo ? false : f.custom_minimo,
@@ -843,10 +1017,10 @@ function FarmacoDrawer({
           ? [makeEmptyOccorrenza()]
           : f.occorrenze,
       };
-      // If switching to fisso, also unlock dosi (no longer extended).
-      // If switching to intervallo with previously-set extended values,
-      // re-evaluate isExtended on next render (covered by useMemo).
-      return next;
+      // P15-B (P3): chiamante 3 del chokepoint. Il rientro in 'intervallo'
+      // con valori extended gia impostati e un FRONTE DI SALITA a tutti gli
+      // effetti e va presidiato qui, non delegato a un useMemo di render.
+      return applyExtendedTransition(f, next);
     });
     setDirty(true);
   }
@@ -891,13 +1065,20 @@ function FarmacoDrawer({
     if (tipo === 'fisso_date') {
       return normalizeFissoDate(f);
     }
-    // CP8 §6.183: rebuild DB column intervallo_ore from form split.
+    // P15-B (P2): sede 3 di 4. La colonna DB `intervallo_ore` si ricostruisce
+    // dal RAMO ATTIVO, non dalla somma dei due campi. Con modo '' (quarantena)
+    // resta null: Salva e comunque bloccato da hasIntervalloOreRequired.
+    // SENTINEL_P15B_NORMALIZE_RAMO
     let intervalloOre = null;
     if (tipo === 'intervallo') {
-      const g = numOrNull(f.intervallo_giorni);
-      const o = numOrNull(f.intervallo_ore_residue);
-      if (g != null || o != null) {
-        intervalloOre = joinIntervalloHours(g ?? 0, o ?? 0);
+      const raw = f.intervallo_modo === 'giorni'
+        ? f.intervallo_giorni
+        : f.intervallo_ore_residue;
+      const n = numOrNull(raw);
+      if (n != null) {
+        intervalloOre = f.intervallo_modo === 'giorni'
+          ? joinIntervalloHours(n, 0)
+          : joinIntervalloHours(0, n);
         if (intervalloOre === 0) intervalloOre = null;
       }
     }
@@ -910,7 +1091,15 @@ function FarmacoDrawer({
       intervallo_minimo_ore: (tipo === 'intervallo' && f.custom_minimo)
         ? numOrNull(f.intervallo_minimo_ore)
         : null,
-      dosi_giornaliere: numOrNull(f.dosi_giornaliere) ?? 1,
+      // P15-B (D2): cintura sotto CS-5. Il `?? 1` cattura solo null: un
+      // '3' scritto fuori dal lock passava indenne fino al payload. Qui la
+      // regola di dominio (extended => 1 dose) e applicata al confine di
+      // uscita, indipendentemente da come lo stato ci sia arrivato. Pattern
+      // s.6.205: un invariante applicato a un solo percorso non e un
+      // invariante. SENTINEL_P15B_D2
+      dosi_giornaliere: isExtendedFromForm(f)
+        ? 1
+        : (numOrNull(f.dosi_giornaliere) ?? 1),
       relazione_pasto: f.relazione_pasto,
       dettaglio_pasto: trimOrNull(f.dettaglio_pasto),
       note: trimOrNull(f.note),
@@ -1107,30 +1296,29 @@ function FarmacoDrawer({
   // --- Validation -----------------------------------------------
 
   // CP8 §6.183: intervallo total > 0 required when tipo='intervallo'.
+  // P15-B (P2): sede 4 di 4, instradata sul lettore unico. Il guard finite
+  // e CONSERVATO (difensivo). SENTINEL_P15B_ORETOTAL
   const intervalloOreTotal = useMemo(() => {
     if (form.tipo_frequenza !== 'intervallo') return 0;
-    const g = form.intervallo_giorni === '' ? 0 : Number(form.intervallo_giorni);
-    const o = form.intervallo_ore_residue === '' ? 0 : Number(form.intervallo_ore_residue);
-    if (!Number.isFinite(g) || !Number.isFinite(o)) return 0;
-    return joinIntervalloHours(g, o);
-  }, [form.tipo_frequenza, form.intervallo_giorni, form.intervallo_ore_residue]);
+    const tot = intervalloOreAttivo(form);
+    if (!Number.isFinite(tot)) return 0;
+    return tot;
+  }, [
+    form.tipo_frequenza,
+    form.intervallo_modo,
+    form.intervallo_giorni,
+    form.intervallo_ore_residue,
+  ]);
 
   const hasIntervalloOreRequired =
     form.tipo_frequenza !== 'intervallo' || intervalloOreTotal > 0;
 
-  const intervalloGiorniValid = useMemo(() => {
-    if (form.intervallo_giorni === '') return true;
-    const g = Number(form.intervallo_giorni);
-    return Number.isFinite(g) && g >= 0 && g <= GIORNI_MAX && Number.isInteger(g);
-  }, [form.intervallo_giorni]);
-
-  const intervalloOreResidueValid = useMemo(() => {
-    if (form.intervallo_ore_residue === '') return true;
-    const o = Number(form.intervallo_ore_residue);
-    if (!Number.isFinite(o) || o < 0 || o > ORE_RESIDUE_MAX) return false;
-    // Step 0.5: value*2 must be integer.
-    return Number.isInteger(o * 2);
-  }, [form.intervallo_ore_residue]);
+  // P15-B (P5): i due validatori del vecchio widget sono MORTI. Erano
+  // PERMISSIVI (ammettevano '' come valido) e servivano a colorare il bordo
+  // di due input numerici liberi. Il ramo 'ore' e ora un select a dominio
+  // chiuso -- non c e nulla da validare -- e il dominio di Giorni e
+  // diventato un REQUISITO DI SALVA, non un avviso estetico: vedi D1 in
+  // `allRequiredFilled`.
 
   const dataInizioValid = mode === 'edit' || form.data_inizio >= todayIso();
 
@@ -1215,8 +1403,17 @@ function FarmacoDrawer({
         form.data_inizio !== '' &&
         dataInizioValid &&
         hasIntervalloOreRequired &&
-        intervalloGiorniValid &&
-        intervalloOreResidueValid
+        // P15-B (D1): completamento del VINCOLO CONGIUNTO INTERO di Q2=(P).
+        // Il dominio di Giorni (intero, 2..GIORNI_MAX) e ora CONDIZIONE DI
+        // SALVA, non piu un bordo rosso su un campo comunque salvabile.
+        // Sotto modo 'ore' il conjunct e vacuo: il select non consente
+        // valori fuori dominio. SENTINEL_P15B_D1
+        (form.intervallo_modo !== 'giorni' || (
+          form.intervallo_giorni !== '' &&
+          Number.isInteger(Number(form.intervallo_giorni)) &&
+          Number(form.intervallo_giorni) >= 2 &&
+          Number(form.intervallo_giorni) <= GIORNI_MAX
+        ))
       );
 
   const duplicateMatch = useMemo(() => {
@@ -1468,12 +1665,75 @@ function FarmacoDrawer({
             SENTINEL_PAR_22_198_TER_P1_GATE */}
         {tipoSelected && (<>
 
+        {/* P15-B (P5): due rami MUTUAMENTE ESCLUSIVI al posto della coppia
+            giorni+ore additiva. Prima si potevano digitare "1 giorno e 6
+            ore" (30h, non rappresentabile come cadenza civile) o 365
+            giorni (8760h, fuori dalla colonna DECIMAL(4,1) -> B28). Ora il
+            dominio della UI COINCIDE con il dominio del modello.
+            SENTINEL_P15B_WIDGET */}
         {isIntervallo && (
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-2">
             <span className="text-sm font-medium" style={{ color: t.textPrimary }}>
               Intervallo
             </span>
-            <div className="grid grid-cols-2 gap-2">
+
+            <fieldset className="flex flex-col gap-1">
+              <legend className="text-xs font-medium" style={{ color: t.textSecondary }}>
+                Modalita intervallo
+              </legend>
+              <div className="flex gap-4 py-1">
+                <label className="flex items-center gap-2 text-sm" style={{ color: t.textPrimary }}>
+                  <input
+                    type="radio"
+                    name="intervallo_modo"
+                    value="ore"
+                    checked={form.intervallo_modo === 'ore'}
+                    onChange={() => updateIntervalloModo('ore')}
+                  />
+                  Ogni tot ore
+                </label>
+                <label className="flex items-center gap-2 text-sm" style={{ color: t.textPrimary }}>
+                  <input
+                    type="radio"
+                    name="intervallo_modo"
+                    value="giorni"
+                    checked={form.intervallo_modo === 'giorni'}
+                    onChange={() => updateIntervalloModo('giorni')}
+                  />
+                  Ogni tot giorni
+                </label>
+              </div>
+            </fieldset>
+
+            {form.intervallo_modo === 'ore' && (
+              <div className="flex flex-col gap-1">
+                <label
+                  htmlFor="farmaco-intervallo-ore-residue"
+                  className="text-xs font-medium"
+                  style={{ color: t.textSecondary }}
+                >
+                  Ore
+                </label>
+                <select
+                  id="farmaco-intervallo-ore-residue"
+                  value={form.intervallo_ore_residue}
+                  onChange={(e) => updateField('intervallo_ore_residue', e.target.value)}
+                  className="rounded px-3 py-2 border"
+                  style={{
+                    background: t.modalBg,
+                    color: t.textPrimary,
+                    borderColor: t.tapBd,
+                  }}
+                >
+                  <option value="" disabled>-- scegli --</option>
+                  {ORE_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {form.intervallo_modo === 'giorni' && (
               <div className="flex flex-col gap-1">
                 <label
                   htmlFor="farmaco-intervallo-giorni"
@@ -1486,7 +1746,7 @@ function FarmacoDrawer({
                   id="farmaco-intervallo-giorni"
                   type="number"
                   inputMode="numeric"
-                  min={0}
+                  min={2}
                   max={GIORNI_MAX}
                   step={1}
                   value={form.intervallo_giorni}
@@ -1495,41 +1755,27 @@ function FarmacoDrawer({
                   style={{
                     background: t.modalBg,
                     color: t.textPrimary,
-                    borderColor: intervalloGiorniValid ? t.tapBd : t.red,
+                    borderColor: t.tapBd,
                   }}
                 />
+                <p className="text-xs" style={{ color: t.textSecondary }}>
+                  {'Per prendere il farmaco ogni giorno scegli "Fisso".'}
+                </p>
               </div>
-              <div className="flex flex-col gap-1">
-                <label
-                  htmlFor="farmaco-intervallo-ore-residue"
-                  className="text-xs font-medium"
-                  style={{ color: t.textSecondary }}
-                >
-                  Ore
-                </label>
-                <input
-                  id="farmaco-intervallo-ore-residue"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  max={ORE_RESIDUE_MAX}
-                  step={ORE_RESIDUE_STEP}
-                  value={form.intervallo_ore_residue}
-                  onChange={(e) => updateField('intervallo_ore_residue', e.target.value)}
-                  className="rounded px-3 py-2 border tabular-nums"
-                  style={{
-                    background: t.modalBg,
-                    color: t.textPrimary,
-                    borderColor: intervalloOreResidueValid ? t.tapBd : t.red,
-                  }}
-                />
-              </div>
-            </div>
-            {(!intervalloGiorniValid || !intervalloOreResidueValid) && (
-              <p className="text-xs" role="status" style={{ color: t.red }}>
-                {!intervalloGiorniValid
-                  ? `Giorni: numero intero tra 0 e ${GIORNI_MAX}`
-                  : `Ore: tra 0 e ${ORE_RESIDUE_MAX}, passo 0.5`}
+            )}
+
+            {form.intervallo_modo === '' && (
+              <p
+                data-testid="intervallo-quarantena"
+                role="status"
+                className="text-xs rounded p-2"
+                style={{
+                  background: `${t.orange}22`,
+                  color: t.textPrimary,
+                  border: `1px solid ${t.orange}`,
+                }}
+              >
+                {'Frequenza non valida per la nuova versione: scegli "Ogni tot ore" o "Ogni tot giorni" e reinserisci il valore.'}
               </p>
             )}
           </div>
@@ -1863,9 +2109,15 @@ function FarmacoDrawer({
         {/* --- Sezione 3: Orari di assunzione ------------------- */}
         <SectionHeading theme={t}>Orari di assunzione</SectionHeading>
 
-        {/* P3 par.22.198-ter: modalita' orari (solo intervallo <=24h, D3).
-            SENTINEL_PAR_22_198_TER_P3_UI */}
-        {isIntervallo && !isExtendedForm && (
+        {/* P3 par.22.198-ter: modalita' orari (D3).
+            SENTINEL_PAR_22_198_TER_P3_UI
+            P15-B (Q4=A): il gate `!isExtendedForm` e CADUTO. Il default
+            derivato (`orariMode`) resta invariato e in extended le righe
+            nascono gia tutte 'assoluto' (P3 azione 4), quindi il radio
+            mostra 'Orari specifici' e il ritorno ad 'Ai pasti' e una
+            scelta legittima: ripara una scopertura, non estende il
+            dominio. SENTINEL_P15B_RADIO_GATE */}
+        {isIntervallo && (
           <fieldset className="flex flex-col gap-1">
             <legend className="text-sm font-medium" style={{ color: t.textPrimary }}>
               Modalità orari
@@ -1940,6 +2192,8 @@ function FarmacoDrawer({
               oraPreview={orariPreview[i]}
               onChange={(name, value) => updateOrarioField(i, name, value)}
               theme={t}
+              /* P15-B (P6, DEV-2 s.6.255). SENTINEL_P15B_ORARIOROW_PROP */
+              offsetLocked={isExtendedForm}
             />
           ))}
         </div>
