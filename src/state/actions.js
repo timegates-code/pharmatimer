@@ -548,6 +548,10 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     dispatch({ type: 'DISMISS_TOAST' });
   }
 
+  function clearError() {
+    dispatch({ type: 'CLEAR_ERROR' });
+  }
+
   // ----------------------------------------------------------
   // Action bag
   // ----------------------------------------------------------
@@ -1133,6 +1137,7 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     // CP5 v3.0.0 Step 1 (§6.176-177) — Toast Mit-C dispatchers.
     showToast,
     dismissToast,
+    clearError,
     // CP6 v3.0.0 Step 1 (§6.180-181) — "Ricomincia da capo" reset.
     resetAllData,
   };

@@ -11,18 +11,21 @@
 // Mocking strategy: vi.mock overrides the AppContext + useTheme stubs at
 // module-resolution time. mockState is a let-binding that the mocked
 // useAppContext closes over — reassigning before each test changes what
-// the component reads at render time. mockDispatch is a vi.fn cleared in
-// beforeEach.
+// the component reads at render time. mockActions is a stable module-level
+// object exposing clearError (a vi.fn cleared in beforeEach); its identity
+// is stable across renders so the effect dep [error, actions] does not
+// re-arm the timer spuriously.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import ErrorSurface from './ErrorSurface.jsx';
 
-const mockDispatch = vi.fn();
+const mockClearError = vi.fn();
+const mockActions = { clearError: mockClearError };
 let mockState = { error: null };
 
 vi.mock('../../state/AppContext.jsx', () => ({
-  useAppContext: () => ({ state: mockState, dispatch: mockDispatch }),
+  useAppContext: () => ({ state: mockState, actions: mockActions }),
 }));
 
 vi.mock('../../hooks/useTheme.js', () => ({
@@ -46,7 +49,7 @@ vi.mock('../../hooks/useTheme.js', () => ({
 describe('ErrorSurface', () => {
   beforeEach(() => {
     mockState = { error: null };
-    mockDispatch.mockClear();
+    mockClearError.mockClear();
     vi.useFakeTimers();
   });
 
@@ -71,18 +74,17 @@ describe('ErrorSurface', () => {
     expect(screen.queryByTestId('error-surface-banner')).toBeNull();
     expect(screen.getByText('Attenzione')).toBeInTheDocument();
 
-    // Just before 4s — no dispatch yet
+    // Just before 4s — clearError not yet called
     act(() => {
       vi.advanceTimersByTime(3999);
     });
-    expect(mockDispatch).not.toHaveBeenCalled();
+    expect(mockClearError).not.toHaveBeenCalled();
 
-    // Cross 4s threshold — CLEAR_ERROR dispatched
+    // Cross 4s threshold — actions.clearError() invoked
     act(() => {
       vi.advanceTimersByTime(1);
     });
-    expect(mockDispatch).toHaveBeenCalledWith({ type: 'CLEAR_ERROR' });
-    expect(mockDispatch).toHaveBeenCalledTimes(1);
+    expect(mockClearError).toHaveBeenCalledTimes(1);
   });
 
   it('renders toast for severity error and auto-dismisses after 4s', () => {
@@ -96,7 +98,7 @@ describe('ErrorSurface', () => {
     act(() => {
       vi.advanceTimersByTime(4000);
     });
-    expect(mockDispatch).toHaveBeenCalledWith({ type: 'CLEAR_ERROR' });
+    expect(mockClearError).toHaveBeenCalledTimes(1);
   });
 
   it('renders banner for severity critical without auto-dismiss and shows code', () => {
@@ -120,17 +122,17 @@ describe('ErrorSurface', () => {
     act(() => {
       vi.advanceTimersByTime(10_000);
     });
-    expect(mockDispatch).not.toHaveBeenCalled();
+    expect(mockClearError).not.toHaveBeenCalled();
   });
 
-  it('dispatches CLEAR_ERROR when the close button is clicked', () => {
+  it('invokes actions.clearError() when the close button is clicked', () => {
     mockState = {
       error: { severity: 'warning', message: 'X', kind: 'repo' },
     };
     render(<ErrorSurface />);
 
     fireEvent.click(screen.getByTestId('error-surface-dismiss'));
-    expect(mockDispatch).toHaveBeenCalledWith({ type: 'CLEAR_ERROR' });
+    expect(mockClearError).toHaveBeenCalledTimes(1);
   });
 
   it('defaults to toast (severity error) when severity field is missing — backward-compat with CP1a legacy shape', () => {

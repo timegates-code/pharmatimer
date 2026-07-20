@@ -55,7 +55,7 @@ const CODE_COPY = Object.freeze({
 });
 
 export default function ErrorSurface() {
-  const { state, dispatch } = useAppContext();
+  const { state, actions } = useAppContext();
   const { tokens: t } = useTheme();
   const error = state.error;
 
@@ -67,11 +67,11 @@ export default function ErrorSurface() {
     if (severity === 'critical') return undefined;
 
     const timer = setTimeout(() => {
-      dispatch({ type: 'CLEAR_ERROR' });
+      actions.clearError();
     }, TOAST_DISMISS_MS);
 
     return () => clearTimeout(timer);
-  }, [error, dispatch]);
+  }, [error, actions]);
 
   if (!error) return null;
 
@@ -80,7 +80,7 @@ export default function ErrorSurface() {
   // par.198-bis P8: map-first copy resolution (known code -> Italian copy).
   const message = CODE_COPY[error.code] ?? error.message ?? CODE_COPY.GENERIC;
 
-  const handleDismiss = () => dispatch({ type: 'CLEAR_ERROR' });
+  const handleDismiss = () => actions.clearError();
 
   // Severity → token mapping
   let bg;
