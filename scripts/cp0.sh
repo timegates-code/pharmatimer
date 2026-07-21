@@ -74,6 +74,24 @@ ck PROD_UUID "$PROD_UUID" "$(sed -n '1p' /tmp/cp0_prod.txt)"
 ck UTENTI "$UTENTI" "$(sed -n '2p' /tmp/cp0_prod.txt)"
 ck PERMESSI "$PERMESSI" "$(sed -n '3p' /tmp/cp0_prod.txt)"
 echo "INFO  prod no-stop (verbalizzare): farmaci_attivi=$(sed -n '4p' /tmp/cp0_prod.txt) orari_base=$(sed -n '5p' /tmp/cp0_prod.txt) log_assunzioni=$(sed -n '6p' /tmp/cp0_prod.txt) data_specifica=$(sed -n '7p' /tmp/cp0_prod.txt) farmaci_fisso_date=$(sed -n '8p' /tmp/cp0_prod.txt)"
+# --- avanzamento (INFO no-stop, calcolato da session_state.env; SENTINEL_CP0_AVANZAMENTO) ---
+ENV_SS="scripts/session_state.env"
+if [ -f "$ENV_SS" ]; then
+  . "$ENV_SS"
+  BSUM=$(( ${BLOCCO_TOT_MIN:-0} + ${BLOCCO_TOT_MAX:-0} ))
+  RSUM=$(( ${FONDOSCALA_MIN:-0} + ${FONDOSCALA_MAX:-0} ))
+  if [ "$BSUM" -gt 0 ] && [ "$RSUM" -gt 0 ]; then
+    BPCT=$(( (${BLOCCO_FATTI:-0} * 200 + BSUM / 2) / BSUM ))
+    RPCT=$(( (${CONSUNTIVO:-0} * 200 + RSUM / 2) / RSUM ))
+    BMID="$((BSUM / 2))"; [ $((BSUM % 2)) -ne 0 ] && BMID="${BMID},5"
+    RMID="$((RSUM / 2))"; [ $((RSUM % 2)) -ne 0 ] && RMID="${RMID},5"
+    BLAB="Blocco (${BLOCCO:-?}) [range ${BLOCCO_TOT_MIN:-0}-${BLOCCO_TOT_MAX:-0}]:"
+    RLAB="Roadmap (v3.2.0) [range ${FONDOSCALA_MIN:-0}-${FONDOSCALA_MAX:-0}]:"
+    echo 'INFO  === STATI DI AVANZAMENTO ==='
+    printf 'INFO  %-36s %3s / ~%-6s = ~%d%%\n' "$BLAB" "${BLOCCO_FATTI:-0}" "$BMID" "$BPCT"
+    printf 'INFO  %-36s %3s / ~%-6s = ~%d%%\n' "$RLAB" "${CONSUNTIVO:-0}" "$RMID" "$RPCT"
+  fi
+fi
 if [ "$FAIL" -eq 0 ]; then
   echo "CP0 VERDETTO: GREEN ($N sonde)"
   exit 0
