@@ -1,5 +1,6 @@
 import { LocalRepository } from "./LocalRepository.js";
 import { ApiRepository } from "./ApiRepository.js";
+import { SyncRepository } from "./SyncRepository.js";
 
 // ============================================================
 // Repository factory (Fase 3 F3-S5-alpha MOD N+5.I par.11.N-S3).
@@ -44,9 +45,18 @@ function _shouldUseApiRepo() {
 
 export function getRepository() {
   if (!_instance) {
-    _instance = shouldUseApiRepo()
-      ? new ApiRepository()
-      : new LocalRepository();
+    // SENTINEL_PAR_22_198_QUINVICIES_FACTORY_WIRE -- CS-3 (Spec 14.4):
+    // on the API path, wrap ApiRepository with the SyncRepository read-
+    // guard. The shared LocalRepository is both the ApiRepository
+    // delegate (profili/impostazioni) and the SyncRepository mirror
+    // target; `db` is a module singleton so all local ops hit one IDB.
+    if (shouldUseApiRepo()) {
+      const local = new LocalRepository();
+      const api = new ApiRepository(local);
+      _instance = new SyncRepository(api, local);
+    } else {
+      _instance = new LocalRepository();
+    }
   }
   return _instance;
 }

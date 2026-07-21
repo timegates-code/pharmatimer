@@ -26,8 +26,13 @@ describe('repository factory toggle (par.22.90 sub-AMB O + EMP-1)', () => {
     localStorage.setItem('pharmatimer.useApiRepo', '1');
     const { getRepository } = await import('./index.js');
     const { ApiRepository } = await import('./ApiRepository.js');
+    const { SyncRepository } = await import('./SyncRepository.js');
     const repo = getRepository();
-    expect(repo).toBeInstanceOf(ApiRepository);
+    // SENTINEL_PAR_22_198_SEXVICIES_INDEX_TEST_FLAG -- CS-3: il factory
+    // restituisce il guardiano SyncRepository che avvolge ApiRepository
+    // sul ramo API (flag localStorage). Intento originale preservato.
+    expect(repo).toBeInstanceOf(SyncRepository);
+    expect(repo._api).toBeInstanceOf(ApiRepository);
   });
 
   it('singleton: two calls to getRepository return the same instance (lazy memoized)', async () => {
@@ -42,7 +47,11 @@ describe('repository factory toggle (par.22.90 sub-AMB O + EMP-1)', () => {
     vi.stubEnv('VITE_USE_API', '1');
     const { getRepository } = await import('./index.js');
     const { ApiRepository } = await import('./ApiRepository.js');
+    const { SyncRepository } = await import('./SyncRepository.js');
     const repo = getRepository();
-    expect(repo).toBeInstanceOf(ApiRepository);
+    // SENTINEL_PAR_22_198_SEXVICIES_INDEX_TEST_ENV -- CS-3: idem, ramo
+    // env VITE_USE_API. Intento originale (repo API cablata) preservato.
+    expect(repo).toBeInstanceOf(SyncRepository);
+    expect(repo._api).toBeInstanceOf(ApiRepository);
   });
 });

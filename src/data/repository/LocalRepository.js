@@ -442,4 +442,91 @@ export class LocalRepository {
       return db.transaction(mode, tables, fn);
     }, "TRANSACTION_ABORT");
   }
+
+  // ==========================================================
+  // Mirror write-path (CS-3, Spec 14.4)
+  // SENTINEL_PAR_22_198_QUINVICIES_MIRROR_*
+  // ==========================================================
+  // Populate the local read-mirror from a fresh server snapshot.
+  // Called by SyncRepository AFTER a successful server read, inside a
+  // rw Dexie transaction. Reconciliation is soft-delete only (never
+  // hard-delete), preserving clinical history (M2/M3, metro 14.0).
+
+  async mirrorFarmaci(server) {
+    // SENTINEL_PAR_22_198_QUINVICIES_MIRROR_FARMACI
+    // Server returns only active meds (backend WHERE attivo=TRUE): any
+    // local row absent from `server` is a soft-deleted med -> attivo=0,
+    // NEVER hard-delete (preserves log history + name for Cronologia).
+    const list = Array.isArray(server) ? server : [];
+    return this._wrap(
+      () =>
+        db.transaction("rw", db.farmaci, async () => {
+          const serverIds = new Set(list.map((f) => f.id));
+          for (const f of list) {
+            await db.farmaci.put({ ...f, attivo: f.attivo === 0 ? 0 : 1 });
+          }
+          const locals = await db.farmaci.toArray();
+          for (const loc of locals) {
+            if (!serverIds.has(loc.id) && loc.attivo !== 0) {
+              await db.farmaci.update(loc.id, { attivo: 0 });
+            }
+          }
+        }),
+      "TRANSACTION_ABORT"
+    );
+  }
+
+  async mirrorOrari(server) {
+    // SENTINEL_PAR_22_198_QUINVICIES_MIRROR_ORARI
+    // Full replace: the server publishes the authoritative orari view
+    // (Q3=A). Orari of inactive meds are clinically inert.
+    const list = Array.isArray(server) ? server : [];
+    return this._wrap(
+      () =>
+        db.transaction("rw", db.orari_base, async () => {
+          await db.orari_base.clear();
+          if (list.length > 0) {
+            await db.orari_base.bulkPut(list);
+          }
+        }),
+      "TRANSACTION_ABORT"
+    );
+  }
+
+  async mirrorLogWindow(server, dataDa, dataA) {
+    // SENTINEL_PAR_22_198_QUINVICIES_MIRROR_LOGWINDOW
+    // Windowed replace restricted to active meds (Q3=A). The server
+    // response carries ONLY logs of active meds (fan-out over GET
+    // /api/farmaci, WHERE attivo=TRUE), so the farmaco_id set present
+    // in `server` == the active set for this window. Inside
+    // [dataDa,dataA] we delete only rows whose farmaco_id is in that
+    // set, then bulkPut the server rows. Out-of-window rows and
+    // in-window rows of inactive meds stay INTACT (M2/M3).
+    //
+    // PINNED INVARIANT: the server never hard-deletes log rows (all 5
+    // log verbs are INSERT/UPDATE only). If a server DELETE verb is
+    // ever added, revisit this reconciliation -- the companion vitest
+    // (LocalRepository.mirror.test.js) documents and guards it.
+    const list = Array.isArray(server) ? server : [];
+    return this._wrap(
+      () =>
+        db.transaction("rw", db.log_assunzioni, async () => {
+          const serverFarmIds = new Set(list.map((r) => r.farmaco_id));
+          const inWindow = await db.log_assunzioni
+            .where("data")
+            .between(dataDa, dataA, true, true)
+            .toArray();
+          const toDelete = inWindow
+            .filter((r) => serverFarmIds.has(r.farmaco_id))
+            .map((r) => r.id);
+          if (toDelete.length > 0) {
+            await db.log_assunzioni.bulkDelete(toDelete);
+          }
+          if (list.length > 0) {
+            await db.log_assunzioni.bulkPut(list);
+          }
+        }),
+      "TRANSACTION_ABORT"
+    );
+  }
 }
