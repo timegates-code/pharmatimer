@@ -75,6 +75,7 @@ class LogAssunzioneCreatePresa(BaseModel):
     recupero_minuti: int = 0
     note: Optional[str] = Field(default=None, max_length=200)
     ricalcolo_dose_successiva: Optional[RicalcoloDoseSuccessivaPayload] = None
+    client_op_id: Optional[str] = Field(default=None, max_length=36)
 
 
 class LogAssunzioneResponse(BaseModel):
@@ -102,6 +103,17 @@ class LogAssunzioneResponse(BaseModel):
     )
 
 
+class LogAssunzioneVerboResponse(LogAssunzioneResponse):
+    """Verb-endpoint response = full row + dedup flag (Spec sez. 14.6).
+
+    dedup=True only on a first-gesture dedupe hit (client_op_id already applied
+    to this row): the row is returned unchanged, the transition NOT re-applied.
+    dedup=False on the normal path. GET list stays on LogAssunzioneResponse.
+    """
+
+    dedup: bool = False
+
+
 # F3-S3-beta CP1 idempotency_marker v01
 # 5 NEW Pydantic models for state transitions endpoints under
 # /api/farmaci/{farmaco_id}/log/{saltata|sospesa|undo|recupero}.
@@ -112,6 +124,7 @@ class LogAssunzioneSlotPayload(BaseModel):
 
     data: date
     dose_numero: int = Field(..., ge=1)
+    client_op_id: Optional[str] = Field(default=None, max_length=36)
 
 
 class LogAssunzioneCreateSaltata(LogAssunzioneSlotPayload):

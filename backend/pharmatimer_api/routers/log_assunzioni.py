@@ -17,7 +17,7 @@ deferred F3-S3beta (par.11.D-S3 F3-S3.F split ratified).
 """
 from datetime import date, datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from mysql.connector.pooling import PooledMySQLConnection
 
 from pharmatimer_api.db.dependencies import CurrentUser, get_current_user, get_db
@@ -29,6 +29,7 @@ from pharmatimer_api.models.log_assunzione import (
     LogAssunzioneRecuperoPayload,
     LogAssunzioneResponse,
     LogAssunzioneUndoPayload,
+    LogAssunzioneVerboResponse,
 )
 
 
@@ -103,12 +104,13 @@ def list_log_assunzioni(
 
 @router.post(
     "/farmaci/{farmaco_id}/log/presa",
-    response_model=LogAssunzioneResponse,
+    response_model=LogAssunzioneVerboResponse,
     status_code=status.HTTP_201_CREATED,
 )
 def post_presa(
     farmaco_id: int,
     payload: LogAssunzioneCreatePresa,
+    response: Response,
     current_user: CurrentUser = Depends(get_current_user),
     conn: PooledMySQLConnection = Depends(get_db),
 ) -> LogAssunzioneResponse:
@@ -119,6 +121,16 @@ def post_presa(
     cur = conn.cursor(dictionary=True)
     try:
         _verify_farmaco_ownership(cur, farmaco_id, current_user.id)
+        if payload.client_op_id is not None:
+            cur.execute(
+                _LOG_ROW_SELECT_BY_TARGA,
+                (payload.client_op_id, current_user.id, farmaco_id),
+            )
+            dedup_row = cur.fetchone()
+            if dedup_row is not None:
+                conn.commit()
+                response.status_code = status.HTTP_200_OK
+                return LogAssunzioneVerboResponse(**dedup_row, dedup=True)
         cur.execute(
             "SELECT id, stato FROM log_assunzioni "
             "WHERE utente_id = %s AND farmaco_id = %s "
@@ -139,7 +151,8 @@ def post_presa(
             cur.execute(
                 "UPDATE log_assunzioni SET "
                 "ora_prevista = %s, ora_effettiva = %s, delta_minuti = %s, "
-                "gap_minuti = %s, recupero_minuti = %s, stato = 'presa', note = %s "
+                "gap_minuti = %s, recupero_minuti = %s, stato = 'presa', note = %s, "
+                "client_op_id = %s "
                 "WHERE id = %s",
                 (
                     payload.ora_prevista,
@@ -148,6 +161,7 @@ def post_presa(
                     payload.gap_minuti,
                     payload.recupero_minuti,
                     payload.note,
+                    payload.client_op_id,
                     existing["id"],
                 ),
             )
@@ -156,8 +170,9 @@ def post_presa(
             cur.execute(
                 "INSERT INTO log_assunzioni ("
                 "utente_id, farmaco_id, data, dose_numero, ora_prevista, "
-                "ora_effettiva, delta_minuti, gap_minuti, recupero_minuti, stato, note"
-                ") VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'presa', %s)",
+                "ora_effettiva, delta_minuti, gap_minuti, recupero_minuti, stato, note, "
+                "client_op_id"
+                ") VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'presa', %s, %s)",
                 (
                     current_user.id,
                     farmaco_id,
@@ -169,6 +184,7 @@ def post_presa(
                     payload.gap_minuti,
                     payload.recupero_minuti,
                     payload.note,
+                    payload.client_op_id,
                 ),
             )
             target_id = cur.lastrowid
@@ -240,6 +256,16 @@ _LOG_ROW_SELECT = (
 )
 
 
+
+_LOG_ROW_SELECT_BY_TARGA = (
+    "SELECT id, utente_id, farmaco_id, data, dose_numero, ora_prevista, "
+    "ora_effettiva, delta_minuti, ora_ricalcolata, gap_minuti, "
+    "recupero_minuti, stato, note, created_at "
+    "FROM log_assunzioni "
+    "WHERE client_op_id = %s AND utente_id = %s AND farmaco_id = %s"
+)
+
+
 def _compose_undo_audit_note(existing: str | None, audit_ts_iso: str) -> str:
     """Append `[undo TS]` suffix to note, truncate content if total > 200 chars.
 
@@ -260,12 +286,13 @@ def _compose_undo_audit_note(existing: str | None, audit_ts_iso: str) -> str:
 
 @router.post(
     "/farmaci/{farmaco_id}/log/saltata",
-    response_model=LogAssunzioneResponse,
+    response_model=LogAssunzioneVerboResponse,
     status_code=status.HTTP_201_CREATED,
 )
 def post_saltata(
     farmaco_id: int,
     payload: LogAssunzioneCreateSaltata,
+    response: Response,
     current_user: CurrentUser = Depends(get_current_user),
     conn: PooledMySQLConnection = Depends(get_db),
 ) -> LogAssunzioneResponse:
@@ -280,6 +307,16 @@ def post_saltata(
     cur = conn.cursor(dictionary=True)
     try:
         _verify_farmaco_ownership(cur, farmaco_id, current_user.id)
+        if payload.client_op_id is not None:
+            cur.execute(
+                _LOG_ROW_SELECT_BY_TARGA,
+                (payload.client_op_id, current_user.id, farmaco_id),
+            )
+            dedup_row = cur.fetchone()
+            if dedup_row is not None:
+                conn.commit()
+                response.status_code = status.HTTP_200_OK
+                return LogAssunzioneVerboResponse(**dedup_row, dedup=True)
         cur.execute(
             "SELECT id, stato FROM log_assunzioni "
             "WHERE utente_id = %s AND farmaco_id = %s "
@@ -306,16 +343,18 @@ def post_saltata(
                 "UPDATE log_assunzioni SET "
                 "stato = 'saltata', "
                 "note = COALESCE(%s, note), "
-                "ora_effettiva = NULL, delta_minuti = NULL, recupero_minuti = 0 "
+                "ora_effettiva = NULL, delta_minuti = NULL, recupero_minuti = 0, "
+                "client_op_id = %s "
                 "WHERE id = %s",
-                (payload.note, existing["id"]),
+                (payload.note, payload.client_op_id, existing["id"]),
             )
             target_id = existing["id"]
         else:
             cur.execute(
                 "INSERT INTO log_assunzioni ("
-                "utente_id, farmaco_id, data, dose_numero, ora_prevista, stato, note"
-                ") VALUES (%s, %s, %s, %s, %s, 'saltata', %s)",
+                "utente_id, farmaco_id, data, dose_numero, ora_prevista, stato, note, "
+                "client_op_id"
+                ") VALUES (%s, %s, %s, %s, %s, 'saltata', %s, %s)",
                 (
                     current_user.id,
                     farmaco_id,
@@ -323,6 +362,7 @@ def post_saltata(
                     payload.dose_numero,
                     payload.ora_prevista,
                     payload.note,
+                    payload.client_op_id,
                 ),
             )
             target_id = cur.lastrowid
@@ -340,12 +380,13 @@ def post_saltata(
 
 @router.post(
     "/farmaci/{farmaco_id}/log/sospesa",
-    response_model=LogAssunzioneResponse,
+    response_model=LogAssunzioneVerboResponse,
     status_code=status.HTTP_201_CREATED,
 )
 def post_sospesa(
     farmaco_id: int,
     payload: LogAssunzioneCreateSospesa,
+    response: Response,
     current_user: CurrentUser = Depends(get_current_user),
     conn: PooledMySQLConnection = Depends(get_db),
 ) -> LogAssunzioneResponse:
@@ -363,6 +404,16 @@ def post_sospesa(
     cur = conn.cursor(dictionary=True)
     try:
         _verify_farmaco_ownership(cur, farmaco_id, current_user.id)
+        if payload.client_op_id is not None:
+            cur.execute(
+                _LOG_ROW_SELECT_BY_TARGA,
+                (payload.client_op_id, current_user.id, farmaco_id),
+            )
+            dedup_row = cur.fetchone()
+            if dedup_row is not None:
+                conn.commit()
+                response.status_code = status.HTTP_200_OK
+                return LogAssunzioneVerboResponse(**dedup_row, dedup=True)
         cur.execute(
             "SELECT id, stato FROM log_assunzioni "
             "WHERE utente_id = %s AND farmaco_id = %s "
@@ -389,16 +440,18 @@ def post_sospesa(
                 "UPDATE log_assunzioni SET "
                 "stato = 'sospesa', "
                 "note = COALESCE(%s, note), "
-                "ora_effettiva = NULL, delta_minuti = NULL, recupero_minuti = 0 "
+                "ora_effettiva = NULL, delta_minuti = NULL, recupero_minuti = 0, "
+                "client_op_id = %s "
                 "WHERE id = %s",
-                (payload.note, existing["id"]),
+                (payload.note, payload.client_op_id, existing["id"]),
             )
             target_id = existing["id"]
         else:
             cur.execute(
                 "INSERT INTO log_assunzioni ("
-                "utente_id, farmaco_id, data, dose_numero, ora_prevista, stato, note"
-                ") VALUES (%s, %s, %s, %s, %s, 'sospesa', %s)",
+                "utente_id, farmaco_id, data, dose_numero, ora_prevista, stato, note, "
+                "client_op_id"
+                ") VALUES (%s, %s, %s, %s, %s, 'sospesa', %s, %s)",
                 (
                     current_user.id,
                     farmaco_id,
@@ -406,6 +459,7 @@ def post_sospesa(
                     payload.dose_numero,
                     payload.ora_prevista,
                     payload.note,
+                    payload.client_op_id,
                 ),
             )
             target_id = cur.lastrowid
@@ -423,11 +477,12 @@ def post_sospesa(
 
 @router.post(
     "/farmaci/{farmaco_id}/log/undo",
-    response_model=LogAssunzioneResponse,
+    response_model=LogAssunzioneVerboResponse,
 )
 def post_undo(
     farmaco_id: int,
     payload: LogAssunzioneUndoPayload,
+    response: Response,
     current_user: CurrentUser = Depends(get_current_user),
     conn: PooledMySQLConnection = Depends(get_db),
 ) -> LogAssunzioneResponse:
@@ -447,6 +502,16 @@ def post_undo(
     cur = conn.cursor(dictionary=True)
     try:
         _verify_farmaco_ownership(cur, farmaco_id, current_user.id)
+        if payload.client_op_id is not None:
+            cur.execute(
+                _LOG_ROW_SELECT_BY_TARGA,
+                (payload.client_op_id, current_user.id, farmaco_id),
+            )
+            dedup_row = cur.fetchone()
+            if dedup_row is not None:
+                conn.commit()
+                response.status_code = status.HTTP_200_OK
+                return LogAssunzioneVerboResponse(**dedup_row, dedup=True)
         cur.execute(
             "SELECT id, stato, ora_ricalcolata, note "
             "FROM log_assunzioni "
@@ -479,9 +544,10 @@ def post_undo(
             "UPDATE log_assunzioni SET "
             "stato = %s, "
             "ora_effettiva = NULL, delta_minuti = NULL, recupero_minuti = 0, "
-            "note = %s "
+            "note = %s, "
+            "client_op_id = %s "
             "WHERE id = %s",
-            (target_stato, note_new, existing["id"]),
+            (target_stato, note_new, payload.client_op_id, existing["id"]),
         )
 
         # Rollback D+1 only if undoing 'presa' on an interval-frequency drug.
@@ -528,11 +594,12 @@ def post_undo(
 
 @router.post(
     "/farmaci/{farmaco_id}/log/recupero",
-    response_model=LogAssunzioneResponse,
+    response_model=LogAssunzioneVerboResponse,
 )
 def post_recupero(
     farmaco_id: int,
     payload: LogAssunzioneRecuperoPayload,
+    response: Response,
     current_user: CurrentUser = Depends(get_current_user),
     conn: PooledMySQLConnection = Depends(get_db),
 ) -> LogAssunzioneResponse:
@@ -549,6 +616,16 @@ def post_recupero(
     cur = conn.cursor(dictionary=True)
     try:
         _verify_farmaco_ownership(cur, farmaco_id, current_user.id)
+        if payload.client_op_id is not None:
+            cur.execute(
+                _LOG_ROW_SELECT_BY_TARGA,
+                (payload.client_op_id, current_user.id, farmaco_id),
+            )
+            dedup_row = cur.fetchone()
+            if dedup_row is not None:
+                conn.commit()
+                response.status_code = status.HTTP_200_OK
+                return LogAssunzioneVerboResponse(**dedup_row, dedup=True)
         cur.execute(
             "SELECT id, stato, ora_prevista, ora_ricalcolata, gap_minuti "
             "FROM log_assunzioni "
@@ -590,9 +667,10 @@ def post_recupero(
         cur.execute(
             "UPDATE log_assunzioni SET "
             "recupero_minuti = %s, "
-            "ora_ricalcolata = ora_ricalcolata - INTERVAL %s MINUTE "
+            "ora_ricalcolata = ora_ricalcolata - INTERVAL %s MINUTE, "
+            "client_op_id = %s "
             "WHERE id = %s",
-            (payload.recupero_minuti, payload.recupero_minuti, existing["id"]),
+            (payload.recupero_minuti, payload.recupero_minuti, payload.client_op_id, existing["id"]),
         )
 
         # Post-check: ora_ricalcolata >= TIMESTAMP(data, ora_prevista) (no
