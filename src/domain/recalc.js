@@ -24,6 +24,13 @@
  * backend post_saltata touches only the target row, so the N+1 write
  * never persisted anything.
  *
+ * EXCEPTION (s.6.260): applyRipristino, when restoring from 'saltata',
+ * patches the N+1 rollback (gap reset + dose_prec_saltata=false) in the
+ * PLAN ONLY, without a logWrite -- symmetric to s.6.253. Post-s.6.253
+ * the saltata N+1 is never persisted, so a rollback logWrite (stato
+ * 'prevista') would hit POST /log/undo -> 404 on a virgin slot (ANOM-2
+ * desync). Lossless for the same serialization reasons stated above.
+ *
  * See Changelog Fase 2 §6.8–6.16 for design decisions.
  * Sessione 9-A (§6.115b): `ora_ricalcolata` carries an ISO datetime
  * 'YYYY-MM-DDTHH:MM' instead of bare HH:MM, fixing §6.18 cross-midnight.
@@ -744,13 +751,19 @@ export function applyRipristino(plan, entryKey, to) {
       nextDose.stato === 'prevista' &&
       nextDose.dose_prec_saltata === true
     ) {
-      const { plan: p2, entry: nextPatched } = patchEntry(p, nextDose.key, {
+      // s.6.260 (ANOM-2 family): N+1 rollback is PLAN-ONLY, no logWrite
+      // (symmetric to s.6.253 in applySalto). Post-s.6.253 the saltata
+      // N+1 was never persisted, so a rollback logWrite (stato
+      // 'prevista') would hit POST /log/undo -> 404 on a virgin slot
+      // (ANOM-2 desync). Lossless: buildLogWrite never serializes
+      // dose_prec_saltata/gap_originale.
+      // SENTINEL_S6260_RIPRISTINO_N1
+      const { plan: p2 } = patchEntry(p, nextDose.key, {
         gap_minuti: 0,
         gap_originale: 0,
         dose_prec_saltata: false,
       });
       p = p2;
-      logWrites.push(buildLogWrite(nextPatched));
     }
   }
 

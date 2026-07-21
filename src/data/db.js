@@ -22,7 +22,7 @@ import Dexie from "dexie";
 //   does not index booleans directly).
 
 export const DB_NAME = "pharmatimer";
-export const DB_VERSION = 4;
+export const DB_VERSION = 5;
 
 export const db = new Dexie(DB_NAME);
 
@@ -189,6 +189,26 @@ db.version(4).stores({
   if (losers.length > 0) {
     await tx.table("profilo_utente").bulkDelete(losers);
   }
+});
+
+// ============================================================
+// CS-4 S2a (par.22.198-octovicies) -- Schema v5: outbox store
+// (offline write-path, Spec sez. 14). Byte-identical to v4 plus a
+// new `outbox` store. No upgrade hook: a brand-new store is
+// auto-created by Dexie on the version bump; existing v4 data is
+// untouched. `outbox` holds locally-queued dose gestures awaiting
+// delivery (see LocalRepository outbox primitives).
+//   PK ++id     -> FIFO order == insertion order == gesture order.
+//   index stato -> pending|parked partitioning for counts/lists.
+// SENTINEL_PAR_22_198_SEPTVICIES_DBV5
+// ============================================================
+db.version(5).stores({
+  farmaci: "++id, attivo",
+  orari_base: "++id, farmaco_id, [farmaco_id+dose_numero]",
+  log_assunzioni: "++id, data, farmaco_id, [farmaco_id+data]",
+  profilo_utente: "++id, attivo",
+  impostazioni_app: "chiave",
+  outbox: "++id, stato"
 });
 
 // ============================================================

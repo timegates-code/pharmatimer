@@ -1088,10 +1088,22 @@ describe('T13 — applyRipristino: saltata → sospesa (intervallo con rollback)
     expect(next.stato).toBe('prevista');
   });
 
-  it('dovrebbe produrre 2 logWrites (target + N+1)', () => {
+  it('dovrebbe produrre 1 logWrite (solo target; N+1 rollback plan-only, s.6.260)', () => {
+    // SENTINEL_S6260_RIPRISTINO_N1: N+1 rollback plan-only, nessun logWrite N+1.
     const result = applyRipristino(plan, entry1.key, 'sospesa');
-    expect(result.logWrites).toHaveLength(2);
+    expect(result.logWrites).toHaveLength(1);
+    expect(result.logWrites[0].stato).toBe('sospesa');
     expect(result.prompt).toBeNull();
+  });
+
+  it('s.6.260: rollback N+1 applicato al plan MA logWrites resta 1', () => {
+    // Ancora combinata, simmetrica a SENTINEL_S6253_ANOM2 (applySalto):
+    // il rollback N+1 e nel result.plan ma NON produce logWrite.
+    const result = applyRipristino(plan, entry1.key, 'sospesa');
+    const next = result.plan.find((e) => e.key === entry2.key);
+    expect(next.dose_prec_saltata).toBe(false);
+    expect(next.gap_minuti).toBe(0);
+    expect(result.logWrites).toHaveLength(1);
   });
 });
 
@@ -1119,13 +1131,14 @@ describe('T13 — applyRipristino: saltata → attiva (con rollback)', () => {
     plan = [entry1, entry2];
   });
 
-  it('dovrebbe ripristinare target a prevista e fare rollback N+1', () => {
+  it('dovrebbe ripristinare target a prevista e fare rollback N+1 plan-only (s.6.260)', () => {
+    // SENTINEL_S6260_RIPRISTINO_N1: N+1 rollback nel plan, nessun logWrite N+1.
     const result = applyRipristino(plan, entry1.key, 'attiva');
     const target = result.plan.find((e) => e.key === entry1.key);
     const next = result.plan.find((e) => e.key === entry2.key);
     expect(target.stato).toBe('prevista');
     expect(next.dose_prec_saltata).toBe(false);
-    expect(result.logWrites).toHaveLength(2);
+    expect(result.logWrites).toHaveLength(1);
   });
 });
 

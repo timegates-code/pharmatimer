@@ -529,4 +529,99 @@ export class LocalRepository {
       "TRANSACTION_ABORT"
     );
   }
+
+  // ==========================================================
+  // Outbox (offline write-path, CS-4 S2a) -- Spec sez. 14.
+  // SENTINEL_PAR_22_198_SEPTVICIES_OUTBOX
+  // ----------------------------------------------------------
+  // Inert foundation: primitives over the Dexie `outbox` store
+  // (db.js v5). No caller wires these yet (that is S2b/S3). FIFO
+  // is the ++id primary key; `stato` (pending|parked) is indexed.
+  // ==========================================================
+
+  async outboxEnqueue(elements) {
+    // SENTINEL_PAR_22_198_SEPTVICIES_OUTBOX_ENQUEUE
+    // Append 1..N elements (bulkAdd). Composable inside an ambient
+    // rw transaction (S2b enqueues in the SAME tx as the log rows,
+    // so a gesture is all-or-nothing). Returns the assigned ids.
+    return this._wrap(() => db.outbox.bulkAdd(elements, { allKeys: true }));
+  }
+
+  async outboxNextPending() {
+    // SENTINEL_PAR_22_198_SEPTVICIES_OUTBOX_NEXTPENDING
+    // First pending element by ascending id (true FIFO on the PK).
+    return this._wrap(async () =>
+      (await db.outbox
+        .orderBy("id")
+        .filter((e) => e.stato === "pending")
+        .first()) || null
+    );
+  }
+
+  async outboxRemove(id) {
+    // SENTINEL_PAR_22_198_SEPTVICIES_OUTBOX_REMOVE
+    return this._wrap(() => db.outbox.delete(id));
+  }
+
+  async outboxPark(id, reason) {
+    // SENTINEL_PAR_22_198_SEPTVICIES_OUTBOX_PARK
+    return this._wrap(() =>
+      db.outbox.update(id, {
+        stato: "parked",
+        parked_reason: reason,
+        parked_at: new Date().toISOString(),
+      })
+    );
+  }
+
+  async outboxRetry(id) {
+    // SENTINEL_PAR_22_198_SEPTVICIES_OUTBOX_RETRY
+    // parked -> pending at the SAME id: the element rejoins the FIFO
+    // at its original position (gesture order preserved).
+    return this._wrap(() =>
+      db.outbox.update(id, {
+        stato: "pending",
+        parked_reason: null,
+        parked_at: null,
+      })
+    );
+  }
+
+  async outboxCounts() {
+    // SENTINEL_PAR_22_198_SEPTVICIES_OUTBOX_COUNTS
+    return this._wrap(async () => {
+      const pending = await db.outbox.where("stato").equals("pending").count();
+      const parked = await db.outbox.where("stato").equals("parked").count();
+      return { pending, parked };
+    });
+  }
+
+  async outboxList(stato) {
+    // SENTINEL_PAR_22_198_SEPTVICIES_OUTBOX_LIST
+    return this._wrap(() => db.outbox.where("stato").equals(stato).sortBy("id"));
+  }
+
+  async outboxProtectedKeys() {
+    // SENTINEL_PAR_22_198_SEPTVICIES_OUTBOX_PROTECTEDKEYS
+    // Set of `${farmaco_id}|${data}|${dose_numero}` for every log row
+    // frozen in a pending OR parked element. The mirror (14.4.4) skips
+    // rows whose dose-key is protected, so a queued gesture is never
+    // overwritten by a server snapshot before delivery (M2). Derived
+    // from logs[] (buildLogWrite serializes those 3 fields).
+    return this._wrap(() =>
+      db.transaction("r", db.outbox, async () => {
+        const rows = await db.outbox
+          .where("stato")
+          .anyOf("pending", "parked")
+          .toArray();
+        const keys = new Set();
+        for (const el of rows) {
+          for (const lg of el.logs || []) {
+            keys.add(`${lg.farmaco_id}|${lg.data}|${lg.dose_numero}`);
+          }
+        }
+        return keys;
+      })
+    );
+  }
 }

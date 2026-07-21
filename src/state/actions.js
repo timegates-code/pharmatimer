@@ -1057,13 +1057,14 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
       await db.transaction(
         'rw',
         db.farmaci, db.orari_base, db.log_assunzioni,
-        db.impostazioni_app, db.profilo_utente,
+        db.impostazioni_app, db.profilo_utente, db.outbox,
         async () => {
           await db.farmaci.clear();
           await db.orari_base.clear();
           await db.log_assunzioni.clear();
           await db.impostazioni_app.clear();
           await db.profilo_utente.clear();
+          await db.outbox.clear(); // SENTINEL_PAR_22_198_SEPTVICIES_WIPE_OUTBOX (6.205 cross-path)
           // Re-add default "Standard" profilo so init() finds an
           // attivo profile (else throws NO_ACTIVE_PROFILE → INIT_ERROR
           // → OnboardingGate cannot open since gate requires status
