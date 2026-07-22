@@ -108,7 +108,9 @@
  * @property {(id: number, patch: Partial<LogAssunzione>) => Promise<void>} updateLog
  * @property {(id: number) => Promise<void>}              deleteLog
  * @property {(farmacoId: number, data: string, doseNumero: number, patch: Partial<LogAssunzione>) => Promise<LogAssunzione>} upsertLog
- * @property {(logs: LogAssunzione[]) => Promise<LogAssunzione[]>} upsertLogsBatch
+ * @property {(logs: LogAssunzione[], op?: string|null) => Promise<LogAssunzione[]>} upsertLogsBatch
+ *           `op` (CS-4 Q-OP1=A) is the gesture verb; INERT in S2b --
+ *           every implementation has arity 1 and ignores it. SENTINEL_S2B_OP_EXPLICIT
  *
  * // --- Impostazioni (key/value) ---
  * @property {(chiave: string) => Promise<any>}           getSetting

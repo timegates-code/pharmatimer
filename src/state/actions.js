@@ -289,6 +289,7 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     const result = await commitApplyResult({
       dispatch, getState, repo,
       domainCall: (plan) => applyAssunzione(plan, input),
+      op: 'presa',
       pushPresoKey: entryKey,
     });
     maybeReschedule(getState()); // §6.126 trigger 2.1
@@ -301,6 +302,7 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     const result = await commitApplyResult({
       dispatch, getState, repo,
       domainCall: (plan) => applySalto(plan, entryKey),
+      op: 'salta',
     });
     maybeReschedule(getState()); // §6.126 trigger 2.2
     return result;
@@ -310,6 +312,7 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     const result = await commitApplyResult({
       dispatch, getState, repo,
       domainCall: (plan) => applySospensione(plan, entryKey),
+      op: 'sospendi',
     });
     maybeReschedule(getState()); // §6.126 trigger 2.3
     return result;
@@ -319,6 +322,7 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     const result = await commitApplyResult({
       dispatch, getState, repo,
       domainCall: (plan) => applyRecupero(plan, entryKey, minuti),
+      op: 'recupero',
     });
     maybeReschedule(getState()); // §6.126 trigger 2.4
     return result;
@@ -328,6 +332,7 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     const result = await commitApplyResult({
       dispatch, getState, repo,
       domainCall: (plan) => applyRipristino(plan, entryKey, to),
+      op: 'ripristina',
     });
     maybeReschedule(getState()); // §6.126 trigger 2.5
     return result;
@@ -351,6 +356,7 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     const result = await commitApplyResult({
       dispatch, getState, repo,
       domainCall: (plan) => applyAnnullaAssunzione(plan, entryKey),
+      op: 'annullaUltima',
       popPresoKey: true,
     });
     maybeReschedule(getState()); // §6.126 trigger 2.6
@@ -374,6 +380,7 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     const result = await commitApplyResult({
       dispatch, getState, repo,
       domainCall: (plan) => applyAnnullaAssunzione(plan, entryKey),
+      op: 'annullaAssunzione',
     });
     if (result.ok) {
       dispatch({ type: 'REMOVE_PRESO_KEY', payload: entryKey });

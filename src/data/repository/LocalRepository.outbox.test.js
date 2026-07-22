@@ -189,3 +189,91 @@ describe("LocalRepository.outbox -- wipe (6.205: resetAllData include outbox)", 
     expect(await repo.outboxCounts()).toEqual({ pending: 0, parked: 0 });
   });
 });
+
+// ============================================================
+// SONDA WP1 -- tocco indivisibile: la transazione a DUE store
+// (par.22.198-triginties / S2b punto 3). SENTINEL_S2B_WP1_PROBE
+// ------------------------------------------------------------
+// Domanda misurata: la zone Dexie sopravvive allo `await fn()` di
+// LocalRepository._wrap? Se non sopravvivesse, `outboxEnqueue`
+// chiamata DENTRO una transazione ambientale scriverebbe fuori da
+// quella transazione, e il tocco indivisibile progettato per S2c
+// (registro + outbox, o tutto o nulla) non reggerebbe: una presa
+// potrebbe restare nel registro senza il proprio elemento di coda,
+// cioe non raggiungere mai il server senza che nulla lo segnali (M2).
+//
+// Le asserzioni sono sul ROLLBACK, che e lo invariante clinico.
+// Il CODICE di errore che arriva al chiamante viene MISURATO e
+// stampato, non pinnato: e la domanda WP1-bis aperta a novemvicies
+// (la idempotenza di _wrap fa attraversare intatto lo errore gia
+// avvolto da outboxEnqueue, quindi il chiamante potrebbe NON vedere
+// TRANSACTION_ABORT). Il valore misurato va a verbale e il pin si
+// colloca a S2c, quando il contratto promise Q3.A viene cablato.
+// ============================================================
+
+function wp1Element(client_op_id, id) {
+  const el = makeElement("presa", client_op_id, [logRow(1, "2026-07-22", 1)]);
+  if (id != null) el.id = id;
+  return el;
+}
+
+describe("LocalRepository -- sonda WP1 (transazione indivisibile a due store)", () => {
+  it("fallimento ESTERNO: registro e outbox rollbackano ENTRAMBI", async () => {
+    let caught = null;
+    try {
+      await repo.withTransaction("rw", ["log_assunzioni", "outbox"], async () => {
+        await db.log_assunzioni.add({
+          farmaco_id: 1,
+          data: "2026-07-22",
+          dose_numero: 1,
+          stato: "presa",
+        });
+        await repo.outboxEnqueue([wp1Element("uuid-wp1a")]);
+        throw new Error("WP1: fallimento forzato DOPO entrambe le scritture");
+      });
+    } catch (err) {
+      caught = err;
+    }
+
+    expect(caught).not.toBeNull();
+    // Invariante clinico: o tutto o nulla, su ENTRAMBI gli store.
+    expect(await db.log_assunzioni.count()).toBe(0);
+    expect((await repo.outboxCounts())).toEqual({ pending: 0, parked: 0 });
+
+    // MISURA (non pin): quale codice raggiunge il chiamante.
+    expect(typeof caught.code).toBe("string");
+    expect(caught.code.length).toBeGreaterThan(0);
+    console.log("WP1-a codice al chiamante:", caught.code);
+  });
+
+  it("fallimento INTERNO a outboxEnqueue: rollback del registro + codice misurato", async () => {
+    // Precondizione: un elemento gia in coda, cosi il bulkAdd successivo
+    // con id esplicito duplicato fallisce DENTRO outboxEnqueue, dove lo
+    // errore viene gia avvolto dal suo _wrap (questo e WP1-bis).
+    const [existingId] = await repo.outboxEnqueue([wp1Element("uuid-wp1-pre")]);
+
+    let caught = null;
+    try {
+      await repo.withTransaction("rw", ["log_assunzioni", "outbox"], async () => {
+        await db.log_assunzioni.add({
+          farmaco_id: 2,
+          data: "2026-07-22",
+          dose_numero: 1,
+          stato: "presa",
+        });
+        await repo.outboxEnqueue([wp1Element("uuid-wp1b", existingId)]);
+      });
+    } catch (err) {
+      caught = err;
+    }
+
+    expect(caught).not.toBeNull();
+    // Il registro rollbacka: la riga scritta prima del fallimento sparisce.
+    expect(await db.log_assunzioni.count()).toBe(0);
+    // La coda torna al solo elemento pre-esistente (nessun doppione).
+    expect((await repo.outboxCounts()).pending).toBe(1);
+
+    expect(typeof caught.code).toBe("string");
+    console.log("WP1-b codice al chiamante:", caught.code);
+  });
+});

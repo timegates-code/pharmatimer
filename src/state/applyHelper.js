@@ -1,7 +1,8 @@
 // ============================================================
 // commitApplyResult — DRY optimistic-commit helper reused by all
-// 6 apply* thunks (presa, salta, sospendi, recupero, ripristina,
-// annullaUltima). Changelog Fase 2 §13/D7 + §11 AMB-5b2.A.
+// 7 apply* thunks (presa, salta, sospendi, recupero, ripristina,
+// annullaUltima, annullaAssunzione). Changelog Fase 2 §13/D7 +
+// §11 AMB-5b2.A.
 // ============================================================
 //
 // Flow (pushPresoKey OR neither):
@@ -34,7 +35,7 @@ import { DomainError } from '../domain/errors.js';
  * @typedef {object} CommitArgs
  * @property {(a: {type: string, payload?: any}) => void} dispatch
  * @property {() => import('./reducer.js').AppState} getState
- * @property {{upsertLogsBatch: (logs: any[]) => Promise<any[]>}} repo
+ * @property {{upsertLogsBatch: (logs: any[], op?: string|null) => Promise<any[]>}} repo
  * @property {(plan: any) => import('../domain/types.js').ApplyResult} domainCall
  *           Pure function; closes over the thunk's own args.
  * @property {string|null} [pushPresoKey]
@@ -44,6 +45,15 @@ import { DomainError } from '../domain/errors.js';
  *           If true, pop the last key from presoStack on success
  *           (and re-push it on rollback). Only used by annullaUltima.
  *           Mutually exclusive with pushPresoKey.
+ * @property {string|null} [op]
+ *           Gesture verb (CS-4 Q-OP1=A, par.22.198-novemvicies): one of
+ *           'presa', 'salta', 'sospendi', 'recupero', 'ripristina',
+ *           'annullaUltima', 'annullaAssunzione'. Forwarded to
+ *           repo.upsertLogsBatch as the 2nd argument so the outbox
+ *           splitter can label the queued element with the GESTURE
+ *           (the delivery route is derived later, never frozen).
+ *           INERT in S2b: all 3 repository implementations have arity 1
+ *           and ignore it. SENTINEL_S2B_OP_EXPLICIT
  */
 
 /**
@@ -52,7 +62,7 @@ import { DomainError } from '../domain/errors.js';
  */
 export async function commitApplyResult({
   dispatch, getState, repo, domainCall,
-  pushPresoKey = null, popPresoKey = false,
+  pushPresoKey = null, popPresoKey = false, op = null,
 }) {
   // Guard: the two stack operations are mutually exclusive.
   if (pushPresoKey && popPresoKey) {
@@ -117,7 +127,7 @@ export async function commitApplyResult({
   // 3. Persist atomically.
   try {
     if (result.logWrites && result.logWrites.length > 0) {
-      await repo.upsertLogsBatch(result.logWrites);
+      await repo.upsertLogsBatch(result.logWrites, op);
     }
   } catch (err) {
     // Rollback composed from existing actions.
