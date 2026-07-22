@@ -82,14 +82,15 @@ if [ -f "$ENV_SS" ]; then
   RSUM=$(( ${FONDOSCALA_MIN:-0} + ${FONDOSCALA_MAX:-0} ))
   if [ "$BSUM" -gt 0 ] && [ "$RSUM" -gt 0 ]; then
     BPCT=$(( (${BLOCCO_FATTI:-0} * 200 + BSUM / 2) / BSUM ))
-    RPCT=$(( (${CONSUNTIVO:-0} * 200 + RSUM / 2) / RSUM ))
+    RPCT10=$(( (${CONSUNTIVO:-0} * 2000 + RSUM / 2) / RSUM ))
+    RPCTS="$((RPCT10 / 10)),$((RPCT10 % 10))"  # SENTINEL_CP0_ROADMAP_DECIMO
     BMID="$((BSUM / 2))"; [ $((BSUM % 2)) -ne 0 ] && BMID="${BMID},5"
     RMID="$((RSUM / 2))"; [ $((RSUM % 2)) -ne 0 ] && RMID="${RMID},5"
     BLAB="Blocco (${BLOCCO:-?}) [range ${BLOCCO_TOT_MIN:-0}-${BLOCCO_TOT_MAX:-0}]:"
     RLAB="Roadmap (v3.2.0) [range ${FONDOSCALA_MIN:-0}-${FONDOSCALA_MAX:-0}]:"
     echo 'INFO  === STATI DI AVANZAMENTO ==='
     printf 'INFO  %-36s %3s / ~%-6s = ~%d%%\n' "$BLAB" "${BLOCCO_FATTI:-0}" "$BMID" "$BPCT"
-    printf 'INFO  %-36s %3s / ~%-6s = ~%d%%\n' "$RLAB" "${CONSUNTIVO:-0}" "$RMID" "$RPCT"
+    printf 'INFO  %-36s %3s / ~%-6s = ~%s%%\n' "$RLAB" "${CONSUNTIVO:-0}" "$RMID" "$RPCTS"
   fi
 fi
 if [ "$FAIL" -eq 0 ]; then
