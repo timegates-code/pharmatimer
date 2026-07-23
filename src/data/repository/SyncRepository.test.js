@@ -155,15 +155,31 @@ describe("SyncRepository", () => {
   });
 
   describe("getLogByRange (guarded read)", () => {
-    it("successo: mirrorLogWindow(server, da, a) + ritorna il dato server", async () => {
+    it("successo: mirrorLogWindow(server, da, a) + ritorna lo specchio RILETTO", async () => {
+      // CS-4 S2c-2b (c4) + voce 38. The guard no longer returns the raw
+      // server payload: it returns the mirror RE-READ after the write, so
+      // the rows held by a live outbox promise survive the snapshot
+      // (14.4.4, M1/M2). Referential identity with `server` is broken BY
+      // CONSTRUCTION -- dovuto realignment, not a regression.
+      // SENTINEL_S2C2B_REREAD_TEST
       const server = [{ id: 1, farmaco_id: 10, data: "2026-07-10" }];
+      const riletto = [
+        { id: 1, farmaco_id: 10, data: "2026-07-10", stato: "presa" },
+      ];
       const api = makeApi({ getLogByRange: vi.fn().mockResolvedValue(server) });
-      const local = makeLocal();
+      const local = makeLocal({
+        getLogByRange: vi.fn().mockResolvedValue(riletto),
+      });
       const sync = new SyncRepository(api, local);
       const res = await sync.getLogByRange("2026-07-05", "2026-07-15");
-      expect(res).toBe(server);
+      expect(res).toBe(riletto);
+      expect(res).not.toBe(server);
       expect(local.mirrorLogWindow).toHaveBeenCalledWith(
         server,
+        "2026-07-05",
+        "2026-07-15"
+      );
+      expect(local.getLogByRange).toHaveBeenCalledWith(
         "2026-07-05",
         "2026-07-15"
       );

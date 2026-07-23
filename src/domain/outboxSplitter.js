@@ -79,6 +79,18 @@ export const PARK_REASONS = Object.freeze({
   OP_SCONOSCIUTO: 'OP_SCONOSCIUTO',
   PAIRING_FALLITO: 'PAIRING_FALLITO',
   ROTTA_NON_DERIVABILE: 'ROTTA_NON_DERIVABILE',
+  // s.6.266 (Q-QUATER-2=A, par.198-quinquetriginties-quater). A failed
+  // delivery reaches the client as `CONSTRAINT_VIOLATION` whether it was a
+  // true 409 conflict or a broken 4xx: `exceptions.py` has no conflict code
+  // and `apiClient` maps 409 and 422 onto the same key (both MEASURED).
+  // Spec 14.3 asks for opposite actions on those two rows -- drop vs park --
+  // so the element is PARKED for both: dropping a broken 4xx would lose a
+  // dose really taken (M2) and send the card back to "da prendere" (M1),
+  // while parking a true 409 loses nothing (the parking lot never discards).
+  // Reversible: once the server vocabulary grows a CONFLICT code (S3), the
+  // 409 branch goes back to drop, per the letter of 14.3.
+  // SENTINEL_S6266_PARK_REASON
+  CONFLITTO_O_RICHIESTA_ROTTA: 'CONFLITTO_O_RICHIESTA_ROTTA',
 });
 
 const UNDO_STATI = Object.freeze(['prevista', 'ricalcolata']);

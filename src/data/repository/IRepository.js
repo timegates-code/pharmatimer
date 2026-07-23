@@ -109,8 +109,14 @@
  * @property {(id: number) => Promise<void>}              deleteLog
  * @property {(farmacoId: number, data: string, doseNumero: number, patch: Partial<LogAssunzione>) => Promise<LogAssunzione>} upsertLog
  * @property {(logs: LogAssunzione[], op?: string|null) => Promise<LogAssunzione[]>} upsertLogsBatch
- *           `op` (CS-4 Q-OP1=A) is the gesture verb; INERT in S2b --
- *           every implementation has arity 1 and ignores it. SENTINEL_S2B_OP_EXPLICIT
+ *           `op` (CS-4 Q-OP1=A) is the gesture verb. LIVE since S2c-2b:
+ *           SyncRepository OVERRIDES this method with the offline
+ *           write-path (indivisible touch + FIFO delivery, Spec 14.3).
+ *           ApiRepository and LocalRepository keep arity 1 and ignore it.
+ *           RETURN: the rows written to the LOCAL ledger, never the server
+ *           response -- invariant with respect to the network, because
+ *           offline no server response exists (s.6.265, Q-TER-3=A).
+ *           SENTINEL_S2B_OP_EXPLICIT
  *
  * // --- Impostazioni (key/value) ---
  * @property {(chiave: string) => Promise<any>}           getSetting
