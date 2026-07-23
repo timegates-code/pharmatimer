@@ -155,7 +155,9 @@ describe('actions.init() â€” presoStack rehydration cross-day (Sessione 8-pre, Â
   });
 
   it('preserves ASC order across yesterday + today (LIFO top = most recent)', async () => {
-    // Repo returns logs sorted ASC by (data, ora_effettiva).
+    // Questo caso consegna un input GIA ordinato: verifica il
+    // passaggio, non lo ordinamento. Il pin dello ordinamento e nei
+    // due casi seguenti (SENTINEL_S2C1_PRESOSTACK_PIN).
     const repo = makeRepo([
       presaLog({ id: 1, data: YESTERDAY, dose_numero: 2, ora: '13:00' }),
       presaLog({ id: 2, data: TODAY, dose_numero: 1, ora: '08:00' }),
@@ -166,6 +168,75 @@ describe('actions.init() â€” presoStack rehydration cross-day (Sessione 8-pre, Â
     const setStackAction = dispatched.find((a) => a.type === 'SET_PRESO_STACK');
     expect(setStackAction.payload).toEqual([
       `${YESTERDAY}-10-2`,
+      `${TODAY}-10-1`,
+      `${TODAY}-10-2`,
+    ]);
+    expect(setStackAction.payload.at(-1)).toBe(`${TODAY}-10-2`);
+  });
+
+  // ==========================================================
+  // Pin dello ordinamento esplicito di presoStack.
+  // par.22.198-tretriginties / S2c-1 punto (k), Q-AUD-3 -> PC-3.
+  // SENTINEL_S2C1_PRESOSTACK_PIN
+  // ==========================================================
+
+  it('ordina lo stack anche se il repo restituisce ordine NON cronologico', async () => {
+    // NESSUN ramo del repository garantisce un ordine: la via API
+    // restituisce arrays.flat() di un fan-out per farmaco (ordine
+    // farmaco-major), lo specchio restituisce lo ordine dello indice
+    // `data` con pareggi per id. Qui il repo consegna le righe
+    // mescolate: lo stack deve uscire cronologico lo stesso, altrimenti
+    // dopo un reload `annulla ultima` colpisce una dose diversa da
+    // quella attesa -- dose realmente presa che torna "da prendere"
+    // (M1) e record che diverge dallo intento (M3).
+    const repo = makeRepo([
+      presaLog({ id: 3, data: TODAY, dose_numero: 2, ora: '12:00' }),
+      presaLog({ id: 1, data: YESTERDAY, dose_numero: 2, ora: '13:00' }),
+      presaLog({ id: 2, data: TODAY, dose_numero: 1, ora: '08:00' }),
+    ]);
+    const dispatched = await runInit({ repo });
+
+    const setStackAction = dispatched.find((a) => a.type === 'SET_PRESO_STACK');
+    expect(setStackAction.payload).toEqual([
+      `${YESTERDAY}-10-2`,
+      `${TODAY}-10-1`,
+      `${TODAY}-10-2`,
+    ]);
+    expect(setStackAction.payload.at(-1)).toBe(`${TODAY}-10-2`);
+  });
+
+  it('ordina correttamente con ora_effettiva di FORMATO MISTO (ISO piu HH:MM)', async () => {
+    // Lo stesso istante clinico arriva in forme diverse secondo la via
+    // di scrittura: ISO completo quando la riga viene dal server,
+    // 'HH:MM' quando viene dal dominio locale. Un confronto
+    // lessicografico crudo metterebbe '12:00' PRIMA di
+    // '<data>T08:00:00' (perche '1' < '2'), cioe la presa piu recente
+    // finirebbe in FONDO allo stack. Q3=A: la chiave temporale si
+    // normalizza a 'HH:MM' prima del confronto.
+    const repo = makeRepo([
+      {
+        id: 1,
+        farmaco_id: 10,
+        data: TODAY,
+        dose_numero: 2,
+        ora_prevista: '12:00',
+        ora_effettiva: '12:00',
+        stato: 'presa',
+      },
+      {
+        id: 2,
+        farmaco_id: 10,
+        data: TODAY,
+        dose_numero: 1,
+        ora_prevista: '08:00',
+        ora_effettiva: `${TODAY}T08:00:00`,
+        stato: 'presa',
+      },
+    ]);
+    const dispatched = await runInit({ repo });
+
+    const setStackAction = dispatched.find((a) => a.type === 'SET_PRESO_STACK');
+    expect(setStackAction.payload).toEqual([
       `${TODAY}-10-1`,
       `${TODAY}-10-2`,
     ]);

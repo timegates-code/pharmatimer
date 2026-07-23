@@ -91,6 +91,32 @@ function logRowToEntryKey(logRow) {
  * mirrors the production singleton from `services/notifications.js`
  * but every method is a no-op. §6.126 (Sessione 9-B parte 2/2).
  */
+/**
+ * Normalise a time-ish field to a comparable 'HH:MM' string.
+ * SENTINEL_S2C1_PRESOSTACK_SORT
+ *
+ * The same clinical instant reaches us in three shapes depending on the
+ * write path that produced the row:
+ *   'HH:MM'                 domain writes (PWA local)
+ *   'HH:MM:SS'              MySQL TIME through the API
+ *   'YYYY-MM-DDTHH:MM:SS'   MySQL DATETIME through the API
+ *
+ * A raw lexicographic compare ACROSS shapes is wrong: '08:05' sorts
+ * before '2026-07-23T08:05:00' because '0' < '2'. Ordering must never
+ * depend on which shape a row happens to carry, so every candidate is
+ * reduced to 'HH:MM' first.
+ *
+ * @param {unknown} value
+ * @returns {string} 'HH:MM', or '' when there is nothing comparable.
+ */
+function toComparableTime(value) {
+  if (typeof value !== 'string' || value.length === 0) return '';
+  const tIdx = value.indexOf('T');
+  const sepIdx = tIdx >= 0 ? tIdx : value.indexOf(' ');
+  const timePart = sepIdx >= 0 ? value.slice(sepIdx + 1) : value;
+  return timePart.slice(0, 5);
+}
+
 function defaultNoopServices() {
   return {
     notifications: {
@@ -200,17 +226,35 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
       //     that may theoretically live in logAssunzioni via
       //     PLAN_DAYS_AFTER; defensive guard)
       //
-      // Sort order: repo.getLogByRange returns ASC by (data,
-      // ora_effettiva). The filter preserves that order, so the LIFO
-      // convention (top = stack.at(-1) = most recent press) holds.
+      // Sort order (par.22.198-tretriginties, Q-AUD-3 -> PC-3): the
+      // repository guarantees NO order on either branch. The API path
+      // returns arrays.flat() of a per-farmaco fan-out (farmaco-major);
+      // the mirror returns Dexie `data` index order, ties by id. Neither
+      // is chronological, so after a reload the top of presoStack was
+      // not necessarily the most recent press, and `annulla ultima`
+      // could hit a different dose than the user expects: a dose really
+      // taken would go back to "to take" (M1) and the record would
+      // diverge from the intent (M3).
+      //
+      // The stack is therefore ordered EXPLICITLY below, so the LIFO
+      // convention (top = stack.at(-1) = most recent press) holds BY
+      // CONSTRUCTION rather than by an assumption about the caller.
       //
       // Dispatched AFTER INIT_SUCCESS (not merged into its payload) to
       // keep the init shape change minimal and isolate this concern
       // in its own action. No-op if the filter result is empty.
       const startPresoDate = addDays(today, -PLAN_DAYS_BEFORE);
-      const presaLogsInWindow = logAssunzioni.filter(
-        (l) => l.stato === 'presa' && l.data >= startPresoDate && l.data <= today
-      );
+      const presaLogsInWindow = logAssunzioni
+        .filter(
+          (l) => l.stato === 'presa' && l.data >= startPresoDate && l.data <= today
+        )
+        .sort((a, b) => {
+          if (a.data !== b.data) return a.data < b.data ? -1 : 1;
+          const ta = toComparableTime(a.ora_effettiva ?? a.ora_prevista);
+          const tb = toComparableTime(b.ora_effettiva ?? b.ora_prevista);
+          if (ta !== tb) return ta < tb ? -1 : 1;
+          return (a.dose_numero ?? 0) - (b.dose_numero ?? 0);
+        });
       dispatch({
         type: 'SET_PRESO_STACK',
         payload: presaLogsInWindow.map(logRowToEntryKey),

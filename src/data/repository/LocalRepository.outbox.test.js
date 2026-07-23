@@ -277,3 +277,100 @@ describe("LocalRepository -- sonda WP1 (transazione indivisibile a due store)", 
     console.log("WP1-b codice al chiamante:", caught.code);
   });
 });
+
+// ============================================================
+// SONDA WP5 -- upsertLogsBatch ANNIDATA nella transazione del tocco
+// (par.22.198-tretriginties / S2c-1 punto a0). SENTINEL_S2C1_WP5_PROBE
+// ------------------------------------------------------------
+// Domanda misurata: `upsertLogsBatch` apre una transazione PROPRIA
+// `db.transaction("rw", db.log_assunzioni, ...)` (LocalRepository.js:378).
+// Nel punto (c) di S2c-2 quella transazione finisce ANNIDATA dentro il
+// padre a DUE store aperto da withTransaction("rw", [log_assunzioni,
+// outbox]). Scope sottoinsieme: legale in Dexie IN TEORIA, mai misurato
+// in casa. Lesson #56/#57: si misura, non si deduce.
+//
+// Se WP5 risultasse RED il punto (c) cambierebbe FORMA -- il tocco
+// dovrebbe scrivere il registro senza passare da upsertLogsBatch, oppure
+// upsertLogsBatch dovrebbe diventare scope-aware -- e il cablaggio
+// andrebbe ridisegnato PRIMA di scriverlo. Per questo la sonda precede
+// ogni costruzione.
+//
+// WP5-c misura il rovescio: un padre che NON include `outbox` deve
+// FALLIRE. E il movente misurato di WP2, cioe dello allargamento
+// esplicito di scope che il punto (f) pretende da mirrorLogWindow.
+// ============================================================
+
+describe("LocalRepository -- sonda WP5 (upsertLogsBatch annidata nel tocco)", () => {
+  it("WP5-a: upsertLogsBatch nel padre a due store COMPLETA e committa", async () => {
+    let thrown = null;
+    try {
+      await repo.withTransaction("rw", ["log_assunzioni", "outbox"], async () => {
+        await repo.upsertLogsBatch([logRow(1, "2026-07-23", 1, "presa")]);
+        await repo.outboxEnqueue([
+          makeElement("presa", "uuid-wp5a", [logRow(1, "2026-07-23", 1)]),
+        ]);
+      });
+    } catch (err) {
+      thrown = err;
+    }
+
+    if (thrown) {
+      console.log("WP5-a ESITO: RED --", thrown.code, "--", thrown.message);
+    } else {
+      console.log("WP5-a ESITO: GREEN -- sub-transaction annidata legale");
+    }
+
+    expect(thrown).toBeNull();
+    expect(await db.log_assunzioni.count()).toBe(1);
+    expect((await repo.outboxCounts()).pending).toBe(1);
+  });
+
+  it("WP5-b: fallimento ESTERNO dopo la annidata -> rollback di ENTRAMBI", async () => {
+    let caught = null;
+    try {
+      await repo.withTransaction("rw", ["log_assunzioni", "outbox"], async () => {
+        await repo.upsertLogsBatch([logRow(2, "2026-07-23", 1, "presa")]);
+        await repo.outboxEnqueue([
+          makeElement("presa", "uuid-wp5b", [logRow(2, "2026-07-23", 1)]),
+        ]);
+        throw new Error("WP5: fallimento forzato DOPO entrambe le scritture");
+      });
+    } catch (err) {
+      caught = err;
+    }
+
+    expect(caught).not.toBeNull();
+    // Invariante clinico del tocco indivisibile: o tutto o nulla.
+    // Se la sub-transaction committasse per conto proprio, il registro
+    // conserverebbe una presa senza il suo elemento di coda: mai spedita
+    // e mai segnalata (M2).
+    expect(await db.log_assunzioni.count()).toBe(0);
+    expect(await repo.outboxCounts()).toEqual({ pending: 0, parked: 0 });
+
+    console.log("WP5-b codice al chiamante:", caught.code);
+  });
+
+  it("WP5-c: padre SENZA outbox nello scope -> FALLISCE (movente di WP2)", async () => {
+    let thrown = null;
+    try {
+      await repo.withTransaction("rw", ["log_assunzioni"], async () => {
+        await repo.upsertLogsBatch([logRow(3, "2026-07-23", 1, "presa")]);
+        await repo.outboxEnqueue([
+          makeElement("presa", "uuid-wp5c", [logRow(3, "2026-07-23", 1)]),
+        ]);
+      });
+    } catch (err) {
+      thrown = err;
+    }
+
+    console.log(
+      "WP5-c ESITO:",
+      thrown ? "SOLLEVA -- " + thrown.code : "NON SOLLEVA"
+    );
+
+    expect(thrown).not.toBeNull();
+    // Il registro non resta scritto a meta: la sub-transaction annidata
+    // muore col padre.
+    expect(await db.log_assunzioni.count()).toBe(0);
+  });
+});
