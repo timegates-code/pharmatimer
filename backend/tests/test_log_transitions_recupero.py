@@ -298,3 +298,225 @@ def test_post_recupero_cross_midnight_no_false_anticipation(
     )
     assert r_over.status_code == 409
 
+
+# --- SENTINEL_S2C2A_RECUPERO_ABSOLUTE_TESTS ---------------------------------
+# s.6.263: POST /recupero carries an ABSOLUTE total, not a relative decrement.
+# Shared baseline for the cases below (Spec 4.5 worked example):
+#   dose 2 -> ora_prevista 16:00, ora_ricalcolata 18:00, gap_minuti 120.
+
+
+def _setup_gap120(
+    client: TestClient,
+    token: str,
+    owner_id: int,
+    insert_test_farmaco: Callable[..., int],
+    nome: str,
+) -> Tuple[int, date, datetime]:
+    """Interval drug, dose 1 taken 2h late, dose 2 left 'ricalcolata'.
+
+    Returns (farmaco_id, today, base_ricalcolata), where base_ricalcolata is
+    ora_ricalcolata BEFORE any recupero is applied: today at 18:00.
+
+    Deliberately not reusing _setup_interval_drug_with_gap: that helper pins
+    ora_ricalcolata to 17:00 for every gap >= 60, which does not agree with
+    gap_minuti=120.
+    """
+    farmaco_id = insert_test_farmaco(
+        utente_id=owner_id,
+        nome=nome,
+        tipo_frequenza="intervallo",
+        intervallo_ore="8.0",
+        intervallo_minimo_ore="4.0",
+        dosi_giornaliere=3,
+    )
+    today = date.today()
+    base_ricalcolata = datetime.combine(today, dtime(18, 0))
+    presa_payload = {
+        "data": today.isoformat(),
+        "dose_numero": 1,
+        "ora_prevista": "08:00:00",
+        "ora_effettiva": datetime.combine(today, dtime(10, 0)).isoformat(),
+        "delta_minuti": 120,
+        "gap_minuti": 120,
+        "recupero_minuti": 0,
+        "ricalcolo_dose_successiva": {
+            "dose_numero": 2,
+            "data": today.isoformat(),
+            "ora_prevista": "16:00:00",
+            "ora_ricalcolata": base_ricalcolata.isoformat(),
+            "gap_minuti": 120,
+        },
+    }
+    r = client.post(
+        f"/api/farmaci/{farmaco_id}/log/presa",
+        json=presa_payload,
+        headers={"X-User-Token": token},
+    )
+    assert r.status_code == 201
+    return farmaco_id, today, base_ricalcolata
+
+
+def _post_recupero(
+    client: TestClient,
+    token: str,
+    farmaco_id: int,
+    today: date,
+    minuti: int,
+):
+    """POST /recupero on dose 2 of the shared baseline."""
+    return client.post(
+        f"/api/farmaci/{farmaco_id}/log/recupero",
+        json={
+            "data": today.isoformat(),
+            "dose_numero": 2,
+            "recupero_minuti": minuti,
+        },
+        headers={"X-User-Token": token},
+    )
+
+
+def test_post_recupero_repeated_is_absolute(
+    client: TestClient,
+    seed_owner_test: Tuple[str, int],
+    insert_test_farmaco: Callable[..., int],
+) -> None:
+    """T6 (s.6.263): the same total posted twice is inert, not cumulative.
+
+    M3 -- the record must state the truth. Under the relative form the second
+    POST shifts ora_ricalcolata again while recupero_minuti stays at 30, so the
+    column understates the real shift by half.
+    """
+    token, owner_id = seed_owner_test
+    farmaco_id, today, base = _setup_gap120(
+        client, token, owner_id, insert_test_farmaco, "RepeatAbs"
+    )
+
+    r1 = _post_recupero(client, token, farmaco_id, today, 30)
+    assert r1.status_code == 200
+    assert r1.json()["ora_ricalcolata"] == (
+        base - timedelta(minutes=30)
+    ).isoformat()
+
+    r2 = _post_recupero(client, token, farmaco_id, today, 30)
+    assert r2.status_code == 200
+    body = r2.json()
+    assert body["recupero_minuti"] == 30
+    assert body["ora_ricalcolata"] == (base - timedelta(minutes=30)).isoformat()
+    # Same assertion restated as the M3 invariant rather than a literal time.
+    assert body["ora_ricalcolata"] == (
+        base - timedelta(minutes=body["recupero_minuti"])
+    ).isoformat()
+
+
+def test_post_recupero_increase_reanchors(
+    client: TestClient,
+    seed_owner_test: Tuple[str, int],
+    insert_test_farmaco: Callable[..., int],
+) -> None:
+    """T7 (s.6.263): raising the total re-anchors to the original time.
+
+    30 then 90 must land at base-90, not at base-30-90.
+    """
+    token, owner_id = seed_owner_test
+    farmaco_id, today, base = _setup_gap120(
+        client, token, owner_id, insert_test_farmaco, "IncreaseAbs"
+    )
+
+    assert _post_recupero(client, token, farmaco_id, today, 30).status_code == 200
+
+    r2 = _post_recupero(client, token, farmaco_id, today, 90)
+    assert r2.status_code == 200
+    body = r2.json()
+    assert body["recupero_minuti"] == 90
+    assert body["ora_ricalcolata"] == (base - timedelta(minutes=90)).isoformat()
+
+
+def test_post_recupero_decrease_moves_dose_later(
+    client: TestClient,
+    seed_owner_test: Tuple[str, int],
+    insert_test_farmaco: Callable[..., int],
+) -> None:
+    """T8 (s.6.263): lowering the total moves the dose later.
+
+    Not expressible under the relative form, where every POST can only
+    subtract. Lets the user correct a recupero set too aggressively.
+    """
+    token, owner_id = seed_owner_test
+    farmaco_id, today, base = _setup_gap120(
+        client, token, owner_id, insert_test_farmaco, "DecreaseAbs"
+    )
+
+    assert _post_recupero(client, token, farmaco_id, today, 90).status_code == 200
+
+    r2 = _post_recupero(client, token, farmaco_id, today, 30)
+    assert r2.status_code == 200
+    body = r2.json()
+    assert body["recupero_minuti"] == 30
+    assert body["ora_ricalcolata"] == (base - timedelta(minutes=30)).isoformat()
+
+
+def test_post_recupero_cumulative_stays_within_gap(
+    client: TestClient,
+    seed_owner_test: Tuple[str, int],
+    insert_test_farmaco: Callable[..., int],
+) -> None:
+    """T9 (s.6.263): with an absolute total the gap check regains its meaning.
+
+    90 posted twice is a total of 90, inside gap 120, so it must succeed. Under
+    the relative form the second POST subtracts again and the anticipation
+    post-check answers 409 for a request the clinical model allows.
+
+    The trailing 121 pins that the gap check still fires under the new
+    semantics: it must stay a 409.
+    """
+    token, owner_id = seed_owner_test
+    farmaco_id, today, base = _setup_gap120(
+        client, token, owner_id, insert_test_farmaco, "CumulativeAbs"
+    )
+
+    assert _post_recupero(client, token, farmaco_id, today, 90).status_code == 200
+
+    r2 = _post_recupero(client, token, farmaco_id, today, 90)
+    assert r2.status_code == 200
+    assert r2.json()["ora_ricalcolata"] == (
+        base - timedelta(minutes=90)
+    ).isoformat()
+
+    r3 = _post_recupero(client, token, farmaco_id, today, 121)
+    assert r3.status_code == 409
+
+
+def test_post_recupero_null_ora_ricalcolata_rejected(
+    client: TestClient,
+    seed_owner_test: Tuple[str, int],
+    insert_test_farmaco: Callable[..., int],
+    db_test_pool,
+) -> None:
+    """T10: stato 'ricalcolata' with ora_ricalcolata NULL must be refused.
+
+    The column is NULLABLE (measured on the dev schema). With no explicit
+    guard, the anticipation post-check compares against NULL, NULL is falsy,
+    and the row is stored with recupero_minuti > 0 and no time at all: M3.
+    """
+    token, owner_id = seed_owner_test
+    farmaco_id, today, _base = _setup_gap120(
+        client, token, owner_id, insert_test_farmaco, "NullRicalc"
+    )
+
+    conn = db_test_pool.get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE log_assunzioni SET ora_ricalcolata = NULL "
+            "WHERE utente_id = %s AND farmaco_id = %s "
+            "AND data = %s AND dose_numero = %s",
+            (owner_id, farmaco_id, today, 2),
+        )
+        assert cur.rowcount == 1
+        conn.commit()
+        cur.close()
+    finally:
+        conn.close()
+
+    r = _post_recupero(client, token, farmaco_id, today, 30)
+    assert r.status_code == 409

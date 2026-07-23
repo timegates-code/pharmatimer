@@ -612,6 +612,23 @@ def post_recupero(
     TODO F3-S3-gamma+: intervallo_minimo_ore enforcement (Q-RES-2 deferred).
 
     DRIFT-NEW.3 = A: read row.gap_minuti directly (no TIMESTAMPDIFF inline).
+
+    s.6.263: recupero_minuti is an ABSOLUTE total, not a relative decrement.
+    Spec 4.3 normed a single application only; on a repeated application the
+    literal form of Spec 4.7 shifted ora_ricalcolata again while the column
+    kept the last value, so the record understated the real shift (M3). The
+    route now rebuilds the original ora_ricalcolata from the stored total,
+    then applies the new one. A single application is byte-identical to the
+    previous behaviour.
+
+    The old total is read in the SELECT ... FOR UPDATE and passed as a Python
+    parameter on purpose: MySQL evaluates UPDATE assignments left to right on
+    ALREADY updated values, so reading the column on the right-hand side would
+    make correctness depend on assignment order.
+
+    A 'ricalcolata' row with ora_ricalcolata NULL is refused: the anticipation
+    post-check compares against NULL, NULL is falsy, and the row would be
+    stored with a recupero and no time at all.
     """
     cur = conn.cursor(dictionary=True)
     try:
@@ -627,7 +644,8 @@ def post_recupero(
                 response.status_code = status.HTTP_200_OK
                 return LogAssunzioneVerboResponse(**dedup_row, dedup=True)
         cur.execute(
-            "SELECT id, stato, ora_prevista, ora_ricalcolata, gap_minuti "
+            "SELECT id, stato, ora_prevista, ora_ricalcolata, gap_minuti, "
+            "recupero_minuti "
             "FROM log_assunzioni "
             "WHERE utente_id = %s AND farmaco_id = %s "
             "AND data = %s AND dose_numero = %s "
@@ -647,6 +665,15 @@ def post_recupero(
                     f"/recupero richiede stato 'ricalcolata' (corrente '{existing['stato']}')"
                 ),
             )
+        if existing["ora_ricalcolata"] is None:
+            raise RepositoryError(
+                code=RepositoryErrorCode.CONSTRAINT_VIOLATION,
+                message=(
+                    "Riga 'ricalcolata' priva di ora_ricalcolata: "
+                    "recupero non applicabile"
+                ),
+            )
+        rec_old = int(existing["recupero_minuti"] or 0)
         gap_min = int(existing["gap_minuti"] or 0)
         if gap_min <= 0:
             raise RepositoryError(
@@ -667,10 +694,17 @@ def post_recupero(
         cur.execute(
             "UPDATE log_assunzioni SET "
             "recupero_minuti = %s, "
-            "ora_ricalcolata = ora_ricalcolata - INTERVAL %s MINUTE, "
+            "ora_ricalcolata = ora_ricalcolata "
+            "+ INTERVAL %s MINUTE - INTERVAL %s MINUTE, "
             "client_op_id = %s "
             "WHERE id = %s",
-            (payload.recupero_minuti, payload.recupero_minuti, payload.client_op_id, existing["id"]),
+            (
+                payload.recupero_minuti,
+                rec_old,
+                payload.recupero_minuti,
+                payload.client_op_id,
+                existing["id"],
+            ),
         )
 
         # Post-check: ora_ricalcolata >= TIMESTAMP(data, ora_prevista) (no
