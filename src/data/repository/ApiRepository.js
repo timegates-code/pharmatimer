@@ -296,8 +296,15 @@ export class ApiRepository {
   }
 
   // ==========================================================
-  // Private dispatch helpers
+  // Private dispatch helpers -- SENTINEL_S2C2B_TARGA_INJ
   // ==========================================================
+  // CS-4 / S2c-2b punto (d): every write payload carries the outbox
+  // element targa, generated at the tap and frozen with the element
+  // (M3). The field is OPTIONAL and defaults to null, so nothing
+  // changes for callers that do not queue. Server side it is the CS-2
+  // dedupe key: a redelivered gesture is recognised and applied once
+  // (M1), and a gesture that reaches the server exactly once is never
+  // lost to an ambiguous retry (M2).
 
   _dispatchLogVerb(farmacoId, data, doseNumero, patch) {
     const stato = patch && patch.stato;
@@ -311,6 +318,7 @@ export class ApiRepository {
         dose_numero: doseNumero,
         ora_prevista: patch.ora_prevista,
         note: patch.note ?? null,
+        client_op_id: patch.client_op_id ?? null,
       });
     }
     if (stato === "sospesa") {
@@ -319,6 +327,7 @@ export class ApiRepository {
         dose_numero: doseNumero,
         ora_prevista: patch.ora_prevista,
         note: patch.note ?? null,
+        client_op_id: patch.client_op_id ?? null,
       });
     }
     if (stato === "prevista" || stato === "ricalcolata") {
@@ -328,13 +337,34 @@ export class ApiRepository {
       return apiClient.post(`/api/farmaci/${farmacoId}/log/undo`, {
         data,
         dose_numero: doseNumero,
+        client_op_id: patch.client_op_id ?? null,
       });
     }
-    if (!stato && patch && patch.recupero_minuti > 0) {
+    // SENTINEL_S2C2B_EXC_IV
+    // s.6.264 (Q-H=A). Under the ABSOLUTE recupero semantics of s.6.263
+    // the natural domain of the total is 0..gap, and ZERO is a legitimate
+    // clinical gesture: RESET, i.e. ora_ricalcolata restored to the
+    // originally recalculated time. It used to be an unreachable point --
+    // the branch discriminated by VALUE, so a true total of zero could
+    // only be expressed with a one-minute workaround that falsified the
+    // record by one minute (M3). The guard now discriminates by PRESENCE
+    // and TYPE: absent, null, NaN and negatives still fall through to
+    // GENERIC and get parked (R-4), never guessed onto a route.
+    //
+    // BILATERAL, same commit: the server payload moves to ge=0. Relaxing
+    // one side alone was ratified as clinically UNSAFE and discarded --
+    // it yields either an endpoint no caller can reach or a client whose
+    // gesture the server rejects systematically.
+    //
+    // M1 intact: the reset moves the dose only TOWARDS its original
+    // recalculated time, never before ora_prevista (the SQL
+    // anticipation post-check is unchanged).
+    if (!stato && patch && typeof patch.recupero_minuti === "number" && patch.recupero_minuti >= 0) {
       return apiClient.post(`/api/farmaci/${farmacoId}/log/recupero`, {
         data,
         dose_numero: doseNumero,
         recupero_minuti: patch.recupero_minuti,
+        client_op_id: patch.client_op_id ?? null,
       });
     }
     throw new RepositoryError({
@@ -366,6 +396,12 @@ export class ApiRepository {
       ora_prevista: ricalc.ora_prevista,
       ora_ricalcolata: ricalc.ora_ricalcolata,
       gap_minuti: ricalc.gap_minuti ?? 0,
+      // Carried for uniformity of the write surface. MEASURED at
+      // quinquetriginties-bis: the nested server model does not declare
+      // this field and no request model forbids extras, so the server
+      // ignores it today. The dedupe key of the atomic couple travels on
+      // the top-level payload, which is where CS-2 looks for it.
+      client_op_id: ricalc.client_op_id ?? null,
     };
     const result = await apiClient.post(
       `/api/farmaci/${presa.farmaco_id}/log/presa`,
@@ -392,6 +428,7 @@ export class ApiRepository {
       gap_minuti: patch.gap_minuti ?? 0,
       recupero_minuti: patch.recupero_minuti ?? 0,
       note: patch.note ?? null,
+      client_op_id: patch.client_op_id ?? null,
     };
   }
 

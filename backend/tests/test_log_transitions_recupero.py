@@ -1,8 +1,11 @@
 """
 # F3-S3-beta CP1 idempotency_marker v01
 PharmaTimer F3-S3-beta CP1
-Pytest /recupero transitions (4 test): happy, eccesso gap, stato non ricalcolata,
-gap=0.
+Pytest /recupero transitions (11 test): happy, eccesso gap, stato non
+ricalcolata, gap=0, semantica assoluta s.6.263, guardia ora_ricalcolata
+NULL, reset a zero s.6.264.
+Conteggio RIMISURATO sul file: la dicitura precedente dichiarava 4 ed era
+stantia da piu sessioni.
 """
 from datetime import date, datetime, time as dtime, timedelta
 from typing import Callable, Tuple
@@ -484,6 +487,55 @@ def test_post_recupero_cumulative_stays_within_gap(
 
     r3 = _post_recupero(client, token, farmaco_id, today, 121)
     assert r3.status_code == 409
+
+
+def test_post_recupero_reset_to_zero_restores_original(
+    client: TestClient,
+    seed_owner_test: Tuple[str, int],
+    insert_test_farmaco: Callable[..., int],
+) -> None:
+    """T11 (s.6.264): recupero_minuti=0 is a legitimate gesture -- RESET.
+
+    SENTINEL_S6264_RESET_PIN
+
+    Under the ABSOLUTE semantics of s.6.263 the domain of the total is
+    0..gap, and zero means: put ora_ricalcolata back to the time it was
+    originally recalculated to. Before s.6.264 that point was unreachable
+    on BOTH sides (server gt=0 -> 422, client guard by value), so a true
+    total of zero could only be approximated with a one-minute workaround
+    that falsifies the record by one minute (M3).
+
+    Replay is inert: a second identical reset rewrites the same absolute
+    total. That is the property s.6.263 bought, and the precondition of
+    the retrying FIFO queue of CS-4 (M2). Targa-based dedupe of this same
+    route is pinned separately in test_log_client_op_dedup.py.
+
+    M1 unaffected: the reset moves the dose only TOWARDS its original
+    recalculated time, never before ora_prevista -- the SQL anticipation
+    post-check is untouched.
+    """
+    token, owner_id = seed_owner_test
+    farmaco_id, today, base = _setup_gap120(
+        client, token, owner_id, insert_test_farmaco, "ResetZero"
+    )
+
+    r1 = _post_recupero(client, token, farmaco_id, today, 90)
+    assert r1.status_code == 200
+    assert r1.json()["ora_ricalcolata"] == (
+        base - timedelta(minutes=90)
+    ).isoformat()
+
+    r2 = _post_recupero(client, token, farmaco_id, today, 0)
+    assert r2.status_code == 200
+    body = r2.json()
+    assert body["stato"] == "ricalcolata"
+    assert body["recupero_minuti"] == 0
+    assert body["ora_ricalcolata"] == base.isoformat()
+
+    r3 = _post_recupero(client, token, farmaco_id, today, 0)
+    assert r3.status_code == 200
+    assert r3.json()["recupero_minuti"] == 0
+    assert r3.json()["ora_ricalcolata"] == base.isoformat()
 
 
 def test_post_recupero_null_ora_ricalcolata_rejected(

@@ -510,7 +510,25 @@ export class LocalRepository {
     const list = Array.isArray(server) ? server : [];
     return this._wrap(
       () =>
-        db.transaction("rw", db.log_assunzioni, async () => {
+        db.transaction("rw", [db.log_assunzioni, db.outbox], async () => {
+          // SENTINEL_S2C2B_MIRROR_SHIELD
+          // Regola di protezione (Spec 14.4.4) -- CS-4/S2c-2b punto (f).
+          // A dose key frozen inside a pending|parked outbox element is a
+          // gesture the user already made and the server has not seen yet.
+          // A server snapshot must NEVER overwrite it before delivery (M2)
+          // and must never resurrect a stale value over it (M3).
+          //
+          // INDIVISIBLE: the outbox read happens INSIDE this transaction
+          // (scope widened to two stores), so the shield cannot go stale
+          // between the check and the write. `outboxProtectedKeys` opens a
+          // nested "r" sub-transaction on `outbox`: both mode and scope are
+          // subsets of this parent, which Dexie allows (WP5 GREEN).
+          //
+          // Shield applied to BOTH branches: a protected row is neither
+          // deleted nor overwritten. With an empty outbox `protectedKeys`
+          // is empty and the behaviour is byte-identical to CS-3.
+          const protectedKeys = await this.outboxProtectedKeys();
+          const doseKey = (r) => `${r.farmaco_id}|${r.data}|${r.dose_numero}`;
           const serverFarmIds = new Set(list.map((r) => r.farmaco_id));
           const inWindow = await db.log_assunzioni
             .where("data")
@@ -518,12 +536,14 @@ export class LocalRepository {
             .toArray();
           const toDelete = inWindow
             .filter((r) => serverFarmIds.has(r.farmaco_id))
+            .filter((r) => !protectedKeys.has(doseKey(r)))
             .map((r) => r.id);
           if (toDelete.length > 0) {
             await db.log_assunzioni.bulkDelete(toDelete);
           }
-          if (list.length > 0) {
-            await db.log_assunzioni.bulkPut(list);
+          const toPut = list.filter((r) => !protectedKeys.has(doseKey(r)));
+          if (toPut.length > 0) {
+            await db.log_assunzioni.bulkPut(toPut);
           }
         }),
       "TRANSACTION_ABORT"

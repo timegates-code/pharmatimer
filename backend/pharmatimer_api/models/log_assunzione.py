@@ -160,4 +160,15 @@ class LogAssunzioneRecuperoPayload(LogAssunzioneSlotPayload):
     beyond base time). intervallo_minimo_ore constraint DEFERRED F3-S3-gamma+.
     """
 
-    recupero_minuti: int = Field(..., gt=0, le=1440)
+    # SENTINEL_S6264_GE0
+    # s.6.264 (Q-H=A). Under the ABSOLUTE semantics of s.6.263 the natural
+    # domain of the total is 0..gap, and ZERO is a real clinical gesture,
+    # not a no-op: RESET, i.e. ora_ricalcolata restored to the originally
+    # recalculated time. MEASURED at quinquetriginties: this route already
+    # handles zero correctly by construction (rec_old restored, INTERVAL 0
+    # MINUTE, anticipation post-check unchanged) -- validation was the only
+    # obstacle. A true total of zero must be expressible, because the
+    # one-minute workaround falsifies the record by one minute (M3).
+    # The client guard moves to presence-and-type in the SAME commit:
+    # relaxing one side alone was ratified as clinically UNSAFE.
+    recupero_minuti: int = Field(..., ge=0, le=1440)

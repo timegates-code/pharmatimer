@@ -2,7 +2,9 @@
 //
 // SENTINEL_N5I_CP1_POST_APPLIED -- do not remove (idempotency_marker pattern par.22.58-Fase2 + Lesson #20)
 //
-// CP1.B (par.11.N-S3 N+5.I): 18 tests for Log assunzioni 9 methods.
+// CP1.B (par.11.N-S3 N+5.I): 20 tests for Log assunzioni 9 methods.
+// +2 a par.22.198-quinquetriginties-bis (s.6.264, punto zero del
+// totale assoluto); conteggio rimisurato, non incrementato a mente.
 // Covers: state-machine dispatch 5 verbi (sub-AMB A par.22.90), atomic detect [presa@D,
 // ricalcolata@D+1] (sub-AMB J), fan-out getLogByRange cross-farmaci (sub-AMB B),
 // EMP-21 HH:MM -> ISO datetime coercion, throw GENERIC for updateLog/deleteLog (sub-AMB N+O).
@@ -74,6 +76,7 @@ describe('ApiRepository Log assunzioni (dispatch + fan-out + atomic batch)', () 
       dose_numero: 2,
       ora_prevista: '20:00',
       note: 'dimenticato',
+      client_op_id: null,
     });
   });
 
@@ -95,7 +98,7 @@ describe('ApiRepository Log assunzioni (dispatch + fan-out + atomic batch)', () 
     await repo.upsertLog(42, '2026-05-24', 1, { stato: 'prevista' });
     const [url, body] = apiClient.post.mock.calls[0];
     expect(url).toBe('/api/farmaci/42/log/undo');
-    expect(body).toEqual({ data: '2026-05-24', dose_numero: 1 });
+    expect(body).toEqual({ data: '2026-05-24', dose_numero: 1, client_op_id: null });
   });
 
   // -------- 6: upsertLog ricalcolata -> undo (sub-AMB A.1 par.22.90) --------
@@ -111,7 +114,56 @@ describe('ApiRepository Log assunzioni (dispatch + fan-out + atomic batch)', () 
     await repo.upsertLog(42, '2026-05-24', 1, { recupero_minuti: 30 });
     const [url, body] = apiClient.post.mock.calls[0];
     expect(url).toBe('/api/farmaci/42/log/recupero');
-    expect(body).toEqual({ data: '2026-05-24', dose_numero: 1, recupero_minuti: 30 });
+    expect(body).toEqual({
+      data: '2026-05-24',
+      dose_numero: 1,
+      recupero_minuti: 30,
+      client_op_id: null,
+    });
+  });
+
+  // -------- 7-bis: s.6.264 -- lo ZERO e un gesto legittimo --------
+  it('upsertLog recupero_minuti===0 senza stato: POST /log/recupero (reset)', async () => {
+    // SENTINEL_S2C2B_PIN_RESET_CLIENT
+    // Sotto la semantica ASSOLUTA di s.6.263 il dominio del totale e
+    // 0..gap e lo zero significa RESET: ora_ricalcolata riportata alla
+    // ricalcolata originale. Prima di s.6.264 era un punto irraggiungibile
+    // e un totale vero pari a zero si poteva solo esprimere col
+    // ripiego a un minuto, che falsifica il record di un minuto (M3).
+    apiClient.post.mockResolvedValue({ id: 107 });
+    await repo.upsertLog(42, '2026-05-24', 1, { recupero_minuti: 0 });
+    const [url, body] = apiClient.post.mock.calls[0];
+    expect(url).toBe('/api/farmaci/42/log/recupero');
+    expect(body).toEqual({
+      data: '2026-05-24',
+      dose_numero: 1,
+      recupero_minuti: 0,
+      client_op_id: null,
+    });
+  });
+
+  // -------- 7-ter: la guardia discrimina per PRESENZA e TIPO --------
+  it('upsertLog recupero_minuti non numerico o negativo: resta GENERIC', async () => {
+    // SENTINEL_S2C2B_PIN_RESET_GUARD
+    // Il contrario del pin precedente: s.6.264 apre lo zero e NIENTE
+    // altro. Una forma non riconosciuta non si indovina mai su una rotta
+    // (R-4, PARK-ON-UNKNOWN); resta GENERIC e a valle si parcheggia.
+    for (const patch of [
+      { recupero_minuti: null },
+      { recupero_minuti: NaN },
+      { recupero_minuti: -1 },
+      { recupero_minuti: '0' },
+    ]) {
+      let caught;
+      try {
+        await repo.upsertLog(42, '2026-05-24', 1, patch);
+      } catch (err) {
+        caught = err;
+      }
+      expect(caught).toBeInstanceOf(RepositoryError);
+      expect(caught.code).toBe('GENERIC');
+    }
+    expect(apiClient.post).not.toHaveBeenCalled();
   });
 
   // -------- 8: upsertLog empty patch -> GENERIC --------
@@ -172,6 +224,7 @@ describe('ApiRepository Log assunzioni (dispatch + fan-out + atomic batch)', () 
       ora_prevista: '08:00',
       ora_ricalcolata: '08:30',
       gap_minuti: 30,
+      client_op_id: null,
     });
     expect(result).toHaveLength(2);
   });
