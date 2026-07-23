@@ -93,10 +93,70 @@ if [ -f "$ENV_SS" ]; then
     printf 'INFO  %-36s %3s / ~%-6s = ~%s%%\n' "$RLAB" "${CONSUNTIVO:-0}" "$RMID" "$RPCTS"
   fi
 fi
-if [ "$FAIL" -eq 0 ]; then
+# --- SONDA 20: impegni sotto guardia (SENTINEL_CP0_IMPEGNI_SONDA20; par.198-quattuortriginties-bis) ---
+# CLASSE 2 di RED, distinta dal DRIFT per ratifica Q-P3=A: non e il mondo che
+# diverge dallo stato dichiarato, e una DECISIONE DOVUTA che nessuno ha preso.
+# Contatore FAIL_IMP separato da FAIL; vocabolario SCAD/WARN mai DRIFT.
+# Semantica SCADE_A (Q-P2=A): valore di CONSUNTIVO ENTRO IL QUALE il lavoro
+# deve essere fatto. >= SCADE_A -> SCAD; == SCADE_A - 1 -> WARN; sotto -> silente.
+# Unica via di uscita da uno SCAD: fare il lavoro (riga rimossa) OPPURE
+# rinviare esplicitamente (SCADE_A nuovo e RINVII+1), atto visibile in git log -p.
+TSV_IMP="scripts/impegni.tsv"
+FAIL_IMP=0
+N=$((N+1))
+if [ ! -f "$TSV_IMP" ]; then
+  echo "DRIFT IMPEGNI atteso=$TSV_IMP trovato=assente (la guardia stessa e sparita)"
+  FAIL=1
+elif [ -z "${CONSUNTIVO:-}" ]; then
+  echo "DRIFT IMPEGNI atteso=CONSUNTIVO valorizzato trovato=vuoto"
+  FAIL=1
+else
+  IMP_TOT=0
+  IMP_SCAD=0
+  IMP_WARN=0
+  IMP_BAD=0
+  IMP_TAB="$(printf '\t')"
+  while IFS="$IMP_TAB" read -r I_TOK I_SCADE I_RINV I_NOTA || [ -n "${I_TOK:-}" ]; do
+    case "${I_TOK:-}" in
+      ""|"#"*|"TOKEN") continue ;;
+    esac
+    case "${I_SCADE:-}" in
+      ""|*[!0-9]*)
+        echo "DRIFT IMPEGNI riga malformata token=$I_TOK SCADE_A=${I_SCADE:-vuoto}"
+        IMP_BAD=$((IMP_BAD+1))
+        FAIL=1
+        continue
+        ;;
+    esac
+    IMP_TOT=$((IMP_TOT+1))
+    if [ "$CONSUNTIVO" -ge "$I_SCADE" ]; then
+      IMP_SCAD=$((IMP_SCAD+1))
+      FAIL_IMP=1
+      echo "SCAD  IMPEGNO $I_TOK SCADUTO (SCADE_A=$I_SCADE, CONSUNTIVO=$CONSUNTIVO, RINVII=${I_RINV:-?})"
+    elif [ "$CONSUNTIVO" -eq "$((I_SCADE-1))" ]; then
+      IMP_WARN=$((IMP_WARN+1))
+      echo "WARN  IMPEGNO $I_TOK in scadenza (SCADE_A=$I_SCADE, CONSUNTIVO=$CONSUNTIVO, RINVII=${I_RINV:-?})"
+    fi
+  done < "$TSV_IMP"
+  IMP_LINE="IMPEGNI = $IMP_TOT in guardia, $IMP_SCAD scaduti, $IMP_WARN in scadenza, $IMP_BAD malformate"
+  if [ "$IMP_SCAD" -gt 0 ]; then
+    echo "SCAD  $IMP_LINE"
+  elif [ "$IMP_BAD" -gt 0 ]; then
+    echo "DRIFT $IMP_LINE"
+  else
+    echo "OK    $IMP_LINE"
+  fi
+fi
+if [ "$FAIL" -eq 0 ] && [ "$FAIL_IMP" -eq 0 ]; then
   echo "CP0 VERDETTO: GREEN ($N sonde)"
   exit 0
-else
+elif [ "$FAIL" -eq 0 ]; then
+  echo "CP0 VERDETTO: RED -- IMPEGNO SCADUTO (decisione dovuta, non e un drift)"
+  exit 1
+elif [ "$FAIL_IMP" -eq 0 ]; then
   echo "CP0 VERDETTO: RED -- STOP-ON-DRIFT (regola par.197-ter: fermarsi e verbalizzare)"
+  exit 1
+else
+  echo "CP0 VERDETTO: RED -- DRIFT piu IMPEGNO SCADUTO"
   exit 1
 fi
