@@ -33,10 +33,12 @@ beforeEach(async () => {
     db.farmaci,
     db.orari_base,
     db.log_assunzioni,
+    db.outbox,
     async () => {
       await db.farmaci.clear();
       await db.orari_base.clear();
       await db.log_assunzioni.clear();
+      await db.outbox.clear();
     }
   );
 });
@@ -114,5 +116,142 @@ describe("LocalRepository.mirrorLogWindow", () => {
     );
     const row = await db.log_assunzioni.get(1);
     expect(row.stato).toBe("saltata");
+  });
+});
+
+// SENTINEL_S2C2B_PIN_CARDINALITA
+// Pin d4 (Q-AUD-2), posato a par.198-sextriginties sulla schermatura
+// NUOVA: dose-key shield piu id-space shield (SENTINEL_WP6_FIX in
+// LocalRepository.js). Harness: file-level beforeEach extended to
+// FOUR stores including the outbox store (Q-QUINQUIES-5=A). Third
+// case at COLLIDING id per LC-95: a pin is designed on the
+// configuration where the risk lives.
+describe("LocalRepository.mirrorLogWindow -- pin d4, cardinalita della schermatura (Q-AUD-2)", () => {
+  function elementoProtetto(farmacoId, data, doseNumero) {
+    // Full outbox element shape per Q4.A (transcription, not invention).
+    return {
+      stato: "pending",
+      op: "presa",
+      client_op_id: "uuid-d4-" + farmacoId + "-" + doseNumero,
+      logs: [{ farmaco_id: farmacoId, data: data, dose_numero: doseNumero }],
+      farmaco_id: farmacoId,
+      data: data,
+      dose_numero: doseNumero,
+      created_at: new Date().toISOString(),
+      attempts: 0,
+      parked_reason: null,
+      parked_at: null,
+    };
+  }
+
+  async function righeDellaDose(farmacoId, data, doseNumero) {
+    const tutte = await db.log_assunzioni.toArray();
+    return tutte.filter(
+      (r) =>
+        r.farmaco_id === farmacoId &&
+        r.data === data &&
+        r.dose_numero === doseNumero
+    );
+  }
+
+  it("d4-1: chiave protetta a cardinalita UNO, ed e la congelata", async () => {
+    const [riga] = await repo.upsertLogsBatch([
+      {
+        farmaco_id: 1,
+        data: "2026-07-10",
+        dose_numero: 1,
+        stato: "presa",
+        ora_effettiva: "2026-07-10T09:00:00",
+      },
+    ]);
+    await repo.outboxEnqueue([elementoProtetto(1, "2026-07-10", 1)]);
+    // The server republishes the SAME dose key with a stale state and
+    // a NON-colliding id: the key-space shield alone must hold here,
+    // and it must not duplicate the row either.
+    await repo.mirrorLogWindow(
+      [
+        {
+          id: 500,
+          farmaco_id: 1,
+          data: "2026-07-10",
+          dose_numero: 1,
+          stato: "prevista",
+        },
+      ],
+      "2026-07-05",
+      "2026-07-15"
+    );
+    const protetta = await righeDellaDose(1, "2026-07-10", 1);
+    expect(protetta).toHaveLength(1);
+    expect(protetta[0].id).toBe(riga.id);
+    expect(protetta[0].stato).toBe("presa");
+    expect(protetta[0].ora_effettiva).toBe("2026-07-10T09:00:00");
+  });
+
+  it("d4-2: dose di controllo NON protetta rimpiazzata regolarmente", async () => {
+    await db.log_assunzioni.bulkPut([
+      {
+        id: 40,
+        farmaco_id: 1,
+        data: "2026-07-10",
+        dose_numero: 2,
+        stato: "prevista",
+      },
+    ]);
+    // Protection is ACTIVE on a different key: the shield must be
+    // selective, not a blanket freeze of the window.
+    await repo.outboxEnqueue([elementoProtetto(1, "2026-07-10", 1)]);
+    await repo.mirrorLogWindow(
+      [
+        {
+          id: 41,
+          farmaco_id: 1,
+          data: "2026-07-10",
+          dose_numero: 2,
+          stato: "presa",
+        },
+      ],
+      "2026-07-05",
+      "2026-07-15"
+    );
+    const controllo = await righeDellaDose(1, "2026-07-10", 2);
+    expect(controllo).toHaveLength(1);
+    expect(controllo[0].id).toBe(41);
+    expect(controllo[0].stato).toBe("presa");
+  });
+
+  it("d4-3: id COLLIDENTE su chiave libera -- superstite intatto, riga server ri-chiavata", async () => {
+    const [riga] = await repo.upsertLogsBatch([
+      {
+        farmaco_id: 1,
+        data: "2026-07-10",
+        dose_numero: 1,
+        stato: "presa",
+        ora_effettiva: "2026-07-10T09:00:00",
+      },
+    ]);
+    await repo.outboxEnqueue([elementoProtetto(1, "2026-07-10", 1)]);
+    // The configuration where the risk lives (LC-95): free dose key,
+    // colliding primary key.
+    await repo.mirrorLogWindow(
+      [
+        {
+          id: riga.id,
+          farmaco_id: 1,
+          data: "2026-07-10",
+          dose_numero: 2,
+          stato: "prevista",
+        },
+      ],
+      "2026-07-05",
+      "2026-07-15"
+    );
+    const protetta = await righeDellaDose(1, "2026-07-10", 1);
+    expect(protetta).toHaveLength(1);
+    expect(protetta[0].id).toBe(riga.id);
+    expect(protetta[0].stato).toBe("presa");
+    const affiorata = await righeDellaDose(1, "2026-07-10", 2);
+    expect(affiorata).toHaveLength(1);
+    expect(affiorata[0].id).not.toBe(riga.id);
   });
 });

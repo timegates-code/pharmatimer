@@ -541,9 +541,41 @@ export class LocalRepository {
           if (toDelete.length > 0) {
             await db.log_assunzioni.bulkDelete(toDelete);
           }
+          // SENTINEL_WP6_FIX_ID_SHIELD
+          // WP6 fix (par.198-sextriginties, Q-FIX-1=A). The dose-key shield
+          // above cannot see the PRIMARY-KEY space: local autoincrement ids
+          // and server ids are independent sequences over the same integers
+          // (probe WP6: measures a, c, d RED pre-fix). A server row whose id
+          // equals the id of a SURVIVOR of this reconciliation -- a protected
+          // row, an in-window row of an inactive med, or ANY out-of-window
+          // row, protected ones included (protectedKeys covers them by key,
+          // not by id, and inWindow never reads them) -- would be written
+          // OVER that survivor by the PK upsert below (M1, M2, M3).
+          // Shield: survivor ids are read AFTER the delete (index-only
+          // primaryKeys), and each colliding server row is RE-KEYED into a
+          // computed free range: base = max(surviving ids, incoming ids) + 1,
+          // assigned sequentially. Deterministic and collision-free by
+          // construction, one single write call; the IDB generator realigns
+          // past any explicit key it sees. With zero collisions the written
+          // set is identical to the pre-fix code. A re-keyed row is plain
+          // unprotected mirror data: the next cycle replaces it, and once
+          // its blocking survivor is gone it converges back to its server
+          // id. Spec 14.4.4 (protected rows untouchable by any server
+          // snapshot) and 14.4.3 (faithful snapshot, absences included)
+          // both hold; cardinality per dose key stays one.
           const toPut = list.filter((r) => !protectedKeys.has(doseKey(r)));
           if (toPut.length > 0) {
-            await db.log_assunzioni.bulkPut(toPut);
+            const survivorIds = new Set(
+              await db.log_assunzioni.toCollection().primaryKeys()
+            );
+            let maxId = 0;
+            for (const k of survivorIds) if (k > maxId) maxId = k;
+            for (const r of toPut) if (r.id > maxId) maxId = r.id;
+            let nextFree = maxId + 1;
+            const shielded = toPut.map((r) =>
+              survivorIds.has(r.id) ? { ...r, id: nextFree++ } : r
+            );
+            await db.log_assunzioni.bulkPut(shielded);
           }
         }),
       "TRANSACTION_ABORT"
