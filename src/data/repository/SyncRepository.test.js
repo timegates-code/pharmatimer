@@ -28,6 +28,11 @@ function makeApi(overrides = {}) {
     getFarmaci: vi.fn().mockResolvedValue([]),
     getAllOrari: vi.fn().mockResolvedValue([]),
     getLogByRange: vi.fn().mockResolvedValue([]),
+    // CS-4 S2c-2b write-path. Signatures transcribed from the real
+    // contract in IRepository.js :110-111 -- upsertLog(farmacoId, data,
+    // doseNumero, patch) and upsertLogsBatch(logs, op).
+    upsertLog: vi.fn().mockResolvedValue({}),
+    upsertLogsBatch: vi.fn().mockResolvedValue([]),
     ...overrides,
   };
 }
@@ -40,6 +45,22 @@ function makeLocal(overrides = {}) {
     getFarmaci: vi.fn().mockResolvedValue([]),
     getAllOrari: vi.fn().mockResolvedValue([]),
     getLogByRange: vi.fn().mockResolvedValue([]),
+    // CS-4 S2c-2b write-path. Signatures transcribed from the real
+    // LocalRepository.js: :372 upsertLogsBatch(logs), :439
+    // withTransaction(mode, storeNames, fn), :594 outboxEnqueue(elements),
+    // :602 outboxNextPending(), :613 outboxRemove(id), :618
+    // outboxPark(id, reason).
+    //
+    // `withTransaction` RUNS its callback on purpose: a mock that
+    // swallowed it would make every write-path pin below VACUOUS -- the
+    // touch would never be attempted, and the silence of the network
+    // would prove nothing at all.
+    withTransaction: vi.fn(async (mode, storeNames, fn) => fn()),
+    upsertLogsBatch: vi.fn().mockResolvedValue([]),
+    outboxEnqueue: vi.fn().mockResolvedValue(undefined),
+    outboxNextPending: vi.fn().mockResolvedValue(null),
+    outboxRemove: vi.fn().mockResolvedValue(undefined),
+    outboxPark: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -202,6 +223,42 @@ describe("SyncRepository", () => {
       );
       expect(local.mirrorLogWindow).not.toHaveBeenCalled();
     });
+
+    it("clinico: il server dice prevista, lo specchio dice presa -- affiora presa", async () => {
+      // SENTINEL_S2C2B_PIN_REREAD
+      // Distinct from the pin above, which fixes referential identity
+      // ONLY. Here the CONTENT is the point: a live outbox promise holds
+      // the dose as `presa` in the mirror while the server snapshot still
+      // says `prevista`. Returning the snapshot would send the card back
+      // to "da prendere" (M1) and make the queued gesture look lost (M2),
+      // so the re-read must win and the server value must NOT surface.
+      const server = [
+        {
+          id: 1,
+          farmaco_id: 10,
+          data: "2026-07-10",
+          dose_numero: 1,
+          stato: "prevista",
+        },
+      ];
+      const riletto = [
+        {
+          id: 1,
+          farmaco_id: 10,
+          data: "2026-07-10",
+          dose_numero: 1,
+          stato: "presa",
+        },
+      ];
+      const api = makeApi({ getLogByRange: vi.fn().mockResolvedValue(server) });
+      const local = makeLocal({
+        getLogByRange: vi.fn().mockResolvedValue(riletto),
+      });
+      const sync = new SyncRepository(api, local);
+      const res = await sync.getLogByRange("2026-07-05", "2026-07-15");
+      expect(res.map((r) => r.stato)).toEqual(["presa"]);
+      expect(res.some((r) => r.stato === "prevista")).toBe(false);
+    });
   });
 
   describe("forwarders", () => {
@@ -233,6 +290,136 @@ describe("SyncRepository", () => {
       expect(await sync.getLogByData("2026-07-10")).toEqual(["row"]);
       expect(api.getLogByData).toHaveBeenCalledWith("2026-07-10");
       expect(local.mirrorLogWindow).not.toHaveBeenCalled();
+    });
+  });
+
+  // ==========================================================
+  // Write-path pins (CS-4 S2c-2b, par.22.198-septtriginties)
+  // ==========================================================
+  // The gesture is annotated FIRST in ledger + outbox, in ONE
+  // transaction (taccuino-prima, Spec 14.6.2), and only then delivered.
+  // Park reasons are asserted as RAW LITERALS on purpose (Q-SEPT-1=A):
+  // that string is what the Centro invii shows the person, so a silent
+  // rename must BREAK these pins instead of quietly following them.
+
+  describe("write-path (CS-4 S2c-2b)", () => {
+    const LOGS = [
+      { farmaco_id: 1, data: "2026-07-24", dose_numero: 1, stato: "presa" },
+    ];
+
+    function elemento(id) {
+      return {
+        id,
+        op: "presa",
+        client_op_id: "targa-" + id,
+        logs: [
+          { farmaco_id: 1, data: "2026-07-24", dose_numero: 1, stato: "presa" },
+        ],
+      };
+    }
+
+    it("GENERIC: parcheggia ROTTA_NON_DERIVABILE, mai rimuove, promise RESOLVE", async () => {
+      // SENTINEL_S2C2B_PIN_GENERIC
+      // A broken request is not healed by retrying (Spec 14.3), but it
+      // must never be dropped either: the dose was really taken (M2).
+      const scritte = [{ id: 501, ...LOGS[0] }];
+      const api = makeApi({
+        upsertLog: vi.fn().mockRejectedValue({ code: "GENERIC" }),
+      });
+      const local = makeLocal({
+        upsertLogsBatch: vi.fn().mockResolvedValue(scritte),
+        outboxNextPending: vi
+          .fn()
+          .mockResolvedValueOnce(elemento(11))
+          .mockResolvedValue(null),
+      });
+      const sync = new SyncRepository(api, local);
+
+      await expect(sync.upsertLogsBatch(LOGS, "presa")).resolves.toBe(scritte);
+      expect(api.upsertLog).toHaveBeenCalledTimes(1);
+      expect(local.outboxPark).toHaveBeenCalledWith(11, "ROTTA_NON_DERIVABILE");
+      expect(local.outboxRemove).not.toHaveBeenCalled();
+    });
+
+    it("CONSTRAINT_VIOLATION: parcheggia CONFLITTO_O_RICHIESTA_ROTTA, mai drop", async () => {
+      // SENTINEL_S6266_PIN_PARK
+      // s.6.266: a true 409 and a broken 4xx arrive indistinguishable and
+      // Spec 14.3 asks for opposite actions. Both PARK: the parking lot
+      // never discards, while a drop would lose a dose really taken (M2)
+      // and send the card back to "da prendere" (M1).
+      const scritte = [{ id: 502, ...LOGS[0] }];
+      const api = makeApi({
+        upsertLog: vi.fn().mockRejectedValue({ code: "CONSTRAINT_VIOLATION" }),
+      });
+      const local = makeLocal({
+        upsertLogsBatch: vi.fn().mockResolvedValue(scritte),
+        outboxNextPending: vi
+          .fn()
+          .mockResolvedValueOnce(elemento(21))
+          .mockResolvedValue(null),
+      });
+      const sync = new SyncRepository(api, local);
+
+      await expect(sync.upsertLogsBatch(LOGS, "presa")).resolves.toBe(scritte);
+      expect(local.outboxPark).toHaveBeenCalledWith(
+        21,
+        "CONFLITTO_O_RICHIESTA_ROTTA"
+      );
+      expect(local.outboxRemove).not.toHaveBeenCalled();
+    });
+
+    it("il parcheggio NON blocca la fila: il secondo elemento viene consegnato", async () => {
+      // SENTINEL_S6266_PIN_PARK
+      // Spec 14.3: parking does not stop the queue -- only unreachable,
+      // 5xx and UNAUTHORIZED do. A parked head that froze the file would
+      // strand every later dose behind it (M2).
+      const api = makeApi({
+        upsertLog: vi
+          .fn()
+          .mockRejectedValueOnce({ code: "CONSTRAINT_VIOLATION" })
+          .mockResolvedValue({ id: 1 }),
+      });
+      const local = makeLocal({
+        outboxNextPending: vi
+          .fn()
+          .mockResolvedValueOnce(elemento(31))
+          .mockResolvedValueOnce(elemento(32))
+          .mockResolvedValue(null),
+      });
+      const sync = new SyncRepository(api, local);
+
+      await sync.upsertLogsBatch(LOGS, "presa");
+      expect(local.outboxPark).toHaveBeenCalledWith(
+        31,
+        "CONFLITTO_O_RICHIESTA_ROTTA"
+      );
+      expect(local.outboxRemove).toHaveBeenCalledTimes(1);
+      expect(local.outboxRemove).toHaveBeenCalledWith(32);
+    });
+
+    it("transazione-tocco fallita: la promise RIGETTA e nessuna rete parte", async () => {
+      // SENTINEL_S2C2B_PIN_REJECT
+      // Voce 52 / Q-QUATER-5=A: `reject` is legal ONLY here, on a touch
+      // that failed to be annotated. The mock RUNS the callback and only
+      // then aborts, so the pin proves the network stayed silent because
+      // delivery never started -- not because the callback was skipped.
+      // The earlier form of this pin was VACUOUS for exactly that reason.
+      const boom = { code: "TRANSACTION_ABORT" };
+      const api = makeApi();
+      const local = makeLocal({
+        withTransaction: vi.fn(async (mode, storeNames, fn) => {
+          await fn();
+          throw boom;
+        }),
+      });
+      const sync = new SyncRepository(api, local);
+
+      await expect(sync.upsertLogsBatch(LOGS, "presa")).rejects.toBe(boom);
+      expect(local.upsertLogsBatch).toHaveBeenCalled();
+      expect(local.outboxEnqueue).toHaveBeenCalled();
+      expect(api.upsertLog).not.toHaveBeenCalled();
+      expect(api.upsertLogsBatch).not.toHaveBeenCalled();
+      expect(local.outboxNextPending).not.toHaveBeenCalled();
     });
   });
 });

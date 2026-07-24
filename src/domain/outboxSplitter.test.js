@@ -284,3 +284,39 @@ describe('outboxSplitter -- forma dello elemento (Q4.A)', () => {
     expect(splitIntoElements({ op: 'presa', logs: [], newId, now })).toEqual([]);
   });
 });
+
+describe('outboxSplitter -- OUTBOX_OPS append-only (Q-S2C-5 = A)', () => {
+  // SENTINEL_S2C5_PIN_OPS_APPEND
+  // Il toEqual del pin Q-OP1 resta INTATTO e pinna materia distinta: la
+  // forma esatta del vocabolario di oggi. Qui si pinna la REGOLA -- il
+  // vocabolario non perde e non ricicla MAI un verbo. Un verbo rimosso
+  // renderebbe non derivabile la rotta di ogni elemento gia in coda che
+  // lo porta: il gesto finirebbe parcheggiato per un motivo che non e
+  // colpa sua, e una presa vera resterebbe in attesa di mani umane (M2).
+  //
+  // La lista storica e SEPARATA di proposito: se fosse derivata da
+  // OUTBOX_OPS il pin seguirebbe una rimozione invece di romperla.
+  const OPS_STORICI = [
+    'presa',
+    'salta',
+    'sospendi',
+    'recupero',
+    'ripristina',
+    'annullaUltima',
+    'annullaAssunzione',
+  ];
+
+  it('nessun verbo storico e mai stato rimosso', () => {
+    for (const op of OPS_STORICI) {
+      expect(OUTBOX_OPS, `verbo storico rimosso: ${op}`).toContain(op);
+    }
+  });
+
+  it('il vocabolario e congelato in scrittura', () => {
+    expect(Object.isFrozen(OUTBOX_OPS)).toBe(true);
+  });
+
+  it('nessun verbo e riciclato: zero duplicati', () => {
+    expect(new Set(OUTBOX_OPS).size).toBe(OUTBOX_OPS.length);
+  });
+});
