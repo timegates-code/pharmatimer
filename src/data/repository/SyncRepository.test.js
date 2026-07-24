@@ -421,5 +421,84 @@ describe("SyncRepository", () => {
       expect(api.upsertLogsBatch).not.toHaveBeenCalled();
       expect(local.outboxNextPending).not.toHaveBeenCalled();
     });
+
+    it("s.6.259: N elementi accodati in UNA transazione a due store", async () => {
+      // SENTINEL_S6259_PIN_TX_SCOPE
+      // INVARIANTE TOCCO INDIVISIBILE (Spec 14.3). PIN_REJECT above proves
+      // both writes happen INSIDE the callback; it says nothing about the
+      // scope. If "outbox" ever fell out of storeNames the ledger would
+      // commit alone: the touch would be annotated with no promise behind
+      // it, and a dose really taken would never be delivered (M2).
+      // The 3-row shape is the #17 one, so the split is exercised for real:
+      // one lone `saltata` plus the atomic couple.
+      const TRE = [
+        { farmaco_id: 1, data: "2026-07-22", dose_numero: 1, stato: "saltata" },
+        { farmaco_id: 1, data: "2026-07-23", dose_numero: 1, stato: "presa" },
+        {
+          farmaco_id: 1,
+          data: "2026-07-24",
+          dose_numero: 1,
+          stato: "ricalcolata",
+        },
+      ];
+      const api = makeApi();
+      const local = makeLocal();
+      const sync = new SyncRepository(api, local);
+
+      await sync.upsertLogsBatch(TRE, "presa");
+
+      expect(local.withTransaction).toHaveBeenCalledTimes(1);
+      const [mode, storeNames] = local.withTransaction.mock.calls[0];
+      expect(mode).toBe("rw");
+      expect(storeNames).toEqual(["log_assunzioni", "outbox"]);
+
+      // TUTTI gli elementi in UNA sola chiamata: due accodamenti separati
+      // non sarebbero piu un tocco indivisibile.
+      expect(local.outboxEnqueue).toHaveBeenCalledTimes(1);
+      const [elementi] = local.outboxEnqueue.mock.calls[0];
+      expect(elementi).toHaveLength(2);
+      expect(elementi.map((e) => e.logs.length)).toEqual([1, 2]);
+      // UNA targa per elemento, distinte (M3: congelate al tocco).
+      expect(new Set(elementi.map((e) => e.client_op_id)).size).toBe(2);
+    });
+
+    it("s.6.259: la coppia atomica viaggia come UNA sola richiesta", async () => {
+      // SENTINEL_S6259_PIN_UNA_RICHIESTA
+      // "un elemento = UNA richiesta API". Due upsertLog sequenziali
+      // manderebbero la riga `ricalcolata` sul ramo /log/undo e la dose N+1
+      // perderebbe il proprio ricalcolo (M1): e il finding #17 alla lettera.
+      const COPPIA = [
+        { farmaco_id: 1, data: "2026-07-23", dose_numero: 1, stato: "presa" },
+        {
+          farmaco_id: 1,
+          data: "2026-07-24",
+          dose_numero: 1,
+          stato: "ricalcolata",
+        },
+      ];
+      const api = makeApi();
+      const local = makeLocal({
+        outboxNextPending: vi
+          .fn()
+          .mockResolvedValueOnce({
+            id: 41,
+            op: "presa",
+            client_op_id: "targa-41",
+            logs: COPPIA,
+          })
+          .mockResolvedValue(null),
+      });
+      const sync = new SyncRepository(api, local);
+
+      await sync.upsertLogsBatch(COPPIA, "presa");
+
+      expect(api.upsertLogsBatch).toHaveBeenCalledTimes(1);
+      expect(api.upsertLog).not.toHaveBeenCalled();
+      const [righe] = api.upsertLogsBatch.mock.calls[0];
+      expect(righe).toHaveLength(2);
+      // La targa e UNA per elemento e viaggia su entrambe le righe.
+      expect(righe.every((r) => r.client_op_id === "targa-41")).toBe(true);
+      expect(local.outboxRemove).toHaveBeenCalledWith(41);
+    });
   });
 });

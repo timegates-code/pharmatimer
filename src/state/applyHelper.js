@@ -30,6 +30,9 @@
 // into a single render.
 
 import { DomainError } from '../domain/errors.js';
+// s.6.261 livello 1: il vocabolario dei verbi e la SOLA fonte di verita
+// del confine del tocco. Direzione state -> domain, gia in uso in actions.js.
+import { OUTBOX_OPS } from '../domain/outboxSplitter.js';
 
 /**
  * @typedef {object} CommitArgs
@@ -52,8 +55,11 @@ import { DomainError } from '../domain/errors.js';
  *           repo.upsertLogsBatch as the 2nd argument so the outbox
  *           splitter can label the queued element with the GESTURE
  *           (the delivery route is derived later, never frozen).
- *           INERT in S2b: all 3 repository implementations have arity 1
- *           and ignore it. SENTINEL_S2B_OP_EXPLICIT
+ *           CONSUMED by SyncRepository.upsertLogsBatch (arity 2) since
+ *           S2c-2b; LocalRepository and ApiRepository keep arity 1 and
+ *           ignore it, so the verb only matters on the guarded path.
+ *           Checked at the touch boundary: SENTINEL_S6261_L1_OP_GUARD.
+ *           SENTINEL_S2B_OP_EXPLICIT
  */
 
 /**
@@ -68,6 +74,35 @@ export async function commitApplyResult({
   if (pushPresoKey && popPresoKey) {
     throw new Error(
       'commitApplyResult: pushPresoKey and popPresoKey are mutually exclusive'
+    );
+  }
+
+  // s.6.261 -- LIVELLO 1 della clausola di irraggiungibilita (Q-NOVEMTRIG-1=A).
+  // The gesture verb is the ONLY thing the outbox cannot derive: the delivery
+  // route is derived at delivery time, but `op` must be CARRIED. A missing or
+  // misspelled verb parks the element as OP_SCONOSCIUTO (level 2): nothing is
+  // lost (M2 holds), yet a dose really taken waits for human hands instead of
+  // being delivered.
+  //
+  // ASYMMETRIC ON PURPOSE, unlike the guard just above. There the two stack
+  // keys admit no safe degradation, so it throws everywhere. Here a safe
+  // degradation EXISTS (the parking lot), so production never throws at all.
+  // PLACEMENT IS LOAD-BEARING: the very same check at the persist site would
+  // fall inside the try/catch below, whose rollback restores the plan
+  // snapshot and re-pushes presoStack -- the card would go back to "da
+  // prendere" (M1) and a gesture already annotated would look lost (M2).
+  // Up here, above every dispatch, there is nothing to roll back, so outside
+  // production the omission can be LOUD: an eighth gesture that forgets its
+  // verb can never reach a pilot.
+  //
+  // The env read is DEFENSIVE (same shape as data/repository/index.js): the
+  // bare form would raise TypeError right here, at the touch boundary, if
+  // import.meta.env were undefined -- exactly the failure this design avoids.
+  // SENTINEL_S6261_L1_OP_GUARD
+  const opGuardActive = Boolean(import.meta.env && import.meta.env.DEV);
+  if (opGuardActive && !OUTBOX_OPS.includes(op)) {
+    throw new Error(
+      'commitApplyResult: verbo di gesto non riconosciuto: ' + String(op)
     );
   }
 
