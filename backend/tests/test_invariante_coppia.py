@@ -669,16 +669,29 @@ def _seq_sc6(client, token, owner_id, insert_test_farmaco, pool):
 
 
 def _seq_sc7(client, token, owner_id, insert_test_farmaco, pool):
-    """:202-212 selects `stato` and never reads it.
+    """:202-212 now guards the destination state -- s.6.269, Q-QBIS-1=A.
 
-    Sites :143, :334 and :431 all refuse a transition from a closed state with
-    409. This branch does not, so a dose already taken can be returned to
-    'ricalcolata' with ora_effettiva and delta_minuti still populated, and
-    reappears to the patient as due.
+    Sites :143, :334 and :431 refuse a transition from a closed state with
+    409. This branch used to select `stato` under FOR UPDATE and never read
+    it, so a dose already taken came back as 'ricalcolata' with ora_effettiva
+    still populated: the record called 'due' a dose that had been taken (M1)
+    and kept the taken time on it (M3).
 
-    DIFFERENT DEFECT from the pair: guarded by n3-stato-destinazione, not by
-    s.6.268. PERIMETER: server-side reachability only. Whether the PWA can
-    compose this sequence is NOT measured and is asserted in no direction.
+    DIFFERENT DEFECT from the pair: it was guarded by n3-stato-destinazione,
+    not by s.6.268.
+
+    WHY corretto IS 201 AND NOT 409. s.6.269: the guard SKIPS the
+    recalculation and confirms dose D, instead of refusing the whole request.
+    Refusing would roll back dose D, and a 4xx parks the queued element with
+    no retry (Spec 14.3), so a real intake would never reach the server and
+    would stay invisible until CS-5 (M2). Conformity is therefore 201 with
+    D+1 left 'presa' and its ora_effettiva intact.
+
+    REACHABILITY FROM THE PWA, measured at quadragies-quater-bis: the client
+    guard in recalc.js :417 reads the LOCAL mirror at tap time while the
+    payload is frozen and delivered later by the queue, so it cannot bind the
+    server state at the moment of the UPDATE. Only the site holding the lock
+    can, and that is this one.
     """
     farmaco_id = insert_test_farmaco(
         utente_id=owner_id, nome="SC7", tipo_frequenza="intervallo",
@@ -727,8 +740,8 @@ def _seq_sc7(client, token, owner_id, insert_test_farmaco, pool):
     row = _read_row(pool, owner_id, farmaco_id, today, 2)
     return {
         "SC-7.1": Passo(
-            sede=":202-212 stato di destinazione non controllato",
-            corretto=(409, "presa", True),
+            sede=":202-212 guardia dello stato di destinazione (s.6.269)",
+            corretto=(201, "presa", True),
             rotto=(201, "ricalcolata", True),
             misurato=(
                 r.status_code, row["stato"], row["ora_effettiva"] is not None
@@ -961,15 +974,12 @@ def test_s696_punto_zero_su_base_falsa(
     _esigi("SC-5.1", passi["SC-5.1"])
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "n3-stato-destinazione, difetto DIVERSO dalla coppia: :202-212 non "
-        "legge lo stato, quindi una dose gia presa torna ricalcolata con 201 "
-        "invece di essere rifiutata con 409, conservando ora_effettiva. "
-        "Conformita = guardia di stato allineata a :143/:334/:431."
-    ),
-)
+# SENTINEL_S6269_XFAIL_RIMOSSO -- Q-QBIS-1=A. Marker removed in the SAME
+# session that repaired the site, as the STATO clause requires. From here on
+# this is a HARD test: if the guard is dropped, SC-7.1 measures
+# (201, 'ricalcolata', True), stops matching `corretto`, and there is no xfail
+# left to swallow it. The function NAME is historical -- it names the defect
+# the step was minted for and is kept so the Changelog references hold.
 def test_n3_stato_destinazione_non_controllato(
     client, seed_owner_test, insert_test_farmaco, db_test_pool
 ) -> None:

@@ -200,16 +200,36 @@ def post_presa(
             )
             next_dose = cur.fetchone()
             if next_dose is not None:
-                cur.execute(
-                    "UPDATE log_assunzioni SET "
-                    "ora_ricalcolata = %s, gap_minuti = %s, stato = 'ricalcolata' "
-                    "WHERE id = %s",
-                    (
-                        ricalc.ora_ricalcolata,
-                        ricalc.gap_minuti,
-                        next_dose["id"],
-                    ),
-                )
+                # SENTINEL_S6269_GUARDIA_STATO_DESTINAZIONE -- Q-QBIS-1=A.
+                #
+                # n3-stato-destinazione: this branch used to overwrite the
+                # destination row without ever reading the `stato` it had just
+                # selected under FOR UPDATE, so a dose already closed by the
+                # user came back as 'ricalcolata' while keeping ora_effettiva.
+                # The record then called 'due' a dose that had been taken (M1)
+                # and kept the taken time on it (M3). Sites :143, :334 and
+                # :431 all refuse a transition from a closed state; this one
+                # did not.
+                #
+                # s.6.269 -- the guard SKIPS the recalculation instead of
+                # refusing the whole request. Refusing would roll back dose D
+                # written above, and a 4xx parks the queued element with no
+                # retry (Spec 14.3): a real intake would never reach the
+                # server and would stay invisible until CS-5 (M2). Skipping
+                # leaves BOTH rows truthful server-side. Realignment of the
+                # client mirror rides on the 2xx refresh; that the refreshed
+                # window covers D+1 is NOT measured and is anchored to CS-5.
+                if next_dose["stato"] not in ("presa", "saltata", "sospesa"):
+                    cur.execute(
+                        "UPDATE log_assunzioni SET "
+                        "ora_ricalcolata = %s, gap_minuti = %s, stato = 'ricalcolata' "
+                        "WHERE id = %s",
+                        (
+                            ricalc.ora_ricalcolata,
+                            ricalc.gap_minuti,
+                            next_dose["id"],
+                        ),
+                    )
             else:
                 cur.execute(
                     "INSERT INTO log_assunzioni ("
