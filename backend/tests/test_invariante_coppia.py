@@ -12,76 +12,110 @@ record of the measurement session and is no longer the collaudo of the fix.
 
 WHAT THESE TESTS ASSERT
 Every discriminating test asserts the CORRECT value -- the one a guarded pair
-would produce -- and carries xfail(strict=True) while s.6.268 lives. The day a
-site is repaired its test becomes XPASS, which under strict is a FAILURE, and
-the suite breaks instead of staying green in silence. Characterization tests of
-the broken behavior were rejected: a suite that asserts as CORRECT what is
-wrong misleads whoever maintains it.
+produces. Characterization tests of the broken behavior were rejected: a suite
+that asserts as CORRECT what is wrong misleads whoever maintains it.
+
+THE REGIME, AND ITS CHANGE AT fix-invariante-coppia (Q-COPPIA-3=A)
+HISTORICAL, kept as record. While s.6.268 lived, every discriminating test
+carried xfail(strict=True): the day a site was repaired its test would turn
+XPASS, which under strict is a FAILURE, so the suite would break instead of
+staying green in silence. That is what happened, and it was MEASURED before
+the markers were touched -- five sites repaired, eleven XPASS(strict) in one
+run, 118 passed beside them.
+FROM HERE ON the steps are HARD tests, and they are THIRTEEN: the mutation
+collaudo of the fix found the :546 site repaired but covered by nothing, so
+SC-9.1 was minted for it (Q-COPPIA-6=A). Two consequences, and the second is
+not an improvement in disguise:
+  - They now intercept ANY deviation from the correct value, a worsening
+    included. Limit 1 below described the opposite and no longer holds.
+  - They no longer inherit the LC-106 guarantee described further down. A step
+    ADDED to this file from here on must be shown discriminating by MUTATION;
+    the structure of a decorator no longer does it for free. SC-9.1 was the
+    first step to pay that price, and it paid it.
 
 GRANULARITY (Q-QUATER-2=B)
-One test per STEP, twelve in all. One test per SCENARIO was refused on
-measurement, not on preference: xfail lives on the TEST, so with three steps
-inside SC-1 a partial fix of one site would have left the test red and silent.
-Only :443 and :154 would have carried an isolated signal -- two sites out of
-five. Twelve tests cost twelve executions of a sequence instead of seven; the
-setups are shared through the _seq_* functions below and are never duplicated,
-because setups that diverge give measurements that diverge.
+One test per STEP: twelve at Q-QUATER-2=B, THIRTEEN from fix-invariante-coppia.
+One test per SCENARIO was refused on measurement, not on preference: xfail
+lived on the TEST, so with three steps inside SC-1 a partial fix of one site
+would have left the test red and silent. Only :443 and :154 would have carried
+an isolated signal -- two sites out of five. That sentence aged into a finding:
+at the fix, mutation measured :546 to carry NO signal at all, and SC-9.1 exists
+because of it. One test per step costs one execution of a sequence per step
+instead of one per scenario; the setups are shared through the _seq_* functions
+below and are never duplicated, because setups that diverge give measurements
+that diverge.
 
-LC-106 IS NOW STRUCTURAL. DO NOT RESTORE THE EXPLICIT CHECK
+LC-106 WAS STRUCTURAL WHILE THE MARKERS LIVED. DO NOT RESTORE THE CHECK
 The sonda this file replaces carried an `assert h1 != h0` inside _declara, to
 refuse a step whose two hypotheses predict the same value. With one step per
-test that guard becomes automatic: a non-discriminating step -- broken value
-equal to the correct one -- would satisfy the assertion, produce XPASS and turn
-red under strict. The absence of an h1/h0 comparison here is NOT a gap and must
-not be "repaired": adding it back would only add dead code.
+test that guard was automatic: a non-discriminating step -- broken value equal
+to the correct one -- would satisfy the assertion, produce XPASS and turn red
+under strict. HISTORICAL from fix-invariante-coppia: with no marker left, a
+non-discriminating step simply passes. Nothing is owed for the steps already
+here: the eleven that carried markers were red for their whole life and turned
+XPASS together in one measured run, SC-7.1 was freed a session earlier by
+s.6.269, and SC-9.1 was shown discriminating by mutation when it was minted.
+The debt falls on any step added from here on. Adding an h1/h0 comparison back
+would still only add dead code, because `rotto` is now a frozen historical
+value and not a live prediction.
 
 WHY SC-8 IS A HARD TEST AND NEVER xfail
-xfail swallows ANY exception, so a broken setup is indistinguishable from the
-defect being present. SC-8 is what makes xfail safe: a broken setup never
-registers its step, coverage falls below twelve and SC-8 -- which is not xfail
--- goes red. SC-8 asserts COVERAGE and, for the steps still nonconforming, the
-SHAPE of the known defect (Q-QUATER-3=A). It never asserts conformity, so it is
-green today and green after the fix.
+xfail swallows ANY exception, so a broken setup was indistinguishable from the
+defect being present. SC-8 is what made xfail safe: a broken setup never
+registers its step, coverage falls below thirteen and SC-8 -- which is not xfail
+-- goes red. That failure mode was seen for real at fix-invariante-coppia, in a
+run where the database was unreachable: 11 xfailed beside 118 errors, every
+marker quietly swallowing its own broken setup. With the markers gone a broken
+setup is a plain red, but SC-8 keeps two jobs that nothing else does: it
+asserts COVERAGE, so a partial run cannot print a reassuring OK, and it asserts
+the SHAPE of the known defect for any step that goes nonconforming again
+(Q-QUATER-3=A). It never asserts conformity, so it was green before the fix and
+is green after it.
 
 LIMITS, DECLARED
-1. xfail intercepts the CHANGE of the sites listed here, a partial fix
-   included. It does NOT intercept a worsening of the defect, nor its
-   appearance in sites not listed here. This is not a protection against
-   regression and must not be sold as one.
-2. The signal reaches the CP0 gate ONLY through `ck PYTEST_RC "0"` in
-   scripts/cp0.sh, added in the same session. cp0.sh reads the count of passed
-   tests out of the pytest log, and under strict xfail that count does NOT move
-   when XPASS arrives: with 117 expected, an XPASS prints "117 passed, ...,
-   1 failed" and the gate still reads 117. Whoever removes that line makes
-   these twelve tests mute to the gate without touching them.
+1. HISTORICAL, superseded. While the markers lived, xfail intercepted the
+   CHANGE of the sites listed here, a partial fix included, and did NOT
+   intercept a worsening. Now the thirteen are hard and a worsening in a listed
+   site is a red like any other. What is still NOT intercepted is the
+   appearance of the defect in a site NOT listed here.
+2. The signal reaches the CP0 gate through `ck PYTEST_RC "0"` in scripts/cp0.sh
+   AND, now, through `ck PYTEST`: a hard test that fails moves the count of
+   passed tests, which under strict xfail it did not. Historical form of this
+   limit: with 117 expected, an XPASS printed "117 passed, ..., 1 failed" and
+   the gate still read 117. `ck XFAILED` remains in cp0.sh with an expected of
+   zero (Q-COPPIA-1=A), so a marker parked here again is a DRIFT.
 3. SC-8 needs module order and a full run: `pytest -k` on a single test leaves
-   coverage below twelve and SC-8 goes red. No plugin that reorders or
+   coverage below thirteen and SC-8 goes red. No plugin that reorders or
    distributes tests is installed (pyproject declares pytest and
    pytest-asyncio only).
-4. THE FAITHFUL PROBE FOR "HAS THE FIX ARRIVED" IS THE EXIT CODE of pytest, or
-   a pattern anchored at the start of the summary line. A bare `grep XPASS` on
-   the pytest log is NOT: pytest echoes the reason of every XFAIL into that
-   log, so any occurrence of the token inside a reason answers yes while
-   nothing has changed. Measured trap, family LC-89, removed from the twelve
-   reasons at par.22.198-quadragies-quater. It survives in this docstring on
-   purpose: prose is never echoed into the log.
+4. HISTORICAL, and the trap is worth keeping. THE FAITHFUL PROBE FOR "HAS THE
+   FIX ARRIVED" WAS THE EXIT CODE of pytest, or a pattern anchored at the start
+   of the summary line. A bare `grep XPASS` on the pytest log was NOT: pytest
+   echoes the reason of every XFAIL into that log, so any occurrence of the
+   token inside a reason answered yes while nothing had changed. Measured trap,
+   family LC-89. With no marker left there are no reasons to echo, so the trap
+   is disarmed by construction rather than avoided.
 
 PERIMETER
 Server-side only. Reachability from the PWA is not measured here and is
 asserted in no direction.
 
 NORMATIVE SOURCE
-Row `fix-invariante-coppia` of scripts/impegni.tsv for the pair; row
-`n3-stato-destinazione` for SC-7, which measures a DIFFERENT defect and names
-its own guard. Deviation s.6.268 in the Fase 3 Changelog.
+Deviation s.6.268 in the Fase 3 Changelog, EXTINGUISHED at fix-invariante-
+coppia together with its row in scripts/impegni.tsv, which was removed because
+closing a commitment IS removing its row. The live rule now lives in the
+module comment at the top of routers/log_assunzioni.py; this file is what keeps
+it honest. Row `n3-stato-destinazione` for SC-7, which measures a DIFFERENT
+defect and names its own guard.
 """
 from __future__ import annotations
 
 from datetime import date, datetime, time as dtime, timedelta
 from typing import Any, Dict, NamedTuple
 
-import pytest
-
+# `import pytest` was removed with the eleven markers: it had no other
+# consumer here, measured at zero `pytest.` references. Opposite call to
+# Q-QQUIN-6=A, where an import declared orphan turned out to have one.
 from pharmatimer_api.config import settings
 
 # ---------------------------------------------------------------------------
@@ -120,7 +154,7 @@ except ImportError as exc:  # pragma: no cover - loud by design
     ) from exc
 
 
-_PASSI_DISCRIMINANTI_ATTESI = 12
+_PASSI_DISCRIMINANTI_ATTESI = 13
 _CONTROLLI_ATTESI = 2
 
 _REGISTRO: Dict[str, Dict[str, Any]] = {}
@@ -150,7 +184,7 @@ class Passo(NamedTuple):
 def _esigi(chiave: str, passo: Passo) -> None:
     """Register the step, THEN demand the correct value.
 
-    Registration happens BEFORE the assertion on purpose: the twelve callers
+    Registration happens BEFORE the assertion on purpose: the thirteen callers
     are expected to fail today, and SC-8 must still be able to count coverage.
     A step that never registers means its sequence broke before reaching the
     measurement, which is exactly what SC-8 is there to catch.
@@ -314,7 +348,7 @@ def _posa_cross_midnight(client, token, owner_id, insert_test_farmaco, nome):
 #
 # Each _seq_* runs its scenario end to end and returns the Passo of every step
 # it produces. A test picks its own key and asserts nothing else: this is what
-# keeps twelve tests from growing twelve divergent setups. Cost: a sequence
+# keeps thirteen tests from growing thirteen divergent setups. Cost: a sequence
 # with N steps is executed N times, once per test. Accepted on purpose.
 #
 # Isolation is a property of the fixtures, measured not assumed:
@@ -751,6 +785,75 @@ def _seq_sc7(client, token, owner_id, insert_test_farmaco, pool):
     }
 
 
+def _seq_sc9(client, token, owner_id, insert_test_farmaco, pool):
+    """:546 post_undo reached with a LIVE total -- the only path that
+    exercises the restore at that site.
+
+    ADDED at fix-invariante-coppia (Q-COPPIA-6=A) because the mutation
+    collaudo measured that site to be repaired and UNCOVERED. In SC-1, SC-1b
+    and SC-5 the /undo always follows a /saltata, which has already zeroed the
+    total, so rec_old is zero and there is nothing to give back: reverting the
+    undo site left the whole suite green at 129. A repaired site no test can
+    redden is a decoration, not a guard.
+
+    The sequence is the one the pilot actually walks: a dose carrying a
+    recovery is TAKEN, and the take is then undone. /presa forwards the stored
+    total verbatim -- recalc.js buildLogWrite sends entry.recupero_minuti --
+    so the row reaches /undo still anticipated by 30 while the record says 30,
+    and the undo is what has to give the time back.
+
+    DISCRIMINATION IS NOT INHERITED HERE. The markers are gone, so this step
+    does not get the LC-106 guarantee for free (see the docstring at the top):
+    it was shown discriminating by MUTATION, reverting rec_old at the undo
+    site and demanding this test red.
+    """
+    farmaco_id, today, base = _setup_gap120(
+        client, token, owner_id, insert_test_farmaco, "SC9"
+    )
+    assert _post_recupero(
+        client, token, farmaco_id, today, 30
+    ).status_code == 200
+
+    r_presa = client.post(
+        f"/api/farmaci/{farmaco_id}/log/presa",
+        json={
+            "data": today.isoformat(),
+            "dose_numero": 2,
+            "ora_prevista": _ORA_PREVISTA_TARGET,
+            "ora_effettiva": datetime.combine(today, dtime(17, 30)).isoformat(),
+            "delta_minuti": 90,
+            "gap_minuti": 120,
+            "recupero_minuti": 30,
+        },
+        headers=_hdr(token),
+    )
+    assert r_presa.status_code in (200, 201), r_presa.text
+
+    # POSA. /presa declares the same total it found, so the pair must NOT move
+    # here: this is a setup guard, not the measurement. If it fails, the /presa
+    # site is broken and nothing this sequence says about /undo is worth
+    # reading -- which is why the step then fails to register and SC-8 goes red
+    # too, instead of this file attributing someone else's defect to the undo.
+    row = _read_row(pool, owner_id, farmaco_id, today, 2)
+    assert row["stato"] == "presa"
+    assert row["recupero_minuti"] == 30
+    assert row["ora_ricalcolata"] == base - timedelta(minutes=30)
+
+    r_undo = _undo(client, token, farmaco_id, today, 2)
+    assert r_undo.status_code == 200, r_undo.text
+    row = _read_row(pool, owner_id, farmaco_id, today, 2)
+    assert row["stato"] == "ricalcolata"
+    assert row["recupero_minuti"] == 0
+    return {
+        "SC-9.1": Passo(
+            sede=":546 post_undo su totale VIVO",
+            corretto=base,
+            rotto=base - timedelta(minutes=30),
+            misurato=row["ora_ricalcolata"],
+        )
+    }
+
+
 # ===========================================================================
 # SC-0 -- CONTROLLO POSITIVO di sede. Test DURO, mai xfail.
 # ===========================================================================
@@ -779,15 +882,24 @@ def test_sc0_guardia_di_sede_empirica(db_test_pool) -> None:
 
 
 # ===========================================================================
-# PASSI DISCRIMINANTI -- dodici, uno per sede-passo. Tutti xfail strict.
+# PASSI DISCRIMINANTI -- TREDICI, uno per sede-passo. Tutti test DURI.
+#
+# SENTINEL_S6268_XFAIL_RIMOSSO -- Q-COPPIA-3=A. The eleven xfail(strict)
+# markers were removed in the SAME session that repaired the five sites, as
+# the STATO clause required, and only AFTER a run had shown all eleven going
+# XPASS(strict) against the repaired router. Removing them any earlier would
+# have turned a measurement into a claim.
+#
+# The eleven `reason` strings are NOT transcribed here. Everything measurable
+# they carried -- site, correct value, broken value -- already lives in the
+# fields of the Passo below, where SC-8 still reads it: `rotto` is what tells
+# a regression to the KNOWN broken value apart from a regression to a
+# different one. Copying those numbers into prose would open a second seat for
+# a value that has one, and the copy is always the seat that goes stale.
+#
+# The twelfth step carries its own marker-removal note at its own site: it was
+# freed one session earlier, by s.6.269.
 # ===========================================================================
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "s.6.268 :346 post_saltata azzera recupero_minuti e lascia "
-        "ora_ricalcolata a base-30; corretto = base. Conformita = sede riparata."
-    ),
-)
 def test_s346_saltata_intra_giorno(
     client, seed_owner_test, insert_test_farmaco, db_test_pool
 ) -> None:
@@ -798,13 +910,6 @@ def test_s346_saltata_intra_giorno(
     _esigi("SC-1.1", passi["SC-1.1"])
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "s.6.268 :546 post_undo riporta la riga a ricalcolata lasciando "
-        "ora_ricalcolata a base-30; corretto = base. Conformita = sede riparata."
-    ),
-)
 def test_s546_undo_intra_giorno(
     client, seed_owner_test, insert_test_farmaco, db_test_pool
 ) -> None:
@@ -815,14 +920,6 @@ def test_s546_undo_intra_giorno(
     _esigi("SC-1.2", passi["SC-1.2"])
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "s.6.268 :696 post_recupero ricostruisce la base da un totale "
-        "azzerato e porta la dose a base-60 dichiarando 30; corretto = "
-        "base-30. Conformita = catena riparata a monte."
-    ),
-)
 def test_s696_recupero_su_base_falsa(
     client, seed_owner_test, insert_test_farmaco, db_test_pool
 ) -> None:
@@ -833,13 +930,6 @@ def test_s696_recupero_su_base_falsa(
     _esigi("SC-1.3", passi["SC-1.3"])
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "s.6.268 :346 attraverso la mezzanotte: ora_ricalcolata resta a "
-        "base-60; corretto = base. Conformita = sede riparata."
-    ),
-)
 def test_s346_saltata_cross_midnight(
     client, seed_owner_test, insert_test_farmaco, db_test_pool
 ) -> None:
@@ -850,13 +940,6 @@ def test_s346_saltata_cross_midnight(
     _esigi("SC-1b.1", passi["SC-1b.1"])
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "s.6.268 :546 attraverso la mezzanotte: ora_ricalcolata resta a "
-        "base-60; corretto = base. Conformita = sede riparata."
-    ),
-)
 def test_s546_undo_cross_midnight(
     client, seed_owner_test, insert_test_farmaco, db_test_pool
 ) -> None:
@@ -867,15 +950,6 @@ def test_s546_undo_cross_midnight(
     _esigi("SC-1b.2", passi["SC-1b.2"])
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "s.6.268 :696 col pavimento a D 23:30: la dose rientra nel giorno "
-        "precedente atterrando sul pavimento mentre il record dichiara 60; "
-        "corretto = base-60. Esposizione M1 limitata dal pavimento, M3 fino "
-        "allo intero gap_minuti. Conformita = catena riparata a monte."
-    ),
-)
 def test_s696_recupero_pavimento_cross_midnight(
     client, seed_owner_test, insert_test_farmaco, db_test_pool
 ) -> None:
@@ -886,14 +960,6 @@ def test_s696_recupero_pavimento_cross_midnight(
     _esigi("SC-1b.3", passi["SC-1b.3"])
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "s.6.268 :443 post_sospesa azzera recupero_minuti e lascia "
-        "ora_ricalcolata a base-30; corretto = base. Sede con segnale "
-        "ISOLATO. Conformita = sede riparata."
-    ),
-)
 def test_s443_sospesa(
     client, seed_owner_test, insert_test_farmaco, db_test_pool
 ) -> None:
@@ -904,14 +970,6 @@ def test_s443_sospesa(
     _esigi("SC-2.1", passi["SC-2.1"])
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "s.6.268 :154 post_presa ramo UPDATE scrive gap e recupero dal "
-        "payload e lascia ora_ricalcolata a base-30; corretto = base. Sede "
-        "con segnale ISOLATO. Conformita = sede riparata."
-    ),
-)
 def test_s154_presa_ramo_update(
     client, seed_owner_test, insert_test_farmaco, db_test_pool
 ) -> None:
@@ -922,13 +980,6 @@ def test_s154_presa_ramo_update(
     _esigi("SC-3.1", passi["SC-3.1"])
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "s.6.268 :205 ricalcolo D+1 rinnova ora_ricalcolata e lascia "
-        "recupero_minuti a 30; corretto = 0. Conformita = sede riparata."
-    ),
-)
 def test_s205_ricalcolo_totale_residuo(
     client, seed_owner_test, insert_test_farmaco, db_test_pool
 ) -> None:
@@ -939,14 +990,6 @@ def test_s205_ricalcolo_totale_residuo(
     _esigi("SC-4.1", passi["SC-4.1"])
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "s.6.268 :696 con totale residuo: il reset a zero sposta la dose a "
-        "nuovo+30, PIU TARDI del ricalcolo, invece di lasciarla su nuovo. "
-        "Direzione opposta a ogni altro passo. Conformita = catena riparata."
-    ),
-)
 def test_s696_reset_direzione_opposta(
     client, seed_owner_test, insert_test_farmaco, db_test_pool
 ) -> None:
@@ -957,13 +1000,6 @@ def test_s696_reset_direzione_opposta(
     _esigi("SC-4.2", passi["SC-4.2"])
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "s.6.264 punto zero su base falsa: dopo il ciclo il reset a zero non "
-        "restituisce base ma base-30. Conformita = catena riparata a monte."
-    ),
-)
 def test_s696_punto_zero_su_base_falsa(
     client, seed_owner_test, insert_test_farmaco, db_test_pool
 ) -> None:
@@ -972,6 +1008,19 @@ def test_s696_punto_zero_su_base_falsa(
         client, token, owner_id, insert_test_farmaco, db_test_pool
     )
     _esigi("SC-5.1", passi["SC-5.1"])
+
+
+# SENTINEL_S6268_PASSO_UNDO_VIVO -- Q-COPPIA-6=A. The thirteenth step, minted
+# by the mutation collaudo of the fix and not by the original measurement: it
+# is the only one that reaches the /undo restore with a total still live.
+def test_s546_undo_su_totale_vivo(
+    client, seed_owner_test, insert_test_farmaco, db_test_pool
+) -> None:
+    token, owner_id = seed_owner_test
+    passi = _seq_sc9(
+        client, token, owner_id, insert_test_farmaco, db_test_pool
+    )
+    _esigi("SC-9.1", passi["SC-9.1"])
 
 
 # SENTINEL_S6269_XFAIL_RIMOSSO -- Q-QBIS-1=A. Marker removed in the SAME

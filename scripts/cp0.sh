@@ -66,7 +66,15 @@ echo '...pytest in esecuzione...'
 PYTEST_RC_LIVE=$?
 ck PYTEST_RC "0" "$PYTEST_RC_LIVE"
 ck PYTEST "$PYTEST" "$(grep -Eo '[0-9]+ passed' /tmp/cp0_pytest.log | grep -Eo '[0-9]+' | head -1)"
-ck XFAILED "$XFAILED" "$(grep -Eo '[0-9]+ xfailed' /tmp/cp0_pytest.log | grep -Eo '[0-9]+' | head -1)"
+# SENTINEL_CP0_XFAILED_ZERO -- Q-COPPIA-1=A. Con s.6.268 estinta la suite non
+# porta piu alcun marcatore, e pytest OMETTE il token dalla riga di sommario
+# invece di stamparne zero: lo estrattore tornerebbe VUOTO e un atteso di 0
+# darebbe DRIFT per sempre. Misurato, non dedotto. La normalizzazione rende il
+# gate leggibile e gli lascia il morso nel verso che oggi conta -- nella suite
+# backend non esiste alcun xfail -- cosi nessuno puo parcheggiare un test rosso
+# sotto un marcatore senza che il CP0 lo veda.
+XFAILED_LIVE=$(grep -Eo '[0-9]+ xfailed' /tmp/cp0_pytest.log | grep -Eo '[0-9]+' | head -1)
+ck XFAILED "$XFAILED" "${XFAILED_LIVE:-0}"
 ck DEV_UUID "$DEV_UUID" "$(mysql -N -B -e 'SELECT LEFT(@@server_uuid,9)')"
 BASE="https://marketreader-server.taila127de.ts.net"
 ck ROOT "200" "$(curl -s -o /tmp/cp0_root.html -w '%{http_code}' "$BASE/")"

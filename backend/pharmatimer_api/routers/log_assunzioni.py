@@ -37,6 +37,45 @@ router = APIRouter(prefix="/api", tags=["log_assunzioni"])
 
 _MAX_RANGE_DAYS = 31
 
+# ---------------------------------------------------------------------------
+# PAIR INVARIANT ora_ricalcolata / recupero_minuti -- s.6.268, repaired here.
+#
+# recupero_minuti is the ABSOLUTE total of anticipation baked into
+# ora_ricalcolata (s.6.263), so the two columns are ONE value held in two
+# cells:
+#
+#     ora_ricalcolata_stored = ora_ricalcolata_original - recupero_minuti
+#
+# RULE. Every site that writes recupero_minuti on a row must, in the SAME
+# UPDATE, shift ora_ricalcolata by (rec_old - rec_new) minutes. The fragment
+# below is textually IDENTICAL at all four restore sites, so one probe finds
+# them all and a future site that forgets it stands out by contrast:
+#
+#     recupero_minuti = %s,
+#     ora_ricalcolata = ora_ricalcolata
+#     + INTERVAL %s MINUTE - INTERVAL %s MINUTE
+#         params (rec_new, rec_old, rec_new)
+#
+# rec_old is read in the SAME SELECT ... FOR UPDATE and passed as a Python
+# parameter, never read inline on the right-hand side: MySQL evaluates UPDATE
+# assignments left to right on ALREADY updated values, so an inline read would
+# make correctness depend on assignment order. Same reason as post_recupero.
+#
+# FAIL-SAFE: NULL + INTERVAL is NULL, so a row carrying no recalculated time
+# keeps none and PROCEEDS. Suppressing on missing information would be M2.
+#
+# The D+1 recalculation branch is the DUAL and is NOT part of this fragment:
+# it installs a FRESH ora_ricalcolata that carries no anticipation, so it
+# writes recupero_minuti = 0 -- SENTINEL_S6268_COPPIA_RICALCOLO.
+#
+# Before the repair four sites moved the total without moving the time and the
+# fifth moved the time without moving the total, so post_recupero rebuilt the
+# base from a false total and worked on it in silence: M1 bounded by the floor
+# ora_ricalcolata >= TIMESTAMP(data, ora_prevista), M3 up to the whole
+# gap_minuti. Measured at par.22.198-quadragies-ter, repaired at
+# fix-invariante-coppia. Guarded by backend/tests/test_invariante_coppia.py.
+# ---------------------------------------------------------------------------
+
 
 def _verify_farmaco_ownership(cur, farmaco_id: int, utente_id: int) -> None:
     """Duplicated locally to avoid cross-router import coupling.
@@ -132,7 +171,7 @@ def post_presa(
                 response.status_code = status.HTTP_200_OK
                 return LogAssunzioneVerboResponse(**dedup_row, dedup=True)
         cur.execute(
-            "SELECT id, stato FROM log_assunzioni "
+            "SELECT id, stato, recupero_minuti FROM log_assunzioni "
             "WHERE utente_id = %s AND farmaco_id = %s "
             "AND data = %s AND dose_numero = %s "
             "FOR UPDATE",
@@ -148,20 +187,33 @@ def post_presa(
                         "transizione a 'presa' non ammessa"
                     ),
                 )
+            # SENTINEL_S6268_COPPIA_PRESA -- pair rule at the top of this
+            # module. Here rec_new comes from the payload instead of being a
+            # reset: on the client path the two coincide, because
+            # recalc.js buildLogWrite forwards entry.recupero_minuti verbatim,
+            # so the shift is a no-op there and a correction wherever the
+            # declared total and the stored one disagree.
+            rec_old = int(existing["recupero_minuti"] or 0)
+            rec_new = payload.recupero_minuti
             cur.execute(
                 "UPDATE log_assunzioni SET "
                 "ora_prevista = %s, ora_effettiva = %s, delta_minuti = %s, "
-                "gap_minuti = %s, recupero_minuti = %s, stato = 'presa', note = %s, "
-                "client_op_id = %s "
+                "gap_minuti = %s, stato = 'presa', note = %s, "
+                "client_op_id = %s, "
+                "recupero_minuti = %s, "
+                "ora_ricalcolata = ora_ricalcolata "
+                "+ INTERVAL %s MINUTE - INTERVAL %s MINUTE "
                 "WHERE id = %s",
                 (
                     payload.ora_prevista,
                     payload.ora_effettiva,
                     payload.delta_minuti,
                     payload.gap_minuti,
-                    payload.recupero_minuti,
                     payload.note,
                     payload.client_op_id,
+                    rec_new,
+                    rec_old,
+                    rec_new,
                     existing["id"],
                 ),
             )
@@ -220,9 +272,16 @@ def post_presa(
                 # client mirror rides on the 2xx refresh; that the refreshed
                 # window covers D+1 is NOT measured and is anchored to CS-5.
                 if next_dose["stato"] not in ("presa", "saltata", "sospesa"):
+                    # SENTINEL_S6268_COPPIA_RICALCOLO -- the DUAL of the
+                    # restore rule. A fresh ora_ricalcolata carries no
+                    # anticipation, so the stored total goes to zero. Leaving
+                    # it stale made a later reset move the dose LATER than the
+                    # recalculation instead of restoring it: the one direction
+                    # of the defect opposite to every other site.
                     cur.execute(
                         "UPDATE log_assunzioni SET "
-                        "ora_ricalcolata = %s, gap_minuti = %s, stato = 'ricalcolata' "
+                        "ora_ricalcolata = %s, gap_minuti = %s, "
+                        "recupero_minuti = 0, stato = 'ricalcolata' "
                         "WHERE id = %s",
                         (
                             ricalc.ora_ricalcolata,
@@ -338,7 +397,7 @@ def post_saltata(
                 response.status_code = status.HTTP_200_OK
                 return LogAssunzioneVerboResponse(**dedup_row, dedup=True)
         cur.execute(
-            "SELECT id, stato FROM log_assunzioni "
+            "SELECT id, stato, recupero_minuti FROM log_assunzioni "
             "WHERE utente_id = %s AND farmaco_id = %s "
             "AND data = %s AND dose_numero = %s "
             "FOR UPDATE",
@@ -359,14 +418,29 @@ def post_saltata(
                         "richiede /undo intermedio"
                     ),
                 )
+            # SENTINEL_S6268_COPPIA_SALTATA -- pair rule at the top of this
+            # module. Zeroing the total without giving the time back left the
+            # row anticipated by rec_old while the record stated none.
+            rec_old = int(existing["recupero_minuti"] or 0)
+            rec_new = 0
             cur.execute(
                 "UPDATE log_assunzioni SET "
                 "stato = 'saltata', "
                 "note = COALESCE(%s, note), "
-                "ora_effettiva = NULL, delta_minuti = NULL, recupero_minuti = 0, "
-                "client_op_id = %s "
+                "ora_effettiva = NULL, delta_minuti = NULL, "
+                "client_op_id = %s, "
+                "recupero_minuti = %s, "
+                "ora_ricalcolata = ora_ricalcolata "
+                "+ INTERVAL %s MINUTE - INTERVAL %s MINUTE "
                 "WHERE id = %s",
-                (payload.note, payload.client_op_id, existing["id"]),
+                (
+                    payload.note,
+                    payload.client_op_id,
+                    rec_new,
+                    rec_old,
+                    rec_new,
+                    existing["id"],
+                ),
             )
             target_id = existing["id"]
         else:
@@ -435,7 +509,7 @@ def post_sospesa(
                 response.status_code = status.HTTP_200_OK
                 return LogAssunzioneVerboResponse(**dedup_row, dedup=True)
         cur.execute(
-            "SELECT id, stato FROM log_assunzioni "
+            "SELECT id, stato, recupero_minuti FROM log_assunzioni "
             "WHERE utente_id = %s AND farmaco_id = %s "
             "AND data = %s AND dose_numero = %s "
             "FOR UPDATE",
@@ -456,14 +530,30 @@ def post_sospesa(
                         "richiede /undo intermedio"
                     ),
                 )
+            # SENTINEL_S6268_COPPIA_SOSPESA -- pair rule at the top of this
+            # module. Twin of the /saltata site: same UPDATE shape, same
+            # failure, and the only one of the five that carried an ISOLATED
+            # signal in the suite.
+            rec_old = int(existing["recupero_minuti"] or 0)
+            rec_new = 0
             cur.execute(
                 "UPDATE log_assunzioni SET "
                 "stato = 'sospesa', "
                 "note = COALESCE(%s, note), "
-                "ora_effettiva = NULL, delta_minuti = NULL, recupero_minuti = 0, "
-                "client_op_id = %s "
+                "ora_effettiva = NULL, delta_minuti = NULL, "
+                "client_op_id = %s, "
+                "recupero_minuti = %s, "
+                "ora_ricalcolata = ora_ricalcolata "
+                "+ INTERVAL %s MINUTE - INTERVAL %s MINUTE "
                 "WHERE id = %s",
-                (payload.note, payload.client_op_id, existing["id"]),
+                (
+                    payload.note,
+                    payload.client_op_id,
+                    rec_new,
+                    rec_old,
+                    rec_new,
+                    existing["id"],
+                ),
             )
             target_id = existing["id"]
         else:
@@ -533,7 +623,7 @@ def post_undo(
                 response.status_code = status.HTTP_200_OK
                 return LogAssunzioneVerboResponse(**dedup_row, dedup=True)
         cur.execute(
-            "SELECT id, stato, ora_ricalcolata, note "
+            "SELECT id, stato, ora_ricalcolata, recupero_minuti, note "
             "FROM log_assunzioni "
             "WHERE utente_id = %s AND farmaco_id = %s "
             "AND data = %s AND dose_numero = %s "
@@ -560,14 +650,33 @@ def post_undo(
         target_stato = (
             "ricalcolata" if existing["ora_ricalcolata"] is not None else "prevista"
         )
+        # SENTINEL_S6268_COPPIA_UNDO -- pair rule at the top of this module.
+        # target_stato above is derived from the PRESENCE of ora_ricalcolata,
+        # so an undone row goes back to 'ricalcolata' carrying its time: if
+        # the total were zeroed without giving that time back, the row would
+        # re-enter the recalculated state already anticipated, and the next
+        # /recupero would rebuild its base from a false total.
+        rec_old = int(existing["recupero_minuti"] or 0)
+        rec_new = 0
         cur.execute(
             "UPDATE log_assunzioni SET "
             "stato = %s, "
-            "ora_effettiva = NULL, delta_minuti = NULL, recupero_minuti = 0, "
+            "ora_effettiva = NULL, delta_minuti = NULL, "
             "note = %s, "
-            "client_op_id = %s "
+            "client_op_id = %s, "
+            "recupero_minuti = %s, "
+            "ora_ricalcolata = ora_ricalcolata "
+            "+ INTERVAL %s MINUTE - INTERVAL %s MINUTE "
             "WHERE id = %s",
-            (target_stato, note_new, payload.client_op_id, existing["id"]),
+            (
+                target_stato,
+                note_new,
+                payload.client_op_id,
+                rec_new,
+                rec_old,
+                rec_new,
+                existing["id"],
+            ),
         )
 
         # Rollback D+1 only if undoing 'presa' on an interval-frequency drug.
