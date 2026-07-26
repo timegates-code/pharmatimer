@@ -635,8 +635,35 @@ export class LocalRepository {
         stato: "pending",
         parked_reason: null,
         parked_at: null,
+        attempts: 0,
       })
     );
+  }
+
+  async outboxNextPendingAfter(afterId) {
+    // SENTINEL_SEX_OUTBOX_NEXTAFTER
+    // Same shape as outboxNextPending, but skips every id up to and
+    // including `afterId`. Q-SEX-4=A: an element that raised an internal
+    // exception and has not spent its budget stays `pending`, so the plain
+    // head query would hand it back and the pass would end on the anti-spin
+    // net. The cursor lets the queue proceed past it, as Spec 14.3 requires
+    // (the fila indiana stops ONLY on unreachable / 5xx / UNAUTHORIZED).
+    // Ordering dependencies on the same dose are resolved by server-wins
+    // plus the final re-read, per Spec 14.3 -- NOT by preserving order here.
+    return this._wrap(async () =>
+      (await db.outbox
+        .orderBy("id")
+        .filter((e) => e.id > afterId && e.stato === "pending")
+        .first()) || null
+    );
+  }
+
+  async outboxBumpAttempts(id, next) {
+    // SENTINEL_SEX_OUTBOX_BUMPATTEMPTS
+    // Q-SEX-3=A: `attempts` lives on the element, so the parking lot can say
+    // how many times the gesture was really tried (M3). The caller computes
+    // `next` from the element it already holds -- no read-then-write here.
+    return this._wrap(() => db.outbox.update(id, { attempts: next }));
   }
 
   async outboxCounts() {

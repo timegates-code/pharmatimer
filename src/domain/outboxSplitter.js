@@ -130,12 +130,29 @@ export const PARK_REASONS = Object.freeze({
   // DOSE_NON_TROVATA was rejected at quadragies for naming only one of them.
   FARMACO_O_DOSE_ASSENTE: 'FARMACO_O_DOSE_ASSENTE',
 
-  // Residual branch. Population reachable TODAY, measured: GENERIC (any
-  // other 4xx) and a raw throw with no `.code` from inside the try. FORBIDDEN
-  // would land here too but is NOT reachable from the queue: the five verbs
-  // mount only get_current_user / get_db, while FORBIDDEN is raised solely by
+  // Residual branch of the TRANSPORT class only. Q-SEX-2=A partitioned the
+  // old population POSITIONALLY: what reaches here now is a delivery that
+  // failed with a `.code` the taxonomy does not name -- GENERIC, i.e. any
+  // other 4xx -- and Spec 14.3 parks it at once, without retry, because
+  // retrying does not heal a broken request. FORBIDDEN would land here too
+  // but is NOT reachable from the queue: the five verbs mount only
+  // get_current_user / get_db, while FORBIDDEN is raised solely by
   // require_owner and assert_admin_on_paziente.
+  //
+  // A raw throw with NO `.code` NO LONGER lands here: it is the internal
+  // class and it is re-thrown to the drain, which counts it.
   ERRORE_NON_CLASSIFICATO: 'ERRORE_NON_CLASSIFICATO',
+
+  // ---- Q-SEX-2=A / Q-SEX-3=A / Q-SEX-4=A (par.22.198-quadragies-sexies) ----
+  // Internal app exception, budget spent. Spec 14.3 gives this class -- and
+  // ONLY this class -- a counter: three failed deliveries, then the parking
+  // lot. It needs a reason of its own: reusing ERRORE_NON_CLASSIFICATO would
+  // put ONE label on TWO different journeys, an immediate park and three
+  // failed attempts, which is exactly the defect Q-QQUIN-2=A removed when it
+  // split the catch-all. The reason is what the PERSON reads in the Centro
+  // invii (14.5), so it must say what actually happened.
+  // SENTINEL_SEX_PARK_REASON
+  ERRORE_INTERNO_RIPETUTO: 'ERRORE_INTERNO_RIPETUTO',
 });
 
 const UNDO_STATI = Object.freeze(['prevista', 'ricalcolata']);

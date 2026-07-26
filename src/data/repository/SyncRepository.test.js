@@ -61,6 +61,14 @@ function makeLocal(overrides = {}) {
     outboxNextPending: vi.fn().mockResolvedValue(null),
     outboxRemove: vi.fn().mockResolvedValue(undefined),
     outboxPark: vi.fn().mockResolvedValue(undefined),
+    // SENTINEL_SEX_PIN_HARNESS
+    // Q-SEX-4=A / Q-SEX-3=A. Firme trascritte dal reale: outboxNextPendingAfter
+    // (afterId) e outboxBumpAttempts(id, next). Il default di NextPendingAfter
+    // e `null` di proposito: nei pin che NON saltano mai un elemento il cursore
+    // non si accende, quindi un default diverso mascherebbe una accensione
+    // indebita invece di lasciarla vedere.
+    outboxNextPendingAfter: vi.fn().mockResolvedValue(null),
+    outboxBumpAttempts: vi.fn().mockResolvedValue(1),
     ...overrides,
   };
 }
@@ -318,6 +326,10 @@ describe("SyncRepository", () => {
       };
     }
 
+    function elementoTentato(id, attempts) {
+      return { ...elemento(id), attempts };
+    }
+
     it("GENERIC: parcheggia ERRORE_NON_CLASSIFICATO, mai rimuove, promise RESOLVE", async () => {
       // SENTINEL_S2C2B_PIN_GENERIC
       // A broken request is not healed by retrying (Spec 14.3), but it
@@ -450,14 +462,14 @@ describe("SyncRepository", () => {
       expect(local.outboxRemove).not.toHaveBeenCalled();
     });
 
-    it("eccezione interna senza code: parcheggia ERRORE_NON_CLASSIFICATO", async () => {
+    it("eccezione interna senza code: CONTA e non parcheggia (primo colpo)", async () => {
       // SENTINEL_S2C2B_PIN_NOCODE
-      // Un throw grezzo sollevato DENTRO il try -- :267 rows.map, :271
-      // _patchForVerb -- non porta `.code` e cade nel ramo residuo.
-      // QUESTO PIN FISSA LA ETICHETTA, NON LO INSTRADAMENTO: Spec 14.3
-      // vuole N=3 tentativi prima del parcheggio, e qui il parcheggio e
-      // immediato. La divergenza resta APERTA ed e materia di -sexies; il
-      // pin non la chiude e soprattutto non la nasconde dietro un verde.
+      // Un throw grezzo sollevato DENTRO il try -- rows.map, _patchForVerb --
+      // non porta `.code`. Q-SEX-2=A lo classifica per POSIZIONE come classe
+      // INTERNA e il ramo catch lo RILANCIA al drenaggio invece di
+      // parcheggiarlo. Il pin FISSAVA la etichetta di un parcheggio immediato
+      // e dichiarava aperta la divergenza da Spec 14.3; -sexies la chiude, e
+      // il pin ora fissa lo INSTRADAMENTO nuovo: si conta, non si parcheggia.
       const scritte = [{ id: 513, ...LOGS[0] }];
       const api = makeApi({
         upsertLog: vi.fn().mockRejectedValue(new TypeError("boom")),
@@ -472,10 +484,100 @@ describe("SyncRepository", () => {
       const sync = new SyncRepository(api, local);
 
       await expect(sync.upsertLogsBatch(LOGS, "presa")).resolves.toBe(scritte);
+      expect(local.outboxBumpAttempts).toHaveBeenCalledWith(71, 1);
+      expect(local.outboxPark).not.toHaveBeenCalled();
+      expect(local.outboxRemove).not.toHaveBeenCalled();
+    });
+
+    it("interna al TERZO colpo: parcheggia ERRORE_INTERNO_RIPETUTO", async () => {
+      // SENTINEL_SEX_PIN_TERZO_COLPO
+      // Q-SEX-3=A: soglia 3, cioe tre consegne fallite e poi il parcheggio.
+      // Lo elemento arriva con attempts=2, quindi questo e il terzo. Il motivo
+      // e asserito come LETTERALE GREZZO (Q-SEPT-1=A): quella stringa e cio
+      // che la persona legge nel Centro invii, quindi una rinomina silenziosa
+      // deve ROMPERE il pin invece di seguirlo.
+      const scritte = [{ id: 514, ...LOGS[0] }];
+      const api = makeApi({
+        upsertLog: vi.fn().mockRejectedValue(new TypeError("boom")),
+      });
+      const local = makeLocal({
+        upsertLogsBatch: vi.fn().mockResolvedValue(scritte),
+        outboxNextPending: vi
+          .fn()
+          .mockResolvedValueOnce(elementoTentato(81, 2))
+          .mockResolvedValue(null),
+      });
+      const sync = new SyncRepository(api, local);
+
+      await expect(sync.upsertLogsBatch(LOGS, "presa")).resolves.toBe(scritte);
+      expect(local.outboxBumpAttempts).toHaveBeenCalledWith(81, 3);
       expect(local.outboxPark).toHaveBeenCalledWith(
-        71,
-        "ERRORE_NON_CLASSIFICATO"
+        81,
+        "ERRORE_INTERNO_RIPETUTO"
       );
+      expect(local.outboxRemove).not.toHaveBeenCalled();
+    });
+
+    it("la fila PROSEGUE oltre lo elemento che ha sollevato", async () => {
+      // SENTINEL_SEX_PIN_AVANZA
+      // Q-SEX-4=A, ed e il pin portante della sessione. Prima di -sexies una
+      // eccezione interna fermava la passata e OGNI dose successiva restava
+      // dietro di essa: fermare la fila per sempre dietro un elemento e il
+      // modo di fallire che Q-QQUIN-2=A ha gia qualificato M2. Qui il primo
+      // elemento solleva e resta in coda col suo contatore, e il SECONDO
+      // viene consegnato lo stesso. Le dipendenze sulla stessa dose le
+      // risolvono server-vince piu rilettura finale, per Spec 14.3.
+      const scritte = [{ id: 515, ...LOGS[0] }];
+      const api = makeApi({
+        upsertLog: vi
+          .fn()
+          .mockRejectedValueOnce(new TypeError("boom"))
+          .mockResolvedValue({}),
+      });
+      const local = makeLocal({
+        upsertLogsBatch: vi.fn().mockResolvedValue(scritte),
+        outboxNextPending: vi
+          .fn()
+          .mockResolvedValueOnce(elemento(101))
+          .mockResolvedValue(null),
+        outboxNextPendingAfter: vi
+          .fn()
+          .mockResolvedValueOnce(elemento(102))
+          .mockResolvedValue(null),
+      });
+      const sync = new SyncRepository(api, local);
+
+      await expect(sync.upsertLogsBatch(LOGS, "presa")).resolves.toBe(scritte);
+      expect(local.outboxNextPendingAfter).toHaveBeenCalledWith(101);
+      expect(local.outboxRemove).toHaveBeenCalledWith(102);
+      expect(local.outboxPark).not.toHaveBeenCalled();
+    });
+
+    it("contatore non scrivibile: lo elemento resta in coda, nulla si perde", async () => {
+      // SENTINEL_SEX_PIN_CONTATORE_MUTO
+      // Q-SEX-3=A, costo dichiarato in ratifica: lo incremento e una scrittura
+      // Dexie, quindi quando Dexie STESSO e la risorsa guasta il contatore non
+      // avanza. Direzione sicura e non silenziosa: lo elemento resta `pending`
+      // e nulla si perde (M2). Il parcheggio userebbe lo stesso store rotto,
+      // quindi nessuna altra sede lo renderebbe raggiungibile.
+      const scritte = [{ id: 516, ...LOGS[0] }];
+      const api = makeApi({
+        upsertLog: vi.fn().mockRejectedValue(new TypeError("boom")),
+      });
+      const local = makeLocal({
+        upsertLogsBatch: vi.fn().mockResolvedValue(scritte),
+        outboxNextPending: vi
+          .fn()
+          .mockResolvedValueOnce(elemento(111))
+          .mockResolvedValue(null),
+        outboxBumpAttempts: vi
+          .fn()
+          .mockRejectedValue({ code: "TRANSACTION_ABORT" }),
+      });
+      const sync = new SyncRepository(api, local);
+
+      await expect(sync.upsertLogsBatch(LOGS, "presa")).resolves.toBe(scritte);
+      expect(local.outboxPark).not.toHaveBeenCalled();
       expect(local.outboxRemove).not.toHaveBeenCalled();
     });
 

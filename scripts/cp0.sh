@@ -32,6 +32,17 @@ case "$(umask)" in
 esac
 ck HEAD "$HEAD" "$(git rev-parse --short HEAD)"
 ck DESCRIBE "$DESCRIBE" "$(git describe --tags)"
+# LC-103 / G-1 (par.22.198-quadragies-sexies). Il DESCRIBE dello expected
+# deve comparire NELLO STATO. Chiude la famiglia del valore stantio (voce 59)
+# per questo campo: la partizione assegna baseline e git allo expected, quindi
+# finora la prosa dello STATO poteva invecchiare senza che nulla lo vedesse
+# -- ed e successo, voce 59. Riusa $DESCRIBE e NON aggiunge una chiave, cosi
+# cp0.expected resta a 14 e `set -u` non accoppia un file TRACKED con uno
+# IGNORED scritto dalla GAMMA dopo il commit (trappola di -quinquies).
+# Nessuna cardinalita: si asserisce la PRESENZA, perche citare il describe
+# due volte nello STATO e legittimo e non deve arrossare il gate.
+# SENTINEL_CP0_LC103_DESCRIBE_STATO
+ck DESCRIBE_STATO "$DESCRIBE" "$(grep -oF "$DESCRIBE" STATO_CORRENTE.md | head -1)"
 ck AHEAD "0" "$(git rev-list --count @{u}..HEAD)"
 ck TREE "0" "$(git status --porcelain | wc -l | tr -d ' ')"
 SENT_LIVE=$(head -1 STATO_CORRENTE.md | sed 's/<!-- //; s/ -->//')

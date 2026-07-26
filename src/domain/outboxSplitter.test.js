@@ -336,7 +336,8 @@ describe('outboxSplitter -- motivi append-only (Q-S2C-5 = A esteso)', () => {
   //
   // Il quarto valore e RITIRATO dalla emissione da Q-QQUIN-2=A e resta qui
   // a pieno titolo: ritirato non vuol dire rimosso. E la ragione per cui la
-  // lista e otto mentre i motivi attivi sono sette.
+  // lista e NOVE mentre i motivi attivi sono OTTO.
+  // SENTINEL_SEX_PIN_REASONS_NINE
   const REASONS_STORICI = [
     'OP_SCONOSCIUTO',
     'PAIRING_FALLITO',
@@ -346,6 +347,7 @@ describe('outboxSplitter -- motivi append-only (Q-S2C-5 = A esteso)', () => {
     'RICHIESTA_ROTTA',
     'FARMACO_O_DOSE_ASSENTE',
     'ERRORE_NON_CLASSIFICATO',
+    'ERRORE_INTERNO_RIPETUTO',
   ];
 
   it('nessun motivo storico e mai stato rimosso', () => {

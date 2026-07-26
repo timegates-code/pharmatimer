@@ -374,3 +374,75 @@ describe("LocalRepository -- sonda WP5 (upsertLogsBatch annidata nel tocco)", ()
     expect(await db.log_assunzioni.count()).toBe(0);
   });
 });
+
+describe("LocalRepository.outbox -- cursore e contatore (CS-4.24)", () => {
+  // SENTINEL_SEX_PIN_PRIMITIVE
+  // Q-SEX-3=A e Q-SEX-4=A contro Dexie REALE sotto fake-indexeddb, non
+  // contro un mock: le due primitive nuove sono il presidio che permette
+  // alla fila di non fermarsi, e un mock proverebbe solo che le ho chiamate.
+
+  it("nextPendingAfter salta ogni id fino ad afterId compreso", async () => {
+    const ids = await repo.outboxEnqueue([
+      makeElement("presa", "u-a", [logRow(1, "2026-07-26", 1)]),
+      makeElement("salta", "u-b", [logRow(2, "2026-07-26", 1)]),
+      makeElement("sospendi", "u-c", [logRow(3, "2026-07-26", 1)]),
+    ]);
+
+    const primo = await repo.outboxNextPending();
+    expect(primo.id).toBe(ids[0]);
+
+    const dopoPrimo = await repo.outboxNextPendingAfter(ids[0]);
+    expect(dopoPrimo.id).toBe(ids[1]);
+
+    const dopoSecondo = await repo.outboxNextPendingAfter(ids[1]);
+    expect(dopoSecondo.id).toBe(ids[2]);
+
+    expect(await repo.outboxNextPendingAfter(ids[2])).toBeNull();
+  });
+
+  it("nextPendingAfter ignora i parcheggiati, non solo gli id bassi", async () => {
+    const ids = await repo.outboxEnqueue([
+      makeElement("presa", "u-d", [logRow(1, "2026-07-26", 1)]),
+      makeElement("salta", "u-e", [logRow(2, "2026-07-26", 1)]),
+      makeElement("sospendi", "u-f", [logRow(3, "2026-07-26", 1)]),
+    ]);
+    await repo.outboxPark(ids[1], "ERRORE_INTERNO_RIPETUTO");
+
+    // Il secondo e parcheggiato: il cursore deve scavalcarlo e dare il terzo.
+    const dopo = await repo.outboxNextPendingAfter(ids[0]);
+    expect(dopo.id).toBe(ids[2]);
+  });
+
+  it("bumpAttempts scrive il contatore e non tocca lo stato", async () => {
+    const ids = await repo.outboxEnqueue([
+      makeElement("presa", "u-g", [logRow(1, "2026-07-26", 1)]),
+    ]);
+
+    await repo.outboxBumpAttempts(ids[0], 1);
+    let riga = await db.outbox.get(ids[0]);
+    expect(riga.attempts).toBe(1);
+    expect(riga.stato).toBe("pending");
+
+    await repo.outboxBumpAttempts(ids[0], 3);
+    riga = await db.outbox.get(ids[0]);
+    expect(riga.attempts).toBe(3);
+  });
+
+  it("retry azzera attempts oltre a stato e motivo (Q-SEX-3=A)", async () => {
+    const ids = await repo.outboxEnqueue([
+      makeElement("presa", "u-h", [logRow(1, "2026-07-26", 1)]),
+    ]);
+    await repo.outboxBumpAttempts(ids[0], 3);
+    await repo.outboxPark(ids[0], "ERRORE_INTERNO_RIPETUTO");
+
+    await repo.outboxRetry(ids[0]);
+
+    const riga = await db.outbox.get(ids[0]);
+    // Senza lo azzeramento il pulsante Riprova del Centro invii (14.5)
+    // prometterebbe un tentativo nuovo e ne darebbe una frazione: il primo
+    // fallimento riporterebbe subito lo elemento in parcheggio.
+    expect(riga.attempts).toBe(0);
+    expect(riga.stato).toBe("pending");
+    expect(riga.parked_reason).toBeNull();
+  });
+});

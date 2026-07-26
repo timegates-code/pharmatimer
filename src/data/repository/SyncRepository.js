@@ -40,6 +40,10 @@ import {
 
 const MIRROR_FRESHNESS_KEY = "pharmatimer.mirrorFreshness";
 
+// Q-SEX-3=A / Q-SEX-4=A: Spec 14.3 gives the internal-exception class --
+// and only it -- a counter. Three failed deliveries, then the parking lot.
+const INTERNAL_MAX_ATTEMPTS = 3;
+
 export class SyncRepository {
   constructor(api, local) {
     this._api = api;
@@ -211,10 +215,16 @@ export class SyncRepository {
     // SENTINEL_S2C2B_FIFO_DELIVERY
     let delivered = 0;
     let lastId = null;
+    // Q-SEX-4=A: null until an element is skipped; from then on the queue
+    // advances PAST it instead of stopping the pass.
+    let afterId = null;
     for (;;) {
       let element = null;
       try {
-        element = await this._local.outboxNextPending();
+        element =
+          afterId === null
+            ? await this._local.outboxNextPending()
+            : await this._local.outboxNextPendingAfter(afterId);
       } catch {
         return delivered; // local read failed: queue intact, retry at 14.2
       }
@@ -229,14 +239,47 @@ export class SyncRepository {
       try {
         outcome = await this._deliverElement(element);
       } catch {
-        // Internal app exception. The N=3 attempts + park of 14.3 are S3
-        // (residuo verbalizzato a ter): today the element simply stays
-        // queued, which is the safe direction.
-        return delivered;
+        // INTERNAL class (Q-SEX-2=A): everything raised OUTSIDE the delivery
+        // try, PLUS the no-`.code` throws re-thrown from inside it. One
+        // handler for both, because outside the try nothing was ever sent,
+        // so the population is local by construction.
+        // SENTINEL_SEX_INTERNA_HANDLER
+        try {
+          outcome = await this._onInternalException(element);
+        } catch {
+          // Even the counter could not be written: Dexie itself is the
+          // resource that failed. The element stays `pending` and nothing is
+          // lost (M2). Parking would need the very same broken store, so no
+          // other sede would make it reachable.
+          return delivered;
+        }
       }
       if (outcome === "halted") return delivered;
       if (outcome === "delivered") delivered += 1;
+      if (outcome === "ritentabile") afterId = element.id;
     }
+  }
+
+  /**
+   * INTERNAL class handler (Q-SEX-2=A / Q-SEX-3=A / Q-SEX-4=A).
+   * Counts one failed attempt on the element and parks it once the budget
+   * is spent, so the queue is never blocked for good: a permanent stop
+   * behind one element is the M2 mode Q-QQUIN-2=A rejected.
+   *
+   * @returns {Promise<"parked"|"ritentabile">}
+   */
+  async _onInternalException(element) {
+    // SENTINEL_SEX_ONINTERNAL
+    const next = (element.attempts || 0) + 1;
+    await this._local.outboxBumpAttempts(element.id, next);
+    if (next >= INTERNAL_MAX_ATTEMPTS) {
+      await this._local.outboxPark(
+        element.id,
+        PARK_REASONS.ERRORE_INTERNO_RIPETUTO
+      );
+      return "parked";
+    }
+    return "ritentabile";
   }
 
   /**
@@ -289,6 +332,15 @@ export class SyncRepository {
       }
     } catch (err) {
       const code = err && err.code;
+
+      // Q-SEX-2=A, POSITIONAL partition. No `.code` means the throw did not
+      // come from transport but from the two pure-JS sites inside the try
+      // (rows.map, _patchForVerb). That is the INTERNAL class, which Spec
+      // 14.3 gives a counter: re-throw, so the drain handles it exactly like
+      // everything raised outside the try. Parking it here was the
+      // divergence that -sexies closes.
+      // SENTINEL_SEX_RETHROW_NOCODE
+      if (!code) throw err;
       // Unreachable and 5xx both surface as DB_UNAVAILABLE (measured in
       // apiClient); together with UNAUTHORIZED they STOP the queue and
       // leave the element in it. Never parked: parking a true dose for
