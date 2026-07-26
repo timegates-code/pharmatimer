@@ -52,7 +52,10 @@ ck VITEST_TESTS "$VITEST_TESTS" "$(grep -Eo 'Tests  [0-9]+ passed' /tmp/cp0_vite
 ck VITEST_FILES "$VITEST_FILES" "$(grep -Eo 'Test Files  [0-9]+ passed' /tmp/cp0_vitest.log | grep -Eo '[0-9]+' | head -1)"
 echo '...pytest in esecuzione...'
 ( cd backend && venv/bin/python -m pytest -q > /tmp/cp0_pytest.log 2>&1 )
+PYTEST_RC_LIVE=$?
+ck PYTEST_RC "0" "$PYTEST_RC_LIVE"
 ck PYTEST "$PYTEST" "$(grep -Eo '[0-9]+ passed' /tmp/cp0_pytest.log | grep -Eo '[0-9]+' | head -1)"
+ck XFAILED "$XFAILED" "$(grep -Eo '[0-9]+ xfailed' /tmp/cp0_pytest.log | grep -Eo '[0-9]+' | head -1)"
 ck DEV_UUID "$DEV_UUID" "$(mysql -N -B -e 'SELECT LEFT(@@server_uuid,9)')"
 BASE="https://marketreader-server.taila127de.ts.net"
 ck ROOT "200" "$(curl -s -o /tmp/cp0_root.html -w '%{http_code}' "$BASE/")"

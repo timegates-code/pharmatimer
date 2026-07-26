@@ -91,6 +91,51 @@ export const PARK_REASONS = Object.freeze({
   // 409 branch goes back to drop, per the letter of 14.3.
   // SENTINEL_S6266_PARK_REASON
   CONFLITTO_O_RICHIESTA_ROTTA: 'CONFLITTO_O_RICHIESTA_ROTTA',
+
+  // ---- Q-QQUIN-1=A / Q-QQUIN-2=A (par.22.198-quadragies-quinquies) ----
+  // Q-QUADRAG-5-bis=A enumerates FOUR new reasons on a base of four, so
+  // Object.values() holds EIGHT constants. SEVEN of them are ACTIVE: the
+  // eighth is CONFLITTO_O_RICHIESTA_ROTTA above, RETIRED from emission but
+  // never removed. Append-only is not bureaucracy here -- rows already
+  // parked in the pilot's IndexedDB carry that string, and the Centro invii
+  // (14.5) must still be able to explain them. A reason the vocabulary no
+  // longer knows is a real gesture no surface can account for (M2).
+  //
+  // The reason is what the PERSON reads in the parking lot -- Spec 14.3
+  // asks for "perche e qui" in plain words -- so a false label is a false
+  // explanation. That is why the catch-all was split.
+
+  // Server said CONFLICT: a real divergence, the row was written by someone
+  // else. Parked and NOT dropped while the visible warning of 14.5 does not
+  // exist (s.6.267, reversibility anchored to CS-5).
+  // UNREACHABLE TODAY BY MEASURE: the literal CONFLICT exists nowhere in
+  // backend/pharmatimer_api. Wired anyway (Q-QQUIN-2=A) so there is no
+  // window in which the server tells the truth and the client mislabels it:
+  // apiClient :57 reads body.error.code BEFORE HTTP_STATUS_TO_CODE, so a new
+  // server code crosses the client without touching a VIETATO file.
+  // SENTINEL_S6267_PARK_REASON
+  CONFLITTO_VERO: 'CONFLITTO_VERO',
+
+  // CONSTRAINT_VIOLATION. 409 and 422 collapse onto this single client code
+  // (apiClient :33-34, MEASURED), so against a server that cannot emit
+  // CONFLICT -- the Mini, today -- a TRUE conflict lands here as well:
+  // imprecise label, identical action, zero clinical stake. Degradation by
+  // construction, not by accident (clausola di asimmetria di versione).
+  RICHIESTA_ROTTA: 'RICHIESTA_ROTTA',
+
+  // NOT_FOUND. The name says farmaco OR dose deliberately: the ownership
+  // check (log_assunzioni.py :41-53) collapses missing / other-user /
+  // inactive onto 404 by security-by-obscurity, so this reason also covers
+  // "the farmaco is no longer yours", the gravest of the three.
+  // DOSE_NON_TROVATA was rejected at quadragies for naming only one of them.
+  FARMACO_O_DOSE_ASSENTE: 'FARMACO_O_DOSE_ASSENTE',
+
+  // Residual branch. Population reachable TODAY, measured: GENERIC (any
+  // other 4xx) and a raw throw with no `.code` from inside the try. FORBIDDEN
+  // would land here too but is NOT reachable from the queue: the five verbs
+  // mount only get_current_user / get_db, while FORBIDDEN is raised solely by
+  // require_owner and assert_admin_on_paziente.
+  ERRORE_NON_CLASSIFICATO: 'ERRORE_NON_CLASSIFICATO',
 });
 
 const UNDO_STATI = Object.freeze(['prevista', 'ricalcolata']);

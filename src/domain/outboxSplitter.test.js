@@ -142,7 +142,7 @@ describe('outboxSplitter -- invariante OP-SCOPED (R-2 = A)', () => {
     });
     expect(elements).toHaveLength(2);
     expect(elements[1].stato).toBe('parked');
-    expect(elements[1].parked_reason).toBe(PARK_REASONS.PAIRING_FALLITO);
+    expect(elements[1].parked_reason).toBe('PAIRING_FALLITO');
     expect(elements[1].parked_at).toBe(NOW);
     // Mai una rotta indovinata: la derivazione fallisce esplicitamente.
     expect(deriveDelivery(elements[1])).toBeNull();
@@ -231,7 +231,7 @@ describe('outboxSplitter -- PARK-ON-UNKNOWN (R-4 = A)', () => {
     });
     expect(elements).toHaveLength(1);
     expect(elements[0].stato).toBe('parked');
-    expect(elements[0].parked_reason).toBe(PARK_REASONS.OP_SCONOSCIUTO);
+    expect(elements[0].parked_reason).toBe('OP_SCONOSCIUTO');
     // M2: nulla viene scartato, nessuna riga perde la protezione.
     expect(elements[0].logs).toHaveLength(2);
     expect(deriveDelivery(elements[0])).toBeNull();
@@ -318,5 +318,49 @@ describe('outboxSplitter -- OUTBOX_OPS append-only (Q-S2C-5 = A)', () => {
 
   it('nessun verbo e riciclato: zero duplicati', () => {
     expect(new Set(OUTBOX_OPS).size).toBe(OUTBOX_OPS.length);
+  });
+});
+
+describe('outboxSplitter -- motivi append-only (Q-S2C-5 = A esteso)', () => {
+  // SENTINEL_S2C5_PIN_REASONS_APPEND
+  // Q-QQUIN-1=A. Il vocabolario dei motivi non perde e non ricicla MAI un
+  // valore. Le righe gia parcheggiate nello IndexedDB del pilota portano il
+  // letterale con cui furono scritte: se il vocabolario lo perdesse, il
+  // Centro invii (14.5) si troverebbe in mano un gesto vero che nessuna
+  // superficie sa piu spiegare, e la sola azione rimasta sarebbe il tasto
+  // Elimina, cioe la perdita di una presa avvenuta (M2).
+  //
+  // La lista storica e SEPARATA di proposito: se fosse derivata dallo
+  // oggetto vivo, il pin SEGUIREBBE una rimozione invece di romperla
+  // (LC-109, tautologia). Per questo si scrive a letterali grezzi.
+  //
+  // Il quarto valore e RITIRATO dalla emissione da Q-QQUIN-2=A e resta qui
+  // a pieno titolo: ritirato non vuol dire rimosso. E la ragione per cui la
+  // lista e otto mentre i motivi attivi sono sette.
+  const REASONS_STORICI = [
+    'OP_SCONOSCIUTO',
+    'PAIRING_FALLITO',
+    'ROTTA_NON_DERIVABILE',
+    'CONFLITTO_O_RICHIESTA_ROTTA',
+    'CONFLITTO_VERO',
+    'RICHIESTA_ROTTA',
+    'FARMACO_O_DOSE_ASSENTE',
+    'ERRORE_NON_CLASSIFICATO',
+  ];
+
+  it('nessun motivo storico e mai stato rimosso', () => {
+    const vivi = Object.values(PARK_REASONS);
+    for (const reason of REASONS_STORICI) {
+      expect(vivi, `motivo storico rimosso: ${reason}`).toContain(reason);
+    }
+  });
+
+  it('il vocabolario dei motivi e congelato in scrittura', () => {
+    expect(Object.isFrozen(PARK_REASONS)).toBe(true);
+  });
+
+  it('nessun motivo e riciclato: zero duplicati', () => {
+    const vivi = Object.values(PARK_REASONS);
+    expect(new Set(vivi).size).toBe(vivi.length);
   });
 });

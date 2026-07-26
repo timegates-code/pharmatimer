@@ -318,7 +318,7 @@ describe("SyncRepository", () => {
       };
     }
 
-    it("GENERIC: parcheggia ROTTA_NON_DERIVABILE, mai rimuove, promise RESOLVE", async () => {
+    it("GENERIC: parcheggia ERRORE_NON_CLASSIFICATO, mai rimuove, promise RESOLVE", async () => {
       // SENTINEL_S2C2B_PIN_GENERIC
       // A broken request is not healed by retrying (Spec 14.3), but it
       // must never be dropped either: the dose was really taken (M2).
@@ -337,11 +337,14 @@ describe("SyncRepository", () => {
 
       await expect(sync.upsertLogsBatch(LOGS, "presa")).resolves.toBe(scritte);
       expect(api.upsertLog).toHaveBeenCalledTimes(1);
-      expect(local.outboxPark).toHaveBeenCalledWith(11, "ROTTA_NON_DERIVABILE");
+      expect(local.outboxPark).toHaveBeenCalledWith(
+        11,
+        "ERRORE_NON_CLASSIFICATO"
+      );
       expect(local.outboxRemove).not.toHaveBeenCalled();
     });
 
-    it("CONSTRAINT_VIOLATION: parcheggia CONFLITTO_O_RICHIESTA_ROTTA, mai drop", async () => {
+    it("CONSTRAINT_VIOLATION: parcheggia RICHIESTA_ROTTA, mai drop", async () => {
       // SENTINEL_S6266_PIN_PARK
       // s.6.266: a true 409 and a broken 4xx arrive indistinguishable and
       // Spec 14.3 asks for opposite actions. Both PARK: the parking lot
@@ -361,10 +364,7 @@ describe("SyncRepository", () => {
       const sync = new SyncRepository(api, local);
 
       await expect(sync.upsertLogsBatch(LOGS, "presa")).resolves.toBe(scritte);
-      expect(local.outboxPark).toHaveBeenCalledWith(
-        21,
-        "CONFLITTO_O_RICHIESTA_ROTTA"
-      );
+      expect(local.outboxPark).toHaveBeenCalledWith(21, "RICHIESTA_ROTTA");
       expect(local.outboxRemove).not.toHaveBeenCalled();
     });
 
@@ -389,12 +389,94 @@ describe("SyncRepository", () => {
       const sync = new SyncRepository(api, local);
 
       await sync.upsertLogsBatch(LOGS, "presa");
-      expect(local.outboxPark).toHaveBeenCalledWith(
-        31,
-        "CONFLITTO_O_RICHIESTA_ROTTA"
-      );
+      expect(local.outboxPark).toHaveBeenCalledWith(31, "RICHIESTA_ROTTA");
       expect(local.outboxRemove).toHaveBeenCalledTimes(1);
       expect(local.outboxRemove).toHaveBeenCalledWith(32);
+    });
+
+    it("CONFLICT: parcheggia CONFLITTO_VERO, mai drop (s.6.267)", async () => {
+      // SENTINEL_S6267_PIN_PARK
+      // Ramo oggi IRRAGGIUNGIBILE per misura: il letterale CONFLICT non
+      // esiste in backend/pharmatimer_api. Il pin non e per questo vacuo --
+      // esercita il ramo con un errore mockato e fissa che il giorno in cui
+      // il server imparera il codice il client lo etichettera per quello che
+      // e, invece di schiacciarlo su RICHIESTA_ROTTA. Spec 14.3 chiederebbe
+      // drop piu avviso visibile, ma la superficie 14.5 non esiste ancora:
+      // s.6.267 parcheggia, e il parcheggio non scarta mai (M2).
+      const scritte = [{ id: 511, ...LOGS[0] }];
+      const api = makeApi({
+        upsertLog: vi.fn().mockRejectedValue({ code: "CONFLICT" }),
+      });
+      const local = makeLocal({
+        upsertLogsBatch: vi.fn().mockResolvedValue(scritte),
+        outboxNextPending: vi
+          .fn()
+          .mockResolvedValueOnce(elemento(51))
+          .mockResolvedValue(null),
+      });
+      const sync = new SyncRepository(api, local);
+
+      await expect(sync.upsertLogsBatch(LOGS, "presa")).resolves.toBe(scritte);
+      expect(local.outboxPark).toHaveBeenCalledWith(51, "CONFLITTO_VERO");
+      expect(local.outboxRemove).not.toHaveBeenCalled();
+    });
+
+    it("NOT_FOUND: parcheggia FARMACO_O_DOSE_ASSENTE, mai drop", async () => {
+      // SENTINEL_S2C2B_PIN_NOTFOUND
+      // Il 404 sulla rotta della coda nasce anche da
+      // _verify_farmaco_ownership (log_assunzioni.py :41-53), che collassa
+      // assente / di un altro utente / disattivato su un solo codice per
+      // security-by-obscurity: il motivo nomina farmaco E dose perche
+      // entrambe le cose accadono, e la prima e la piu grave. Parcheggia
+      // come ogni 4xx: un drop perderebbe una presa avvenuta (M2).
+      const scritte = [{ id: 512, ...LOGS[0] }];
+      const api = makeApi({
+        upsertLog: vi.fn().mockRejectedValue({ code: "NOT_FOUND" }),
+      });
+      const local = makeLocal({
+        upsertLogsBatch: vi.fn().mockResolvedValue(scritte),
+        outboxNextPending: vi
+          .fn()
+          .mockResolvedValueOnce(elemento(61))
+          .mockResolvedValue(null),
+      });
+      const sync = new SyncRepository(api, local);
+
+      await expect(sync.upsertLogsBatch(LOGS, "presa")).resolves.toBe(scritte);
+      expect(local.outboxPark).toHaveBeenCalledWith(
+        61,
+        "FARMACO_O_DOSE_ASSENTE"
+      );
+      expect(local.outboxRemove).not.toHaveBeenCalled();
+    });
+
+    it("eccezione interna senza code: parcheggia ERRORE_NON_CLASSIFICATO", async () => {
+      // SENTINEL_S2C2B_PIN_NOCODE
+      // Un throw grezzo sollevato DENTRO il try -- :267 rows.map, :271
+      // _patchForVerb -- non porta `.code` e cade nel ramo residuo.
+      // QUESTO PIN FISSA LA ETICHETTA, NON LO INSTRADAMENTO: Spec 14.3
+      // vuole N=3 tentativi prima del parcheggio, e qui il parcheggio e
+      // immediato. La divergenza resta APERTA ed e materia di -sexies; il
+      // pin non la chiude e soprattutto non la nasconde dietro un verde.
+      const scritte = [{ id: 513, ...LOGS[0] }];
+      const api = makeApi({
+        upsertLog: vi.fn().mockRejectedValue(new TypeError("boom")),
+      });
+      const local = makeLocal({
+        upsertLogsBatch: vi.fn().mockResolvedValue(scritte),
+        outboxNextPending: vi
+          .fn()
+          .mockResolvedValueOnce(elemento(71))
+          .mockResolvedValue(null),
+      });
+      const sync = new SyncRepository(api, local);
+
+      await expect(sync.upsertLogsBatch(LOGS, "presa")).resolves.toBe(scritte);
+      expect(local.outboxPark).toHaveBeenCalledWith(
+        71,
+        "ERRORE_NON_CLASSIFICATO"
+      );
+      expect(local.outboxRemove).not.toHaveBeenCalled();
     });
 
     it("transazione-tocco fallita: la promise RIGETTA e nessuna rete parte", async () => {

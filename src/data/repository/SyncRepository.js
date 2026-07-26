@@ -297,18 +297,41 @@ export class SyncRepository {
         return "halted";
       }
       // s.6.266 (Q-QUATER-2=A): every business error PARKS, none drops.
-      // A true 409 and a broken 4xx both reach us as CONSTRAINT_VIOLATION
-      // -- the server vocabulary has no conflict code and apiClient maps
-      // 409 and 422 onto the same key (both MEASURED) -- while the two
-      // rows of 14.3 they belong to demand opposite actions. Dropping a
-      // broken 4xx would lose a dose really taken (M2) and send the card
-      // back to "da prendere" (M1); parking a true 409 loses nothing,
-      // because the parking lot never discards. The queue proceeds and the
-      // protection stays ON (14.4.4).
-      const reason =
-        code === "GENERIC"
-          ? PARK_REASONS.ROTTA_NON_DERIVABILE
-          : PARK_REASONS.CONFLITTO_O_RICHIESTA_ROTTA;
+      // Dropping a broken 4xx would lose a dose really taken (M2) and send
+      // the card back to "da prendere" (M1); parking loses nothing, because
+      // the parking lot never discards. The queue proceeds and the
+      // protection stays ON (14.4.4). Spec 14.3 norms the ACTION, which is
+      // UNCHANGED here -- every 4xx still parks. What changes is the LABEL.
+      //
+      // Q-QQUIN-2=A: the catch-all becomes FIVE outcomes. In the old form
+      // ROTTA_NON_DERIVABILE carried TWO meanings -- the true one at :256
+      // and :279, where no route could be derived BEFORE sending, and a
+      // false one here, where the route was derived correctly and the
+      // SERVER refused. The reason is what the person reads in the parking
+      // lot (14.3), so the second label was a false explanation.
+      // SENTINEL_S2C2B_CATCH_FIVE
+      let reason;
+      if (code === "CONFLICT") {
+        // s.6.267. Unreachable until the server vocabulary grows the code;
+        // wired now so no window opens between server truth and client label.
+        reason = PARK_REASONS.CONFLITTO_VERO;
+      } else if (code === "CONSTRAINT_VIOLATION") {
+        // 409 and 422 collapse here (apiClient :33-34, MEASURED). Against a
+        // server without CONFLICT a true conflict lands here too: imprecise
+        // label, identical action, zero clinical stake.
+        reason = PARK_REASONS.RICHIESTA_ROTTA;
+      } else if (code === "NOT_FOUND") {
+        // Farmaco OR dose: the ownership check collapses missing /
+        // other-user / inactive onto 404 by security-by-obscurity.
+        reason = PARK_REASONS.FARMACO_O_DOSE_ASSENTE;
+      } else {
+        // GENERIC, plus any raw throw with no `.code` from inside the try
+        // (:267 map, :271 _patchForVerb). The ROUTING of that second case is
+        // NOT touched here: it still parks at once, without the N=3 of 14.3.
+        // That deviation stays open and is the matter of -sexies. Only the
+        // label changes, from a false one to a truthful one.
+        reason = PARK_REASONS.ERRORE_NON_CLASSIFICATO;
+      }
       await this._local.outboxPark(element.id, reason);
       return "parked";
     }
