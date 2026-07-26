@@ -49,6 +49,11 @@ const { repoMock } = vi.hoisted(() => {
       setProfiloAttivo: mk(undefined),
       setProfiloAttivoConCleanup: mk(undefined),
       setSetting: mk(undefined),
+      // SENTINEL_QOCT_MOCK_DRAIN
+      // CS-4.26: il thunk di drenaggio chiama repo.drainOutbox(). Senza
+      // questa voce il ramo catch del thunk diventerebbe il percorso
+      // normale, e i pin sui trigger passerebbero per il motivo sbagliato.
+      drainOutbox: mk(0),
     },
   };
 });
@@ -312,5 +317,111 @@ describe('AppProvider — CP4 wiring (Sessione 9-B parte 2/2 §6.126)', () => {
     expect(notifications.showDoseNotification).toHaveBeenCalledTimes(1);
     const farmacoArg = notifications.showDoseNotification.mock.calls[0][1];
     expect(farmacoArg.id).toBe(7);
+  });
+});
+
+// ============================================================
+// SENTINEL_QOCT_PIN_TRIGGER_BLOCCO
+// Trigger di drenaggio (CS-4.26, Spec 14.2 punti 2, 3 e 4).
+// ============================================================
+// Senza questi pin i tre trigger a evento sono rimovibili senza che nulla
+// diventi rosso, e sono lunico meccanismo che porta fuori dal telefono una
+// presa registrata offline: M2 per omissione di guardia.
+//
+// Tutte le prove montano sulla via SEED, quindi `actions.init()` non gira
+// e il contatore del throttle parte da zero a ogni montaggio: una passata
+// per prova, senza interferenze fra trigger.
+
+describe('AppProvider -- trigger di drenaggio (CS-4.26)', () => {
+  const SEED = { status: 'ready', profiloAttivo: { id: 7, nome_profilo: 'Test' } };
+  let spiaInterval = null;
+
+  beforeEach(() => {
+    Object.values(repoMock).forEach((fn) => fn.mockClear());
+  });
+
+  afterEach(() => {
+    // Ripristino MIRATO, non globale. Non perche `vi.restoreAllMocks()`
+    // sia pericoloso qui -- questo file lo usa gia nel describe CP4 ed e
+    // verde -- ma perche ripristinare SOLO cio che si e creato e lo
+    // intervento minimo e non dipende dalla semantica di
+    // `restoreAllMocks`, che e cambiata fra versioni di vitest.
+    if (spiaInterval) {
+      spiaInterval.mockRestore();
+      spiaInterval = null;
+    }
+  });
+
+  it('trigger 3: levento online DEDICATO chiede una passata', async () => {
+    // SENTINEL_QOCT_PIN_TRIGGER_ONLINE
+    render(
+      <AppProvider initialStateProp={SEED}>
+        <div data-testid="child">child</div>
+      </AppProvider>
+    );
+
+    await act(async () => {
+      window.dispatchEvent(new Event('online'));
+    });
+
+    expect(repoMock.drainOutbox).toHaveBeenCalledTimes(1);
+  });
+
+  it('trigger 2: visibilitychange chiede una passata', async () => {
+    // SENTINEL_QOCT_PIN_TRIGGER_PRIMOPIANO
+    render(
+      <AppProvider initialStateProp={SEED}>
+        <div data-testid="child">child</div>
+      </AppProvider>
+    );
+
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+
+    expect(repoMock.drainOutbox).toHaveBeenCalledTimes(1);
+  });
+
+  it('trigger 4: il tick chiede una passata, senza toccare alcun timer', async () => {
+    // SENTINEL_QOCT_PIN_TRIGGER_TICK
+    // `setInterval` e spiato e lo handler invocato a mano: il tick e
+    // pinnato davvero, ma senza fake timer e quindi senza il rischio di
+    // hang che il commento in testa a questo file documenta.
+    spiaInterval = vi.spyOn(globalThis, 'setInterval');
+
+    render(
+      <AppProvider initialStateProp={SEED}>
+        <div data-testid="child">child</div>
+      </AppProvider>
+    );
+
+    const chiamata = spiaInterval.mock.calls.find(([, ms]) => ms === 60000);
+    expect(chiamata).toBeDefined();
+
+    await act(async () => {
+      chiamata[0]();
+    });
+
+    expect(repoMock.drainOutbox).toHaveBeenCalledTimes(1);
+  });
+
+  it('il listener online viene RIMOSSO allo smontaggio', async () => {
+    // SENTINEL_QOCT_PIN_CLEANUP_ONLINE
+    // Un listener registrato e mai rimosso si accumula a ogni rimontaggio:
+    // N passate per un solo evento, e il budget `attempts` bruciato N
+    // volte piu in fretta.
+    const { unmount } = render(
+      <AppProvider initialStateProp={SEED}>
+        <div data-testid="child">child</div>
+      </AppProvider>
+    );
+
+    unmount();
+
+    await act(async () => {
+      window.dispatchEvent(new Event('online'));
+    });
+
+    expect(repoMock.drainOutbox).not.toHaveBeenCalled();
   });
 });

@@ -37,6 +37,8 @@ import {
   deriveDelivery,
   PARK_REASONS,
 } from "../../domain/outboxSplitter.js";
+// SENTINEL_QOCT_IMPORT_GATE
+import { OUTBOX_ATTEMPT_GATE_MS } from "../../domain/constants.js";
 
 const MIRROR_FRESHNESS_KEY = "pharmatimer.mirrorFreshness";
 
@@ -48,6 +50,12 @@ export class SyncRepository {
   constructor(api, local) {
     this._api = api;
     this._local = local;
+    // SENTINEL_QOCT_DRAINING_FIELD
+    // Q-QSEPT-3=A: non-overlap guard as an INSTANCE field. Legitimate
+    // because `repo` is an eager singleton (repository/index.js, measured
+    // at CS-4.25): every trigger reaches the same object, so one flag is
+    // enough and no module-level state is needed.
+    this._draining = false;
   }
 
   // ---- Freshness (Q4=A) ------------------------------------
@@ -126,7 +134,12 @@ export class SyncRepository {
     return this._local.getLogByRange(dataDa, dataA);
   }
 
-  // ---- Explicit forwarders (28) ----------------------------
+  // ---- Explicit forwarders (27) ----------------------------
+  // SENTINEL_QOCT_FORWARDER_COUNT
+  // Q-QOCT-5=A: the header said 28 until CS-4 S2c-2b turned
+  // upsertLogsBatch into the write-path; the count was never decremented.
+  // MEASURED at CS-4.26: 27 `return this._api.` lines, 27 distinct names.
+  // `drainOutbox` is NOT a forwarder and does not count here.
   // Everything else delegates verbatim to the ApiRepository. Kept
   // explicit (not a Proxy) so the completeness vitest can see them and
   // the surface stays auditable. getLogByData forwards raw (devCheck-only
@@ -211,6 +224,40 @@ export class SyncRepository {
    *
    * @returns {Promise<number>} elements delivered in this pass
    */
+  /**
+   * PUBLIC drain entry point (Q-QSEPT-3=A / Q-QSEPT-5=A / Q-QSEPT-6=A).
+   * Called by the trigger thunk of actions.js. NEVER throws.
+   *
+   * @returns {Promise<number>} elements delivered in this pass
+   */
+  async drainOutbox() {
+    // SENTINEL_QOCT_PUBLIC_DRAIN
+    if (this._draining) return 0;
+    // Q-QSEPT-4=A / s.6.271: `navigator.onLine` is consulted INSIDE the
+    // pass and suppresses THIS pass only. No `offline` listener and no
+    // persistent stop -- Spec 14.2.3 prescribes one, and this is the
+    // documented deviation. On iOS standalone the `online` event is not
+    // guaranteed on return from suspension, so a stop raised by `offline`
+    // could stay up forever and real doses would remain undelivered and
+    // invisible until CS-5, which is M2.
+    //
+    // FAIL-SAFE: the flag is compared to `false`, so a missing navigator
+    // property (undefined) PROCEEDS. Absence of information must never
+    // suppress a delivery.
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      return 0;
+    }
+    this._draining = true;
+    try {
+      return await this._drainOutbox();
+    } finally {
+      // Released in `finally` on purpose: `_drainOutbox` is written never
+      // to throw, but a flag left raised by an unforeseen throw would
+      // silence EVERY later trigger for the rest of the session (M2).
+      this._draining = false;
+    }
+  }
+
   async _drainOutbox() {
     // SENTINEL_S2C2B_FIFO_DELIVERY
     let delivered = 0;
@@ -269,6 +316,25 @@ export class SyncRepository {
    * @returns {Promise<"parked"|"ritentabile">}
    */
   async _onInternalException(element) {
+    // SENTINEL_QOCT_ATTEMPT_GATE
+    // Q-QSEPT-1=A / Q-QOCT-3=A. The budget is spent per ELEMENT, not per
+    // pass. Without this gate three rapid taps on different doses run three
+    // write-path passes in seconds, each charging one attempt to the SAME
+    // head element, which parks a real dose as ERRORE_INTERNO_RIPETUTO with
+    // no retry and no surface until CS-5.
+    //
+    // FAIL-SAFE, not negotiable: an absent, null or unparseable timestamp
+    // makes Date.parse return NaN, and `NaN < X` is false, so the element
+    // PROCEEDS and the attempt is charged. Suppressing a delivery on
+    // missing information would be M2. Elements enqueued before this
+    // release carry no timestamp and are therefore unaffected.
+    const sinceLast = Date.now() - Date.parse(element.last_attempt_at);
+    if (sinceLast < OUTBOX_ATTEMPT_GATE_MS) {
+      // Too soon: do NOT charge the attempt. The element stays `pending`
+      // and the caller advances the cursor past it (Q-SEX-4=A), so the
+      // queue never stops behind it.
+      return "ritentabile";
+    }
     // SENTINEL_SEX_ONINTERNAL
     const next = (element.attempts || 0) + 1;
     await this._local.outboxBumpAttempts(element.id, next);

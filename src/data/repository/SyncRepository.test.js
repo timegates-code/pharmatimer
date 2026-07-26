@@ -17,7 +17,8 @@
 // jsdom environment (default): real localStorage for freshness; globals
 // off (explicit imports), matching vitest.config.js.
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+// SENTINEL_QOCT_IMPORT_AFTEREACH
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { SyncRepository } from "./SyncRepository.js";
 import { ApiRepository } from "./ApiRepository.js";
 
@@ -683,6 +684,142 @@ describe("SyncRepository", () => {
       // La targa e UNA per elemento e viaggia su entrambe le righe.
       expect(righe.every((r) => r.client_op_id === "targa-41")).toBe(true);
       expect(local.outboxRemove).toHaveBeenCalledWith(41);
+    });
+
+    // ========================================================
+    // SENTINEL_QOCT_PIN_BLOCCO
+    // Cancello temporale e drenaggio pubblico (CS-4.26, Spec 14.2).
+    // ========================================================
+    // The `onLine` stub is an OWN property shadowing the jsdom prototype
+    // getter; `delete` in afterEach reveals the original again. A global
+    // left dirty would break later suites by execution order, which is
+    // the worst kind of failure to attribute.
+    afterEach(() => {
+      delete navigator.onLine;
+      vi.restoreAllMocks();
+    });
+
+    function elementoRecente(id, attempts, quandoMs) {
+      return {
+        ...elementoTentato(id, attempts),
+        last_attempt_at: new Date(quandoMs).toISOString(),
+      };
+    }
+
+    it("cancello: un elemento tentato da poco NON consuma il budget", async () => {
+      // SENTINEL_QOCT_PIN_CANCELLO_SOPPRIME
+      // Q-QSEPT-1=A. Il budget si spende per ELEMENTO, non per passata.
+      // Senza cancello tre tocchi ravvicinati bruciano i tre tentativi in
+      // pochi secondi e parcheggiano una presa VERA come
+      // ERRORE_INTERNO_RIPETUTO, senza ritenta e senza superficie fino a
+      // CS-5. La fila deve comunque PROSEGUIRE oltre lo elemento.
+      const scritte = [{ id: 601, ...LOGS[0] }];
+      const api = makeApi({
+        upsertLog: vi.fn().mockRejectedValue(new TypeError("boom")),
+      });
+      const local = makeLocal({
+        upsertLogsBatch: vi.fn().mockResolvedValue(scritte),
+        outboxNextPending: vi
+          .fn()
+          .mockResolvedValue(elementoRecente(91, 1, Date.now())),
+      });
+      const sync = new SyncRepository(api, local);
+
+      await expect(sync.upsertLogsBatch(LOGS, "presa")).resolves.toBe(scritte);
+      expect(local.outboxBumpAttempts).not.toHaveBeenCalled();
+      expect(local.outboxPark).not.toHaveBeenCalled();
+      expect(local.outboxRemove).not.toHaveBeenCalled();
+      expect(local.outboxNextPendingAfter).toHaveBeenCalledWith(91);
+    });
+
+    it("cancello: un elemento tentato da tempo consuma il budget", async () => {
+      // SENTINEL_QOCT_PIN_CANCELLO_APRE
+      // Il verso opposto dello stesso cancello. Senza questo il pin
+      // precedente sarebbe soddisfatto anche da un cancello sempre chiuso,
+      // che non parcheggerebbe mai nulla e sarebbe M2 a sua volta.
+      const scritte = [{ id: 602, ...LOGS[0] }];
+      const api = makeApi({
+        upsertLog: vi.fn().mockRejectedValue(new TypeError("boom")),
+      });
+      const local = makeLocal({
+        upsertLogsBatch: vi.fn().mockResolvedValue(scritte),
+        outboxNextPending: vi
+          .fn()
+          .mockResolvedValue(elementoRecente(92, 1, Date.now() - 3600000)),
+      });
+      const sync = new SyncRepository(api, local);
+
+      await expect(sync.upsertLogsBatch(LOGS, "presa")).resolves.toBe(scritte);
+      expect(local.outboxBumpAttempts).toHaveBeenCalledWith(92, 2);
+    });
+
+    it("fail-safe: timestamp NULL procede, non sopprime", async () => {
+      // SENTINEL_QOCT_PIN_FAILSAFE_TIMESTAMP
+      // Sopprimere per assenza di informazione sarebbe M2: lo elemento
+      // resterebbe pending per sempre, senza consumare budget e senza mai
+      // parcheggiare, quindi invisibile alla persona fino a CS-5. Gli
+      // elementi accodati prima di questa release non portano il campo.
+      const scritte = [{ id: 603, ...LOGS[0] }];
+      const api = makeApi({
+        upsertLog: vi.fn().mockRejectedValue(new TypeError("boom")),
+      });
+      const local = makeLocal({
+        upsertLogsBatch: vi.fn().mockResolvedValue(scritte),
+        outboxNextPending: vi
+          .fn()
+          .mockResolvedValue({ ...elementoTentato(93, 1), last_attempt_at: null }),
+      });
+      const sync = new SyncRepository(api, local);
+
+      await expect(sync.upsertLogsBatch(LOGS, "presa")).resolves.toBe(scritte);
+      expect(local.outboxBumpAttempts).toHaveBeenCalledWith(93, 2);
+    });
+
+    it("drainOutbox: offline sopprime LA PASSATA senza toccare la coda", async () => {
+      // SENTINEL_QOCT_PIN_ONLINE_FALSE
+      // Q-QSEPT-4=A / s.6.271. La soppressione vale per questa passata e
+      // basta: nessun fermo persistente, nessun listener offline. La coda
+      // resta intatta e il trigger successivo riprova.
+      Object.defineProperty(navigator, "onLine", {
+        configurable: true,
+        get: () => false,
+      });
+      const local = makeLocal({
+        outboxNextPending: vi.fn().mockResolvedValue(elemento(94)),
+      });
+      const sync = new SyncRepository(makeApi(), local);
+
+      await expect(sync.drainOutbox()).resolves.toBe(0);
+      expect(local.outboxNextPending).not.toHaveBeenCalled();
+      expect(local.outboxPark).not.toHaveBeenCalled();
+      expect(local.outboxRemove).not.toHaveBeenCalled();
+    });
+
+    it("drainOutbox: la guardia impedisce due passate sovrapposte", async () => {
+      // SENTINEL_QOCT_PIN_NON_SOVRAPPOSIZIONE
+      // Q-QSEPT-3=A. Sei trigger possono cadere insieme; due passate
+      // concorrenti leggerebbero la stessa testa e la consegnerebbero due
+      // volte. La targa la fa deduplicare lato server, ma contarci sarebbe
+      // affidarsi alla rete per un difetto locale.
+      let sblocca;
+      const attesa = new Promise((res) => {
+        sblocca = res;
+      });
+      const local = makeLocal({
+        outboxNextPending: vi.fn().mockImplementation(async () => {
+          await attesa;
+          return null;
+        }),
+      });
+      const sync = new SyncRepository(makeApi(), local);
+
+      const prima = sync.drainOutbox();
+      const seconda = await sync.drainOutbox();
+
+      expect(seconda).toBe(0);
+      expect(local.outboxNextPending).toHaveBeenCalledTimes(1);
+      sblocca();
+      await expect(prima).resolves.toBe(0);
     });
   });
 });

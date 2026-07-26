@@ -636,6 +636,11 @@ export class LocalRepository {
         parked_reason: null,
         parked_at: null,
         attempts: 0,
+        // SENTINEL_QOCT_RETRY_RESET
+        // Q-QOCT-3=A: a zeroed budget cannot coexist with a timestamp that
+        // says "tried a moment ago" -- that record would contradict itself,
+        // which is M3. Cleared together with the other three fields.
+        last_attempt_at: null,
       })
     );
   }
@@ -663,7 +668,17 @@ export class LocalRepository {
     // Q-SEX-3=A: `attempts` lives on the element, so the parking lot can say
     // how many times the gesture was really tried (M3). The caller computes
     // `next` from the element it already holds -- no read-then-write here.
-    return this._wrap(() => db.outbox.update(id, { attempts: next }));
+    return this._wrap(() =>
+      db.outbox.update(id, {
+        attempts: next,
+        // SENTINEL_QOCT_BUMP_STAMP
+        // Q-QOCT-3=A: the attempt timestamp is stamped HERE, inside, on
+        // the precedent of outboxPark stamping parked_at. The signature
+        // stays (id, next) -- it is exact in two toHaveBeenCalledWith
+        // assertions of SyncRepository.test.js (Registro, voce 96).
+        last_attempt_at: new Date().toISOString(),
+      })
+    );
   }
 
   async outboxCounts() {
@@ -702,5 +717,17 @@ export class LocalRepository {
         return keys;
       })
     );
+  }
+
+  // SENTINEL_QOCT_LOCAL_DRAIN
+  // Q-QSEPT-6=A. The factory returns EITHER SyncRepository or this class,
+  // and the trigger thunk calls drainOutbox() without knowing which. A
+  // capability check in the thunk would be fail-silent: the day the
+  // guardian renamed the method, delivery would become a mute no-op on the
+  // API path. Keeping the surface identical makes that impossible.
+  // Nothing is ever enqueued on the local-only path, so returning 0 is the
+  // truth here, not a stub.
+  async drainOutbox() {
+    return 0;
   }
 }

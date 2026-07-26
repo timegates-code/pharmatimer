@@ -168,6 +168,11 @@ export function AppProvider({ children, initialStateProp }) {
         // cancel-then-rebuild) guarantees no leaks.
         maybeReschedule(stateRef.current);
       }
+      // SENTINEL_QOCT_TICK_DRAIN
+      // Spec 14.2.4 -- trigger 4. Throttled inside the thunk, so a tick
+      // every 60s cannot hammer the queue. Placed AFTER the ready guard:
+      // a successful drain calls rebuildPlan, which needs a built plan.
+      actions.drainOutbox();
     };
     const onForegroundEvent = () => {
       setTickMs(Date.now());
@@ -177,14 +182,31 @@ export function AppProvider({ children, initialStateProp }) {
         actions.rebuildPlan();
       }
       maybeReschedule(stateRef.current);
+      // SENTINEL_QOCT_FOREGROUND_DRAIN
+      // Spec 14.2.2 -- trigger 2, on the existing visibilitychange/focus
+      // handler.
+      actions.drainOutbox();
+    };
+    // SENTINEL_QOCT_ONLINE_LISTENER
+    // Spec 14.2.3 -- trigger 3. A DEDICATED handler, NOT a reuse of
+    // onForegroundEvent: connectivity is not foreground, and reusing it
+    // would reschedule every notification on every network flap. The
+    // event is only a HINT (Spec 14.2.3) -- the proof is the delivery
+    // itself -- so it does nothing but ask for a pass. No `offline`
+    // listener and no persistent stop: deviation s.6.271.
+    const onOnline = () => {
+      actions.drainOutbox();
     };
     const id = setInterval(tick, TICK_INTERVAL_MS);
     document.addEventListener('visibilitychange', onForegroundEvent);
     window.addEventListener('focus', onForegroundEvent);
+    // SENTINEL_QOCT_ONLINE_REGISTER
+    window.addEventListener('online', onOnline);
     return () => {
       clearInterval(id);
       document.removeEventListener('visibilitychange', onForegroundEvent);
       window.removeEventListener('focus', onForegroundEvent);
+      window.removeEventListener('online', onOnline);
     };
   }, [actions, services]);
 

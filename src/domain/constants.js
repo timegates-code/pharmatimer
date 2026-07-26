@@ -16,3 +16,23 @@ export const GET_FARMACI_SOLO_ATTIVI = true;
 
 // Provider tick + rollover detect (AMB-6.G, Sessione 6)
 export const TICK_INTERVAL_MS = 60_000;
+
+// SENTINEL_QOCT_CONSTANTS
+// CS-4.26 (Spec 14.2). Q-QSEPT-2=A / Q-QOCT-1=A: TWO distinct constants
+// with the SAME value on purpose. They gate different things, and one
+// constant serving two purposes hides where it bites.
+//
+// DRAIN_THROTTLE_MS -- minimum spacing between two TRIGGER-driven drain
+// passes (Spec 14.2.4). It NEVER gates the write-path pass: Spec 14.2.5
+// prescribes an immediate drain on a new write, and the two lines are
+// compatible only this way.
+//
+// OUTBOX_ATTEMPT_GATE_MS -- minimum spacing between two attempts charged
+// to the SAME queue element (Spec 14.3, internal-exception class). Without
+// it, three rapid taps run three write-path passes in seconds, each
+// charging one attempt to the same head element, which parks a real dose.
+//
+// Both values are CONVENTIONAL: the defensibility comes from the
+// structure, not from the number.
+export const DRAIN_THROTTLE_MS = 60_000;
+export const OUTBOX_ATTEMPT_GATE_MS = 60_000;

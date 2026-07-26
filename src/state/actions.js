@@ -29,6 +29,8 @@ import {
   PLAN_DAYS_AFTER,
   PLAN_TOTAL_DAYS,
   GET_FARMACI_SOLO_ATTIVI,
+  // SENTINEL_QOCT_IMPORT_THROTTLE
+  DRAIN_THROTTLE_MS,
 } from '../domain/constants.js';
 import { selectToday, selectProfiloById } from './selectors.js';
 import { commitApplyResult } from './applyHelper.js';
@@ -158,6 +160,52 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
   }
 
 
+  // SENTINEL_QOCT_DRAIN_THUNK
+  // Q-QSEPT-3=A / Q-QSEPT-5=A / Q-QSEPT-7=A -- trigger-driven drain
+  // (Spec 14.2, triggers 1..4). Called from the tail of init() and from
+  // the three event handlers in AppContext.
+  //
+  // Throttled at DRAIN_THROTTLE_MS. The throttle deliberately does NOT
+  // cover the write-path drain, which lives inside the guardian and must
+  // stay immediate (Spec 14.2.5): the two lines of Spec are compatible
+  // only this way.
+  //
+  // NEVER throws, in ANY branch. It is awaited inside the try of init(),
+  // so an escaping rejection would dispatch INIT_ERROR over an already
+  // emitted INIT_SUCCESS -- a delivery hiccup turned into a broken boot.
+  // The queue is intact by construction (Spec 14.3): nothing is lost,
+  // the next trigger retries.
+  let lastDrainAt = 0;
+
+  async function drainOutbox() {
+    const now = Date.now();
+    // Stamped BEFORE the pass, not after: a pass that takes long must not
+    // let the next trigger start a second one. Overlap is guarded again on
+    // the repository side (Q-QSEPT-3=A); two guards here are cheap.
+    if (now - lastDrainAt < DRAIN_THROTTLE_MS) return 0;
+    lastDrainAt = now;
+
+    let delivered = 0;
+    try {
+      delivered = await repo.drainOutbox();
+    } catch {
+      return 0;
+    }
+
+    if (delivered > 0) {
+      // Q-QSEPT-7=A: a trigger drain has no `logs` in hand, so the mirror
+      // is realigned by rebuilding the plan. ADVISORY, like
+      // _refreshTouchedWindow: its failure can never fail a touch that is
+      // already annotated.
+      try {
+        await rebuildPlan();
+      } catch {
+        // advisory only
+      }
+    }
+    return delivered;
+  }
+
   // ----------------------------------------------------------
   // init / rebuildPlan
   // ----------------------------------------------------------
@@ -263,6 +311,14 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
       // §6.126 — Trigger 1 (init): reschedule notifications after a
       // successful boot. No-op if notifiche_attive !== 1.
       maybeReschedule(getState());
+
+      // SENTINEL_QOCT_INIT_DRAIN
+      // Spec 14.2.1 -- trigger 1: init with a residual queue drains at
+      // boot. Reached offline too, because init() succeeds by
+      // construction (Spec 14.4.6: Profili and Impostazioni are local,
+      // the three server-backed reads fall back to the mirror); there the
+      // pass is suppressed inside the guardian by navigator.onLine.
+      await drainOutbox();
     } catch (err) {
       // SENTINEL_N5QC_CP4BIS_INIT_PROPAGATE_CODE -- drift-N53: propaga err.code
       // (es. UNAUTHORIZED) cosi App puo auto-clear un token stale al reload.
@@ -1166,6 +1222,8 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
   return {
     init,
     rebuildPlan,
+    // SENTINEL_QOCT_BAG
+    drainOutbox,
     addProfilo,
     updateProfilo,
     deleteProfilo,

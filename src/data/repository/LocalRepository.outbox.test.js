@@ -445,4 +445,67 @@ describe("LocalRepository.outbox -- cursore e contatore (CS-4.24)", () => {
     expect(riga.stato).toBe("pending");
     expect(riga.parked_reason).toBeNull();
   });
+
+  // SENTINEL_QOCT_PIN_LOCAL_BLOCCO
+  // CS-4.26 -- timbro del tentativo e superficie di drenaggio.
+
+  it("bumpAttempts timbra last_attempt_at a firma invariata (Q-QOCT-3=A)", async () => {
+    // SENTINEL_QOCT_PIN_BUMP_TIMBRO
+    // Il timbro sta DENTRO la primitiva, sul precedente di outboxPark che
+    // scrive parked_at: cosi la firma resta (id, next) e le due
+    // toHaveBeenCalledWith di SyncRepository.test.js restano esatte.
+    // La prima asserzione pinna anche la PREMESSA del fail-safe: un
+    // elemento nasce SENZA il campo.
+    const ids = await repo.outboxEnqueue([
+      makeElement("presa", "uuid-t1", [logRow(1, "2026-07-24", 1)]),
+    ]);
+    const prima = await db.outbox.get(ids[0]);
+    expect(prima.last_attempt_at).toBeUndefined();
+
+    await repo.outboxBumpAttempts(ids[0], 1);
+
+    const dopo = await db.outbox.get(ids[0]);
+    expect(dopo.attempts).toBe(1);
+    expect(typeof dopo.last_attempt_at).toBe("string");
+    expect(Number.isNaN(Date.parse(dopo.last_attempt_at))).toBe(false);
+    expect(dopo.stato).toBe("pending");
+  });
+
+  it("retry azzera last_attempt_at oltre ad attempts (Q-QOCT-3=A)", async () => {
+    // SENTINEL_QOCT_PIN_RETRY_TIMBRO
+    // Un budget azzerato che convivesse con un timestamp "tentato poco fa"
+    // sarebbe un record che si contraddice, cioe M3: il pulsante Riprova
+    // del Centro invii prometterebbe un tentativo nuovo e il cancello lo
+    // sopprimerebbe per un minuto.
+    const ids = await repo.outboxEnqueue([
+      makeElement("presa", "uuid-t2", [logRow(1, "2026-07-24", 2)]),
+    ]);
+    await repo.outboxBumpAttempts(ids[0], 3);
+    await repo.outboxPark(ids[0], "ERRORE_INTERNO_RIPETUTO");
+
+    await repo.outboxRetry(ids[0]);
+
+    const riga = await db.outbox.get(ids[0]);
+    expect(riga.attempts).toBe(0);
+    expect(riga.last_attempt_at).toBeNull();
+    expect(riga.stato).toBe("pending");
+  });
+
+  it("drainOutbox e un no-op che torna 0 e non tocca la coda (Q-QSEPT-6=A)", async () => {
+    // SENTINEL_QOCT_PIN_LOCAL_NOOP
+    // La fabbrica restituisce O il guardiano O questa classe, e il thunk
+    // chiama drainOutbox() senza sapere quale ha in mano. Un controllo di
+    // capacita nel thunk sarebbe fail-silent: il giorno in cui il
+    // guardiano rinominasse il metodo, la consegna diventerebbe un no-op
+    // muto sulla via API.
+    const ids = await repo.outboxEnqueue([
+      makeElement("presa", "uuid-t3", [logRow(1, "2026-07-24", 3)]),
+    ]);
+
+    await expect(repo.drainOutbox()).resolves.toBe(0);
+
+    const riga = await db.outbox.get(ids[0]);
+    expect(riga.stato).toBe("pending");
+    expect(await db.outbox.count()).toBe(1);
+  });
 });
