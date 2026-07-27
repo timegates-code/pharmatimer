@@ -324,6 +324,71 @@
 
 <!-- SENTINEL_MINT_63_64_PAR_22_173 -->
 
+### #67 -- L-perimetro-sonda-integrale
+- Stato: minted
+- Origine: par.22.198-quinquagies-ter (deferito 39; forma Q-LEX-1=A, composizione Q-REGI-3=A). Token: LC-55, LC-56, LC-58, LC-59, LC-62, LC-67, LC-71, LC-72, LC-73, LC-74
+- Nota: LC-62 e CONSERVATO senza enunciato (Q-REGI-2=A) -- compare solo in righe di sole `Basi` (Changelog Fase 3 :12035 e :12144) e nella riga meta :14128; contenuto da rimisurare. LC-55 e LC-56 sono enunciati RICOSTRUITI dallo uso e restano ricostruzioni (LC-99).
+- Regola: il perimetro di una sonda si enuncia PER INTERO -- path esclusi, CASE, quoting, forma del glob, famiglia lessicale dello identificatore -- o non e enunciato; `grep -r` esclude sempre `node_modules`, `venv`, `__pycache__` e `*.bak*` censiti contro le varianti reali con `find`, lo output multi-file porta sempre `-H`, e i glob si quotano sempre perche zsh aborta il comando se anche uno solo non matcha e la assenza di output viene letta come assenza del file.
+- Contesto: ogni sonda di censimento e ogni gate di patcher. Cardinalita ritirate per perimetro incompleto: `*.bak` non escluso ha raddoppiato i conteggi, un pattern case-sensitive ha dato 5 invece di 6, un glob non quotato ha impedito la esecuzione, e il pattern di uno stato React non matchava il proprio setter.
+
+### #68 -- L-riga-non-e-misura
+- Stato: minted
+- Origine: par.22.198-quinquagies-ter (deferito 39; forma Q-LEX-1=A, composizione Q-REGI-3=A). Token: LC-63, LC-68, LC-89, LC-105, LC-106
+- Regola: una riga restituita da uno strumento non e una misura del suo significato; una sonda dichiara PRIMA i due esiti che distingue, e se un esito e compatibile con entrambe le ipotesi non e una misura; una asserzione negativa o di esaustivita ha per perimetro quello della sonda e non quello del repo; una sonda CLI non misura mai il comportamento del path applicativo, e una config che ESISTE non e la config che GOVERNA.
+- Contesto: ogni conclusione tratta da `grep`, da un client a riga di comando o dalla presenza di un file. Un token dentro un commento non e la riga che quel token apre; un blocco di configurazione morto puo coesistere con quello vivo e mentire.
+
+### #69 -- L-bash-forma-eseguibile
+- Stato: minted
+- Origine: par.22.198-quinquagies-ter (deferito 39; forma Q-LEX-1=A, composizione Q-REGI-3=A). Token: LC-61, LC-77, LC-78, LC-79, LC-80
+- Regola: ogni blocco bash gira in subshell, con `cd` gated da `|| exit 1`, glob quotati, e `;` e mai `&&` fra sonde di conteggio; i path assoluti dei tool sono per-host e si misurano con `command -v` sullo host bersaglio, mai ereditati da un altro host; i comandi one-shot destinati al browser o alla clipboard si consegnano file-backed in `/tmp`.
+- Contesto: ogni blocco incollato in Terminale su Studio o via `ssh` sul Mini. Un `&&` fra conteggi ferma la catena al primo esito falsy e produce una misura parziale letta come completa; un `mv` non gated ha gia fermato una GAMMA in silenzio.
+
+### #70 -- L-attesi-misurati-non-dedotti
+- Stato: minted
+- Origine: par.22.198-quinquagies-ter (deferito 39; forma Q-LEX-1=A, composizione Q-REGI-3=A). Token: LC-76, LC-83, LC-86, LC-90, LC-96, LC-109
+- Regola: lo atteso di un gate si MISURA sul file POST in sandbox e si verifica come POST == PRE + DELTA dichiarato; non si deduce, non si scrive a memoria, e non si deriva MAI dalla stessa sorgente che il gate deve verificare, perche quello non e un gate ma una TAUTOLOGIA; quando `old` e sottostringa di `new` lo atteso POST di `old` e 1 e non 0, dichiarato per-anchor e mai in ciclo uniforme.
+- Contesto: ogni self-check di patcher. Un `DELTA_RIGHE` tenuto come intero scritto a mano ha intercettato due conteggi sbagliati su due patcher indipendenti; derivato dal composto sarebbe passato in silenzio in entrambi i casi.
+
+### #71 -- L-collaudo-per-mutazione
+- Stato: minted
+- Origine: par.22.198-quinquagies-ter (deferito 39; forma Q-LEX-1=A, composizione Q-REGI-3=A). Token: LC-70, LC-75, LC-93, LC-95, LC-98, LC-108
+- Regola: un pin o un gate verde non e efficace finche una mutazione non lo ha visto ROSSO NOMINANDOLO; la harness deve asserire che la mutazione abbia davvero cambiato il sorgente e dichiarare MUTAZIONE NON APPLICATA invece di stampare verde; una mutazione che muove piu di una variabile intercetta ma non isola; il patcher si collauda in sandbox sul COMPORTAMENTO con sagoma fedele, backup FUORI dal repo e rollback dal backup su ogni POST rosso, catturando `Exception` e non solo `AssertionError`.
+- Contesto: ogni patcher e ogni pin di suite. Un pin si progetta sulla configurazione dove il rischio vive: se la configurazione scelta non puo mostrare il difetto, il pin certifica il vuoto. Un gate `grep`-0 su un simbolo morto e violato anche da una sua citazione in commento.
+
+### #72 -- L-fonte-e-il-file
+- Stato: minted
+- Origine: par.22.198-quinquagies-ter (deferito 39; forma Q-LEX-1=A, composizione Q-REGI-3=A). Token: LC-87, LC-88, LC-91, LC-92, LC-97, LC-99, LC-100, LC-104, LC-107
+- Regola: prima di comporre una ratifica o un piano si dumpa LA FONTE che norma -- sezione di Spec, sorgente di produzione, testo della deviazione, riga di TSV -- e mai un suo indice, riassunto o mappa di riga; i file si citano col path completo dalla radice del repo; una fonte che vive in due copie si certifica per IMPRONTA prima di usarne la lettura come misura; una ricostruzione ratificata resta una ricostruzione, salvo prova di identita per md5; fra la prosa dello STATO e `scripts/session_state.env` lo arbitro e lo env; le ratifiche si rileggono contro la fonte a chiusura, con esito DICHIARATO anche quando conferma.
+- Contesto: apertura e chiusura di ogni sessione. Un binario documentato per un host non si riusa su un altro senza misurarne il path; e prima di dichiarare perduto un file si interroga il versionamento del sistema operativo.
+
+### #73 -- L-errore-non-rettificato-diventa-premessa
+- Stato: minted
+- Origine: par.22.198-quinquagies-ter (deferito 39; forma Q-LEX-1=A, composizione Q-REGI-3=A). Token: LC-57, LC-60, LC-64, LC-66, LC-69, LC-82
+- Nota: LC-57, LC-60 e LC-82 sono enunciati RICOSTRUITI dallo uso e restano ricostruzioni (LC-99).
+- Regola: il rischio di un errore non e lo errore in se, ma che entri nella storia come fatto misurato e diventi premessa futura, quindi ogni ritiro si verbalizza a Registro; il ritiro di una asserzione per vizio di metodo NON equivale alla sua negazione, la conclusione torna incognita e va rimisurata; nessun rilievo si presenta come NUOVO prima di una sonda di duplicazione a due chiavi su Changelog e backlog; un design dichiarato chiuso ha una scadenza, perche il codice scritto fra design-close e code-step puo invalidarlo; e una dimostrazione su aritmetica temporale resta ipotesi finche una sonda non ha CERCATO il contro-esempio.
+- Contesto: Registro rettifiche, Convenzione di rilievo, e ogni conclusione tratta da un pattern-match senza averne verificato la precondizione.
+
+### #74 -- L-invariante-su-tutti-i-percorsi
+- Stato: minted
+- Origine: par.22.198-quinquagies-ter (deferito 39; forma Q-LEX-1=A, composizione Q-REGI-3=A). Token: LC-84, LC-94, LC-101
+- Regola: un invariante ratificato su UNA superficie, o espresso in UNO spazio di chiavi, si enumera e si verifica su TUTTE le superfici che espongono lo stesso dato e in OGNI spazio di chiavi in cui la scrittura avviene, prima di dichiararlo realizzato; e la collocazione della guardia e essa stessa parte dello invariante.
+- Contesto: rafforza il pattern par.6.205. Ogni invariante clinico dei TRE MAI, ogni guardia di livello 1, e ogni upsert che convive con una seconda sequenza di identita.
+
+### #75 -- L-numero-dal-massimo-e-dal-gate
+- Stato: minted
+- Origine: par.22.198-quinquagies-ter (deferito 39; forma Q-LEX-1=A, composizione Q-REGI-3=A). Token: LC-54, LC-65, LC-103
+- Nota: la clausola finale non porta token e nasce da un rilievo di sessione (Q-REGI-5=A).
+- Regola: il primo numero libero si misura sul MASSIMO assegnato e non si deriva dal conteggio; una sonda di baseline non pinna un valore che la chiusura stessa e destinata a cambiare, ma ne verifica forma e coerenza interna; e ogni valore gia gate-ato altrove si GENERA dalla fonte invece di essere trascritto, perche una lista di coordinate scritta nel record invecchia a ogni sessione che la registra -- si esclude per PREDICATO, mai per coordinata.
+- Contesto: numerazione del registro, `scripts/cp0.expected`, tabella degli impegni, liste di esclusione dei censimenti. Misurato a quinquagies-ter: una lista che dichiarava TRE sedi ne aveva SEI, perche la chiusura che registra un censimento crea nuove sedi-meta.
+
+### #76 -- L-invariante-non-vive-nella-memoria
+- Stato: minted
+- Origine: par.22.198-quinquagies-ter (deferito 39; forma Q-LEX-1=A, composizione Q-REGI-3=A). Token: LC-52, LC-53, LC-81, LC-85
+- Regola: un invariante che dipende dalla memoria non e un invariante e va automatizzato in uno script o in un self-check di chiusura; il file si censisce per INTERO prima di patcharlo, mai per `grep` troncati; la terna di giunzione del Changelog -- commento `R1 emit`, heading `###` col prefisso `par.`, bullet `SENTINEL_..._GAMMA` -- e asserita dal patcher GAMMA; e lo `outDir` del deploy si deriva da `package.json` con verifica dello output di build PRIMA del rsync.
+- Contesto: `scripts/close_step.sh`, la riga INFO di avanzamento in `scripts/cp0.sh`, e i self-check POST di ogni GAMMA.
+
+<!-- SENTINEL_MINT_67_76_PAR_22_198_QUINQUAGIES_TER -->
+
 ---
 
 ## Candidate (pronte al mint, sbloccate dalla creazione del registro -- par.130)
