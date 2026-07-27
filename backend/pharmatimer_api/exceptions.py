@@ -10,6 +10,9 @@ Code -> HTTP status mapping (Q2=a):
     DB_UNAVAILABLE -> 503
     NOT_FOUND -> 404
     CONSTRAINT_VIOLATION -> 409
+    CONFLICT -> 409
+    FORBIDDEN -> 403
+    UNAUTHORIZED -> 401
     GENERIC -> 500
 """
 from enum import Enum
@@ -23,6 +26,10 @@ class RepositoryErrorCode(str, Enum):
     DB_UNAVAILABLE = "DB_UNAVAILABLE"
     NOT_FOUND = "NOT_FOUND"
     CONSTRAINT_VIOLATION = "CONSTRAINT_VIOLATION"
+    # SENTINEL_QPONTE_CONFLICT_ENUM -- true state conflict: the row was
+    # written by someone else. Distinct from CONSTRAINT_VIOLATION, which
+    # stays the code for input validation. Same 409, different meaning.
+    CONFLICT = "CONFLICT"
     FORBIDDEN = "FORBIDDEN"  # CP1 F3-S4-alpha N+5.E-alpha applied SENTINEL
     UNAUTHORIZED = "UNAUTHORIZED"  # SENTINEL_N5K_CP1_EXCEPTIONS_UNAUTHORIZED_ENUM N+5.K cluster auth-layer fix
     GENERIC = "GENERIC"
@@ -38,6 +45,9 @@ _DEFAULT_SEVERITY = {
     RepositoryErrorCode.DB_UNAVAILABLE: RepositoryErrorSeverity.CRITICAL,
     RepositoryErrorCode.NOT_FOUND: RepositoryErrorSeverity.WARNING,
     RepositoryErrorCode.CONSTRAINT_VIOLATION: RepositoryErrorSeverity.WARNING,
+    # SENTINEL_QPONTE_CONFLICT_SEVERITY -- WARNING per Q-QUADRAG-4=A: a
+    # conflict is someone else being right, not a fault of this client.
+    RepositoryErrorCode.CONFLICT: RepositoryErrorSeverity.WARNING,
     RepositoryErrorCode.FORBIDDEN: RepositoryErrorSeverity.WARNING,
     RepositoryErrorCode.UNAUTHORIZED: RepositoryErrorSeverity.ERROR,  # SENTINEL_N5K_CP1_EXCEPTIONS_UNAUTHORIZED_SEVERITY drift-N54 par.22.91 ratifica Opzione A
     RepositoryErrorCode.GENERIC: RepositoryErrorSeverity.ERROR,
@@ -47,6 +57,9 @@ _HTTP_STATUS = {
     RepositoryErrorCode.DB_UNAVAILABLE: 503,
     RepositoryErrorCode.NOT_FOUND: 404,
     RepositoryErrorCode.CONSTRAINT_VIOLATION: 409,
+    # SENTINEL_QPONTE_CONFLICT_HTTP -- 409, and it MUST stay 4xx: apiClient
+    # collapses every 5xx onto DB_UNAVAILABLE before reading the body.
+    RepositoryErrorCode.CONFLICT: 409,
     RepositoryErrorCode.FORBIDDEN: 403,
     RepositoryErrorCode.UNAUTHORIZED: 401,  # SENTINEL_N5K_CP1_EXCEPTIONS_UNAUTHORIZED_HTTP_STATUS
     RepositoryErrorCode.GENERIC: 500,

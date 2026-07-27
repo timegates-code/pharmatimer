@@ -134,6 +134,9 @@ def test_post_recupero_exceeds_gap(
         headers={"X-User-Token": token},
     )
     assert r.status_code == 409
+    # SENTINEL_QPONTE_PIN_RESTA -- log_assunzioni.py :813. NON migra: valida il
+    # payload, nessuno ha scritto la riga al posto nostro.
+    assert r.json()["error"]["code"] == "CONSTRAINT_VIOLATION"
     msg = r.json()["error"]["message"].lower()
     assert "eccede" in msg or "gap" in msg
 
@@ -168,6 +171,8 @@ def test_post_recupero_invalid_state(
         headers={"X-User-Token": token},
     )
     assert r_rec.status_code == 409
+    # SENTINEL_QPONTE_PIN_CONFLICT -- log_assunzioni.py :791, stato non ricalcolata.
+    assert r_rec.json()["error"]["code"] == "CONFLICT"
 
 
 def test_post_recupero_no_gap(
@@ -222,6 +227,12 @@ def test_post_recupero_no_gap(
         headers={"X-User-Token": token},
     )
     assert r_rec.status_code == 409
+    # SENTINEL_QPONTE_PIN_RESTA -- log_assunzioni.py :808. E IL PIN DELLA
+    # DECISIONE di Q-PONTE-2=A: sede indecidibile, ratificata dal lato che non
+    # perde. Sotto la semantica assoluta di s.6.263 gap_minuti non e mai
+    # decrementato, quindi nessun recupero concorrente accende la condizione.
+    # Una migrazione futura a CONFLICT fa arrossare QUESTO asserto.
+    assert r_rec.json()["error"]["code"] == "CONSTRAINT_VIOLATION"
     msg = r_rec.json()["error"]["message"].lower()
     assert "gap" in msg or "recuperare" in msg
 
@@ -572,3 +583,6 @@ def test_post_recupero_null_ora_ricalcolata_rejected(
 
     r = _post_recupero(client, token, farmaco_id, today, 30)
     assert r.status_code == 409
+    # SENTINEL_QPONTE_PIN_RESTA -- log_assunzioni.py :798. NON migra: la riga e
+    # rotta, non contesa. Etichetta imprecisa nel Centro invii, a backlog.
+    assert r.json()["error"]["code"] == "CONSTRAINT_VIOLATION"

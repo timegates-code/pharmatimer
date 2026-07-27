@@ -71,7 +71,8 @@ def test_post_saltata_update_from_presa_blocked(
         headers={"X-User-Token": token},
     )
     assert r_saltata.status_code == 409
-    assert r_saltata.json()["error"]["code"] == "CONSTRAINT_VIOLATION"
+    # SENTINEL_QPONTE_PIN_CONFLICT -- log_assunzioni.py :414, transizione da presa.
+    assert r_saltata.json()["error"]["code"] == "CONFLICT"
 
 
 def test_post_saltata_idempotent_block(
@@ -100,7 +101,12 @@ def test_post_saltata_idempotent_block(
         headers={"X-User-Token": token},
     )
     assert r2.status_code == 409
-    assert "gia in stato" in r2.json()["error"]["message"].lower() or            r2.json()["error"]["code"] == "CONSTRAINT_VIOLATION"
+    # SENTINEL_QPONTE_PIN_CONFLICT -- log_assunzioni.py :409, dose gia saltata.
+    # La disgiunzione precedente era VACUA: il primo membro e il messaggio, che
+    # la migrazione non tocca, quindi il secondo non discriminava mai. Spezzata
+    # in due asserti duri: ora il codice deve essere quello giusto.
+    assert "gia in stato" in r2.json()["error"]["message"].lower()
+    assert r2.json()["error"]["code"] == "CONFLICT"
 
 
 def test_post_saltata_scope_violation(

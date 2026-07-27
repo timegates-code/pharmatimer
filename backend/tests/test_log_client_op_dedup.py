@@ -284,6 +284,8 @@ def test_presa_distinct_targa_still_conflicts(
         headers=_auth(token),
     )
     assert r_conflict.status_code == 409
+    # SENTINEL_QPONTE_PIN_CONFLICT -- log_assunzioni.py :183, dose gia presa.
+    assert r_conflict.json()["error"]["code"] == "CONFLICT"
 
     # Same targa = recognized replay, 200 dedup.
     r_replay = client.post(

@@ -188,3 +188,5 @@ def test_post_undo_nothing_to_undo(
         headers={"X-User-Token": token},
     )
     assert r_undo2.status_code == 409
+    # SENTINEL_QPONTE_PIN_CONFLICT -- log_assunzioni.py :641, niente da annullare.
+    assert r_undo2.json()["error"]["code"] == "CONFLICT"

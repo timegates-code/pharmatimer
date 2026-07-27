@@ -17,6 +17,7 @@
 //   UNAUTHORIZED         — HTTP 401 missing/invalid token (ApiRepo) → error
 //   FORBIDDEN            — HTTP 403 owner-only or admin-only      → warning
 //   GENERIC              — fallback for unclassified errors       → error
+//   CONFLICT             -- server-side true state conflict (409) -> warning
 //
 // Future Fase 3 note: ApiRepository (FastAPI client) MUST honor the same
 // contract, mapping HTTP errors to the same code vocabulary.
@@ -29,6 +30,11 @@ export const SEVERITY_BY_CODE = Object.freeze({
   DB_UNAVAILABLE: 'critical',
   TRANSACTION_ABORT: 'critical',
   CONSTRAINT_VIOLATION: 'error',
+  // SENTINEL_QPONTE_CONFLICT_CLIENT -- Q-PONTE-3=A. The header above requires
+  // every new code to register its default here. 'warning' is what the server
+  // declares for CONFLICT, so the two tables agree on this code instead of
+  // diverging as they already do on CONSTRAINT_VIOLATION (declared, not fixed).
+  CONFLICT: 'warning',
   NOT_FOUND: 'warning',
   UNAUTHORIZED: 'error',
   FORBIDDEN: 'warning',

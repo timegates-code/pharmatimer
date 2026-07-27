@@ -62,6 +62,8 @@ def test_post_sospesa_idempotent_block(
         headers={"X-User-Token": token},
     )
     assert r2.status_code == 409
+    # SENTINEL_QPONTE_PIN_CONFLICT -- log_assunzioni.py :521, dose gia sospesa.
+    assert r2.json()["error"]["code"] == "CONFLICT"
 
 
 def test_post_sospesa_source_presa_refused(
@@ -99,7 +101,8 @@ def test_post_sospesa_source_presa_refused(
         headers={"X-User-Token": token},
     )
     assert r_sosp.status_code == 409
-    assert r_sosp.json()["error"]["code"] == "CONSTRAINT_VIOLATION"
+    # SENTINEL_QPONTE_PIN_CONFLICT -- log_assunzioni.py :526, conflitto di stato.
+    assert r_sosp.json()["error"]["code"] == "CONFLICT"
     msg = r_sosp.json()["error"]["message"].lower()
     assert "presa" in msg or "non ammessa" in msg
 
@@ -134,3 +137,5 @@ def test_post_sospesa_lateral_from_saltata_refused(
         headers={"X-User-Token": token},
     )
     assert r_sosp.status_code == 409
+    # SENTINEL_QPONTE_PIN_CONFLICT -- log_assunzioni.py :526, transizione da saltata.
+    assert r_sosp.json()["error"]["code"] == "CONFLICT"

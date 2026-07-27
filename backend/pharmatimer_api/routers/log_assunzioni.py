@@ -181,7 +181,7 @@ def post_presa(
         if existing is not None:
             if existing["stato"] in ("presa", "saltata", "sospesa"):
                 raise RepositoryError(
-                    code=RepositoryErrorCode.CONSTRAINT_VIOLATION,
+                    code=RepositoryErrorCode.CONFLICT,
                     message=(
                         f"Dose gia in stato '{existing['stato']}', "
                         "transizione a 'presa' non ammessa"
@@ -407,12 +407,12 @@ def post_saltata(
         if existing is not None:
             if existing["stato"] == "saltata":
                 raise RepositoryError(
-                    code=RepositoryErrorCode.CONSTRAINT_VIOLATION,
+                    code=RepositoryErrorCode.CONFLICT,
                     message="Dose gia in stato 'saltata'",
                 )
             if existing["stato"] not in ("prevista", "ricalcolata"):
                 raise RepositoryError(
-                    code=RepositoryErrorCode.CONSTRAINT_VIOLATION,
+                    code=RepositoryErrorCode.CONFLICT,
                     message=(
                         f"Transizione da '{existing['stato']}' a 'saltata' non ammessa, "
                         "richiede /undo intermedio"
@@ -519,12 +519,12 @@ def post_sospesa(
         if existing is not None:
             if existing["stato"] == "sospesa":
                 raise RepositoryError(
-                    code=RepositoryErrorCode.CONSTRAINT_VIOLATION,
+                    code=RepositoryErrorCode.CONFLICT,
                     message="Dose gia in stato 'sospesa'",
                 )
             if existing["stato"] not in ("prevista", "ricalcolata"):
                 raise RepositoryError(
-                    code=RepositoryErrorCode.CONSTRAINT_VIOLATION,
+                    code=RepositoryErrorCode.CONFLICT,
                     message=(
                         f"Transizione da '{existing['stato']}' a 'sospesa' non ammessa, "
                         "richiede /undo intermedio"
@@ -639,7 +639,7 @@ def post_undo(
         original_stato = existing["stato"]
         if original_stato in ("prevista", "ricalcolata"):
             raise RepositoryError(
-                code=RepositoryErrorCode.CONSTRAINT_VIOLATION,
+                code=RepositoryErrorCode.CONFLICT,
                 message=(
                     f"Nessuna transizione da annullare (stato corrente '{original_stato}')"
                 ),
@@ -789,7 +789,7 @@ def post_recupero(
             )
         if existing["stato"] != "ricalcolata":
             raise RepositoryError(
-                code=RepositoryErrorCode.CONSTRAINT_VIOLATION,
+                code=RepositoryErrorCode.CONFLICT,
                 message=(
                     f"/recupero richiede stato 'ricalcolata' (corrente '{existing['stato']}')"
                 ),
