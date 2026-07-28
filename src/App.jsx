@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import CronologiaView from "./components/cronologia/CronologiaView.jsx";
 import OggiView from "./components/oggi/OggiView.jsx";
@@ -16,6 +16,9 @@ import { selectImpostazione, selectFarmaciAttivi } from "./state/selectors.js";
 import { shouldUseApiRepo } from "./data/repository/index.js"; // SENTINEL_N5QC_CP1_LOGINGATE_SHARED_GATE
 import { ONBOARDING_LS_KEY } from "./data/db.js"; // SENTINEL_BUGM_S6251_LS_IMPORT
 import { parseMagicLinkToken } from "./components/auth/magicLink.js"; // SENTINEL_M2B2_MAGICLINK_IMPORT
+import AvvisoConflittoCard from "./components/shared/AvvisoConflittoCard.jsx"; // SENTINEL_QORDITO_IMPORT
+import { componiScheda } from "./utils/avvisoScheda.js"; // SENTINEL_QORDITO_IMPORT
+import { elencaAvvisi, rimuoviAvviso } from "./data/repository/avvisiStore.js"; // SENTINEL_QORDITO_IMPORT
 
 // Shell with bottom nav and route outlets.
 // Oggi, Config, and Cronologia are functional; Export route redirects to Cronologia (s.6.216 N+3, ratifica N+4).
@@ -55,6 +58,7 @@ export default function App() {
       <OnboardingGate />
       <LoginGate />
       <SessionExpiryGate />
+      <AvvisoConflittoGate />
       <Routes>
         <Route path="/" element={<Navigate to="/oggi" replace />} />
         <Route path="/oggi" element={<OggiView />} />
@@ -209,4 +213,44 @@ function SessionExpiryGate() {
     window.location.reload();
   }, [state.error]);
   return null;
+}
+
+// SENTINEL_QORDITO_GATE -- CS-5.3-bis parte 3, P-3 (Q-ORDITO-1=A, Q-ORDITO-2=A).
+//
+// Gate of the conflict notice. Selection and remounting live HERE
+// (Q-TRAMA-5=A); junction and rendering do NOT -- they are avvisoScheda.js
+// and AvvisoConflittoCard.jsx, both delivered inert at P-2.
+//
+// Q-ORDITO-2=A, LOAD-BEARING -- do not remove the hook. This component is a
+// CHILD of AppProvider, and a child does not re-render when the parent's
+// state changes: only a CONSUMER does. The notice's seat is localStorage,
+// which notifies nobody, so the periodic re-read that makes a notice VISIBLE
+// is this very consumption -- AppContext.jsx :151 stamps setTickMs on every
+// tick and on every foreground event, BEFORE its own ready guard. Measured
+// worst case: TICK_INTERVAL_MS = 60_000 (domain/constants.js :18).
+//
+// ONE record at a time, oldest first (Q-TRAMA-5=A). `elencaAvvisi` already
+// discards records without a targa, so `client_op_id` is always there, and
+// `componiScheda` never returns null and never throws -- so there is always
+// something to show: degraded when the facts cannot be read back, which is
+// the M2 presidio of Q-TRAMA-4=A.
+//
+// A failed removal is NOT swallowed: the counter is bumped either way, the
+// list is re-read, and a notice still present is shown AGAIN. Nothing here
+// expires a notice -- only a read does (Spec 14.5 p.4).
+function AvvisoConflittoGate() {
+  const { state } = useApp();
+  const [, forzaRilettura] = useState(0);
+
+  const avvisi = state.status === "ready" ? elencaAvvisi() : [];
+  const record = avvisi[0] ?? null;
+  if (!record) return null;
+
+  const scheda = componiScheda(record);
+  const handleLetto = () => {
+    rimuoviAvviso(record.client_op_id);
+    forzaRilettura((n) => n + 1);
+  };
+
+  return <AvvisoConflittoCard open scheda={scheda} onLetto={handleLetto} />;
 }
