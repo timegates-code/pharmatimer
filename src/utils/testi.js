@@ -42,6 +42,14 @@ export const AVVISO_CONFLITTO_CHIUSURA =
 /** The single button. Q-PONTE-7=A: no action inside the card. */
 export const AVVISO_CONFLITTO_AZIONE = 'Ho letto';
 
+/** Line 2 of the degraded card -- states the absence without jargon. */
+export const AVVISO_CONFLITTO_FATTI_ASSENTI =
+  'I dettagli di questa registrazione non sono disponibili.';
+
+/** Line 4 of the degraded card -- same "nothing is up to you" clause. */
+export const AVVISO_CONFLITTO_CHIUSURA_ASSENTI =
+  'Non devi fare niente adesso. Se vuoi, controlla le tue dosi nella schermata Oggi.';
+
 /**
  * @param {unknown} v
  * @returns {boolean} true when `v` is a non-blank string.
@@ -79,6 +87,34 @@ export function testoAvvisoConflitto(fatti = {}) {
     fatti: `${farmacoNome}, dose ${doseNumero} del ${dataLabel}. Avevi registrato alle ${oraLabel}.`,
     spiegazione: AVVISO_CONFLITTO_SPIEGAZIONE,
     chiusura: AVVISO_CONFLITTO_CHIUSURA,
+    azione: AVVISO_CONFLITTO_AZIONE,
+  });
+}
+
+/**
+ * The SAME card with the facts left out, for a record whose facts cannot be
+ * read back (Q-TRAMA-4=A).
+ *
+ * Four lines and one button, exactly like the complete card: Q-LETTO-8=A is
+ * neither touched nor amended. This function takes no arguments and NEVER
+ * returns null -- that is the point. Its caller has already dropped the
+ * gesture, so showing nothing would be a silent discard, which is M2.
+ *
+ * The facts line says the details are unavailable and NOT that the dose was
+ * missed: the dose WAS taken, and what did not go through is the
+ * registration.
+ *
+ * SENTINEL_QTRAMA_DEGRADATO
+ *
+ * @returns {{titolo: string, fatti: string, spiegazione: string,
+ *            chiusura: string, azione: string}}
+ */
+export function testoAvvisoDegradato() {
+  return Object.freeze({
+    titolo: AVVISO_CONFLITTO_TITOLO,
+    fatti: AVVISO_CONFLITTO_FATTI_ASSENTI,
+    spiegazione: AVVISO_CONFLITTO_SPIEGAZIONE,
+    chiusura: AVVISO_CONFLITTO_CHIUSURA_ASSENTI,
     azione: AVVISO_CONFLITTO_AZIONE,
   });
 }
