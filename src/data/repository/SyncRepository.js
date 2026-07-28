@@ -37,6 +37,10 @@ import {
   deriveDelivery,
   PARK_REASONS,
 } from "../../domain/outboxSplitter.js";
+// SENTINEL_S6273_IMPORT
+// s.6.273 / Q-NODO-2=A. Sibling import, the direction Q-LETTO-6=A chose
+// when it seated the notice store beside the guardian: no new edge.
+import { salvaAvviso, MOTIVI_AVVISO } from "./avvisiStore.js";
 // SENTINEL_QOCT_IMPORT_GATE
 import { OUTBOX_ATTEMPT_GATE_MS } from "../../domain/constants.js";
 
@@ -354,7 +358,7 @@ export class SyncRepository {
    * on none of the five payloads, it only selects the branch, so forcing
    * it cannot falsify the record (M3).
    *
-   * @returns {Promise<"delivered"|"parked"|"halted">}
+   * @returns {Promise<"delivered"|"parked"|"halted"|"refused">}
    */
   async _deliverElement(element) {
     const delivery = deriveDelivery(element);
@@ -430,8 +434,31 @@ export class SyncRepository {
       // SENTINEL_S2C2B_CATCH_FIVE
       let reason;
       if (code === "CONFLICT") {
-        // s.6.267. Unreachable until the server vocabulary grows the code;
-        // wired now so no window opens between server truth and client label.
+        // SENTINEL_S6273_DROP
+        // s.6.273 EMESSA. Spec 14.3 :1102 contemplates TWO outcomes on
+        // this row; this branch has THREE (Q-NODO-2=A, -3=A, -4=A).
+        //
+        // ORDER IS THE CLINICAL CLAUSE and not a style choice: the
+        // notice is the M2 compensation for the drop, so it is
+        // persisted BEFORE outboxRemove. The only window that can
+        // open is "notice without drop", which is benign -- the
+        // element stays queued, is redelivered, earns the same 409
+        // and rewrites the SAME key, one per targa (Q-LETTO-4=A).
+        // The reverse order loses the gesture.
+        //
+        // s.6.267 EXTINGUISHED here: its premise was that the 14.5
+        // surface did not exist. CONFLITTO_VERO stays ACTIVE and does
+        // NOT become historical -- the prediction written at its
+        // emission assumed two outcomes (Registro voce 158).
+        if (await this._avvisaSuConflitto(element, rows)) {
+          // Outside a try, exactly like the normal drop at the tail
+          // of this method: a failing outboxRemove propagates, spends
+          // one attempt and leaves the element queued. Nothing lost.
+          await this._local.outboxRemove(element.id);
+          return "refused";
+        }
+        // No presa among the rows SENT, or the notice could not be
+        // written: park, which is the pre-F2 behaviour and is safe.
         reason = PARK_REASONS.CONFLITTO_VERO;
       } else if (code === "CONSTRAINT_VIOLATION") {
         // 409 and 422 collapse here (apiClient :33-34, MEASURED). Against a
@@ -455,6 +482,65 @@ export class SyncRepository {
     }
     await this._local.outboxRemove(element.id);
     return "delivered";
+  }
+
+  /**
+   * s.6.273 -- decide whether a true conflict may be DROPPED, and pay
+   * for the drop with a durable notice (Q-NODO-2=A, Q-NODO-3=A).
+   *
+   * NEVER throws. A throw from here would leave the catch block of
+   * _deliverElement, reach _drainOutbox and be routed to the INTERNAL
+   * class, spending an attempt on an element that failed for a
+   * business reason -- the outcome avvisiStore.js :22-27 calls wrong.
+   *
+   * `false` means the caller MUST NOT drop. Parking is the pre-F2
+   * behaviour and is clinically safe: the lot never discards.
+   *
+   * SENTINEL_S6273_AVVISO
+   *
+   * @param {object} element the outbox element
+   * @param {any[]} rows delivery.rows -- the rows actually SENT
+   * @returns {Promise<boolean>} true only if the notice reads back
+   */
+  async _avvisaSuConflitto(element, rows) {
+    // Q-NODO-3=A. The discriminant is the ROW and not the gesture:
+    // for the annulla* verbs deriveDelivery :277 hands over the FIRST
+    // row only and the others are protection-only (s.6.262). A card
+    // composed on a row never sent would state something false, which
+    // is M3. Measured: `stato: presa` has ONE production writer,
+    // recalc.js :395.
+    const contienePresa =
+      Array.isArray(rows) && rows.some((r) => r && r.stato === "presa");
+    if (!contienePresa) return false;
+
+    // Q-NODO-2=A: the MIRROR and not the network. We are inside the
+    // catch of a delivery that just failed; if the cause is the
+    // network, a second network read fails with it and the notice
+    // would never be written in the very scenario it exists for.
+    // Read AFTER the discriminant, so the farmaco is fetched only
+    // when a drop is actually on the table.
+    let farmaco = null;
+    try {
+      farmaco = await this._local.getFarmaco(element.farmaco_id);
+    } catch {
+      return false; // Q-LETTO-7=A: a failed read does NOT drop.
+    }
+    // A missing farmaco is a FAILED read, not an empty one.
+    if (!farmaco || typeof farmaco.nome !== "string") return false;
+
+    // The seven facts are ALL element fields (Q-NODO-3=A) except the
+    // name, denormalised here at drop time (Q-LETTO-4=A). salvaAvviso
+    // validates every one and returns false on any gap, so a
+    // malformed element PARKS instead of dropping.
+    return salvaAvviso({
+      client_op_id: element.client_op_id,
+      farmaco_nome: farmaco.nome,
+      dose_numero: element.dose_numero,
+      data: element.data,
+      ora_tocco: element.created_at,
+      op: element.op,
+      motivo: MOTIVI_AVVISO.CONFLITTO,
+    });
   }
 
   /**

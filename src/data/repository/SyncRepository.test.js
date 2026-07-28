@@ -21,6 +21,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { SyncRepository } from "./SyncRepository.js";
 import { ApiRepository } from "./ApiRepository.js";
+// SENTINEL_S6273_IMPORT_SUITE
+// Q-NODO-5=A. Il giro intero preteso da Q-ORDITO-4=A si chiude QUI: la
+// sede durevole e la giunzione si importano nella suite del guardiano,
+// perche e il guardiano a scrivere e nessun altro.
+import { elencaAvvisi } from "./avvisiStore.js";
+import { componiScheda, ESITI_SCHEDA } from "../../utils/avvisoScheda.js";
 
 const FRESH_KEY = "pharmatimer.mirrorFreshness";
 
@@ -70,6 +76,14 @@ function makeLocal(overrides = {}) {
     // indebita invece di lasciarla vedere.
     outboxNextPendingAfter: vi.fn().mockResolvedValue(null),
     outboxBumpAttempts: vi.fn().mockResolvedValue(1),
+    // SENTINEL_S6273_HARNESS
+    // Q-NODO-5=A. Firma trascritta dal reale: LocalRepository.js :192
+    // getFarmaco(id). Default `null` FAIL-CLOSED di proposito, stessa
+    // ragione scritta sopra per outboxNextPendingAfter: sotto un default
+    // nullo un pin che droppa e dimentica di configurare il farmaco
+    // PARCHEGGIA e arrossa, invece di droppare in silenzio. Ogni pin che
+    // droppa deve dichiarare il farmaco che gli serve.
+    getFarmaco: vi.fn().mockResolvedValue(null),
     ...overrides,
   };
 }
@@ -316,14 +330,39 @@ describe("SyncRepository", () => {
       { farmaco_id: 1, data: "2026-07-24", dose_numero: 1, stato: "presa" },
     ];
 
-    function elemento(id) {
+    // SENTINEL_S6273_SAGOMA
+    // Q-NODO-9=A. Sagoma TRASCRITTA da outboxSplitter.makeElement :192-207,
+    // undici campi. La forma a quattro campi era INERTE finche nessun pin
+    // leggeva i campi primari; s.6.273 li legge tutti, e una sagoma infedele
+    // avrebbe fissato *parcheggia* mentre credevo di fissare *droppa* --
+    // LC-93 e voce 130, famiglia gia censita su QUESTO file (outboxPark
+    // mockato a undefined mentre il reale ritorna un conteggio).
+    // I tre campi primari derivano da logs[0], come fa la produzione.
+    // RESIDUO DICHIARATO: e una trascrizione e non una prova (LC-99). Che
+    // la produzione generi `data` in forma YYYY-MM-DD lo sostengono
+    // avvisoScheda.js :50-51 e il letterale di LOGS qui sopra, e si misura
+    // sullo stack vero a CS-6.
+    function elemento(id, patch = {}) {
+      const riga = {
+        farmaco_id: 1,
+        data: "2026-07-24",
+        dose_numero: 1,
+        stato: "presa",
+        ...(patch.riga || {}),
+      };
       return {
         id,
-        op: "presa",
+        stato: "pending",
+        op: patch.op || "presa",
         client_op_id: "targa-" + id,
-        logs: [
-          { farmaco_id: 1, data: "2026-07-24", dose_numero: 1, stato: "presa" },
-        ],
+        logs: [riga],
+        farmaco_id: riga.farmaco_id,
+        data: riga.data,
+        dose_numero: riga.dose_numero,
+        created_at: "2026-07-24T13:05:00.000Z",
+        attempts: 0,
+        parked_reason: null,
+        parked_at: null,
       };
     }
 
@@ -358,7 +397,7 @@ describe("SyncRepository", () => {
     });
 
     it("CONSTRAINT_VIOLATION: parcheggia RICHIESTA_ROTTA, mai drop", async () => {
-      // SENTINEL_S6266_PIN_PARK
+      // SENTINEL_S6266_PIN_PARK_ETICHETTA
       // s.6.266: a true 409 and a broken 4xx arrive indistinguishable and
       // Spec 14.3 asks for opposite actions. Both PARK: the parking lot
       // never discards, while a drop would lose a dose really taken (M2)
@@ -382,7 +421,7 @@ describe("SyncRepository", () => {
     });
 
     it("il parcheggio NON blocca la fila: il secondo elemento viene consegnato", async () => {
-      // SENTINEL_S6266_PIN_PARK
+      // SENTINEL_S6266_PIN_PARK_FILA
       // Spec 14.3: parking does not stop the queue -- only unreachable,
       // 5xx and UNAUTHORIZED do. A parked head that froze the file would
       // strand every later dose behind it (M2).
@@ -407,31 +446,184 @@ describe("SyncRepository", () => {
       expect(local.outboxRemove).toHaveBeenCalledWith(32);
     });
 
-    it("CONFLICT: parcheggia CONFLITTO_VERO, mai drop (s.6.267)", async () => {
-      // SENTINEL_S6267_PIN_PARK
-      // Ramo oggi IRRAGGIUNGIBILE per misura: il letterale CONFLICT non
-      // esiste in backend/pharmatimer_api. Il pin non e per questo vacuo --
-      // esercita il ramo con un errore mockato e fissa che il giorno in cui
-      // il server imparera il codice il client lo etichettera per quello che
-      // e, invece di schiacciarlo su RICHIESTA_ROTTA. Spec 14.3 chiederebbe
-      // drop piu avviso visibile, ma la superficie 14.5 non esiste ancora:
-      // s.6.267 parcheggia, e il parcheggio non scarta mai (M2).
-      const scritte = [{ id: 511, ...LOGS[0] }];
-      const api = makeApi({
+    // ========================================================
+    // s.6.273 -- il ramo 409 a TRE esiti (CS-5.3-bis parte 4)
+    // ========================================================
+    // Il pin di s.6.267 che stava qui pinnava *parcheggia, mai drop*, ed
+    // e stato RISCRITTO e non cancellato: s.6.267 e ESTINTA, la sua
+    // premessa -- la superficie 14.5 non esiste -- e caduta per misura.
+    // Il testo di emissione resta nel Changelog, che e append-only.
+
+    function apiInConflitto() {
+      return makeApi({
         upsertLog: vi.fn().mockRejectedValue({ code: "CONFLICT" }),
       });
+    }
+
+    function unSoloElemento(el) {
+      return vi.fn().mockResolvedValueOnce(el).mockResolvedValue(null);
+    }
+
+    it("CONFLICT con una presa: DROPPA e la scheda si compone (s.6.273)", async () => {
+      // SENTINEL_S6273_PIN_DROP
+      // Primo dei tre esiti. Il pin percorre il GIRO INTERO preteso da
+      // Q-ORDITO-4=A -- elemento, salvaAvviso, elencaAvvisi, componiScheda
+      // -- e pretende esito COMPLETA: e cosi che la FORMA di `data` e
+      // `ora_tocco` si misura, invece di irrigidire la validazione di
+      // salvaAvviso, che resterebbe una decisione diversa.
+      let avvisiAlDrop = -1;
+      const api = apiInConflitto();
       const local = makeLocal({
-        upsertLogsBatch: vi.fn().mockResolvedValue(scritte),
-        outboxNextPending: vi
-          .fn()
-          .mockResolvedValueOnce(elemento(51))
-          .mockResolvedValue(null),
+        getFarmaco: vi.fn().mockResolvedValue({ id: 1, nome: "Cardioaspirina" }),
+        outboxNextPending: unSoloElemento(elemento(61)),
+        // ORDINE M2, e questo lo pinna davvero: al momento del drop lo
+        // avviso DEVE gia essere leggibile. Invertire lordine fa rosso qui
+        // e in nessun altro punto.
+        outboxRemove: vi.fn(async () => {
+          avvisiAlDrop = elencaAvvisi().length;
+        }),
       });
       const sync = new SyncRepository(api, local);
 
-      await expect(sync.upsertLogsBatch(LOGS, "presa")).resolves.toBe(scritte);
-      expect(local.outboxPark).toHaveBeenCalledWith(51, "CONFLITTO_VERO");
+      // Q-NODO-4=A: il verbo "refused" NON incrementa il conteggio di
+      // consegna. Se qualcuno domani riusasse "delivered", questa riga
+      // arrossa -- ed e la guardia che il verbo nuovo altrimenti non ha.
+      await expect(sync.drainOutbox()).resolves.toBe(0);
+      expect(local.outboxRemove).toHaveBeenCalledWith(61);
+      expect(local.outboxPark).not.toHaveBeenCalled();
+      expect(avvisiAlDrop).toBe(1);
+
+      const avvisi = elencaAvvisi();
+      expect(avvisi).toHaveLength(1);
+      expect(avvisi[0].motivo).toBe("CONFLITTO");
+      expect(avvisi[0].op).toBe("presa");
+      const scheda = componiScheda(avvisi[0]);
+      expect(scheda.esito).toBe(ESITI_SCHEDA.COMPLETA);
+      expect(scheda.testi.fatti).toContain("Cardioaspirina");
+      expect(scheda.testi.fatti).toContain("dose 1");
+      expect(scheda.testi.fatti).toContain("24 luglio 2026");
+      // Lora e ora LOCALE del tocco: si pinna la FORMA e non il valore,
+      // che dipende dal fuso della macchina di collaudo.
+      expect(scheda.testi.fatti).toMatch(/Avevi registrato alle \d{2}:\d{2}\./);
+    });
+
+    it("CONFLICT senza una presa: RESTA PARCHEGGIATO, nessun avviso", async () => {
+      // SENTINEL_S6273_PIN_NOPRESA
+      // Secondo dei tre esiti. Q-LETTO-2=A: il discriminante e la RIGA e
+      // non il gesto. Senza una presa fra le righe CONSEGNATE non ce nulla
+      // da compensare, e il parcheggio non scarta mai (M2).
+      const api = apiInConflitto();
+      const local = makeLocal({
+        getFarmaco: vi.fn().mockResolvedValue({ id: 1, nome: "Cardioaspirina" }),
+        outboxNextPending: unSoloElemento(
+          elemento(62, { op: "salta", riga: { stato: "saltata" } })
+        ),
+      });
+      const sync = new SyncRepository(api, local);
+
+      await expect(sync.drainOutbox()).resolves.toBe(0);
+      expect(local.outboxPark).toHaveBeenCalledWith(62, "CONFLITTO_VERO");
       expect(local.outboxRemove).not.toHaveBeenCalled();
+      expect(elencaAvvisi()).toHaveLength(0);
+      // Il discriminante sta PRIMA della lettura: il farmaco non si legge
+      // nemmeno quando il drop non e sul tavolo.
+      expect(local.getFarmaco).not.toHaveBeenCalled();
+    });
+
+    it("CONFLICT ma la lettura del farmaco LANCIA: parcheggia, non droppa", async () => {
+      // SENTINEL_S6273_PIN_LETTURA
+      // Terzo esito, prima meta. Q-LETTO-7=A: una lettura fallita NON
+      // autorizza il drop. La riga su outboxBumpAttempts e la parte
+      // discriminante: prova che il throw NON e uscito dallo helper. Se
+      // uscisse finirebbe in _onInternalException e spenderebbe un
+      // tentativo su un errore di business, che avvisiStore.js :22-27
+      // dichiara lo esito sbagliato.
+      const api = apiInConflitto();
+      const local = makeLocal({
+        getFarmaco: vi.fn().mockRejectedValue(new Error("dexie giu")),
+        outboxNextPending: unSoloElemento(elemento(63)),
+      });
+      const sync = new SyncRepository(api, local);
+
+      await expect(sync.drainOutbox()).resolves.toBe(0);
+      expect(local.outboxPark).toHaveBeenCalledWith(63, "CONFLITTO_VERO");
+      expect(local.outboxRemove).not.toHaveBeenCalled();
+      expect(local.outboxBumpAttempts).not.toHaveBeenCalled();
+      expect(elencaAvvisi()).toHaveLength(0);
+    });
+
+    it("CONFLICT ma il farmaco e assente: parcheggia (default fail-closed)", async () => {
+      // SENTINEL_S6273_PIN_FARMACONULL
+      // Terzo esito, seconda meta. Q-LETTO-7=A tratta il farmaco null come
+      // lettura FALLITA e non come lettura vuota. Questo pin usa il default
+      // di makeLocal apposta: e la dimostrazione che il fail-closed morde.
+      const api = apiInConflitto();
+      const local = makeLocal({
+        outboxNextPending: unSoloElemento(elemento(64)),
+      });
+      const sync = new SyncRepository(api, local);
+
+      await expect(sync.drainOutbox()).resolves.toBe(0);
+      expect(local.getFarmaco).toHaveBeenCalledWith(1);
+      expect(local.outboxPark).toHaveBeenCalledWith(64, "CONFLITTO_VERO");
+      expect(local.outboxRemove).not.toHaveBeenCalled();
+      expect(elencaAvvisi()).toHaveLength(0);
+    });
+
+    it("CONFLICT ma la scrittura dello avviso FALLISCE: parcheggia", async () => {
+      // SENTINEL_S6273_PIN_SCRITTURA
+      // Terzo esito, terza meta, ed e il caso portante: salvaAvviso
+      // verifica per RILETTURA e non per assenza di throw, quindi un
+      // setItem che ingoia il valore in silenzio ritorna false. Senza
+      // questo pin il drop sarebbe autorizzato da un avviso che non ce.
+      const spia = vi
+        .spyOn(Storage.prototype, "setItem")
+        .mockImplementation(() => {});
+      const api = apiInConflitto();
+      const local = makeLocal({
+        getFarmaco: vi.fn().mockResolvedValue({ id: 1, nome: "Cardioaspirina" }),
+        outboxNextPending: unSoloElemento(elemento(65)),
+      });
+      const sync = new SyncRepository(api, local);
+
+      await expect(sync.drainOutbox()).resolves.toBe(0);
+      spia.mockRestore();
+      expect(local.outboxPark).toHaveBeenCalledWith(65, "CONFLITTO_VERO");
+      expect(local.outboxRemove).not.toHaveBeenCalled();
+      expect(elencaAvvisi()).toHaveLength(0);
+    });
+
+    it("il discriminante e la RIGA e non il verbo di rotta (Q-NODO-3=A)", async () => {
+      // SENTINEL_S6273_PIN_DISCRIMINANTE
+      // Elemento SINTETICO, e lo dichiaro: `annullaAssunzione` con una riga
+      // `presa`. deriveDelivery :277 consegna la SOLA prima riga col verbo
+      // UNDO, quindi rows.some(presa) e VERO mentre verb === PRESA e FALSO:
+      // i due predicati DIVERGONO qui e in nessun altro caso di questa
+      // suite. Senza questo pin i cinque sopra restano verdi anche sotto la
+      // scorciatoia che Q-NODO-3=A ha scartato -- esito compatibile con
+      // entrambe le ipotesi, cioe la rassicurazione vietata da LC-106.
+      // La sua raggiungibilita in PRODUZIONE non e misurata e non serve:
+      // il pin fissa la FORMA del predicato, non uno scenario clinico.
+      const api = apiInConflitto();
+      const local = makeLocal({
+        getFarmaco: vi.fn().mockResolvedValue({ id: 1, nome: "Cardioaspirina" }),
+        outboxNextPending: unSoloElemento(
+          elemento(66, { op: "annullaAssunzione" })
+        ),
+      });
+      const sync = new SyncRepository(api, local);
+
+      await expect(sync.drainOutbox()).resolves.toBe(0);
+      // Criterio di arresto DICHIARATO: se questa riga arrossa, il verbo
+      // undo non ha un ramo in _patchForVerb e lo elemento e stato
+      // parcheggiato PRIMA di raggiungere la rete. Sarebbe una scoperta
+      // sulla regione :464-499, non un difetto di s.6.273.
+      expect(api.upsertLog).toHaveBeenCalledTimes(1);
+      expect(local.outboxRemove).toHaveBeenCalledWith(66);
+      expect(local.outboxPark).not.toHaveBeenCalled();
+      expect(componiScheda(elencaAvvisi()[0]).esito).toBe(
+        ESITI_SCHEDA.COMPLETA
+      );
     });
 
     it("NOT_FOUND: parcheggia FARMACO_O_DOSE_ASSENTE, mai drop", async () => {
