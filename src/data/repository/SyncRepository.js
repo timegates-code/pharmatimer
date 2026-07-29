@@ -213,8 +213,14 @@ export class SyncRepository {
     // Past this line nothing may reject (Q-QUATER-5=A): the touch is
     // annotated, and an annotated touch is never rolled back by the UI
     // (14.5.4). Delivery outcomes are handled inside the drain, per 14.3.
-    const delivered = await this._drainOutbox();
-    if (delivered > 0) await this._refreshTouchedWindow(logs);
+    // SENTINEL_QLEVA_WRITEPATH_GATE_REMOVED
+    // Q-LEVA-1=A: the gate `if (delivered > 0)` is GONE and the Chiusura
+    // del giro now lives inside `_drainOutbox`, shared by both callers.
+    // The window is no longer the rows of the GESTURE but those of the
+    // elements that actually LEFT the queue -- a NARROWING, declared: a
+    // row whose element is still queued keeps a live promise, so 14.4.4
+    // shields it and rereading it would correct nothing.
+    await this._drainOutbox();
 
     // s.6.265 (Q-TER-3=A): the return is what was really persisted
     // locally, invariant with respect to the network.
@@ -263,6 +269,30 @@ export class SyncRepository {
   }
 
   async _drainOutbox() {
+    // SENTINEL_QLEVA_CHIUSURA_GIRO
+    // Chiusura del giro (Spec 14.3 :1115) in SEDE UNICA (Q-LEVA-1=A).
+    // BOTH callers inherit it here -- the write-path above and the public
+    // trigger drain -- so the clause can no longer hold on one path and be
+    // missed on the other. That asymmetry is the whole reason the impegno
+    // `chiusura-giro-condizionata` was opened (lezione 6.205, voce 125).
+    //
+    // ORDER IS LOAD-BEARING, not style: the reread runs AFTER the pass and
+    // NEVER inside it. While an element is queued its rows are shielded by
+    // 14.4.4, so a reread placed before the drop would hand back the very
+    // row the shield rejected and correct NOTHING. The drop removes the
+    // promise, the shield lifts, and only then does the server snapshot
+    // reach the mirror. Pinned by `letturaAlDrop` in the specchio suite.
+    //
+    // COST AT EMPTY QUEUE IS ZERO: `touched` stays empty and
+    // `_refreshTouchedWindow` returns on `dates.length === 0`. This is why
+    // the reread can be unconditional without a per-pass price.
+    const touched = [];
+    const delivered = await this._drainOutboxPass(touched);
+    await this._refreshTouchedWindow(touched);
+    return delivered;
+  }
+
+  async _drainOutboxPass(touched) {
     // SENTINEL_S2C2B_FIFO_DELIVERY
     let delivered = 0;
     let lastId = null;
@@ -306,6 +336,16 @@ export class SyncRepository {
         }
       }
       if (outcome === "halted") return delivered;
+      // SENTINEL_QLEVA_TOUCHED_PUSH
+      // Only an element that LEFT the queue feeds the window (Q-LEVA-1=A).
+      // `parked` and `ritentabile` keep a LIVE promise, so 14.4.4 still
+      // shields their rows and the mirror is ALREADY right: adding them
+      // would buy a read and change nothing. `halted` cannot reach this
+      // line -- the early return above already left the function, and the
+      // queue was not walked, so Spec :1115 does not apply to that pass.
+      if (outcome === "delivered" || outcome === "refused") {
+        for (const riga of element.logs || []) touched.push(riga);
+      }
       if (outcome === "delivered") delivered += 1;
       if (outcome === "ritentabile") afterId = element.id;
     }

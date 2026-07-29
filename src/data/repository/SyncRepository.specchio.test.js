@@ -1,6 +1,12 @@
 // ============================================================
-// SyncRepository -- SONDA DI MISURA (non guardia).
-// `specchio-dopo-drop`, CS-5.4-bis, par.22.198-bisexagies = `il-riflesso`.
+// SyncRepository -- GUARDIA della Chiusura del giro.
+// `chiusura-giro-condizionata`, CS-5.4-ter, par.22.198-tersexagies =
+// `la-leva` (Q-LEVA-1=A).
+// NATA SONDA DI MISURA a CS-5.4-bis come `specchio-dopo-drop`,
+// par.22.198-bisexagies = `il-riflesso`, e passata a GUARDIA qui: lo stesso
+// cambio di mestiere che `RecuperoModal.ricostruzione.test.jsx` ha fatto a
+// unsexagies, e che questo file aveva dichiarato in anticipo come proprio
+// precedente di forma.
 // ============================================================
 //
 // NATURA. Questo file e una MISURA e non un pin. Risponde a UNA domanda
@@ -51,6 +57,19 @@
 // actions.drain.test.js :134. Nessuna dipendenza da `fake-indexeddb`.
 //
 // SENTINEL_QRIFLESSO_SONDA
+// SENTINEL_QLEVA_GUARDIA
+//
+// ESITO MISURATO e RIPARATO. La misura di CS-5.4-bis ha dato ESITO A: la
+// Chiusura del giro non avveniva. `Q-LEVA-1=A` la ha spostata DENTRO
+// `_drainOutbox`, sede unica dei due chiamanti. Da qui:
+//   G1 resta VERDE  -- la consegna riuscita rilegge, come prima. Il
+//                      controllo positivo NON perde il suo mestiere.
+//   G2 e INVERTITA  -- ora pretende la rilettura, e in piu ne pinna
+//                      lORDINE via `letturaAlDrop`.
+//   G3 resta VERDE  -- col parcheggio NON si rilegge, e da oggi questa
+//                      fase e la guardia che prova che la riparazione e
+//                      MIRATA: se qualcuno spingesse anche `parked`,
+//                      G3 arrossa. Prima era solo un discriminante.
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { SyncRepository } from "./SyncRepository.js";
@@ -138,7 +157,7 @@ function unSoloElemento(el) {
   return vi.fn().mockResolvedValueOnce(el).mockResolvedValue(null);
 }
 
-describe("SONDA specchio-dopo-drop -- la Chiusura del giro sul write-path", () => {
+describe("GUARDIA chiusura-giro-condizionata -- la Chiusura del giro dopo il drop", () => {
   beforeEach(() => {
     // avvisiStore vive in localStorage: senza questo G2 leggerebbe gli
     // avvisi di una fase precedente e il conteggio direbbe il falso.
@@ -165,10 +184,11 @@ describe("SONDA specchio-dopo-drop -- la Chiusura del giro sul write-path", () =
     expect(local.mirrorLogWindow).toHaveBeenCalled();
   });
 
-  it("G2 il caso della riga: dopo il DROP per conflitto la finestra NON si rilegge", async () => {
+  it("G2 il caso della riga: dopo il DROP per conflitto la finestra SI rilegge", async () => {
     // SENTINEL_QRIFLESSO_G2_DROP
     // La fase che risponde alla domanda. Verde = ESITO A. Rossa sullo
     // assert di getLogByRange = ESITO B.
+    let letturaAlDrop = -1;
     const api = makeApi({
       upsertLog: vi.fn().mockRejectedValue({ code: "CONFLICT" }),
     });
@@ -177,6 +197,12 @@ describe("SONDA specchio-dopo-drop -- la Chiusura del giro sul write-path", () =
         .fn()
         .mockResolvedValue({ id: 1, nome: "Cardioaspirina" }),
       outboxNextPending: unSoloElemento(elemento(72)),
+      // Cattura dellORDINE, stessa forma di `avvisiAlDrop` in
+      // SyncRepository.test.js :481: al momento del drop la rilettura NON
+      // deve essere ancora avvenuta.
+      outboxRemove: vi.fn(async () => {
+        letturaAlDrop = api.getLogByRange.mock.calls.length;
+      }),
     });
     const sync = new SyncRepository(api, local);
 
@@ -189,9 +215,17 @@ describe("SONDA specchio-dopo-drop -- la Chiusura del giro sul write-path", () =
     expect(local.outboxPark).not.toHaveBeenCalled();
     expect(elencaAvvisi()).toHaveLength(1);
 
-    // LA MISURA.
-    expect(api.getLogByRange).not.toHaveBeenCalled();
-    expect(local.mirrorLogWindow).not.toHaveBeenCalled();
+    // LA GUARDIA, attese INVERTITE da Q-LEVA-1=A. Prima della riparazione
+    // queste due righe pretendevano `not.toHaveBeenCalled`, ed erano la
+    // MISURA che ha aperto `chiusura-giro-condizionata`.
+    expect(api.getLogByRange).toHaveBeenCalled();
+    expect(local.mirrorLogWindow).toHaveBeenCalled();
+
+    // LORDINE, e non basta che la rilettura avvenga. Finche lo elemento e
+    // in coda le sue righe sono SCHERMATE da 14.4.4: una rilettura posta
+    // PRIMA del drop restituirebbe la riga che lo scudo ha rifiutato, e non
+    // correggerebbe nulla. Questo assert e la SOLA sede che lo intercetta.
+    expect(letturaAlDrop).toBe(0);
   });
 
   it("G3 discriminante: col PARCHEGGIO la finestra non si rilegge per altra ragione", async () => {
