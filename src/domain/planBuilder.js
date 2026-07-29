@@ -1,4 +1,4 @@
-import { timeToMinutes } from '../utils/time.js';
+import { timeToMinutes, addMinutesToIso } from '../utils/time.js';
 import { computeOraPrevista } from './orarioResolver.js';
 import {
   isExtendedInterval,
@@ -80,6 +80,25 @@ function mergeLogIntoEntry(entry, log) {
   entry.ora_ricalcolata = log.ora_ricalcolata ?? null;
   entry.gap_minuti = log.gap_minuti ?? 0;
   entry.recupero_minuti = log.recupero_minuti ?? 0;
+  // SENTINEL_QPERNO_SNAPSHOT -- snapshot-recupero-client (Q-PERNO-4=A).
+  // The pre-recovery snapshot is a client-side session artifact: the server
+  // has no such column by DDL, so a plan rebuilt from server logs lost it and
+  // RecuperoModal fell back to the ALREADY-recovered time -- the dose walked
+  // backwards one step per confirmation (M1) and the person read a base she
+  // never chose (M3).
+  // DERIVATION, not invention: under the absolute recupero semantics of
+  // s.6.263 the stored total is exactly what was subtracted, so the original
+  // is recovered by adding it back. It is the same computation the server
+  // performs at post_recupero. addMinutesToIso recomposes the string field by
+  // field, so any incoming form -- with or without seconds -- is normalised.
+  // GUARD, LOAD-BEARING: derive ONLY when ora_ricalcolata is valued. Date(null)
+  // does not throw, it yields the epoch, and an unguarded derivation would
+  // write a 1970 timestamp into the plan.
+  // gap_originale stays INERT: zero production read sites (Q-PERNO-4=A).
+  entry.ora_ricalcolata_originale =
+    entry.ora_ricalcolata === null
+      ? null
+      : addMinutesToIso(entry.ora_ricalcolata, entry.recupero_minuti);
 }
 
 /**

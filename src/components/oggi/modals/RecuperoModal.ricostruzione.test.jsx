@@ -1,59 +1,43 @@
 // ============================================================
-// SONDA `misura-coppia-client` -- CS-5.2 fase F1 (Q-URTO-2=A, Q-URTO-3=A).
+// GUARDIA `snapshot-recupero-client` -- CS-5.4 tronco 1 (Q-PERNO-3=A).
 // ============================================================
 //
-// WARNING -- READ BEFORE "FIXING" A RED HERE.
-// This file is a MEASUREMENT probe, not a regression guard. It pins the
-// behaviour MEASURED TODAY, defect included. If the successor repair row
-// lands (mergeLogIntoEntry rebuilding the pre-recovery snapshot), these
-// expectations MUST be rewritten by that same session -- a red here after
-// the repair is the EXPECTED signal, not a regression.
-// Greppable marker of that contract: SENTINEL_MCC_MISURA_NON_GUARDIA.
+// Questo file NON e piu una sonda di misura. Fino a quinquagies-quinquies
+// pinnava il difetto MISURATO; da CS-5.4 pinna la RIPARAZIONE, e un rosso qui
+// e una regressione vera. Il marcatore del vecchio contratto e stato rimosso
+// nella stessa sessione che ha ribaltato le attese, come quel contratto
+// prescriveva.
 //
-// WHAT IT MEASURES
-// `src/domain/planBuilder.js` mergeLogIntoEntry (:76-83) carries back SIX
-// fields from the server log and rebuilds neither `ora_ricalcolata_originale`
-// (defaulted null at :153 and :191) nor `gap_originale` (defaulted 0 at :157
-// and :195). The server has no such columns by DDL: the pre-recovery
-// snapshot is a client-side session artifact, written by recalc.js :426/:429
-// and lost on any plan rebuilt from server logs.
+// COSA GARANTISCE
+// `src/domain/planBuilder.js` mergeLogIntoEntry ricostruisce
+// `ora_ricalcolata_originale` dalla coppia gia ricevuta: sotto la semantica
+// ASSOLUTA del recupero (s.6.263) il totale memorizzato e esattamente cio che
+// e stato sottratto, quindi lo originale si recupera ri-sommandolo. E la
+// stessa computazione che il server esegue a post_recupero.
 //
-// The state under test -- snapshot ABSENT while `recupero_minuti` is VALUED --
-// is NOT producible inside a session: recalc.js writes both `*_originale`
-// fields equal to their current counterparts, and applyRecupero (:497-500)
-// only ever touches `ora_ricalcolata` and `recupero_minuti`. It is reachable
-// ONLY through reconstruction, which is why `src/domain/recalc.test.js` :936
-// -- which pins the same fallback on a hand-built entry -- does not cover it.
+// La guardia sul null e PORTANTE: `new Date(null)` non solleva, restituisce
+// lo epoch, e una derivazione incondizionata scriverebbe un orario del 1970
+// nel piano. Il controllo positivo in coda esiste per quello (Q-PERNO-5=A).
 //
-// THREE OUTCOMES DECLARED BEFORE THE PROBE RAN (LC-106)
-//   1. surface only          -- wrong base displayed, nothing wrong leaves.
-//   2. mirror divergent, reabsorbed  -- wrong value enters the local plan,
-//      a successful reread realigns `ora_ricalcolata` (but NOT the snapshot).
-//   3. mirror divergent, PERSISTENT offline -- no reread, drift compounds.
-// F3 separates 1 from {2,3}. F4 separates 2 from 3 AT DOMAIN LEVEL, by
-// refeeding the produced logWrite as a mirror row: pure functions only, no
-// Dexie, no SyncRepository.
+// `gap_originale` resta INERTE e NON si ricostruisce (Q-PERNO-4=A): zero sedi
+// di lettura di produzione, misurate a quinquagies-quinquies. Forma identica
+// allo altro campo, esposizione clinica opposta. F5 pinna quella inerzia.
 //
-// DECLARED RESIDUAL, ANCHORED TO CS-6
-// The Dexie + SyncRepository leg is NOT exercised. This probe does not prove
-// the drifted row survives a restart, only that the domain compounds it.
-// CS-6 already carries "riavvio offline con prese al buio" in its matrix.
+// FORMA DEL VALORE IN ARRIVO (Q-PERNO-6=A). Il modello di risposta dichiara
+// `Optional[datetime]` su colonna DATETIME, quindi il valore serializzato
+// porta i secondi; ma il dev non ha alcuna riga, quindi la forma resta una
+// DEDUZIONE STATICA e non una misura. F6 esercita entrambe le forme invece di
+// indovinare quale sia reale: la derivazione passa da addMinutesToIso, che
+// ricompone la stringa campo per campo e normalizza qualunque cosa entri.
 //
-// SECOND FIELD: `gap_originale` -- measured INERT, and F5 pins the inertia.
-// Zero production READ sites exist (only writes at recalc.js :247/:429/:592/
-// :646/:763 plus the two planBuilder defaults). Under the absolute recupero
-// semantics of s.6.263 `gap_minuti` is never decremented, so the residual is
-// `gap_minuti - recupero_minuti` and a gap snapshot serves nobody.
-// Same shape as the other field, opposite clinical exposure.
+// RESIDUO DICHIARATO, ANCORATO A CS-6. La gamba Dexie piu SyncRepository non e
+// esercitata: qui si prova il dominio, non la sopravvivenza a un riavvio.
 //
-// ENVIRONMENT: jsdom, supplied by vitest.config.js :25. This file mounts a
-// component, so it must NOT carry the per-file environment docblock that the
-// DOM-free domain suites use. That docblock name is deliberately never
-// spelled out anywhere in this file: vitest scans the source for it and
-// would apply it even from inside a comment that denies it -- measured the
-// hard way, Registro voce 135, family of voce 99.
-// Renders are unmounted explicitly, mirroring the proven pattern of
-// `RecuperoModal.test.jsx` :65-67 and :87.
+// AMBIENTE: jsdom, da vitest.config.js :25. Questo file monta un componente,
+// quindi non deve portare il docblock di ambiente che le suite di dominio
+// usano. Quel nome non si scrive mai qui dentro: vitest scandisce il sorgente
+// e lo applicherebbe anche da dentro un commento che lo nega -- Registro voce
+// 135, famiglia della voce 99.
 
 import { describe, it, expect } from 'vitest';
 import { renderWithProvider } from '../../../test/renderHelpers.jsx';
@@ -64,7 +48,6 @@ import { applyRecupero } from '../../../domain/recalc.js';
 const DATA = '2026-04-19';
 const ENTRY_KEY = `${DATA}-1-1`;
 
-// Shape mirrored from src/domain/planBuilder.test.js :7-16.
 const PROFILO = {
   id: 1,
   nome_profilo: 'Standard',
@@ -76,13 +59,10 @@ const PROFILO = {
   attivo: 1,
 };
 
-// `intervallo_minimo_ore: null` is load-bearing: measured at
-// recalc.test.js :89-91, calcolaRecuperoMax then returns the whole gap,
-// so a 30 min recovery on a 60 min gap is always admissible and the probe
-// never trips the RECUPERO_ECCESSIVO guard (recalc.js :487-492).
-// `intervallo_ore: 8` keeps us on the standard branch (<= 24h).
-// No `created_at`: computeTInizio degrades to data_inizio 00:00, so the
-// P20 visibility filter (planBuilder.js :143-144) stays inert.
+// `intervallo_minimo_ore: null` e portante: calcolaRecuperoMax ritorna lo
+// intero gap, quindi 30 min su 60 sono sempre ammissibili e la guardia
+// RECUPERO_ECCESSIVO non scatta mai. `intervallo_ore: 8` tiene il ramo
+// standard. Nessun `created_at`: il filtro P20 resta inerte.
 const FARMACO = {
   id: 1,
   nome: 'Test 100mg',
@@ -109,9 +89,9 @@ const ORARIO = {
 };
 
 /**
- * A server row as it exists AFTER a 30 min recovery: the original recalculated
- * time was 18:00, the stored one is 17:30, the total is 30, the gap stays 60
- * (never decremented, s.6.263). Fifteen-column DDL: no `*_originale`.
+ * Riga server DOPO un recupero di 30 min: lo originale era 18:00, il
+ * memorizzato e 17:30, il totale 30, il gap resta 60 (mai decrementato,
+ * s.6.263). DDL a quindici colonne: nessun campo `*_originale`.
  */
 function rigaServer(overrides = {}) {
   return {
@@ -128,7 +108,6 @@ function rigaServer(overrides = {}) {
   };
 }
 
-/** Rebuild the plan the way init / rebuildPlan does: from server log rows. */
 function ricostruisci(logRows) {
   return buildMultiDayPlan({
     profilo: PROFILO,
@@ -151,93 +130,89 @@ function montaModulo(entry) {
   );
 }
 
-describe('SONDA misura-coppia-client -- ricostruzione del piano dai log del server', () => {
-  // ---------- F1 -- lo stato non producibile in sessione ----------
-  // SENTINEL_MCC_F1_RICOSTRUZIONE
-  it('F1: la ricostruzione produce snapshot ASSENTE con recupero VALORIZZATO', () => {
+describe('GUARDIA snapshot-recupero-client -- ricostruzione del piano dai log del server', () => {
+  // ---------- F1 -- lo snapshot torna, derivato dalla coppia ----------
+  // SENTINEL_QPERNO_F1_RICOSTRUZIONE
+  it('F1: la ricostruzione DERIVA lo snapshot dal totale assoluto', () => {
     const plan = ricostruisci([rigaServer()]);
     expect(plan).toHaveLength(1);
     const e = plan[0];
 
-    // Carried back by mergeLogIntoEntry :77-82.
     expect(e.key).toBe(ENTRY_KEY);
     expect(e.stato).toBe('ricalcolata');
     expect(e.ora_ricalcolata).toBe(`${DATA}T17:30`);
     expect(e.gap_minuti).toBe(60);
     expect(e.recupero_minuti).toBe(30);
 
-    // NOT carried back -- the whole point of the probe.
-    expect(e.ora_ricalcolata_originale).toBeNull();
+    // 17:30 + 30 = 18:00. Era `null` e ora e il valore vero.
+    expect(e.ora_ricalcolata_originale).toBe(`${DATA}T18:00`);
+
+    // gap_originale NON si ricostruisce: Q-PERNO-4=A.
     expect(e.gap_originale).toBe(0);
   });
 
   // ---------- F2 -- cio che la persona LEGGE ----------
-  // SENTINEL_MCC_F2_SUPERFICIE
-  it('F2: il modulo mostra come base il tempo GIA recuperato, non lo originale', () => {
+  // SENTINEL_QPERNO_F2_SUPERFICIE
+  it('F2: il modulo mostra come base lo ORIGINALE, non il tempo gia recuperato', () => {
     const entry = ricostruisci([rigaServer()])[0];
-    const { getByTestId, getByText, queryByText, getByRole, unmount } =
-      montaModulo(entry);
+    const { getByTestId, getByText, queryByText, unmount } = montaModulo(entry);
 
-    // RecuperoModal.jsx :66 -- the cursor starts from the stored total.
     expect(getByTestId('rec-value')).toHaveTextContent('30 min');
 
-    // RecuperoModal.jsx :86 -- baseT falls back to ora_ricalcolata.
-    expect(getByText('17:30')).toBeTruthy(); // wrong base, on screen
-    expect(queryByText('18:00')).toBeNull(); // correct base, absent
+    // RecuperoModal.jsx :86 -- baseT prende lo snapshot, che ora esiste.
+    expect(getByText('18:00')).toBeTruthy();
 
-    // The person reads "from 17:30 to 17:00" instead of "from 18:00 to 17:30".
-    expect(getByTestId('new-time')).toHaveTextContent('17:00');
+    // La persona legge "da 18:00 a 17:30", che e cio che ha davvero scelto.
+    expect(getByTestId('new-time')).toHaveTextContent('17:30');
 
-    // And confirming takes ONE tap, with nothing touched: the primary button
-    // is already enabled and already carries the stored total (:227-236).
-    expect(getByRole('button', { name: /Anticipa di 30 min/i })).toBeEnabled();
+    // La base sbagliata non compare piu come base.
+    expect(queryByText('17:00')).toBeNull();
 
     unmount();
   });
 
-  // ---------- F3 -- il valore sbagliato LASCIA il modulo ----------
-  // SENTINEL_MCC_F3_LOGWRITE
-  it('F3: applyRecupero serializza il valore spostato -- non e sola superficie', () => {
+  // ---------- F3 -- confermare non sposta piu la riga ----------
+  // SENTINEL_QPERNO_F3_LOGWRITE
+  it('F3: applyRecupero riproduce lo stesso valore, la riga NON si sposta', () => {
     const plan = ricostruisci([rigaServer()]);
     const result = applyRecupero(plan, ENTRY_KEY, 30);
 
     expect(result.logWrites).toHaveLength(1);
-    // 17:30 - 30 = 17:00. With the snapshot rebuilt it would be
-    // 18:00 - 30 = 17:30, i.e. the row would not move at all.
-    expect(result.logWrites[0].ora_ricalcolata).toBe(`${DATA}T17:00`);
+    // 18:00 - 30 = 17:30, cioe esattamente il valore gia memorizzato.
+    expect(result.logWrites[0].ora_ricalcolata).toBe(`${DATA}T17:30`);
     expect(result.logWrites[0].recupero_minuti).toBe(30);
     expect(result.logWrites[0].stato).toBe('ricalcolata');
 
-    // buildLogWrite (recalc.js :63-75) carries NEITHER `*_originale` field:
-    // nothing on the wire can let the server or a reread restore them.
+    // buildLogWrite non porta i campi `*_originale`: invariato, e resta vero
+    // che nulla sul filo puo restituirli. La derivazione li ricostruisce
+    // in locale, non li trasporta.
     expect(result.logWrites[0].ora_ricalcolata_originale).toBeUndefined();
     expect(result.logWrites[0].gap_originale).toBeUndefined();
   });
 
-  // ---------- F4 -- esito 2 contro esito 3: la deriva e CUMULATIVA ----------
-  // SENTINEL_MCC_F4_CUMULATIVA
-  it('F4: il secondo giro riparte dal valore gia spostato', () => {
+  // ---------- F4 -- la deriva cumulativa e SPENTA ----------
+  // SENTINEL_QPERNO_F4_STABILE
+  it('F4: il secondo giro non arretra, il valore e un punto fisso', () => {
     const giro1 = applyRecupero(ricostruisci([rigaServer()]), ENTRY_KEY, 30);
     const riga1 = giro1.logWrites[0];
-    expect(riga1.ora_ricalcolata).toBe(`${DATA}T17:00`);
+    expect(riga1.ora_ricalcolata).toBe(`${DATA}T17:30`);
 
-    // Refeed the produced row as the mirror row of the next rebuild. This is
-    // the offline case: no server reread ever contradicts it.
+    // Si rialimenta la riga prodotta come riga di specchio del rebuild
+    // successivo: e il caso offline, dove nessuna rilettura la contraddice.
     const piano2 = ricostruisci([riga1]);
     const e2 = piano2[0];
-    expect(e2.ora_ricalcolata).toBe(`${DATA}T17:00`);
-    expect(e2.ora_ricalcolata_originale).toBeNull(); // still not rebuilt
+    expect(e2.ora_ricalcolata).toBe(`${DATA}T17:30`);
+    expect(e2.ora_ricalcolata_originale).toBe(`${DATA}T18:00`);
 
     const giro2 = applyRecupero(piano2, ENTRY_KEY, 30);
-    // 17:30 -> 17:00 -> 16:30. The dose walks BACKWARDS one step per
-    // confirmation, shortening the interval from the previous dose (M1),
-    // while the same total 30 keeps travelling to the server.
-    expect(giro2.logWrites[0].ora_ricalcolata).toBe(`${DATA}T16:30`);
+    // 17:30 -> 17:30 -> 17:30. La dose non cammina piu allo indietro (M1) e
+    // cio che la persona legge resta cio che ha scelto (M3).
+    expect(giro2.logWrites[0].ora_ricalcolata).toBe(`${DATA}T17:30`);
     expect(giro2.logWrites[0].recupero_minuti).toBe(30);
   });
 
   // ---------- F5 -- gap_originale: inerzia, non esposizione ----------
-  // SENTINEL_MCC_F5_INERZIA
+  // SENTINEL_QPERNO_F5_INERZIA
   it('F5: gap_originale non ricostruito e INERTE, il ritardo residuo resta corretto', () => {
     const entry = ricostruisci([rigaServer()])[0];
     expect(entry.gap_originale).toBe(0);
@@ -245,31 +220,63 @@ describe('SONDA misura-coppia-client -- ricostruzione del piano dai log del serv
 
     const { getAllByText, unmount } = montaModulo(entry);
 
-    // RecuperoModal.jsx :93 computes residualGap from `gap_minuti`, never
-    // from the snapshot: 60 - 30 = 30, correct DESPITE gap_originale being 0.
-    // Two nodes carry "30 min": the cursor value and the residual block.
-    // Had any sede read the snapshot, residualGap would be -30, the block
-    // would render the aligned label instead, and this count would be 1.
+    // RecuperoModal.jsx :93 calcola residualGap da `gap_minuti`, mai dallo
+    // snapshot: 60 - 30 = 30, corretto NONOSTANTE gap_originale sia 0.
+    // Due nodi portano "30 min": il cursore e il blocco del residuo.
     expect(getAllByText('30 min')).toHaveLength(2);
 
     unmount();
   });
 
-  // ---------- CONTROLLO POSITIVO ----------
-  // Without this, a red above would not prove it comes from the
-  // RECONSTRUCTION rather than from the fixture itself (LC-93: the shape
-  // must be faithful precisely on the trait that matters).
-  // SENTINEL_MCC_CTRL_POSITIVO
-  it('CONTROLLO POSITIVO: con lo snapshot presente la base e quella giusta', () => {
-    const entry = {
-      ...ricostruisci([rigaServer()])[0],
-      ora_ricalcolata_originale: `${DATA}T18:00`,
-    };
-    const { getByText, getByTestId, unmount } = montaModulo(entry);
+  // ---------- F6 -- la forma coi secondi, Q-PERNO-6=A ----------
+  // SENTINEL_QPERNO_F6_SECONDI
+  it('F6: la derivazione NORMALIZZA la forma coi secondi', () => {
+    const plan = ricostruisci([rigaServer({ ora_ricalcolata: `${DATA}T17:30:00` })]);
+    const e = plan[0];
 
+    // Il riporto e verbatim: mergeLogIntoEntry non normalizza cio che copia.
+    expect(e.ora_ricalcolata).toBe(`${DATA}T17:30:00`);
+
+    // La derivazione passa da addMinutesToIso, che ricompone campo per campo:
+    // lo snapshot nasce SEMPRE in forma canonica, quale che sia lo ingresso.
+    expect(e.ora_ricalcolata_originale).toBe(`${DATA}T18:00`);
+
+    // Conseguenza dichiarata e non nascosta: dentro lo STESSO elemento i due
+    // campi possono portare forme diverse. Posta clinica nulla, misurata --
+    // RecuperoModal.jsx :87 discrimina su includes('T'), vero per entrambe, e
+    // taglia con slice; recalc.js :494 rinormalizza. A backlog sotto MOD-1.
+    const entry = { ...e };
+    const { getByText, getByTestId, unmount } = montaModulo(entry);
     expect(getByText('18:00')).toBeTruthy();
     expect(getByTestId('new-time')).toHaveTextContent('17:30');
-
     unmount();
+  });
+
+  // ---------- CONTROLLO POSITIVO (Q-PERNO-5=A) ----------
+  // Il vecchio controllo spalmava lo snapshot su un elemento ricostruito:
+  // dopo la riparazione quella spalmatura e un no-op e il test resterebbe
+  // verde con o senza riparazione a bordo -- lo esito compatibile con
+  // entrambe le ipotesi vietato da LC-106, e un gate incapace di arrossare
+  // non e un gate (voce 112). Conservato nel RUOLO e non nella lettera:
+  // il caso che la riparazione NON deve toccare.
+  // SENTINEL_QPERNO_CTRL_NULL
+  it('CONTROLLO POSITIVO: senza ora_ricalcolata lo snapshot resta null', () => {
+    const plan = ricostruisci([
+      rigaServer({
+        stato: 'presa',
+        ora_ricalcolata: null,
+        gap_minuti: 0,
+        recupero_minuti: 0,
+        ora_effettiva: `${DATA}T08:00`,
+      }),
+    ]);
+    const e = plan[0];
+
+    expect(e.ora_ricalcolata).toBeNull();
+    expect(e.ora_ricalcolata_originale).toBeNull();
+
+    // Una derivazione incondizionata darebbe lo epoch invece di null: e il
+    // modo di fallire preciso che questo controllo intercetta.
+    expect(String(e.ora_ricalcolata_originale)).not.toContain('1970');
   });
 });
