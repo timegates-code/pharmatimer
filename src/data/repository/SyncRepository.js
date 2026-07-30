@@ -40,7 +40,11 @@ import {
 // SENTINEL_S6273_IMPORT
 // s.6.273 / Q-NODO-2=A. Sibling import, the direction Q-LETTO-6=A chose
 // when it seated the notice store beside the guardian: no new edge.
-import { salvaAvviso, MOTIVI_AVVISO } from "./avvisiStore.js";
+// SENTINEL_QTARGA_IMPORT_ELENCA
+// Q-TARGA-2=B. `elencaAvvisi` joins the SAME sibling import that
+// Q-LETTO-6=A already opened: zero new edges in the import graph. The
+// guardian gains a read exactly where it already writes.
+import { salvaAvviso, MOTIVI_AVVISO, elencaAvvisi } from "./avvisiStore.js";
 // SENTINEL_QOCT_IMPORT_GATE
 import { OUTBOX_ATTEMPT_GATE_MS } from "../../domain/constants.js";
 
@@ -266,6 +270,27 @@ export class SyncRepository {
       // silence EVERY later trigger for the rest of the session (M2).
       this._draining = false;
     }
+  }
+
+  // SENTINEL_QTARGA_CONTA_AVVISI
+  // Q-TARGA-2=B -- the seam through which the trigger-driven thunk learns
+  // that a notice was written. The notice store notifies NOBODY (zero
+  // listeners and zero subscribe, measured), so the plan-side reread
+  // cannot be event-driven: the thunk compares the count ACROSS the pass.
+  //
+  // Seated on the CONCRETE class and NOT on IRepository, which never names
+  // notices: the contract route would have landed on ApiRepository, which
+  // is VIETATO. Italian name for coherence with the whole public surface
+  // of avvisiStore.js (salvaAvviso, elencaAvvisi, rimuoviAvviso) -- a
+  // deliberate, pre-existing derogation from the English-code rule.
+  //
+  // NEVER throws: `elencaAvvisi` returns [] when the store is unreachable
+  // (avvisiStore.js :164-166), so the clinical clause of the thunk holds
+  // here by construction. Callers must STILL guard the call, because
+  // getRepository() hands out a bare LocalRepository when the API flag is
+  // off (index.js :53-59) and that class does not carry this method.
+  contaAvvisi() {
+    return elencaAvvisi().length;
   }
 
   async _drainOutbox() {

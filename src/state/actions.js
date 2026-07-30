@@ -177,6 +177,29 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
   // the next trigger retries.
   let lastDrainAt = 0;
 
+  // SENTINEL_QTARGA_CONTA_SICURO
+  // Q-TARGA-2=B / Q-TARGA-3=A -- guarded read of the notice count.
+  //
+  // The guard is NOT prudence, it is MEASURED: getRepository() returns a
+  // bare LocalRepository when the API flag is off (index.js :53-59), and
+  // that class carries no `contaAvvisi`. A naked call would throw a
+  // TypeError inside a thunk whose contract is NEVER throws, in ANY
+  // branch -- and an escaping rejection here dispatches INIT_ERROR over an
+  // already emitted INIT_SUCCESS, turning a delivery hiccup into a broken
+  // boot. That is M2, not a robustness nicety.
+  //
+  // Absence degrades to 0 BEFORE and 0 AFTER, so the predicate below falls
+  // back exactly to the pre-repair behaviour instead of misfiring. A
+  // future async variant degrades the same way: a Promise is not a number.
+  function contaAvvisiSicuro() {
+    try {
+      const n = repo.contaAvvisi?.();
+      return typeof n === 'number' ? n : 0;
+    } catch {
+      return 0;
+    }
+  }
+
   async function drainOutbox() {
     const now = Date.now();
     // Stamped BEFORE the pass, not after: a pass that takes long must not
@@ -185,14 +208,45 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     if (now - lastDrainAt < DRAIN_THROTTLE_MS) return 0;
     lastDrainAt = now;
 
+    // Read AFTER the throttle gate, so a throttled call pays no store
+    // scan; and BEFORE the pass, because the pass is what writes.
+    const avvisiPrima = contaAvvisiSicuro();
+
     let delivered = 0;
     try {
       delivered = await repo.drainOutbox();
     } catch {
+      // Deliberately does NOT consult the count: on an already degraded
+      // path no new call is added. Perimeter declared at
+      // par.22.198-quatersexagies, not an oversight.
       return 0;
     }
+    const avvisiDopo = contaAvvisiSicuro();
 
-    if (delivered > 0) {
+    // SENTINEL_QTARGA_PREDICATO
+    // Q-LEVA-2=A. Spec 14.3 :1115 puts the plan-window reread FIRST among
+    // the three acts of the Chiusura del giro, and prescribes it `a coda
+    // percorsa` -- with NO condition on what was delivered. On the trigger
+    // path `delivered === 0` conflates FIVE routes (empty queue, failed
+    // local read, no progress, halted, broken Dexie), where an empty queue
+    // is the normal case and a dropped element is the EXPOSED one: that
+    // gate alone missed exactly the case that matters. A notice is written
+    // in ONE of the three 409 outcomes (s.6.273) and that outcome IS the
+    // drop, so the count across the pass is an EXACT discriminant and not
+    // a heuristic.
+    //
+    // Unconditional was rejected: DRAIN_THROTTLE_MS is 60_000, so it would
+    // mean 1440 plan rebuilds a day at an empty queue. The narrowing costs
+    // nothing clinically, because at an empty queue `touched` is empty and
+    // there is nothing stale to realign.
+    //
+    // RESIDUE, declared and not hidden: a count has a window. If the person
+    // clears a notice with `Ho letto` while the drop writes one, the delta
+    // can come out null. M1 stays covered -- the mirror is already
+    // realigned inside `_drainOutbox` in a SINGLE seat, and the targa makes
+    // the server dedupe -- so the residue is plan staleness in React until
+    // the next trigger, never a double dose.
+    if (delivered > 0 || avvisiDopo > avvisiPrima) {
       // Q-QSEPT-7=A: a trigger drain has no `logs` in hand, so the mirror
       // is realigned by rebuilding the plan. ADVISORY, like
       // _refreshTouchedWindow: its failure can never fail a touch that is

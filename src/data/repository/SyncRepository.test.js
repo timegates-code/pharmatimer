@@ -505,6 +505,14 @@ describe("SyncRepository", () => {
       // Lora e ora LOCALE del tocco: si pinna la FORMA e non il valore,
       // che dipende dal fuso della macchina di collaudo.
       expect(scheda.testi.fatti).toMatch(/Avevi registrato alle \d{2}:\d{2}\./);
+
+      // SENTINEL_QTARGA_PIN_CONTA_REALE
+      // Q-TARGA-2=B. La cucitura da cui il thunk da trigger osserva un
+      // avviso NUOVO. Pinnata QUI e non in una suite propria perche qui lo
+      // avviso e stato scritto DAVVERO dal guardiano: il metodo si misura
+      // contro un avviso reale invece che contro un mock di se stesso.
+      expect(sync.contaAvvisi()).toBe(1);
+      expect(sync.contaAvvisi()).toBe(elencaAvvisi().length);
     });
 
     it("CONFLICT senza una presa: RESTA PARCHEGGIATO, nessun avviso", async () => {

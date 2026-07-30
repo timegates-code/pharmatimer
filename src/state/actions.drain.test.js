@@ -7,7 +7,10 @@
 // Q-QSEPT-3=A / Q-QSEPT-7=A. Copre le tre proprieta che rendono il
 // drenaggio da trigger sicuro, e che nessun altro pin protegge:
 //   - il THROTTLE strozza dentro la finestra e riapre oltre;
-//   - `rebuildPlan` gira SOLO quando qualcosa e stato consegnato;
+//   - `rebuildPlan` gira quando qualcosa e stato consegnato OPPURE quando
+//     la passata ha scritto un avviso NUOVO (Q-LEVA-2=A, meta piano di
+//     CS-5.4-quater): il predicato del thunk e una OR, e scrivere SOLO
+//     qui sarebbe un titolo verde che dice il falso, cioe M3 sulla suite;
 //   - il thunk NON SOLLEVA MAI, in nessun ramo.
 //
 // Il terzo punto e clinico e non stilistico: il thunk e atteso in coda a
@@ -111,12 +114,73 @@ describe('actions.drainOutbox -- throttle', () => {
 });
 
 describe('actions.drainOutbox -- riallineamento', () => {
-  it('con ZERO consegnati NON riallinea', async () => {
+  it('con ZERO consegnati e conteggio avvisi COSTANTE non riallinea', async () => {
     // SENTINEL_QOCT_PIN_NO_REBUILD
-    const repo = makeRepo({ drainOutbox: vi.fn().mockResolvedValue(0) });
+    // TITOLO RIALLINEATO ALLA ASSERZIONE alla meta piano di CS-5.4-quater.
+    // Prima diceva `con ZERO consegnati NON riallinea`, e dopo la
+    // riparazione quella frase e FALSA in generale: zero consegnati con un
+    // avviso NUOVO riallinea, ed e il caso esposto. Un titolo verde che
+    // dice il falso e M3 SULLA SUITE, ed e la forma esatta che tersexagies
+    // ha corretto prima del commit. Il pin e CONDIZIONALE e non SOPPRESSO:
+    // sopprimerlo perderebbe la guardia sul caso normale, che e coda vuota.
+    //
+    // La costante e NON NULLA di proposito, 2 prima e 2 dopo: cosi il pin
+    // fissa che il predicato legga il DELTA e non la PRESENZA di avvisi.
+    // Con 0 -> 0 la mutazione `dopo > 0` resterebbe verde qui.
+    const repo = makeRepo({
+      drainOutbox: vi.fn().mockResolvedValue(0),
+      contaAvvisi: vi.fn().mockReturnValue(2),
+    });
     const actions = build(repo);
 
     await actions.drainOutbox();
+
+    expect(repo.getLogByRange).not.toHaveBeenCalled();
+  });
+
+  it('con ZERO consegnati ma un avviso NUOVO riallinea', async () => {
+    // SENTINEL_QTARGA_PIN_AVVISO_NUOVO
+    // Q-LEVA-2=A, il caso che la meta piano esiste per coprire, e il solo
+    // pin che sarebbe rosso senza la riparazione. Sul percorso da trigger
+    // un drop per conflitto (s.6.273) rimuove lo elemento, scrive lo
+    // avviso e restituisce ZERO consegnati, perche il verbo `refused` non
+    // conta come consegna (Q-NODO-4=A, pinnato a SyncRepository.test.js
+    // :491). Prima della riparazione la Chiusura del giro di Spec 14.3
+    // :1115 non avveniva su questa rotta.
+    //
+    // Il valore di ritorno resta 0: il riallineamento per avviso NON gonfia
+    // il conteggio di consegna. Se qualcuno domani lo sommasse, questa riga
+    // arrossa, e protegge SENTINEL_S6273_PIN_DROP dal confine opposto.
+    const repo = makeRepo({
+      drainOutbox: vi.fn().mockResolvedValue(0),
+      contaAvvisi: vi.fn().mockReturnValueOnce(0).mockReturnValueOnce(1),
+    });
+    const actions = build(repo);
+
+    await expect(actions.drainOutbox()).resolves.toBe(0);
+
+    expect(repo.contaAvvisi).toHaveBeenCalledTimes(2);
+    expect(repo.getLogByRange).toHaveBeenCalled();
+  });
+
+  it('con contaAvvisi ASSENTE non solleva e non riallinea', async () => {
+    // SENTINEL_QTARGA_PIN_CONTA_ASSENTE
+    // Q-TARGA-3=A. La assenza NON e ipotetica: getRepository() restituisce
+    // un LocalRepository nudo a flag API spento (index.js :53-59), e quella
+    // classe non porta contaAvvisi. Una chiamata non guardata solleverebbe
+    // TypeError dentro un thunk il cui contratto e NON SOLLEVA MAI, in
+    // nessun ramo, e la eccezione dispaccerebbe INIT_ERROR sopra un
+    // INIT_SUCCESS gia emesso: intoppo di consegna trasformato in avvio
+    // rotto, che e M2.
+    //
+    // La prima asserzione e la guardia della guardia: se qualcuno domani
+    // aggiungesse contaAvvisi a makeRepo(), questo pin arrossa e dice che
+    // il ramo di assenza non e piu esercitato da nessuno.
+    const repo = makeRepo({ drainOutbox: vi.fn().mockResolvedValue(0) });
+    expect(repo.contaAvvisi).toBeUndefined();
+    const actions = build(repo);
+
+    await expect(actions.drainOutbox()).resolves.toBe(0);
 
     expect(repo.getLogByRange).not.toHaveBeenCalled();
   });
