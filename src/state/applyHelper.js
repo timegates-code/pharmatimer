@@ -33,6 +33,8 @@ import { DomainError } from '../domain/errors.js';
 // s.6.261 livello 1: il vocabolario dei verbi e la SOLA fonte di verita
 // del confine del tocco. Direzione state -> domain, gia in uso in actions.js.
 import { OUTBOX_OPS } from '../domain/outboxSplitter.js';
+// SENTINEL_QTIRANTE_IMPORT_APPLYHELPER
+import { raccogliCoda } from './coda.js';
 
 /**
  * @typedef {object} CommitArgs
@@ -195,6 +197,17 @@ export async function commitApplyResult({
     });
     return { ok: false };
   }
+
+  // SENTINEL_QTIRANTE_RACCOLTA_WRITEPATH
+  // Q-RINTOCCO-3=A / Q-TIRANTE-3=A. SEATED HERE AND NOT AT :165, and the
+  // reason is this file's own clause at :90-96: the same call inside the
+  // try above would fall into a catch whose rollback restores the plan
+  // snapshot and re-pushes presoStack -- the card would go back to "da
+  // prendere" (M1) and a gesture already annotated would look lost (M2).
+  // The rollback path needs no collection: the touch commits ledger AND
+  // outbox in ONE transaction (SyncRepository :207-215), so if it aborted
+  // the queue never moved.
+  await raccogliCoda({ dispatch, repo });
 
   return { ok: true };
 }

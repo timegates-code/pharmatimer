@@ -59,6 +59,12 @@ describe('reducer — stato iniziale', () => {
       lastBuiltForDay: null,
       // CP5 v3.0.0 Step 1 (§6.176): toast slice for global UI ephemeral feedback.
       toast: null,
+      // SENTINEL_QTIRANTE_ATTESO_CODA
+      // CS-5.5 parte 2 (Q-RINTOCCO-4=A): specchio esatto della sorgente,
+      // LocalRepository.outboxCounts :684. Questo pin resta a uguaglianza
+      // ESATTA di proposito: un campo nuovo in initialState deve passare
+      // da qui e non entrare in silenzio.
+      coda: { pending: 0, parked: 0 },
     });
   });
 });

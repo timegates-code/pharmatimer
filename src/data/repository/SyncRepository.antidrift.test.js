@@ -88,3 +88,48 @@ describe("rete anti-drift -- superfici grezze non esposte (Q-AUD-4)", () => {
     });
   }
 });
+
+// ============================================================
+// Q-TIRANTE-7=A -- la PREMESSA di F-3, resa gate-abile.
+// SENTINEL_QTIRANTE_PIN_OUTBOXRETRY
+// ------------------------------------------------------------
+// La benignita di F-3 -- il drain pubblico che offline ritorna 0 prima
+// di `_drainOutbox`, mentre il write-path lo chiama a valle -- e stata
+// MISURATA a par.22.198-septsexagies, e poggia INTERAMENTE su una
+// premessa sola: `outboxRetry` non ha alcun chiamante di produzione,
+// quindi oggi `parked` cambia SOLO dentro una passata.
+//
+// Spec 14.5.3 prescrive Riprova / Elimina. Il giorno in cui quei due
+// gesti saranno cablati, `parked` cambiera FUORI da ogni passata e il
+// raccoglitore di src/state/coda.js dovra essere chiamato anche da li,
+// altrimenti il parcheggio resta muto in silenzio -- M2 -- e nessun
+// test di oggi lo vedrebbe. Voce 220.
+//
+// NON si pinna un CONTEGGIO, che e il difetto dei 27 forwarder rimasti
+// a 28 per due sessioni: si pinna la PREMESSA. Il pin nasce verde e
+// morde esattamente nel momento in cui la premessa cade.
+// ============================================================
+
+describe("premessa di F-3 -- outboxRetry senza chiamanti di produzione", () => {
+  it("il perimetro scandito non e vuoto (guardia contro un verde vacuo)", () => {
+    expect(FILES.length).toBeGreaterThan(20);
+  });
+
+  it("controllo positivo: il meccanismo TROVA una chiamata che esiste", () => {
+    // Senza questo, un walk o una regex rotti renderebbero verde
+    // l'asserzione sotto senza aver letto nulla. `.upsertLogsBatch(` ha
+    // un chiamante di produzione MISURATO, applyHelper.js :165, che e
+    // esattamente la porta del write-path.
+    const re = /\.upsertLogsBatch\s*\(/;
+    const hits = FILES.filter((f) => re.test(readFileSync(f, "utf8")));
+    expect(hits.length).toBeGreaterThan(0);
+  });
+
+  it("nessun consumatore di produzione chiama .outboxRetry()", () => {
+    const re = /\.outboxRetry\s*\(/;
+    const hits = FILES
+      .filter((f) => re.test(readFileSync(f, "utf8")))
+      .map((f) => relative(SRC_DIR, f));
+    expect(hits).toEqual([]);
+  });
+});

@@ -389,6 +389,22 @@
 
 <!-- SENTINEL_MINT_67_76_PAR_22_198_QUINQUAGIES_TER -->
 
+### #77 -- L-triare-per-posta-prima-di-spendere
+- Stato: minted
+- Origine: par.22.198-octosexagies (tranche 1 della voce 223; forma Q-LEX-1=A, collocazione Q-ZOCCOLO-5=A)
+- Nota: non porta token LC-*, e nasce da una misura di sessione e non dal corpus storico; il precedente di una clausola senza token e la riga finale di #75.
+- Regola: prima di spendere righe su un reperto se ne stabilisce la POSTA. Un reperto a zero posta clinica e zero effetto sul prodotto vale UNA RIGA e un parcheggio, qualunque sia la sua eleganza. In FASE 0 non si aprono rilievi: il cancello passa o non passa, e cio che si nota si tria DOPO il CP0.
+- Contesto: apertura di sessione, CP0, composizione dei verbali. Misurato a septsexagies: nove errori da quattro cause, e tre asserzioni ritirate in apertura -- voci 216, 217 e 218 -- nate tutte dallo spendere prima di triare, dentro la fase che esiste per far passare un cancello. E la sola contromisura che agisca a monte, e la sola non presidiabile da una macchina.
+
+### #78 -- L-sonda-vuota-porta-controllo-positivo
+- Stato: minted
+- Origine: par.22.198-octosexagies (tranche 1 della voce 223; forma Q-LEX-1=A, collocazione Q-ZOCCOLO-5=A)
+- Nota: non porta token LC-*; ha per parenti stretti LC-89, LC-105 e LC-106, che presidiano il perimetro e la discriminazione ma non la VITALITA dello strumento.
+- Regola: ogni sonda che puo tornare vuota porta nello STESSO giro un controllo positivo, cioe un pattern che DEVE matchare sullo stesso perimetro. Se tace anche quello, e rotta la sonda e non assente il dato. Il controllo va puntato su un bersaglio la cui presenza il record afferma davvero, altrimenti misura la propria omissione. Corollario: contare non e leggere, e un verdetto di appartenenza si dimostra citando la voce e non il numero.
+- Contesto: sonde di duplicazione, censimenti di prefisso, gate di patcher. Voce 217, dove G-16 fu contata undici volte e letta zero mentre la voce 208 gia censiva il reperto; voce 212, dove una sonda malformata per costruzione fu letta come smentita invece che come strumento rotto; voce 153, dove un glob non quotato sotto nomatch di zsh abortiva il comando e la sonda usciva muta; voce 201 e il suo seguito a octosexagies, dove il controllo positivo era puntato su un bersaglio che il corpus non conteneva.
+
+<!-- SENTINEL_MINT_77_78_PAR_22_198_OCTOSEXAGIES -->
+
 ---
 
 ## Candidate (pronte al mint, sbloccate dalla creazione del registro -- par.130)

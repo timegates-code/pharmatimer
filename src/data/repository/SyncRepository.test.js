@@ -317,6 +317,52 @@ describe("SyncRepository", () => {
   });
 
   // ==========================================================
+  // Coda offline -- lettura disponibile (CS-5.5 parte 2)
+  // ==========================================================
+  // SENTINEL_QTIRANTE_PIN_FORWARD_LOCAL
+  // Q-RINTOCCO-2=A. `outboxCounts` NON e un forwarder del blocco dei 27:
+  // quelli vanno a `_api`, questo va a `_local`. E la ragione per cui la
+  // rete di completezza qui sopra -- che cammina ApiRepository.prototype
+  // -- non lo incontra, e il conteggio di 27 resta vero.
+  //
+  // Il mock di `makeLocal` NON porta `outboxCounts` e si passa per
+  // override invece di allargare la sagoma condivisa: allargarla
+  // renderebbe meno fedele ogni altro pin di questo file, che e il
+  // difetto gia censito su `outboxPark` mockato a `undefined`.
+  describe("outboxCounts (lettura della coda, CS-5.5)", () => {
+    it("inoltra a _local e restituisce il suo valore", async () => {
+      const api = makeApi();
+      const local = makeLocal({
+        outboxCounts: vi.fn().mockResolvedValue({ pending: 2, parked: 1 }),
+      });
+      const sync = new SyncRepository(api, local);
+
+      await expect(sync.outboxCounts()).resolves.toEqual({
+        pending: 2,
+        parked: 1,
+      });
+      expect(local.outboxCounts).toHaveBeenCalledTimes(1);
+    });
+
+    it("un rifiuto di _local ARRIVA al chiamante e non diventa uno zero", async () => {
+      // SENTINEL_QTIRANTE_PIN_FORWARD_REJECT
+      // Q-TIRANTE-1=A si regge su questo. `_wrap` rilancia un
+      // RepositoryError classificato, quindi il rifiuto DEVE attraversare
+      // il guardiano intatto. Se qualcuno lo assorbisse qui restituendo
+      // {0,0}, il parcheggio si dipingerebbe vuoto mentre elementi sono
+      // parcheggiati, e nessuna guardia del livello stato potrebbe piu
+      // accorgersene: M2.
+      const api = makeApi();
+      const local = makeLocal({
+        outboxCounts: vi.fn().mockRejectedValue(new Error("DB_UNAVAILABLE")),
+      });
+      const sync = new SyncRepository(api, local);
+
+      await expect(sync.outboxCounts()).rejects.toThrow("DB_UNAVAILABLE");
+    });
+  });
+
+  // ==========================================================
   // Write-path pins (CS-4 S2c-2b, par.22.198-septtriginties)
   // ==========================================================
   // The gesture is annotated FIRST in ledger + outbox, in ONE

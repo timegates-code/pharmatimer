@@ -34,6 +34,8 @@ import {
 } from '../domain/constants.js';
 import { selectToday, selectProfiloById } from './selectors.js';
 import { commitApplyResult } from './applyHelper.js';
+// SENTINEL_QTIRANTE_IMPORT_ACTIONS
+import { raccogliCoda } from './coda.js';
 import { rescheduleAllNotifications } from '../services/notifications.js';
 
 // ------------------------------------------------------------
@@ -216,12 +218,26 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     try {
       delivered = await repo.drainOutbox();
     } catch {
-      // Deliberately does NOT consult the count: on an already degraded
-      // path no new call is added. Perimeter declared at
-      // par.22.198-quatersexagies, not an oversight.
+      // SENTINEL_QTIRANTE_RACCOLTA_CATCH
+      // The NOTICE count is deliberately NOT consulted here: on an already
+      // degraded path no new call is added (perimeter declared at
+      // par.22.198-quatersexagies). The QUEUE count is a different matter
+      // and IS collected (Q-TIRANTE-4=A): a pass that parked elements and
+      // then rejected has changed `parked`, and leaving that unread paints
+      // an empty parking lot over occupied slots, which is M2. The
+      // collector never throws and dispatches nothing when it cannot read.
+      await raccogliCoda({ dispatch, repo });
       return 0;
     }
     const avvisiDopo = contaAvvisiSicuro();
+
+    // SENTINEL_QTIRANTE_RACCOLTA_THUNK
+    // Q-RINTOCCO-3=A. The pass has just mutated the queue, so the parking
+    // lot is read HERE and not inside `_drainOutbox` (Q-RINTOCCO-1=A): a
+    // pass is one of the queue's mutators, not the queue's state, and the
+    // day Riprova / Elimina of 14.5.3 move `parked` outside a pass an
+    // observer seated in the mutator would go blind in silence (voce 220).
+    await raccogliCoda({ dispatch, repo });
 
     // SENTINEL_QTARGA_PREDICATO
     // Q-LEVA-2=A. Spec 14.3 :1115 puts the plan-window reread FIRST among

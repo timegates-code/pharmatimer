@@ -293,6 +293,32 @@ export class SyncRepository {
     return elencaAvvisi().length;
   }
 
+  // SENTINEL_QTIRANTE_OUTBOX_COUNTS
+  // Q-RINTOCCO-2=A -- IDENTICAL surface on both concrete classes, and NO
+  // capability check anywhere. `LocalRepository.outboxCounts` :684 exists
+  // already; this is its forwarder, so the state layer reads the queue
+  // through whichever class the factory handed it (index.js :53-59).
+  //
+  // Precedent is Q-QSEPT-6=A (LocalRepository :722-732), NOT Q-TARGA-3=A.
+  // There, absence of `contaAvvisi` means "no notice", which is the
+  // pre-repair behaviour. Here absence would mean "empty parking lot while
+  // elements ARE parked", and 14.5.1 makes `Da controllare: N` the one
+  // state that asks for human hands. That is M2, so the surface must EXIST
+  // on both classes instead of being probed for.
+  //
+  // NOT a forwarder in the sense of the block above: it delegates to
+  // `_local`, not to `_api`, and `outboxCounts` is absent from
+  // ApiRepository (measured). The completeness net at
+  // SyncRepository.test.js :98-106 walks ApiRepository.prototype, so it
+  // never sees this name and the count of 27 stays true.
+  //
+  // MAY REJECT, unlike `contaAvvisi` right above: `_wrap` (LocalRepository
+  // :57-64) re-throws a classified RepositoryError. A caller must NEVER
+  // read a rejection as zero -- see src/state/coda.js.
+  async outboxCounts() {
+    return this._local.outboxCounts();
+  }
+
   async _drainOutbox() {
     // SENTINEL_QLEVA_CHIUSURA_GIRO
     // Chiusura del giro (Spec 14.3 :1115) in SEDE UNICA (Q-LEVA-1=A).

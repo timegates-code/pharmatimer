@@ -47,6 +47,7 @@
  * @property {string|null} simulatedNow       'HH:MM' in DEV, null in prod.
  * @property {string|null} lastBuiltForDay    'YYYY-MM-DD' — latest day the plan was built for.
  * @property {ToastState|null} toast          CP5 §6.176 — ephemeral global toast.
+ * @property {{pending: number, parked: number}} coda   CS-5.5 -- queue counts mirror.
  */
 
 /** @type {AppState} */
@@ -64,6 +65,7 @@ export const initialState = {
   simulatedNow: null,
   lastBuiltForDay: null,
   toast: null,
+  coda: { pending: 0, parked: 0 },
 };
 
 /**
@@ -218,6 +220,17 @@ export function reducer(state, action) {
 
     case 'DISMISS_TOAST':
       return { ...state, toast: null };
+
+    // --- Coda offline (CS-5.5 parte 2, Spec 14.3 :1115) ------
+    // EXACT mirror of the source shape returned by
+    // LocalRepository.outboxCounts :684 -- {pending, parked}, zero
+    // translation (Q-RINTOCCO-4=A). Italian names on the lexicon of
+    // 14.5.1 were rejected: they would tie the state slice to the copy,
+    // and the copy is a separate module by s.6.272.
+    // The payload is validated by the collector (state/coda.js), never
+    // here: the reducer stays pure and dumb.
+    case 'SET_CODA':
+      return { ...state, coda: action.payload };
 
     // --- Error channel --------------------------------------
     case 'SET_ERROR':
