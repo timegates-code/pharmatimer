@@ -47,7 +47,9 @@
  * @property {string|null} simulatedNow       'HH:MM' in DEV, null in prod.
  * @property {string|null} lastBuiltForDay    'YYYY-MM-DD' — latest day the plan was built for.
  * @property {ToastState|null} toast          CP5 §6.176 — ephemeral global toast.
- * @property {{pending: number, parked: number}} coda   CS-5.5 -- queue counts mirror.
+ * @property {{pending: number, parked: number}|null} coda  CS-5.5 -- queue
+ *   counts mirror; `null` until the first collection, which is NOT the same
+ *   fact as a queue measured empty (Q-LUCERNA-3=A).
  */
 
 /** @type {AppState} */
@@ -65,7 +67,15 @@ export const initialState = {
   simulatedNow: null,
   lastBuiltForDay: null,
   toast: null,
-  coda: { pending: 0, parked: 0 },
+  // SENTINEL_QOBLO_CODA_IGNOTA
+  // Q-LUCERNA-3=A. `null` means NOT YET KNOWN, and that is a DIFFERENT
+  // fact from a queue measured empty. `ready` arrives BEFORE the first
+  // collection -- INIT_SUCCESS at actions.js :315 against the collector
+  // seated inside init() -- so a `{0,0}` seed would let the surface say
+  // `Tutto inviato` while elements sit parked, which is M2. The mirror
+  // stays EXACT (Q-RINTOCCO-4=A); what changes is that the slice can now
+  // say it does not know yet.
+  coda: null,
 };
 
 /**
@@ -229,6 +239,9 @@ export function reducer(state, action) {
     // and the copy is a separate module by s.6.272.
     // The payload is validated by the collector (state/coda.js), never
     // here: the reducer stays pure and dumb.
+    // `initialState.coda` is `null` and NOT `{0,0}` (Q-LUCERNA-3=A): the
+    // shape below mirrors a MEASURED queue, and the ABSENCE of a measure
+    // has a value of its own. See SENTINEL_QOBLO_CODA_IGNOTA above.
     case 'SET_CODA':
       return { ...state, coda: action.payload };
 

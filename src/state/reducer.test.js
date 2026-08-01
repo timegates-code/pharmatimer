@@ -60,11 +60,18 @@ describe('reducer — stato iniziale', () => {
       // CP5 v3.0.0 Step 1 (§6.176): toast slice for global UI ephemeral feedback.
       toast: null,
       // SENTINEL_QTIRANTE_ATTESO_CODA
+      // SENTINEL_QOBLO_ATTESO_CODA_NULL
       // CS-5.5 parte 2 (Q-RINTOCCO-4=A): specchio esatto della sorgente,
       // LocalRepository.outboxCounts :684. Questo pin resta a uguaglianza
       // ESATTA di proposito: un campo nuovo in initialState deve passare
-      // da qui e non entrare in silenzio.
-      coda: { pending: 0, parked: 0 },
+      // da qui e non entrare in silenzio -- ed e esattamente cio che ha
+      // fatto a CS-5.5-ter, dove il ROSSO e stato VISTO e NOMINATO prima
+      // di aggiornare questo atteso.
+      // Q-LUCERNA-3=A: il valore iniziale e `null`, che dice NON ANCORA
+      // NOTO, e non `{0,0}`, che direbbe coda MISURATA vuota. La
+      // differenza e clinica e non stilistica: la seconda direbbe
+      // `Tutto inviato` con elementi parcheggiati, che e M2.
+      coda: null,
     });
   });
 });

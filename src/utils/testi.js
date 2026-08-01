@@ -118,3 +118,115 @@ export function testoAvvisoDegradato() {
     azione: AVVISO_CONFLITTO_AZIONE,
   });
 }
+
+/* ============================================================
+ * Indicatore di coda -- Spec 14.5.1, TRE stati (s.6.274).
+ * SENTINEL_QOBLO_INDICATORE_TESTI
+ * ------------------------------------------------------------
+ * THE REFERENT OF THE COUNT LIVES IN THE PHRASE (Q-OBLO-1=A). `N` counts
+ * OUTBOX ELEMENTS: LocalRepository.outboxCounts :684 counts elements by
+ * `stato`, and Spec 14.6 p.1 puts ONE plate per element, so an element is
+ * ONE gesture and a single gesture may move TWO ledger rows -- the presa of
+ * D plus the recalculation of D+1. It is therefore neither a count of doses
+ * nor a count of rows, and a reader sitting in front of OggiView.jsx
+ * :499-530, where six badges count DOSES inside the very same sticky
+ * header, would read it as doses unless the phrase says otherwise. The noun
+ * is not new: it is the one already load-bearing in the M3 clause at :22-25
+ * of this file.
+ *
+ * THE THIRD STATE IS ABSENT ON PURPOSE. `Senza collegamento` is deferred to
+ * CS-5.6 together with its source AND its precedence (s.6.274): the only
+ * honest source is proof by delivery, and s.6.271 declared
+ * `navigator.onLine` unsalvageable on iOS in standalone.
+ *
+ * NO IMPERATIVE IN ANY PHRASE, and the reason is measured: Q-LUCERNA-5=A
+ * keeps the touch area OFF until CS-5.6, so today `Da controllare` has no
+ * door behind it. Asking for a gesture that leads nowhere teaches the person
+ * that the messages of this app are noise, which is the illness 14.5 p.4
+ * names. The label itself is prescribed verbatim by 14.5 p.1 and is a NOUN,
+ * never a command.
+ *
+ * PLURAL AGREEMENT is phrase composition and NOT value formatting: the
+ * module still receives the count already resolved and never formats a date
+ * or a time. `1 registrazione` instead of `1 registrazioni` costs nothing,
+ * and a wrong plural reads as carelessness to the person it addresses.
+ * ============================================================ */
+
+/**
+ * The three states of the indicator. The surface imports these instead of
+ * typing literals, so a rename cannot drift between copy and component.
+ */
+export const STATI_CODA = Object.freeze({
+  QUIETE: 'quiete',
+  DA_INVIARE: 'da_inviare',
+  DA_CONTROLLARE: 'da_controllare',
+});
+
+/** Quiet state -- 14.5 p.1 asks for a DISCREET sign, so there is no line 2. */
+export const INDICATORE_QUIETE_ETICHETTA = 'Tutto inviato';
+
+/**
+ * 14.5 p.7 plus the clinical cost of s.6.274: it states what happens by
+ * itself and what is up to the person, and asserts NOTHING about a
+ * connection the app cannot measure.
+ */
+export const INDICATORE_DA_INVIARE_RASSICURAZIONE =
+  'Sono al sicuro sul telefono e si inviano da sole. Non devi fare niente.';
+
+/**
+ * The one state that would ask for hands, saying so WITHOUT asking, because
+ * the door opens only at CS-5.6. Second sentence taken verbatim from
+ * AVVISO_CONFLITTO_CHIUSURA: a formula already ratified, not a new one.
+ */
+export const INDICATORE_DA_CONTROLLARE_RASSICURAZIONE =
+  'Sono al sicuro sul telefono, ma non partono da sole. Non devi fare niente adesso.';
+
+/**
+ * @param {number} n
+ * @returns {string} `1 registrazione` for one, `N registrazioni` otherwise.
+ */
+function registrazioni(n) {
+  return n === 1 ? '1 registrazione' : `${n} registrazioni`;
+}
+
+/**
+ * Compose the indicator phrase for ONE state.
+ *
+ * TOTALITY IS DELIBERATE, on the precedent of `testoAvvisoConflitto`: an
+ * unknown state, or a count that is not a positive integer where a count is
+ * required, returns `null` instead of a sentence with a hole in it. A
+ * numbered state at zero is a contradiction and not an edge case: with the
+ * queue empty the state IS the quiet one.
+ *
+ * The PRECEDENCE between states is NOT decided here -- Q-LUCERNA-5=A puts it
+ * in the component, in a single seat. This function is told which state to
+ * dress, and dresses it.
+ *
+ * @param {object} [arg]
+ * @param {string} [arg.stato]  one of the values of `STATI_CODA`
+ * @param {number} [arg.n]      element count; ignored by `QUIETE`
+ * @returns {{etichetta: string, rassicurazione: string|null}|null}
+ */
+export function testoIndicatoreCoda(arg = {}) {
+  const { stato, n } = arg || {};
+  if (stato === STATI_CODA.QUIETE) {
+    return Object.freeze({
+      etichetta: INDICATORE_QUIETE_ETICHETTA,
+      rassicurazione: null,
+    });
+  }
+  if (!Number.isInteger(n) || n < 1) return null;
+  if (stato === STATI_CODA.DA_INVIARE) {
+    return Object.freeze({
+      etichetta: `Da inviare: ${registrazioni(n)}`,
+      rassicurazione: INDICATORE_DA_INVIARE_RASSICURAZIONE,
+    });
+  }
+  if (stato === STATI_CODA.DA_CONTROLLARE) {
+    return Object.freeze({
+      etichetta: `Da controllare: ${registrazioni(n)}`,
+      rassicurazione: INDICATORE_DA_CONTROLLARE_RASSICURAZIONE,
+    });
+  }
+  return null;
+}

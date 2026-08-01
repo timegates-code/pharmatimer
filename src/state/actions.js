@@ -283,6 +283,20 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
   async function init() {
     dispatch({ type: 'INIT_START' });
     try {
+      // SENTINEL_QOBLO_RACCOLTA_INIT
+      // Q-LUCERNA-3=A plus Q-OBLO-2=A. The collection is ANTICIPATED here
+      // because `ready` arrives before any pass: INIT_SUCCESS below fires
+      // long before the `drainOutbox()` that closes this try, so without
+      // this line the slice would stay `null` for the whole boot and the
+      // indicator would be mute while elements sit in the queue.
+      // INSIDE the try and not above it (Q-OBLO-2=A): the collector never
+      // throws today, but resting on a property of the CALLEE means the
+      // guard vanishes in silence the day someone touches coda.js. Here
+      // any surprise becomes INIT_FAILED, a path already normed, instead
+      // of leaving init() without SUCCESS and without FAILED -- the app
+      // frozen on `idle`, where the person cannot register at all: M2.
+      await raccogliCoda({ dispatch, repo });
+
       const [profili, farmaci, orari, allSettings] = await Promise.all([
         repo.getProfili(),
         repo.getFarmaci({ soloAttivi: GET_FARMACI_SOLO_ATTIVI }),
