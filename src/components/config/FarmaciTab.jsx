@@ -459,14 +459,18 @@ export default function FarmaciTab(props) {
       style={{ color: t.textPrimary }}
     >
       {/* B24 par.22.198-ter (D5): sticky action header sotto la ConfigTabBar.
-          Offset = altezza bar: safe-area + py-3 (1.5rem) + line-height
-          text-sm (1.25rem) + border-b (1px) = safe-area + 2.75rem + 1px.
-          Se ConfigTabBar cambia padding/typography, aggiornare qui.
-          SENTINEL_PAR_22_198_TER_B24 */}
+          Q-TRABEAZIONE-4=A: lo offset NON e piu trascritto a mano. La
+          fascia pubblica la propria altezza in --sticky-offset (ConfigView
+          monta useStickyOffset sul contenitore) e questo header la legge.
+          Il letterale sopravvive come FALLBACK e vale la altezza della
+          barra SENZA lo indicatore di coda: e il valore giusto proprio
+          quando il var manca, cioe con FarmaciTab montato nudo fuori da
+          ConfigView (FarmaciTab.198ter.test.jsx) o dove ResizeObserver
+          non esiste. SENTINEL_PAR_22_198_TER_B24 SENTINEL_QTRABEAZIONE_OFFSET */}
       <header
         className="flex items-center justify-between mb-4 sticky z-20 -mx-4 px-4 py-2"
         style={{
-          top: 'calc(env(safe-area-inset-top) + 2.75rem + 1px)',
+          top: 'var(--sticky-offset, calc(env(safe-area-inset-top) + 2.75rem + 1px))',
           background: t.headerBg,
           borderBottom: `1px solid ${t.headerBorder}`,
         }}

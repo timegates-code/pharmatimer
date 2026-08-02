@@ -14,7 +14,7 @@
 //      corrente (auto-applicato da NavLink v6).
 
 import { describe, it, expect } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { renderWithProvider } from '../../test/renderHelpers.jsx';
@@ -70,5 +70,32 @@ describe('ConfigTabBar', () => {
       .not.toHaveAttribute('aria-current');
     expect(screen.getByRole('link', { name: 'Sistema' }))
       .not.toHaveAttribute('aria-current');
+  });
+
+  // SENTINEL_QTRABEAZIONE_PIN_TABLIST
+  // Q-TRABEAZIONE-3=A. La geometria di Q-ROSONE-4=A non era presidiata da
+  // nulla: la FASE 0 ha misurato ZERO asserzioni sul root in questa suite
+  // e ZERO occorrenze del token tablist. Questo pin la presidia.
+  // Le DUE asserzioni insieme DISCRIMINANO "fuori dal tablist" da
+  // "assente del tutto" (LC-106): la prima da sola passerebbe anche se lo
+  // indicatore non esistesse affatto.
+  // `coda` va sovrascritta perche reducer.js :78 la da null e il
+  // componente rende null (Q-LUCERNA-3=A), quindi senza override la
+  // asserzione positiva non morderebbe.
+  it('lo indicatore di coda sta FUORI dal gruppo role=tablist', () => {
+    renderWithProvider(
+      <Routes>
+        <Route path="/config/*" element={<ConfigTabBar />} />
+      </Routes>,
+      {
+        initialEntries: ['/config/farmaci'],
+        stateOverrides: { coda: { pending: 2, parked: 0 } },
+      }
+    );
+
+    expect(screen.getByTestId('indicatore-coda')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('tablist')).queryByTestId('indicatore-coda')
+    ).toBeNull();
   });
 });

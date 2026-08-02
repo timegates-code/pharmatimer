@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme.js';
+import IndicatoreCoda from '../shared/IndicatoreCoda.jsx';
 
 // ============================================================
 // ConfigTabBar — top sub-tab bar for the /config/* subtree.
@@ -45,19 +46,34 @@ const TABS = [
   { to: '/config/impostazioni', label: 'Sistema' },
 ];
 
-export default function ConfigTabBar({ onTabClick } = {}) {
+export default function ConfigTabBar({ onTabClick, headerRef } = {}) {
   const { tokens: t } = useTheme();
   return (
-    <nav
-      role="tablist"
-      aria-label="Sezioni Impostazioni"
-      className="sticky top-0 z-30 flex items-center gap-6 px-4 py-3 border-b"
+    <div
+      ref={headerRef}
+      className="sticky top-0 z-30 flex flex-col gap-2 px-4 py-3 border-b"
       style={{
         background: t.headerBg,
         borderColor: t.headerBorder,
         paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)',
       }}
     >
+      {/* SENTINEL_QTRABEAZIONE_FASCIA -- Q-ROSONE-4=A: il root e un
+          contenitore e il role tablist sta sul <nav> interno coi soli
+          tre NavLink, cosi il gruppo annunciato come linguette non
+          acquista un figlio non-tab. Q-TRABEAZIONE-5=A: la spaziatura e
+          `flex flex-col gap-2` e MAI un margine sullo indicatore, perche
+          il gap di flexbox nasce solo FRA nodi resi e IndicatoreCoda
+          rende null quando `coda` e null: lo stato "non ancora noto"
+          costa cosi altezza ZERO, e allo avvio il layout non salta.
+          I tre NavLink qui sotto sono INVARIATI alla lettera, rientro
+          compreso: ri-indentarli toccherebbe righe dichiarate invarianti
+          e JSX non ne risente. */}
+      <nav
+        role="tablist"
+        aria-label="Sezioni Impostazioni"
+        className="flex items-center gap-6"
+      >
       {TABS.map((tab) => (
         <NavLink
           key={tab.to}
@@ -74,6 +90,8 @@ export default function ConfigTabBar({ onTabClick } = {}) {
           {tab.label}
         </NavLink>
       ))}
-    </nav>
+      </nav>
+      <IndicatoreCoda />
+    </div>
   );
 }

@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { useStickyOffset } from '../../hooks/useStickyOffset.js';
 import ProfiliTab from './ProfiliTab.jsx';
 import FarmaciTab from './FarmaciTab.jsx';
 import ImpostazioniTab from './ImpostazioniTab.jsx';
@@ -52,6 +53,14 @@ export default function ConfigView() {
   // §6.104 fix.
   const [pendingNavTo, setPendingNavTo] = useState(null);
   const navigate = useNavigate();
+  // SENTINEL_QTRABEAZIONE_OFFSET_SEDE -- Q-TRABEAZIONE-4=A: la fascia
+  // pubblica la propria altezza in `--sticky-offset` sul contenitore e
+  // FarmaciTab la legge per ereditarieta, invece di trascriverla a mano.
+  // Dopo lo indicatore quella altezza non e piu una costante: cambia con
+  // lo stato della coda, e un letterale non puo essere giusto in tre
+  // stati diversi.
+  const containerRef = useRef(null);
+  const setHeaderEl = useStickyOffset(containerRef);
 
   // Intercept only when dirty. Non-dirty click → NavLink default
   // behaviour (preventDefault not called).
@@ -77,8 +86,8 @@ export default function ConfigView() {
   }
 
   return (
-    <div className="pb-20">
-      <ConfigTabBar onTabClick={handleTabClick} />
+    <div className="pb-20" ref={containerRef}>
+      <ConfigTabBar onTabClick={handleTabClick} headerRef={setHeaderEl} />
       <Routes>
         <Route index element={<Navigate to="/config/farmaci" replace />} />
         <Route path="profili" element={<ProfiliTab dirty={dirty} setDirty={setDirty} />} />
