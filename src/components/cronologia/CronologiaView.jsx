@@ -29,6 +29,7 @@ import { repo } from "../../data/repository/index.js";
 import { Badge } from "../shared/Badge.jsx";
 import { useTheme } from "../../hooks/useTheme.js";
 import { entriesToCsv, DEFAULT_COLUMNS, triggerCsvDownload } from "../../utils/exportCsv.js";
+import IndicatoreCoda from "../shared/IndicatoreCoda.jsx"; // SENTINEL_QMETOPA_IMPORT
 
 // Stato → label IT (s.6.215.B inline mapping)
 const STATO_LABELS = {
@@ -175,6 +176,18 @@ export default function CronologiaView() {
       >
         <h1 className="text-xl font-bold mb-3">Storico assunzioni</h1>
 
+        {/* SENTINEL_QMETOPA_CRONOLOGIA -- Q-ROSONE-5=D: lo indicatore e riga
+            propria a piena larghezza, ULTIMO elemento del blocco sticky,
+            dopo i filtri; h1 e mb-3 restano INTOCCATI.
+            Q-METOPA-3=A: il wrapper avvolge SOLO filtri e indicatore, cosi
+            mb-3 continua a produrre i 12px che il commento sopra dichiara
+            invarianti, e la spaziatura filtri -> indicatore e gap-2 e MAI
+            un margine: il gap di flexbox nasce solo FRA nodi resi e
+            IndicatoreCoda rende null quando coda e null, quindi lo stato
+            "non ancora noto" costa altezza ZERO e il layout non salta.
+            Le righe dei filtri NON sono ri-indentate, sul precedente dei
+            tre NavLink di ConfigTabBar: JSX non ne risente. */}
+        <div className="flex flex-col gap-2">
         <div className="flex flex-wrap gap-2 items-end">
           <label className="flex flex-col text-sm">
             <span className="opacity-70 mb-1">Da</span>
@@ -245,6 +258,8 @@ export default function CronologiaView() {
           >
             Esporta CSV
           </button>
+        </div>
+        <IndicatoreCoda />
         </div>
       </div>
 

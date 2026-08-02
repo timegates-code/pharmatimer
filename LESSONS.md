@@ -405,6 +405,22 @@
 
 <!-- SENTINEL_MINT_77_78_PAR_22_198_OCTOSEXAGIES -->
 
+### #79 -- L-lc90-si-verifica-non-si-presume
+- Stato: minted
+- Origine: par.22.198-terseptuagies (mint DOVUTO, ANCORATO da `Q-TRABEAZIONE-11=A` a biseptuagies; forma `Q-LEX-1=A`, collocazione `Q-ZOCCOLO-5=A` per il precedente, `Q-METOPA-6=A` per questo atto)
+- Nota: porta il token `LC-90` e ne e lo ENUNCIATO. Fino a qui `LC-90` viveva come clausola della Convenzione di chiusura e dentro il corpo dei patcher, senza una sede nel registro.
+- Regola: quando `old` e sottostringa di `new`, lo atteso POST di `old` e **1** e non 0. Ma la relazione di sottostringa **si VERIFICA per ogni ancora e non si presume**, e non si dichiara mai in un ciclo uniforme: fra due ancore che sembrano identiche una riga vuota, un rientro o una riga interposta rompono la sottostringa e ribaltano lo atteso. COROLLARIO: la relazione non e una proprieta STATICA delle ancore ma una proprieta che una MUTAZIONE puo creare, quindi un gate POST costruito sul verso opposto puo risultare IRRAGGIUNGIBILE, e va riconosciuto come tale invece che contato buono.
+- Contesto: patcher content-anchored. A terseptuagies sei ancore su due file hanno preteso attesi DIVERSI riga per riga -- due a 1, perche lo import si appende sotto se stesso, e quattro a 0, perche il blocco nuovo si interpone -- e il gate `POST-6` di `P-METOPA-1` e risultato DOMINATO dal gate di residuo: ogni mutazione che lo avrebbe fatto arrossare ricostruiva `old` dentro `new`. Rimosso col numero lasciato vacante. Precedenti: voce 112, un gate morto spostato a PRE; voce 92, un gate tautologico privato del potere di abortire invece che rimosso.
+
+### #80 -- L-gate-condannato-dalla-propria-prosa
+- Stato: minted
+- Origine: par.22.198-terseptuagies (mint DOVUTO, ANCORATO da `Q-TRABEAZIONE-11=A` a biseptuagies; forma `Q-LEX-1=A`, collocazione `Q-ZOCCOLO-5=A` per il precedente, `Q-METOPA-6=A` per questo atto)
+- Nota: non porta token `LC-*`; e la forma STRETTA di `LC-89` e della voce 99 applicata al patcher che SCRIVE il gate, e ha per parente stretto `#68`.
+- Regola: un gate che conta un token nello INTERO file puo essere condannato dalla prosa del patcher che lo scrive. Se il commento appena inserito CITA il token, il conteggio sale e il gate arrossa sulla passata PULITA; se lo stesso commento vive nel file dove il gate pretende ASSENZA, il gate diventa CIECO. Si restringe SEMPRE il conteggio al corpo che il gate pretende di misurare -- le sole righe di codice, il solo blocco aggiunto, il predicato vero -- perche **contare un token non e misurare il suo ruolo**.
+- Contesto: gate di patcher e sonde di censimento. A terseptuagies DUE ricorrenze nella stessa sessione, su gate miei e una per verso: `POST-5` contava `mb-2.5` su tutto il file ed e uscito ROSSO sulla passata pulita, perche il commento che il patcher stesso inserisce lo cita; `POST-10` cercava `<IndicatoreCoda` nel file di test ed era CIECO, perche due commenti lo citano. Riparati contando `mb-2.5` sulle sole righe con `className=` e ancorando `POST-10` al predicato vero `/<IndicatoreCoda/g`. Precedenti: voci 84, 99, 100 e 102, piu la clausola 4 della Convenzione di rilievo sugli ATTESI di una sonda.
+
+<!-- SENTINEL_MINT_79_80_PAR_22_198_TERSEPTUAGIES -->
+
 ---
 
 ## Candidate (pronte al mint, sbloccate dalla creazione del registro -- par.130)

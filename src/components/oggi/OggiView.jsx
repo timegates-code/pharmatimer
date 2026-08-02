@@ -107,6 +107,7 @@ import { UndoModal } from './modals/UndoModal.jsx';
 import { selectFarmaciAttivi, selectProssimoGiornoConDosi, selectProssimaDoseFuoriPlan, selectFarmaciConDataInizioFutura, selectDataInizioTerapia } from '../../state/selectors.js';
 import EmptyStateZeroFarmaci from './EmptyStateZeroFarmaci.jsx';
 import PreviewBlock from './PreviewBlock.jsx';
+import IndicatoreCoda from '../shared/IndicatoreCoda.jsx'; // SENTINEL_QMETOPA_IMPORT
 
 const IS_DEV = import.meta.env.DEV;
 
@@ -495,8 +496,19 @@ export default function OggiView() {
             </div>
           </div>
 
+          {/* SENTINEL_QMETOPA_OGGI -- Q-ROSONE-8=A: lo indicatore e riga
+              propria DOPO i COUNTERS e PRIMA del DevTimeSlider; accanto a
+              cinque numeri che contano DOSI un sesto che conta
+              REGISTRAZIONI si leggerebbe come il sesto della serie, che e
+              M3 sulla superficie.
+              Q-METOPA-4=A: mb-2.5 MIGRA dal div COUNTERS al wrapper, cosi
+              il ritmo verso il basso resta 10px in ogni stato e in DEV
+              come in produzione, mentre la spaziatura interna e gap-2 e
+              MAI un margine: a coda null lo indicatore rende null, il gap
+              non nasce e costa altezza ZERO. */}
+          <div className="flex flex-col gap-2 mb-2.5">
           {/* COUNTERS */}
-          <div className="flex items-center gap-2 mb-2.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge
               label={`${counters.presi} presi`}
               bg={t.greenBg} text={t.greenTx} border={t.greenBg}
@@ -529,6 +541,8 @@ export default function OggiView() {
               label={`${counters.restanti} restanti`}
               bg={t.grayBg} text={t.grayTx} border={t.grayBg}
             />
+          </div>
+          <IndicatoreCoda />
           </div>
 
           {/* DEV SLIDER — guarded here, not inside the component (AMB-7b.J) */}
