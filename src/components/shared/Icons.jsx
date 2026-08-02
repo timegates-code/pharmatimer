@@ -58,3 +58,25 @@ export const IconCalendar = ({ color = 'currentColor', size = 12 }) => (
     <path d="M16 3v4M8 3v4M3 10h18" />
   </svg>
 );
+
+// CS-5.5-quater (Q-ROSONE-7=A): two glyphs for the queue indicator states
+// that had none. Same shape as the eight above -- outlined, currentColor,
+// 24x24 viewBox -- so the family stays uniform.
+// CIRCLE AND NOT TRIANGLE for the attention one: Spec 14.5 p.1 authorises
+// an attention COLOUR for `Da controllare`, but the triangle is the danger
+// glyph and would contradict the phrase it sits beside, which says the
+// registrations are safe on the phone.
+// SENTINEL_QROSONE_ICONS
+
+export const IconArrowUp = ({ color = 'currentColor', size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 20V5M5 12l7-7 7 7" />
+  </svg>
+);
+
+export const IconAlertCircle = ({ color = 'currentColor', size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <path d="M12 8v4M12 16h.01" />
+  </svg>
+);
