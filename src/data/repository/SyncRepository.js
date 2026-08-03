@@ -14,6 +14,11 @@
 //    apiClient error taxonomy) they fall back to the local mirror and
 //    return stale data WITHOUT bumping freshness (staleness is part of
 //    the datum). Any other error (UNAUTHORIZED, business) PROPAGATES.
+//  - Q-ZANCA-3=A: those same branches also drive the `_unreachable`
+//    latch (Spec 14.2.6 :1083, Q-ZAGARA-1=A). DB_UNAVAILABLE lights
+//    it; ANY other code extinguishes it, because a code proves the
+//    server ANSWERED; a throw with no `.code` is a Dexie fault and
+//    touches NOTHING. The single extinction seat is _bumpFreshness().
 //  - Composition (not inheritance) is required: ApiRepository.getAllOrari
 //    and getLogByRange fan out to `this.getFarmaci()`; a dynamically
 //    dispatched inherited override would double-write the mirror and tear
@@ -64,6 +69,15 @@ export class SyncRepository {
     // at CS-4.25): every trigger reaches the same object, so one flag is
     // enough and no module-level state is needed.
     this._draining = false;
+    // SENTINEL_QZANCA_UNREACHABLE_FIELD
+    // Q-ZAGARA-1=A / Q-OGIVA-6=A: the third indicator state is an
+    // ORTHOGONAL latch (Spec 14.2.6 :1083), not a fourth value in the
+    // precedence, so it lives in a field instead of widening
+    // STATI_CODA. Instance field for the reason `_draining` is one.
+    // `null` means NOT YET MEASURED, a DIFFERENT fact from `false`,
+    // which would assert a link never observed. THE POLARITY IS IN THE
+    // NAME: no site has to remember an inversion.
+    this._unreachable = null;
   }
 
   // ---- Freshness (Q4=A) ------------------------------------
@@ -77,6 +91,13 @@ export class SyncRepository {
   }
 
   _bumpFreshness() {
+    // SENTINEL_QZANCA_SPEGNI_SEDE_UNICA
+    // Q-OGIVA-4=A -- SINGLE SEAT. The three guarded reads call this
+    // AFTER a successful mirror-write, so all three inherit the
+    // extinction BY CONSTRUCTION. Placed BEFORE the try on purpose: a
+    // lone localStorage failure must not skip a fact about
+    // connectivity.
+    this._unreachable = false;
     // Benign best-effort: a lone localStorage failure leaves the mirror
     // updated but the timestamp behind (display-only staleness, never
     // M1/M2/M3). Written AFTER the mirror-write by the callers.
@@ -96,6 +117,11 @@ export class SyncRepository {
       this._bumpFreshness();
       return data;
     } catch (err) {
+      // SENTINEL_QZANCA_LATCH_READ_FARMACI
+      // Q-OGIVA-11=A plus Q-ZANCA-3=A. Any code OTHER than
+      // DB_UNAVAILABLE proves the server ANSWERED, so it EXTINGUISHES.
+      // A throw with no `.code` is a Dexie fault and touches NOTHING.
+      if (err && err.code) this._unreachable = err.code === "DB_UNAVAILABLE";
       if (err && err.code === "DB_UNAVAILABLE") {
         return this._local.getFarmaci({ soloAttivi: true });
       }
@@ -110,6 +136,11 @@ export class SyncRepository {
       this._bumpFreshness();
       return data;
     } catch (err) {
+      // SENTINEL_QZANCA_LATCH_READ_ORARI
+      // Q-OGIVA-11=A plus Q-ZANCA-3=A. Any code OTHER than
+      // DB_UNAVAILABLE proves the server ANSWERED, so it EXTINGUISHES.
+      // A throw with no `.code` is a Dexie fault and touches NOTHING.
+      if (err && err.code) this._unreachable = err.code === "DB_UNAVAILABLE";
       if (err && err.code === "DB_UNAVAILABLE") {
         return this._local.getAllOrari();
       }
@@ -123,6 +154,11 @@ export class SyncRepository {
       await this._local.mirrorLogWindow(data, dataDa, dataA);
       this._bumpFreshness();
     } catch (err) {
+      // SENTINEL_QZANCA_LATCH_READ_LOG
+      // Q-OGIVA-11=A plus Q-ZANCA-3=A. Any code OTHER than
+      // DB_UNAVAILABLE proves the server ANSWERED, so it EXTINGUISHES.
+      // A throw with no `.code` is a Dexie fault and touches NOTHING.
+      if (err && err.code) this._unreachable = err.code === "DB_UNAVAILABLE";
       if (err && err.code === "DB_UNAVAILABLE") {
         return this._local.getLogByRange(dataDa, dataA);
       }
@@ -259,6 +295,12 @@ export class SyncRepository {
     // property (undefined) PROCEEDS. Absence of information must never
     // suppress a delivery.
     if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      // SENTINEL_QZANCA_LATCH_SOPPRESSIONE
+      // Q-ZAGARA-5=A -- ASYMMETRIC role: `navigator.onLine` may LIGHT
+      // the latch and may NEVER extinguish it. `false` is a positive
+      // claim of absence; `true` is not, which is the whole reason
+      // s.6.271 exists.
+      this._unreachable = true;
       return 0;
     }
     this._draining = true;
@@ -291,6 +333,19 @@ export class SyncRepository {
   // off (index.js :53-59) and that class does not carry this method.
   contaAvvisi() {
     return elencaAvvisi().length;
+  }
+
+  // SENTINEL_QZANCA_IS_UNREACHABLE
+  // Q-ZANCA-4=A -- reader on the CONCRETE class, on the precedent of
+  // `contaAvvisi` and NOT of `outboxCounts`. Synchronous and unable to
+  // throw. Callers MUST still guard: getRepository() hands out a bare
+  // LocalRepository when the API flag is off, and that class does not
+  // carry this method. Absence hides NOTHING there -- with no server
+  // there is no "senza collegamento" to report -- which is why the M2
+  // argument of Q-RINTOCCO-2=A does not apply here. Returns `null`
+  // until the first measure.
+  isUnreachable() {
+    return this._unreachable;
   }
 
   // SENTINEL_QTIRANTE_OUTBOX_COUNTS
@@ -502,6 +557,14 @@ export class SyncRepository {
       // divergence that -sexies closes.
       // SENTINEL_SEX_RETHROW_NOCODE
       if (!code) throw err;
+      // SENTINEL_QZANCA_LATCH_CONSEGNA
+      // Q-OGIVA-3=A / Q-ZANCA-2=A -- ONE statement that lights AND
+      // extinguishes, seated ABOVE the halting branch instead of
+      // inside it. That branch carries TWO codes, and UNAUTHORIZED
+      // proves the server ANSWERED: lighting on the branch itself
+      // would leave the latch on with the phone online, which is the
+      // taxonomy finding of R-2.
+      this._unreachable = code === "DB_UNAVAILABLE";
       // Unreachable and 5xx both surface as DB_UNAVAILABLE (measured in
       // apiClient); together with UNAUTHORIZED they STOP the queue and
       // leave the element in it. Never parked: parking a true dose for

@@ -88,6 +88,54 @@ function makeLocal(overrides = {}) {
   };
 }
 
+// SENTINEL_QZANCA_HOIST_SAGOMA
+// Q-ZANCA-9=A -- la sagoma SALE a livello di modulo e resta in SEDE
+// UNICA. Il describe del terzo stato e un FRATELLO di write-path e non
+// vedrebbe una fabbrica annidata: scartata a verbale la seconda
+// fabbrica, che aprirebbe una trascrizione parallela di
+// outboxSplitter.makeElement capace di divergere dalla prima (voce 186,
+// voce 93), su un file che porta gia un precedente censito di sagoma
+// infedele. Il corpo e VERBATIM; cambia il solo rientro.
+// SENTINEL_S6273_SAGOMA
+// Q-NODO-9=A. Sagoma TRASCRITTA da outboxSplitter.makeElement :192-207,
+// undici campi. La forma a quattro campi era INERTE finche nessun pin
+// leggeva i campi primari; s.6.273 li legge tutti, e una sagoma infedele
+// avrebbe fissato *parcheggia* mentre credevo di fissare *droppa* --
+// LC-93 e voce 130, famiglia gia censita su QUESTO file (outboxPark
+// mockato a undefined mentre il reale ritorna un conteggio).
+// I tre campi primari derivano da logs[0], come fa la produzione.
+// RESIDUO DICHIARATO: e una trascrizione e non una prova (LC-99). Che
+// la produzione generi `data` in forma YYYY-MM-DD lo sostengono
+// avvisoScheda.js :50-51 e il letterale di LOGS qui sopra, e si misura
+// sullo stack vero a CS-6.
+function elemento(id, patch = {}) {
+  const riga = {
+    farmaco_id: 1,
+    data: "2026-07-24",
+    dose_numero: 1,
+    stato: "presa",
+    ...(patch.riga || {}),
+  };
+  return {
+    id,
+    stato: "pending",
+    op: patch.op || "presa",
+    client_op_id: "targa-" + id,
+    logs: [riga],
+    farmaco_id: riga.farmaco_id,
+    data: riga.data,
+    dose_numero: riga.dose_numero,
+    created_at: "2026-07-24T13:05:00.000Z",
+    attempts: 0,
+    parked_reason: null,
+    parked_at: null,
+  };
+}
+
+function elementoTentato(id, attempts) {
+  return { ...elemento(id), attempts };
+}
+
 describe("SyncRepository", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -376,45 +424,6 @@ describe("SyncRepository", () => {
       { farmaco_id: 1, data: "2026-07-24", dose_numero: 1, stato: "presa" },
     ];
 
-    // SENTINEL_S6273_SAGOMA
-    // Q-NODO-9=A. Sagoma TRASCRITTA da outboxSplitter.makeElement :192-207,
-    // undici campi. La forma a quattro campi era INERTE finche nessun pin
-    // leggeva i campi primari; s.6.273 li legge tutti, e una sagoma infedele
-    // avrebbe fissato *parcheggia* mentre credevo di fissare *droppa* --
-    // LC-93 e voce 130, famiglia gia censita su QUESTO file (outboxPark
-    // mockato a undefined mentre il reale ritorna un conteggio).
-    // I tre campi primari derivano da logs[0], come fa la produzione.
-    // RESIDUO DICHIARATO: e una trascrizione e non una prova (LC-99). Che
-    // la produzione generi `data` in forma YYYY-MM-DD lo sostengono
-    // avvisoScheda.js :50-51 e il letterale di LOGS qui sopra, e si misura
-    // sullo stack vero a CS-6.
-    function elemento(id, patch = {}) {
-      const riga = {
-        farmaco_id: 1,
-        data: "2026-07-24",
-        dose_numero: 1,
-        stato: "presa",
-        ...(patch.riga || {}),
-      };
-      return {
-        id,
-        stato: "pending",
-        op: patch.op || "presa",
-        client_op_id: "targa-" + id,
-        logs: [riga],
-        farmaco_id: riga.farmaco_id,
-        data: riga.data,
-        dose_numero: riga.dose_numero,
-        created_at: "2026-07-24T13:05:00.000Z",
-        attempts: 0,
-        parked_reason: null,
-        parked_at: null,
-      };
-    }
-
-    function elementoTentato(id, attempts) {
-      return { ...elemento(id), attempts };
-    }
 
     it("GENERIC: parcheggia ERRORE_NON_CLASSIFICATO, mai rimuove, promise RESOLVE", async () => {
       // SENTINEL_S2C2B_PIN_GENERIC
@@ -1066,6 +1075,183 @@ describe("SyncRepository", () => {
       expect(local.outboxNextPending).toHaveBeenCalledTimes(1);
       sblocca();
       await expect(prima).resolves.toBe(0);
+    });
+  });
+
+  // ========================================================
+  // SENTINEL_QZANCA_PIN_BLOCCO
+  // Il terzo stato: il fatto SENZA COLLEGAMENTO (CS-5.6-bis PARTE 2).
+  // ========================================================
+  // Q-ZANCA-8=A. Describe PROPRIO e non pin sparsi nei describe
+  // esistenti: sette titoli direbbero meno di cio che il corpo misura,
+  // e un titolo verde che dice il falso e M3 sulla suite. Precedente
+  // stretto: Q-TIRANTE-7=A.
+  describe("senza collegamento (latch ortogonale, Q-ZAGARA-1=A)", () => {
+    // Lo stub di `onLine` e una proprieta PROPRIA che ombreggia il
+    // getter del prototype di jsdom; il `delete` lo rivela di nuovo. Un
+    // globale lasciato sporco romperebbe le suite successive per ORDINE
+    // DI ESECUZIONE, che e il guasto peggiore da attribuire.
+    afterEach(() => {
+      delete navigator.onLine;
+    });
+
+    // INERTE di proposito: il valore di ritorno di upsertLogsBatch e
+    // mockato, quindi queste righe non sono una sagoma e duplicarle non
+    // e il rischio che Q-ZANCA-9=A evita per `elemento`.
+    const RIGHE = [
+      { farmaco_id: 1, data: "2026-07-24", dose_numero: 1, stato: "presa" },
+    ];
+
+    it("Z1 lo stato iniziale e null, che NON e false", () => {
+      const sync = new SyncRepository(makeApi(), makeLocal());
+      // `null` dice NON ANCORA MISURATO; `false` asserirebbe un
+      // collegamento mai osservato (Q-OGIVA-6=A).
+      expect(sync.isUnreachable()).toBeNull();
+      expect(sync.isUnreachable()).not.toBe(false);
+    });
+
+    it("Z2 una lettura riuscita SPEGNE, e i tre siti ereditano la sede unica", async () => {
+      const casi = [
+        ["getFarmaci", () => []],
+        ["getAllOrari", () => []],
+        ["getLogByRange", () => []],
+      ];
+      for (const [nome] of casi) {
+        const api = makeApi({
+          [nome]: vi
+            .fn()
+            .mockRejectedValueOnce({ code: "DB_UNAVAILABLE" })
+            .mockResolvedValue([]),
+        });
+        const local = makeLocal();
+        const sync = new SyncRepository(api, local);
+        await sync[nome]("2026-07-24", "2026-07-24");
+        expect(sync.isUnreachable()).toBe(true);
+        await sync[nome]("2026-07-24", "2026-07-24");
+        expect(sync.isUnreachable()).toBe(false);
+      }
+    });
+
+    it("Z3 il fallback DB_UNAVAILABLE ACCENDE, su tutti e tre i siti", async () => {
+      for (const nome of ["getFarmaci", "getAllOrari", "getLogByRange"]) {
+        const api = makeApi({
+          [nome]: vi.fn().mockRejectedValue({ code: "DB_UNAVAILABLE" }),
+        });
+        const local = makeLocal();
+        const sync = new SyncRepository(api, local);
+        await sync[nome]("2026-07-24", "2026-07-24");
+        expect(sync.isUnreachable()).toBe(true);
+      }
+    });
+
+    it("Z4 un codice DIVERSO spegne anche sulla lettura: il server ha risposto", async () => {
+      const api = makeApi({
+        getFarmaci: vi
+          .fn()
+          .mockRejectedValueOnce({ code: "DB_UNAVAILABLE" })
+          .mockRejectedValue({ code: "UNAUTHORIZED" }),
+      });
+      const sync = new SyncRepository(api, makeLocal());
+      await sync.getFarmaci();
+      expect(sync.isUnreachable()).toBe(true);
+      await expect(sync.getFarmaci()).rejects.toMatchObject({
+        code: "UNAUTHORIZED",
+      });
+      // Q-ZANCA-3=A: senza questo, un latch acceso resterebbe acceso
+      // col telefono online, che e il rilievo R-2 sul percorso di
+      // lettura invece che su quello di consegna.
+      expect(sync.isUnreachable()).toBe(false);
+    });
+
+    it("Z5 un guasto Dexie NON tocca nulla: un throw senza code non e connettivita", async () => {
+      const api = makeApi({
+        getFarmaci: vi
+          .fn()
+          .mockRejectedValueOnce({ code: "DB_UNAVAILABLE" })
+          .mockRejectedValue(new TypeError("dexie giu")),
+      });
+      const sync = new SyncRepository(api, makeLocal());
+      await sync.getFarmaci();
+      expect(sync.isUnreachable()).toBe(true);
+      await expect(sync.getFarmaci()).rejects.toBeInstanceOf(TypeError);
+      expect(sync.isUnreachable()).toBe(true);
+    });
+
+    it("Z6 una consegna che si FERMA accende, e la coda resta intatta", async () => {
+      const scritte = [{ id: 601, ...RIGHE[0] }];
+      const api = makeApi({
+        upsertLog: vi.fn().mockRejectedValue({ code: "DB_UNAVAILABLE" }),
+      });
+      const local = makeLocal({
+        upsertLogsBatch: vi.fn().mockResolvedValue(scritte),
+        outboxNextPending: vi
+          .fn()
+          .mockResolvedValueOnce(elemento(61))
+          .mockResolvedValue(null),
+      });
+      const sync = new SyncRepository(api, local);
+      await expect(sync.upsertLogsBatch(RIGHE, "presa")).resolves.toBe(scritte);
+      expect(sync.isUnreachable()).toBe(true);
+      expect(local.outboxPark).not.toHaveBeenCalled();
+      expect(local.outboxRemove).not.toHaveBeenCalled();
+    });
+
+    it("Z7 un parcheggio per errore di business SPEGNE: il server ha risposto", async () => {
+      const scritte = [{ id: 602, ...RIGHE[0] }];
+      const api = makeApi({
+        upsertLog: vi
+          .fn()
+          .mockRejectedValueOnce({ code: "DB_UNAVAILABLE" })
+          .mockRejectedValue({ code: "GENERIC" }),
+      });
+      const local = makeLocal({
+        upsertLogsBatch: vi.fn().mockResolvedValue(scritte),
+        outboxNextPending: vi
+          .fn()
+          .mockResolvedValueOnce(elemento(62))
+          .mockResolvedValueOnce(elemento(63))
+          .mockResolvedValue(null),
+      });
+      const sync = new SyncRepository(api, local);
+      await sync.upsertLogsBatch(RIGHE, "presa");
+      expect(sync.isUnreachable()).toBe(true);
+      await sync.drainOutbox();
+      expect(sync.isUnreachable()).toBe(false);
+      expect(local.outboxPark).toHaveBeenCalledWith(
+        63,
+        "ERRORE_NON_CLASSIFICATO"
+      );
+    });
+
+    it("Z8 la soppressione per onLine false ACCENDE senza toccare la coda", async () => {
+      Object.defineProperty(navigator, "onLine", {
+        configurable: true,
+        value: false,
+      });
+      const local = makeLocal({
+        outboxNextPending: vi.fn().mockResolvedValue(elemento(64)),
+      });
+      const sync = new SyncRepository(makeApi(), local);
+      expect(await sync.drainOutbox()).toBe(0);
+      expect(sync.isUnreachable()).toBe(true);
+      expect(local.outboxNextPending).not.toHaveBeenCalled();
+    });
+
+    it("Z9 CONTROLLO NEGATIVO: onLine true da solo NON spegne", async () => {
+      Object.defineProperty(navigator, "onLine", {
+        configurable: true,
+        value: true,
+      });
+      const api = makeApi({
+        getFarmaci: vi.fn().mockRejectedValue({ code: "DB_UNAVAILABLE" }),
+      });
+      const sync = new SyncRepository(api, makeLocal());
+      await sync.getFarmaci();
+      expect(sync.isUnreachable()).toBe(true);
+      // Ruolo ASIMMETRICO (Q-ZAGARA-5=A): accendere si, spegnere mai.
+      // La prova e la CONSEGNA, non lo indizio (AppContext.jsx :194).
+      expect(await sync.drainOutbox()).toBe(0);
+      expect(sync.isUnreachable()).toBe(true);
     });
   });
 });
