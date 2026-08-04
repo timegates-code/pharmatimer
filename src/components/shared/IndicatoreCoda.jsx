@@ -4,7 +4,9 @@ import { STATI_CODA, testoIndicatoreCoda } from '../../utils/testi.js';
 import { IconCheck, IconArrowUp, IconAlertCircle } from './Icons.jsx';
 
 // ============================================================
-// IndicatoreCoda -- CS-5.5-quater. Spec 14.5 p.1 and p.2, and s.6.274.
+// IndicatoreCoda -- CS-5.5-quater, esteso a CS-5.6-bis PARTE 2.
+// Spec 14.5 p.1 e p.2 (s.6.274 ESTINTA: il quarto stato e coperto come
+// dimensione ORTOGONALE, e STATI_CODA resta a tre).
 // SENTINEL_QROSONE_INDICATORE
 // ------------------------------------------------------------
 // SINGLE SEAT OF THE PRECEDENCE (Q-LUCERNA-9=A). `testi.js` :201-203
@@ -82,7 +84,15 @@ export default function IndicatoreCoda() {
 
   // Fail-closed on the totality doctrine of `testi.js` :195-199: a phrase
   // with a hole in it is worse than no phrase at all.
-  const testo = testoIndicatoreCoda(scelta);
+  // SENTINEL_QLESENA_INNESTO
+  // Q-ZAGARA-1=A keeps `scegliStatoCoda` at THREE states, so the flag does
+  // not pass through it: it is merged HERE, and `testoIndicatoreCoda` reads
+  // it with strict `=== true`. Absent slice arrives `undefined` and appends
+  // nothing, which is why the eighteen pins above stay green untouched.
+  const testo = testoIndicatoreCoda({
+    ...scelta,
+    senzaCollegamento: state?.senzaCollegamento,
+  });
   if (testo === null) return null;
 
   const Glifo = GLIFI[scelta.stato];

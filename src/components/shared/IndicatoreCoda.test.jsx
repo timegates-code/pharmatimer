@@ -23,6 +23,9 @@ import {
   INDICATORE_QUIETE_ETICHETTA,
   INDICATORE_DA_INVIARE_RASSICURAZIONE,
   INDICATORE_DA_CONTROLLARE_RASSICURAZIONE,
+  INDICATORE_QUIETE_SENZA_COLLEGAMENTO,
+  INDICATORE_DA_INVIARE_SENZA_COLLEGAMENTO,
+  INDICATORE_DA_CONTROLLARE_SENZA_COLLEGAMENTO,
 } from '../../utils/testi.js';
 
 let mockState = { coda: null };
@@ -43,8 +46,14 @@ vi.mock('../../hooks/useTheme.js', () => ({
   }),
 }));
 
-function montaCon(coda) {
-  mockState = { coda };
+// SENTINEL_QLESENA_MONTACON
+// Q-ZANCA-9=A, sagoma in SEDE UNICA e non un secondo montatore. Secondo
+// parametro OPZIONALE: gli undici chiamanti esistenti restano a un
+// argomento, il flag arriva `undefined` e il `=== true` non appende. Per
+// questo i diciotto pin di questo file restano verdi senza che se ne
+// tocchi uno.
+function montaCon(coda, senzaCollegamento) {
+  mockState = { coda, senzaCollegamento };
   return render(<IndicatoreCoda />);
 }
 
@@ -218,3 +227,68 @@ describe('IndicatoreCoda -- invarianti clinici di 14.5', () => {
     expect(nodo.querySelector('[aria-live]')).toBeNull();
   });
 });
+
+// ------------------------------------------------------------
+// SENTINEL_QLESENA_SUITE_SUPERFICIE
+// F4 -- il collegamento sullo schermo (Q-LESENA-8=A).
+// ------------------------------------------------------------
+describe('IndicatoreCoda -- il collegamento sulla superficie', () => {
+  it('G1 senza flag la seconda riga e quella di sempre', () => {
+    montaCon({ pending: 3, parked: 0 });
+    expect(
+      screen.getByTestId('indicatore-coda-rassicurazione').textContent,
+    ).toBe(INDICATORE_DA_INVIARE_RASSICURAZIONE);
+  });
+
+  it('G2 col flag la frase del collegamento arriva allo schermo', () => {
+    montaCon({ pending: 3, parked: 0 }, true);
+    expect(
+      screen.getByTestId('indicatore-coda-rassicurazione').textContent,
+    ).toContain(INDICATORE_DA_INVIARE_SENZA_COLLEGAMENTO);
+  });
+
+  it('G3 in quiete col flag compare una seconda riga che prima non ce era', () => {
+    montaCon({ pending: 0, parked: 0 }, true);
+    expect(
+      screen.getByTestId('indicatore-coda-rassicurazione').textContent,
+    ).toBe(INDICATORE_QUIETE_SENZA_COLLEGAMENTO);
+    expect(screen.getByTestId('indicatore-coda-etichetta').textContent).toBe(
+      INDICATORE_QUIETE_ETICHETTA,
+    );
+  });
+
+  it('G4 PIN PORTANTE M2: la rassicurazione clinica RESTA a schermo e viene PRIMA', () => {
+    montaCon({ pending: 0, parked: 2 }, true);
+    const riga = screen.getByTestId('indicatore-coda-rassicurazione').textContent;
+    expect(riga).toContain(INDICATORE_DA_CONTROLLARE_RASSICURAZIONE);
+    expect(riga).toContain(INDICATORE_DA_CONTROLLARE_SENZA_COLLEGAMENTO);
+    expect(riga.indexOf(INDICATORE_DA_CONTROLLARE_RASSICURAZIONE)).toBeLessThan(
+      riga.indexOf(INDICATORE_DA_CONTROLLARE_SENZA_COLLEGAMENTO),
+    );
+  });
+
+  it('G5 PIN DELLA STRETTEZZA: una verita LARGA non appende nulla', () => {
+    // Senza questo, i casi su false, null e assente resterebbero verdi
+    // anche con `if (flag)`: sono tutti falsy e non misurerebbero il
+    // `=== true` che Q-OGIVA-8=A prescrive.
+    montaCon({ pending: 3, parked: 0 }, 'true');
+    expect(
+      screen.getByTestId('indicatore-coda-rassicurazione').textContent,
+    ).toBe(INDICATORE_DA_INVIARE_RASSICURAZIONE);
+  });
+
+  it('G6 il flag NON crea lo indicatore quando la coda e IGNOTA', () => {
+    // `coda == null` resta NON ANCORA NOTO anche col collegamento
+    // misurato: dipingere qualunque cosa qui sarebbe M3 sulla superficie.
+    montaCon(null, true);
+    expect(screen.queryByTestId('indicatore-coda')).toBeNull();
+  });
+
+  it('G7 la etichetta non cambia MAI per effetto del collegamento', () => {
+    montaCon({ pending: 0, parked: 2 }, true);
+    expect(screen.getByTestId('indicatore-coda-etichetta').textContent).toBe(
+      'Da controllare: 2 registrazioni',
+    );
+  });
+});
+

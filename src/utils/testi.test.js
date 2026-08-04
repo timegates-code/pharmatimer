@@ -15,6 +15,11 @@ import {
   AVVISO_CONFLITTO_AZIONE,
   testoIndicatoreCoda,
   STATI_CODA,
+  INDICATORE_DA_INVIARE_RASSICURAZIONE,
+  INDICATORE_DA_CONTROLLARE_RASSICURAZIONE,
+  INDICATORE_QUIETE_SENZA_COLLEGAMENTO,
+  INDICATORE_DA_INVIARE_SENZA_COLLEGAMENTO,
+  INDICATORE_DA_CONTROLLARE_SENZA_COLLEGAMENTO,
 } from './testi.js';
 
 const FATTI = Object.freeze({
@@ -105,17 +110,28 @@ describe('testi -- avviso presa in conflitto (Q-PONTE-7=A, Q-LETTO-8=A)', () => 
 // questo blocco, e non dedotto dalla presenza di T4.
 // ============================================================
 
+// SENTINEL_QLESENA_CASI_ESTESI
+// La tupla porta ora anche il collegamento (Q-LESENA-5=A). ESTESA e non
+// affiancata da un raccoglitore proprio: I6, I8 e I9 leggono TUTTI da
+// `tutteLeFrasi`, quindi la copertura delle frasi nuove arriva per
+// COSTRUZIONE in una sede sola. Duplicare i cicli avrebbe riprodotto la
+// lezione 6.205 dentro la suite che dovrebbe proteggerla.
+// Il ROSSO di I7 qui sotto e conseguenza ARITMETICA di questa riga, ed e
+// stato VISTO e NOMINATO prima che il numero fosse aggiornato.
 const CASI_INDICATORE = [
-  [STATI_CODA.QUIETE, undefined],
-  [STATI_CODA.DA_INVIARE, 1],
-  [STATI_CODA.DA_INVIARE, 4],
-  [STATI_CODA.DA_CONTROLLARE, 1],
-  [STATI_CODA.DA_CONTROLLARE, 3],
+  [STATI_CODA.QUIETE, undefined, false],
+  [STATI_CODA.DA_INVIARE, 1, false],
+  [STATI_CODA.DA_INVIARE, 4, false],
+  [STATI_CODA.DA_CONTROLLARE, 1, false],
+  [STATI_CODA.DA_CONTROLLARE, 3, false],
+  [STATI_CODA.QUIETE, undefined, true],
+  [STATI_CODA.DA_INVIARE, 4, true],
+  [STATI_CODA.DA_CONTROLLARE, 3, true],
 ];
 
 function tutteLeFrasi() {
-  return CASI_INDICATORE.map(([stato, n]) => {
-    const t = testoIndicatoreCoda({ stato, n });
+  return CASI_INDICATORE.map(([stato, n, senzaCollegamento]) => {
+    const t = testoIndicatoreCoda({ stato, n, senzaCollegamento });
     return [t.etichetta, t.rassicurazione ?? ''].join(' ');
   });
 }
@@ -171,7 +187,14 @@ describe('testi -- indicatore di coda (Q-OBLO-1=A, Q-OBLO-4=A, Q-OBLO-5=A)', () 
   it('I7 CONTROLLO POSITIVO del meccanismo di I6: il raccoglitore non e vuoto', () => {
     // Senza questo, un raccoglitore rotto renderebbe I6 verde senza aver
     // letto una sola frase: intercetterebbe senza misurare.
-    expect(tutteLeFrasi()).toHaveLength(5);
+    // SENTINEL_QLESENA_LUNGHEZZA
+    // Il ROSSO e stato VISTO e NOMINATO prima che questo numero fosse
+    // toccato: `expected length 5 but got 8`, sede UNICA, in una finestra
+    // sua. Il numero resta un LETTERALE e non `CASI_INDICATORE.length`:
+    // derivarlo dallo array su cui `tutteLeFrasi` itera renderebbe il pin
+    // TAUTOLOGICO, verde per costruzione e incapace di arrossare. Un caso
+    // nuovo deve passare da questa porta, come in reducer.test.js :47.
+    expect(tutteLeFrasi()).toHaveLength(8);
     expect('la coda di invio'.toLowerCase()).toContain('coda');
   });
 
@@ -214,3 +237,94 @@ describe('testi -- indicatore di coda (Q-OBLO-1=A, Q-OBLO-4=A, Q-OBLO-5=A)', () 
     expect(testoIndicatoreCoda({ stato: STATI_CODA.DA_CONTROLLARE, n: 1 })).not.toBeNull();
   });
 });
+
+// ============================================================
+// SENTINEL_QLESENA_SUITE_COPY
+// Il collegamento -- Spec 14.5 p.1, Q-LESENA-3=A e Q-LESENA-4=D.
+// ------------------------------------------------------------
+// Le frasi si asseriscono per IDENTITA importando le costanti: un edit di
+// copy propaga oppure rompe, e non deriva mai in silenzio.
+// ============================================================
+describe('testi -- il collegamento APPENDE e non sostituisce', () => {
+  it('C1 quiete col collegamento assente: la frase sta DA SOLA', () => {
+    const t = testoIndicatoreCoda({
+      stato: STATI_CODA.QUIETE, senzaCollegamento: true,
+    });
+    expect(t.rassicurazione).toBe(INDICATORE_QUIETE_SENZA_COLLEGAMENTO);
+    expect(t.etichetta).toBe('Tutto inviato');
+  });
+
+  it('C2 quiete SENZA il flag: nessuna seconda riga, come prima', () => {
+    const t = testoIndicatoreCoda({ stato: STATI_CODA.QUIETE });
+    expect(t.rassicurazione).toBeNull();
+  });
+
+  it('C3 da inviare: la base sopravvive e la frase la SEGUE', () => {
+    const t = testoIndicatoreCoda({
+      stato: STATI_CODA.DA_INVIARE, n: 4, senzaCollegamento: true,
+    });
+    expect(t.rassicurazione).toBe(
+      INDICATORE_DA_INVIARE_RASSICURAZIONE + ' ' +
+        INDICATORE_DA_INVIARE_SENZA_COLLEGAMENTO,
+    );
+  });
+
+  it('C4 PIN PORTANTE M2: su da controllare la rassicurazione clinica RESTA', () => {
+    // Q-ZAGARA-7=A. Una frase che rimpiazzasse la rassicurazione
+    // lascerebbe la persona ad aspettare una consegna che non avverra
+    // mai. Qui si pretende che ci sia ANCORA, e che venga PRIMA.
+    const t = testoIndicatoreCoda({
+      stato: STATI_CODA.DA_CONTROLLARE, n: 2, senzaCollegamento: true,
+    });
+    expect(t.rassicurazione).toContain(INDICATORE_DA_CONTROLLARE_RASSICURAZIONE);
+    expect(t.rassicurazione).toContain(INDICATORE_DA_CONTROLLARE_SENZA_COLLEGAMENTO);
+    expect(
+      t.rassicurazione.indexOf(INDICATORE_DA_CONTROLLARE_RASSICURAZIONE),
+    ).toBeLessThan(
+      t.rassicurazione.indexOf(INDICATORE_DA_CONTROLLARE_SENZA_COLLEGAMENTO),
+    );
+  });
+
+  it('C5 la clausola causale ce: NON e il collegamento a fermarle', () => {
+    // Il cuore clinico della terza frase. Senza questa meta la persona
+    // aspetta il ritorno del collegamento per un invio che non avverrebbe
+    // comunque: M2 sulla superficie. NESSUN altro pin guarda il CONTENUTO
+    // causale di una frase, quindi lo guarda questo.
+    expect(INDICATORE_DA_CONTROLLARE_SENZA_COLLEGAMENTO).toContain(
+      'non \u00e8 questo il motivo',
+    );
+  });
+
+  const larghi = [['stringa', 'true'], ['uno', 1], ['oggetto', {}], ['lista', []]];
+  for (const [nome, v] of larghi) {
+    it('C6 verita LARGA non appende: ' + nome, () => {
+      // Q-OGIVA-8=A, `=== true` STRETTO. Senza questo pin i casi su
+      // false, null e assente resterebbero TUTTI verdi anche con un
+      // `if (flag)`, perche sono tutti falsy: non misurerebbero nulla.
+      const t = testoIndicatoreCoda({
+        stato: STATI_CODA.DA_INVIARE, n: 1, senzaCollegamento: v,
+      });
+      expect(t.rassicurazione).toBe(INDICATORE_DA_INVIARE_RASSICURAZIONE);
+    });
+  }
+
+  it.each([[false], [null], [undefined]])(
+    'C7 falsy non appende: %s', (v) => {
+      const t = testoIndicatoreCoda({
+        stato: STATI_CODA.DA_INVIARE, n: 1, senzaCollegamento: v,
+      });
+      expect(t.rassicurazione).toBe(INDICATORE_DA_INVIARE_RASSICURAZIONE);
+    });
+
+  it('C8 s.6.274 ESTINTA senza quarto stato: la sede ignota resta null', () => {
+    // I10 :199 e PORTANTE e resta VERBATIM: il collegamento e un
+    // ARGOMENTO e non un valore di STATI_CODA (Q-ZAGARA-1=A).
+    expect(Object.values(STATI_CODA)).toHaveLength(3);
+    expect(
+      testoIndicatoreCoda({
+        stato: 'senza_collegamento', n: 1, senzaCollegamento: true,
+      }),
+    ).toBeNull();
+  });
+});
+

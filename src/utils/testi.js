@@ -120,7 +120,9 @@ export function testoAvvisoDegradato() {
 }
 
 /* ============================================================
- * Indicatore di coda -- Spec 14.5.1, TRE stati (s.6.274).
+ * Indicatore di coda -- Spec 14.5.1. TRE stati in STATI_CODA piu il
+ * collegamento come dimensione ORTOGONALE (s.6.274 ESTINTA qui: il quarto
+ * stato di 14.5 p.1 e ora coperto, senza che STATI_CODA cresca a quattro).
  * SENTINEL_QOBLO_INDICATORE_TESTI
  * ------------------------------------------------------------
  * THE REFERENT OF THE COUNT LIVES IN THE PHRASE (Q-OBLO-1=A). `N` counts
@@ -134,10 +136,14 @@ export function testoAvvisoDegradato() {
  * is not new: it is the one already load-bearing in the M3 clause at :22-25
  * of this file.
  *
- * THE THIRD STATE IS ABSENT ON PURPOSE. `Senza collegamento` is deferred to
- * CS-5.6 together with its source AND its precedence (s.6.274): the only
- * honest source is proof by delivery, and s.6.271 declared
- * `navigator.onLine` unsalvageable on iOS in standalone.
+ * THE THIRD STATE IS NOW COVERED, AND IT IS NOT A FOURTH VALUE
+ * (Q-ZAGARA-1=A). Spec 14.2 p.6 :1083 asks for a mechanism to TURN OFF
+ * "Senza collegamento" at empty queue, so that state COEXISTS with quiet
+ * and cannot be a branch of the same cascade. It is an ORTHOGONAL latching
+ * dimension: `STATI_CODA` stays at three, `scegliStatoCoda` still returns
+ * three, and the surface stays ONE indicator on TWO lines. The source is
+ * proof by delivery inside the guardian, never `navigator.onLine`, which
+ * s.6.271 declared unsalvageable on iOS in standalone.
  *
  * NO IMPERATIVE IN ANY PHRASE, and the reason is measured: Q-LUCERNA-5=A
  * keeps the touch area OFF until CS-5.6, so today `Da controllare` has no
@@ -166,9 +172,9 @@ export const STATI_CODA = Object.freeze({
 export const INDICATORE_QUIETE_ETICHETTA = 'Tutto inviato';
 
 /**
- * 14.5 p.7 plus the clinical cost of s.6.274: it states what happens by
- * itself and what is up to the person, and asserts NOTHING about a
- * connection the app cannot measure.
+ * 14.5 p.7: it states what happens by itself and what is up to the person.
+ * It asserts nothing about the connection -- that fact now has its own
+ * phrase, appended and never substituted (Q-LESENA-3=A).
  */
 export const INDICATORE_DA_INVIARE_RASSICURAZIONE =
   'Sono al sicuro sul telefono e si inviano da sole. Non devi fare niente.';
@@ -180,6 +186,57 @@ export const INDICATORE_DA_INVIARE_RASSICURAZIONE =
  */
 export const INDICATORE_DA_CONTROLLARE_RASSICURAZIONE =
   'Sono al sicuro sul telefono, ma non partono da sole. Non devi fare niente adesso.';
+
+/* ------------------------------------------------------------
+ * SENTINEL_QLESENA_COPY
+ * The connection phrases (Q-LESENA-4=D). Spec :1130 is load-bearing here:
+ * being offline is NOT an error and must not look like one -- no red, the
+ * app works normally, and if it frightens, the elderly person stops
+ * registering. Each phrase names the fact and, in the same breath, says
+ * what it costs.
+ *
+ * THE THIRD ONE CARRIES THE CLINICAL CLAUSE. Its second half says the
+ * connection is NOT the reason. Without it the person waits for the
+ * connection to come back for a delivery that would not happen anyway --
+ * M2 on the surface, which is exactly what Q-ZAGARA-7=A refuses. The
+ * adverb `Anche` marks it as a SEPARATE fact (Q-OGIVA-7=A).
+ *
+ * NO PIN GUARDS THE CAUSAL CONTENT of a phrase: I6, I8 and I9 watch
+ * jargon, imperatives and M3. A text that lied about the WHY would pass
+ * every gate. That is why it is read, not merely tested.
+ * ------------------------------------------------------------ */
+
+/** Quiet plus offline: the fact, and why it costs nothing. */
+export const INDICATORE_QUIETE_SENZA_COLLEGAMENTO =
+  'Il telefono \u00e8 senza collegamento, ma non \u00e8 rimasto niente da inviare.';
+
+/** Pending plus offline: the fact, and why nothing is moving. */
+export const INDICATORE_DA_INVIARE_SENZA_COLLEGAMENTO =
+  'Il telefono \u00e8 senza collegamento: per questo non sono ancora partite.';
+
+/** Parked plus offline: the fact, and the clause that it is NOT the cause. */
+export const INDICATORE_DA_CONTROLLARE_SENZA_COLLEGAMENTO =
+  'Anche il telefono \u00e8 senza collegamento, ma non \u00e8 questo il motivo.';
+
+/**
+ * SENTINEL_QLESENA_APPEND
+ * ONE composition rule for all three states (Q-LESENA-3=A): the phrase is
+ * APPENDED and never substitutes. On `QUIETE` the base is `null`, so the
+ * new phrase stands alone -- same rule, no special case.
+ *
+ * Substituting would drop a clinically load-bearing sentence: on
+ * `DA_INVIARE` it is `Sono al sicuro sul telefono`, and the person with
+ * registrations waiting and no connection is the one who most needs it.
+ *
+ * @param {string|null} base
+ * @param {boolean} offline
+ * @param {string} frase
+ * @returns {string|null}
+ */
+function appendiCollegamento(base, offline, frase) {
+  if (!offline) return base;
+  return base === null ? frase : base + ' ' + frase;
+}
 
 /**
  * @param {number} n
@@ -205,27 +262,43 @@ function registrazioni(n) {
  * @param {object} [arg]
  * @param {string} [arg.stato]  one of the values of `STATI_CODA`
  * @param {number} [arg.n]      element count; ignored by `QUIETE`
+ * @param {boolean|null} [arg.senzaCollegamento]  read with STRICT `=== true`
+ *   (Q-OGIVA-8=A): a truthy non-boolean is not a measure, and `null` means
+ *   NOT YET KNOWN, which must not append anything.
  * @returns {{etichetta: string, rassicurazione: string|null}|null}
  */
 export function testoIndicatoreCoda(arg = {}) {
-  const { stato, n } = arg || {};
+  const { stato, n, senzaCollegamento } = arg || {};
+  const offline = senzaCollegamento === true;
   if (stato === STATI_CODA.QUIETE) {
     return Object.freeze({
       etichetta: INDICATORE_QUIETE_ETICHETTA,
-      rassicurazione: null,
+      rassicurazione: appendiCollegamento(
+        null,
+        offline,
+        INDICATORE_QUIETE_SENZA_COLLEGAMENTO,
+      ),
     });
   }
   if (!Number.isInteger(n) || n < 1) return null;
   if (stato === STATI_CODA.DA_INVIARE) {
     return Object.freeze({
       etichetta: `Da inviare: ${registrazioni(n)}`,
-      rassicurazione: INDICATORE_DA_INVIARE_RASSICURAZIONE,
+      rassicurazione: appendiCollegamento(
+        INDICATORE_DA_INVIARE_RASSICURAZIONE,
+        offline,
+        INDICATORE_DA_INVIARE_SENZA_COLLEGAMENTO,
+      ),
     });
   }
   if (stato === STATI_CODA.DA_CONTROLLARE) {
     return Object.freeze({
       etichetta: `Da controllare: ${registrazioni(n)}`,
-      rassicurazione: INDICATORE_DA_CONTROLLARE_RASSICURAZIONE,
+      rassicurazione: appendiCollegamento(
+        INDICATORE_DA_CONTROLLARE_RASSICURAZIONE,
+        offline,
+        INDICATORE_DA_CONTROLLARE_SENZA_COLLEGAMENTO,
+      ),
     });
   }
   return null;

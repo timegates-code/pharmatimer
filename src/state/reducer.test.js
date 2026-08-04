@@ -72,6 +72,15 @@ describe('reducer — stato iniziale', () => {
       // differenza e clinica e non stilistica: la seconda direbbe
       // `Tutto inviato` con elementi parcheggiati, che e M2.
       coda: null,
+      // SENTINEL_QLESENA_ATTESO_SLICE
+      // CS-5.6-bis PARTE 2. Il ROSSO di questo pin e stato VISTO e
+      // NOMINATO prima che questa riga fosse toccata: UNA riga aggiunta e
+      // ZERO rimosse, quindici campi ricevuti contro quattordici attesi.
+      // Il campo e passato da questa porta invece di entrare in silenzio,
+      // che e esattamente cio per cui la uguaglianza qui e ESATTA.
+      // Q-ZAGARA-6=A: `null` dice NON ANCORA MISURATO. `false` direbbe
+      // collegamento PRESENTE, che e una asserzione mai misurata: M3.
+      senzaCollegamento: null,
     });
   });
 });
@@ -416,3 +425,70 @@ describe('reducer — SET_PROFILI / SET_PROFILO_ATTIVO', () => {
 // validazione del campo `toast: null` nel baseline `toEqual` qui sopra
 // è sufficiente. Coverage end-to-end del flow Mit-C in FarmaciTab.test.jsx
 // (CP5 — trigger commitSave → showToast → state.toast.message).
+
+// ============================================================
+// SENTINEL_QLESENA_SUITE_VERBI
+// SET_CODA e SET_SENZA_COLLEGAMENTO -- il CABLAGGIO verbo verso slice.
+// ------------------------------------------------------------
+// Q-LESENA-10=A. La convenzione qui sopra dichiara il baseline
+// sufficiente per SHOW_TOAST e DISMISS_TOAST, e NELLA STESSA FRASE nomina
+// la copertura end-to-end che li copre davvero. Per questi due verbi
+// quella copertura NON esiste: coda.test.js pinna che il dispatch venga
+// EMESSO, nessuno pinnava che il reducer lo RICEVESSE. La convenzione era
+// stata ereditata dove la sua premessa era caduta.
+//
+// MISURATO PRIMA DI SCRIVERE: cancellando `case SET_CODA` le 1005 prove
+// restavano VERDI e lo indicatore smetteva di funzionare in silenzio.
+// SET_CODA e pinnato QUI e non rinviato: il difetto e preesistente e
+// costa quattro righe, e lasciarlo aperto avrebbe voluto una riga di
+// backlog su un margine gia esaurito da sei rassegne.
+// ============================================================
+describe('reducer -- cablaggio dei verbi di coda (Q-LESENA-10=A)', () => {
+  it('V1 SET_CODA scrive la sua slice e non tocca il resto', () => {
+    const next = reducer(initialState, {
+      type: 'SET_CODA', payload: { pending: 2, parked: 1 },
+    });
+    expect(next.coda).toEqual({ pending: 2, parked: 1 });
+    expect(next.senzaCollegamento).toBeNull();
+    expect(next.plan).toBe(initialState.plan);
+  });
+
+  it('V2 SET_SENZA_COLLEGAMENTO scrive la sua slice e non tocca coda', () => {
+    const next = reducer(initialState, {
+      type: 'SET_SENZA_COLLEGAMENTO', payload: true,
+    });
+    expect(next.senzaCollegamento).toBe(true);
+    expect(next.coda).toBeNull();
+  });
+
+  it.each([[true], [false], [null]])(
+    'V3 la terna passa tale e quale: %s', (v) => {
+      const next = reducer(initialState, {
+        type: 'SET_SENZA_COLLEGAMENTO', payload: v,
+      });
+      expect(next.senzaCollegamento).toBe(v);
+    });
+
+  it('V4 CONTROLLO POSITIVO: un verbo IGNOTO cade sul default', () => {
+    // Senza questo, V1 e V2 sarebbero verdi anche se il reducer scrivesse
+    // qualunque payload su qualunque campo: si misura che la porta esista
+    // e che sia CHIUSA per cio che non le compete.
+    const next = reducer(initialState, {
+      type: 'SET_SENZA_COLLEGAMENTO_XX', payload: true,
+    });
+    expect(next).toBe(initialState);
+  });
+
+  it('V5 le due slice sono INDIPENDENTI e coesistono', () => {
+    // Q-ZAGARA-1=A: il collegamento e una dimensione ORTOGONALE e non un
+    // quarto valore della precedenza. Qui si pinna che le due si possano
+    // scrivere in sequenza senza scavalcarsi.
+    const s1 = reducer(initialState, {
+      type: 'SET_CODA', payload: { pending: 0, parked: 3 },
+    });
+    const s2 = reducer(s1, { type: 'SET_SENZA_COLLEGAMENTO', payload: true });
+    expect(s2.coda).toEqual({ pending: 0, parked: 3 });
+    expect(s2.senzaCollegamento).toBe(true);
+  });
+});
+

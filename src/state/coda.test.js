@@ -18,7 +18,7 @@
 // tace non distingue un collettore prudente da un collettore morto.
 
 import { describe, it, expect, vi } from 'vitest';
-import { raccogliCoda } from './coda.js';
+import { raccogliCoda, raccogliSenzaCollegamento } from './coda.js';
 
 function banco(outboxCounts) {
   const visti = [];
@@ -110,3 +110,128 @@ describe('raccogliCoda -- cio che non e un intero non e uno stato di coda', () =
     });
   }
 });
+
+// ============================================================
+// SENTINEL_QLESENA_SUITE_GEMELLO
+// raccogliSenzaCollegamento -- il gemello del terzo stato (CS-5.6-bis P2).
+// ------------------------------------------------------------
+// BANCO PROPRIO E NON ESTESO. `banco()` qui sopra costruisce un repo che
+// NON porta `isUnreachable`, ed e quella la forma che pinna la porta 1:
+// estenderlo avrebbe tolto il caso di ASSENZA alle tredici prove che oggi
+// lo esercitano senza saperlo.
+// ============================================================
+
+function bancoLatch(isUnreachable) {
+  const visti = [];
+  const repo = isUnreachable === undefined ? {} : { isUnreachable };
+  return { visti, dispatch: (a) => visti.push(a), repo };
+}
+
+describe('raccogliSenzaCollegamento -- porta 1, la ASSENZA tace', () => {
+  it('L1 metodo assente: non dispaccia e non solleva', () => {
+    // Q-LESENA-2=A. getRepository() consegna un LocalRepository nudo a
+    // flag API spento e quella classe non porta il metodo. La assenza non
+    // nasconde nulla: senza server non ce alcun senza-collegamento da
+    // riferire, ed e per questo che lo argomento M2 di Q-RINTOCCO-2=A
+    // non si applica qui.
+    const b = bancoLatch(undefined);
+    expect(() => raccogliSenzaCollegamento(b)).not.toThrow();
+    expect(b.visti).toEqual([]);
+  });
+
+  it('L2 repo assente: non solleva, che e il contratto NEVER THROWS', () => {
+    expect(() =>
+      raccogliSenzaCollegamento({ dispatch: () => {}, repo: undefined }),
+    ).not.toThrow();
+  });
+
+  it('L3 CONTROLLO POSITIVO: col metodo presente il banco VEDE il dispatch', () => {
+    // Senza questo, L1 e L2 sarebbero verdi anche con un gemello MORTO:
+    // intercetterebbero senza isolare.
+    const b = bancoLatch(() => true);
+    raccogliSenzaCollegamento(b);
+    expect(b.visti).toEqual([
+      { type: 'SET_SENZA_COLLEGAMENTO', payload: true },
+    ]);
+  });
+});
+
+describe('raccogliSenzaCollegamento -- lo specchio e ESATTO sulla terna', () => {
+  it.each([[true], [false], [null]])('L4 dispaccia %s tale e quale', (v) => {
+    const b = bancoLatch(() => v);
+    raccogliSenzaCollegamento(b);
+    expect(b.visti).toEqual([
+      { type: 'SET_SENZA_COLLEGAMENTO', payload: v },
+    ]);
+  });
+
+  it('L5 null si dispaccia e NON si salta: saltarlo sarebbe una traduzione', () => {
+    const b = bancoLatch(() => null);
+    raccogliSenzaCollegamento(b);
+    expect(b.visti).toHaveLength(1);
+    expect(b.visti[0].payload).toBeNull();
+  });
+});
+
+describe('raccogliSenzaCollegamento -- porta 2 e porta 3', () => {
+  it('L6 un throw del guardiano non dispaccia e non propaga', () => {
+    // Il metodo e documentato incapace di sollevare, ma poggiare su una
+    // proprieta del CHIAMATO e cio che Q-OBLO-2=A ha gia rifiutato.
+    const b = bancoLatch(() => {
+      throw new TypeError('boom');
+    });
+    expect(() => raccogliSenzaCollegamento(b)).not.toThrow();
+    expect(b.visti).toEqual([]);
+  });
+
+  const fuoriTerna = [
+    ['stringa vera', 'true'],
+    ['numero', 1],
+    ['zero', 0],
+    ['oggetto', {}],
+    ['undefined', undefined],
+  ];
+
+  for (const [nome, v] of fuoriTerna) {
+    it('L7 fuori terna non dispaccia: ' + nome, () => {
+      // M3. La copy legge con `=== true`, quindi un valore fuori terna
+      // cadrebbe sul ramo `false` e la superficie affermerebbe un
+      // collegamento MAI MISURATO. Si rifiuta alla porta, stessa clausola
+      // gia applicata ai conteggi.
+      const b = bancoLatch(() => v);
+      raccogliSenzaCollegamento(b);
+      expect(b.visti).toEqual([]);
+    });
+  }
+});
+
+describe('raccogliSenzaCollegamento -- IN TESTA dentro raccogliCoda', () => {
+  it('L8 PIN PORTANTE: una lettura di coda FALLITA non acceca il latch', async () => {
+    // Q-OGIVA-5=A, ed e la ragione per cui il gemello sta IN TESTA:
+    // raccogliCoda ha QUATTRO ritorni anticipati, e un fatto indipendente
+    // non deve morire col fallimento di un altro.
+    const visti = [];
+    const repo = {
+      outboxCounts: vi.fn().mockRejectedValue(new Error('DB_UNAVAILABLE')),
+      isUnreachable: () => true,
+    };
+    await raccogliCoda({ dispatch: (a) => visti.push(a), repo });
+    expect(visti).toEqual([
+      { type: 'SET_SENZA_COLLEGAMENTO', payload: true },
+    ]);
+  });
+
+  it('L9 col buono arrivano ENTRAMBI, e il latch per PRIMO', async () => {
+    const visti = [];
+    const repo = {
+      outboxCounts: vi.fn().mockResolvedValue({ pending: 1, parked: 0 }),
+      isUnreachable: () => false,
+    };
+    await raccogliCoda({ dispatch: (a) => visti.push(a), repo });
+    expect(visti.map((a) => a.type)).toEqual([
+      'SET_SENZA_COLLEGAMENTO',
+      'SET_CODA',
+    ]);
+  });
+});
+

@@ -50,6 +50,9 @@
  * @property {{pending: number, parked: number}|null} coda  CS-5.5 -- queue
  *   counts mirror; `null` until the first collection, which is NOT the same
  *   fact as a queue measured empty (Q-LUCERNA-3=A).
+ * @property {boolean|null} senzaCollegamento  CS-5.6 -- unreachability
+ *   latch mirror; `null` until the first measure. ORTHOGONAL to `coda` and
+ *   NOT a fourth value of its precedence (Q-ZAGARA-1=A).
  */
 
 /** @type {AppState} */
@@ -76,6 +79,11 @@ export const initialState = {
   // stays EXACT (Q-RINTOCCO-4=A); what changes is that the slice can now
   // say it does not know yet.
   coda: null,
+  // SENTINEL_QLESENA_SLICE
+  // Q-ZAGARA-6=A / Q-OGIVA-6=A. Triple `null` / `false` / `true`, `null`
+  // initial: `false` would assert a connection NEVER MEASURED. The
+  // POLARITY LIVES IN THE NAME, so no site has to remember an inversion.
+  senzaCollegamento: null,
 };
 
 /**
@@ -244,6 +252,12 @@ export function reducer(state, action) {
     // has a value of its own. See SENTINEL_QOBLO_CODA_IGNOTA above.
     case 'SET_CODA':
       return { ...state, coda: action.payload };
+
+    // SENTINEL_QLESENA_VERBO
+    // Q-ZAGARA-6=A, on the shape of SET_CODA above. The payload is
+    // validated by the collector (state/coda.js), never here.
+    case 'SET_SENZA_COLLEGAMENTO':
+      return { ...state, senzaCollegamento: action.payload };
 
     // --- Error channel --------------------------------------
     case 'SET_ERROR':
