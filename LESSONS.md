@@ -421,6 +421,15 @@
 
 <!-- SENTINEL_MINT_79_80_PAR_22_198_TERSEPTUAGIES -->
 
+### #81 -- L-consegna-in-sede-non-gattata-e-archivio
+- Stato: minted
+- Origine: par.22.198-novemseptuagies (mint DOVUTO, deciso in sessione con `Q-ECHINO-7=A`; forma `Q-LEX-1=A`, collocazione `Q-ZOCCOLO-5=A`)
+- Nota: non porta token `LC-*`; e la forma OPERATIVA di `G-17` sul verso *esiste -> citato*, e ha per parenti stretti `#72` e la voce 241.
+- Regola: una consegna depositata in una sede che nessun gate legge non e una consegna, e un archivio. Il rilevamento di cio che vi si accumula dipende allora dalla ATTENZIONE di una persona, e cio che dipende dalla attenzione prima o poi non accade. Il rimedio non e ENUMERARE i file in un documento -- una enumerazione trascritta e stantia PER COSTRUZIONE gia nello istante in cui la sessione deposita -- ma DERIVARE lo insieme dal disco contro un riferimento che la chiusura stessa muove, cosi lo insieme si svuota da solo e nessun elenco invecchia. Il ritiro si fa per SUFFISSO e mai per cancellazione, perche cancellare un record e M3. COROLLARIO: una guardia di questa forma intercetta la SECONDA occorrenza e mai la prima, e il limite si DICHIARA invece di lasciarlo scoprire.
+- Contesto: sedi fuori dal repo, verbali di consegna, corredi di sessione. A novemseptuagies DUE sessioni di solo disegno hanno colliso sullo STESSO slot 154 senza che alcuna delle 23 sonde potesse vederlo, perche una sessione che non committa e non chiude non muove ne git ne sentinel: il rilevatore fu una persona. Misurato allora e non dedotto: `cp0.sh` e `close_step.sh` portavano ZERO occorrenze di `recovery`, mentre Changelog e STATO ne portavano 13 e 5, cioe la cartella era DESCRITTA in abbondanza e LETTA da nessuno. Rimedio `G-20`, sonda 24 del CP0, perimetro derivato per mtime contro `STATO_CORRENTE.md` e ritiro per suffisso `.SUPERATO`. Precedenti: `G-17` alle voci 82 e 154, la voce 241 sulla dichiarazione dello slot, `G-16` sulla lista dei path mantenuta invece che derivata.
+
+<!-- SENTINEL_MINT_81_PAR_22_198_NOVEMSEPTUAGIES -->
+
 ---
 
 ## Candidate (pronte al mint, sbloccate dalla creazione del registro -- par.130)
