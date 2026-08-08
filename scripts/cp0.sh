@@ -169,6 +169,47 @@ else
     echo "OK    $IMP_LINE"
   fi
 fi
+# --- SONDA 24: consegne depositate e non dichiarate (G-20; SENTINEL_CP0_CONSEGNE_G20) ---
+# CLASSE 1 di RED. Chiude il verso scoperto di G-17 -- esiste -> citato -- sulla
+# sede delle CONSEGNE. Movente misurato e non prudenziale: due sessioni di solo
+# disegno hanno colliso sullo stesso slot 154 senza che alcuna delle 23 sonde
+# potesse vederlo, perche una sessione che non committa e non chiude non muove
+# ne git ne sentinel. Il rilevatore fu una persona, ed e la voce 241.
+# PERIMETRO DERIVATO E NON MANTENUTO (G-16 applicata al rimedio): i file si
+# leggono dal disco per mtime contro STATO_CORRENTE.md, che la GAMMA riscrive,
+# quindi lo insieme si SVUOTA DA SOLO a ogni chiusura e nessun elenco invecchia.
+# Il suffisso .SUPERATO ritira una consegna senza cancellarla: riscrivere o
+# cancellare un record e M3. CONSEGNA vive in session_state.env, gia sorgente
+# a :102; si legge come ${CONSEGNA:-} perche cp0.sh e TRACKED e la chiave e
+# IGNORED, che e la trappola di -quinquies gia pagata da LC-103.
+# LIMITE DICHIARATO (LC-105): intercetta la SECONDA consegna e le successive,
+# mai la prima -- nessuna guardia puo -- e il perimetro e la sola cartella
+# nominata. Nomi con spazio non sono supportati e il gate G20_NF/G20_NW li
+# fa arrossare invece di lasciarli splittare in silenzio.
+G20_DIR="$HOME/PharmaTimer_recovery"
+G20_RAW=""
+N=$((N+1))
+if [ -d "$G20_DIR" ]; then
+  G20_RAW=$(find "$G20_DIR" -maxdepth 1 -type f -newer STATO_CORRENTE.md ! -name '.*' ! -name '*.SUPERATO' 2>/dev/null | sed 's#.*/##' | sort)
+fi
+G20_DER=$(printf '%s\n' "$G20_RAW" | grep -v '^$' | sort | tr '\n' ' ')
+G20_DIC=$(printf '%s' "${CONSEGNA:-}" | tr ' ' '\n' | grep -v '^$' | sort | tr '\n' ' ')
+G20_NF=$(printf '%s' "$G20_RAW" | grep -c .)
+G20_NW=$(printf '%s' "$G20_DER" | wc -w | tr -d ' ')
+if [ "$G20_NF" -ne "$G20_NW" ]; then
+  echo "DRIFT CONSEGNE nome con spazio in $G20_DIR (file=$G20_NF parole=$G20_NW)"
+  FAIL=1
+elif [ "$G20_DER" = "$G20_DIC" ]; then
+  echo "OK    CONSEGNE = $G20_NF pendenti, derivate = dichiarate"
+else
+  for G20_F in $G20_DER; do
+    case " $G20_DIC " in *" $G20_F "*) ;; *) echo "DRIFT CONSEGNA depositata e NON dichiarata: $G20_F" ;; esac
+  done
+  for G20_F in $G20_DIC; do
+    case " $G20_DER " in *" $G20_F "*) ;; *) echo "DRIFT CONSEGNA dichiarata e NON trovata: $G20_F" ;; esac
+  done
+  FAIL=1
+fi
 if [ "$FAIL" -eq 0 ] && [ "$FAIL_IMP" -eq 0 ]; then
   echo "CP0 VERDETTO: GREEN ($N sonde)"
   exit 0
