@@ -18,16 +18,16 @@ dist-mini/
 patch_*.py
 append_*.py
 *.bak.cp*
-PharmaTimer_Changelog_Fase2.md
-PharmaTimer_Changelog_Fase3.md
-STATO_CORRENTE.md
 cp_*.py
 design/
 
 # par.22.167 hygiene: KB Spec, artefatti Claude Code, backup dev, patcher throwaway
 PharmaTimer_Project_Spec_*.md
+# La Spec CORRENTE e tracciata: CLAUDE.md la punta e un puntatore
+# a un file fuori dal repo sarebbe cieco per chi clona.
+# Le versioni precedenti restano fuori.
+!PharmaTimer_Project_Spec_v1_18.md
 .claude/
-CLAUDE.md
 backups_dev/
 apply_*.py
 introspect_*.py
@@ -36,6 +36,4 @@ introspect_*.py
 /*.bak-pre-*
 DESIGN_multiutente_attivazione.md
 backend/rotate_owner_token_dev.py
-scripts/cp0.expected
-scripts/session_state.env
 *.egg-info/

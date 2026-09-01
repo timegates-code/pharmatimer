@@ -1,0 +1,15 @@
+# cp0.expected -- attesi baseline; riga di provenienza riscritta dalla GAMMA di par.22.198-unoctogies, l-inventario (SENTINEL_CP0EXP_PAR198_UNOCTOGIES). IL CONTEGGIO DELLE SONDE NON E CAMBIATO: restano 24, che sono 14 chiavi piu 10 non-chiave, e nessuna guardia e stata mintata da questa sessione, che e di sola LETTURA sul prodotto. LE NON-CHIAVE SI ENUMERANO invece di essere contate: umask, DESCRIBE_STATO, AHEAD, TREE, SENTINEL forma, SENT_COUNT, PYTEST_RC, ROOT, IMPEGNI, CONSEGNE. PARTIZIONE RI-DERIVATA SUL FILE e non ereditata dal verbale (Q-OGIVA-16=A, voce 298). DUE GIT MOSSE: HEAD e DESCRIBE, LETTI DA GIT VIVO dopo il commit a40d61e e mai ricomposti ne trasportati (voce 174). DODICI NON GIT INVARIANTI, e la ragione e MISURATA e non assunta: il commit tocca Makefile e scripts/audit/ e NULLA ALTRO -- 852 inserzioni e zero delezioni su tre file NUOVI, zero sorgenti di prodotto, zero file di test, zero deploy sul Mini. Sono VITEST_TESTS VITEST_FILES PYTEST XFAILED LESSONS DEV_UUID BUNDLE OPENAPI_BYTES OPENAPI_VER PROD_UUID UTENTI PERMESSI. OPENAPI_VER NON E ASSUNTA MA MISURATA VIVA IN QUESTA SESSIONE: curl su openapi.json del Mini rende 0.7.5, che e il valore gia pinnato -- e la sola delle dodici che sia stata riletta dalla sorgente invece che dedotta dal perimetro del commit. TRAPPOLA NOMINATA E ONORATA: la partizione precedente aveva DUE git piu UNA non git mossa (LESSONS 65 -> 66) piu UNDICI invarianti; qui LESSONS NON si muove perche nessuna lezione e stata mintata, quindi le invarianti sono DODICI e non undici. Una partizione trasportata sarebbe stata silenziosamente sbagliata restando aritmeticamente giusta. PYTEST_RC e ROOT NON ABITANO QUESTO FILE: cp0.sh le confronta coi letterali zero e 200. DESCRIBE_STATO non e una chiave ma una sonda DERIVATA di cp0.sh :45 e va contata FUORI dalle chiavi (voce 312). CAVEAT DICHIARATO: PYTEST e XFAILED non sono stati ri-eseguiti in questa sessione perche il sandbox nega MySQL su entrambi i trasporti; sono dichiarati invarianti sul perimetro del commit, che non tocca backend/. DESCRIBE letterale v3.2.0-rc.1-111-ga40d61e, scritto senza il segno di uguale per la voce 132.
+HEAD=a40d61e
+DESCRIBE=v3.2.0-rc.1-111-ga40d61e
+LESSONS=66
+VITEST_TESTS=1047
+VITEST_FILES=101
+PYTEST=130
+XFAILED=0
+DEV_UUID=8c7fac68-
+BUNDLE=index-CO3PX9c9
+OPENAPI_BYTES=36048
+OPENAPI_VER=0.7.5
+PROD_UUID=75170e5c-
+UTENTI=4
+PERMESSI=7

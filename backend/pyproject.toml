@@ -49,3 +49,28 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --strict-markers"
 asyncio_mode = "strict"
+
+[tool.ruff]
+# Configurazione MINIMA. Il perimetro e il solo codice di prodotto piu i test:
+# le migrazioni sono one-shot storici e non si normano a posteriori.
+line-length = 100
+target-version = "py312"
+exclude = ["venv", "__pycache__", "db/migrations", "*.bak", "*.bak.*"]
+
+[tool.ruff.lint]
+# E/W pycodestyle, F pyflakes (import e nomi morti), I ordinamento import,
+# B bugbear (trappole reali, non stile), UP modernizzazioni sicure.
+select = ["E", "W", "F", "I", "B", "UP"]
+ignore = [
+    "E501",  # lunghezza riga: gia governata da line-length e non si impone qui
+    # B008 -- "non chiamare funzioni nei default degli argomenti". Con FastAPI
+    # e FALSO PER COSTRUZIONE: Depends(...) e Query(...) nei default SONO il
+    # modo in cui il framework si scrive. Misurati 40 reperti, tutti su router
+    # e dependencies, nessuno un difetto. Baselinarli sarebbe rumore permanente,
+    # perche non possono scendere finche si usa FastAPI.
+    "B008",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# I test usano fixture pytest come argomenti: shadowing e la loro forma normale.
+"tests/*" = ["F811", "B008"]
