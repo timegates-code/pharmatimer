@@ -608,13 +608,15 @@ def voce19():
     print("\n  applicatori di produzione presenti nel repo")
     righe(sorted("backend/db/migrations/" + f for f in os.listdir("backend/db/migrations")
                  if f.startswith("apply_") and "prod" in f), "nessuno")
-    print("\n  COPERTURA DEL CP0, dichiarata e non dedotta")
-    cp0 = read("scripts/cp0.sh")
-    print("     versione del backend in produzione : %s (chiave OPENAPI_VER)"
-          % ("SORVEGLIATA" if "OPENAPI_VER" in cp0 else "non sorvegliata"))
+    print("\n  COPERTURA DEL GATE, dichiarata e non dedotta")
+    mk = read("Makefile")
+    print("     versione del backend in produzione : %s (make prod-check, INFO)"
+          % ("letta" if "OPENAPI_VER" in mk else "non letta"))
     print("     stato delle migrazioni del bersaglio: %s"
-          % ("sorvegliato" if "information_schema" in cp0 else
-             "NON SORVEGLIATO -- meta della coppia e scoperta"))
+          % ("SORVEGLIATO da make g21, che ARROSSA se il Mini e sotto il livello"
+             if "client_op_id" in mk else "NON SORVEGLIATO"))
+    print("     NOTA: fino allo smontaggio del gate questa riga leggeva scripts/cp0.sh,")
+    print("     che sorvegliava la versione ma NON le migrazioni. Ora la coppia e chiusa.")
 
 
 VOCI = {1: voce1, 2: voce2, 3: voce3, 4: voce4, 5: voce5, 6: voce6,
