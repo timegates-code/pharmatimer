@@ -1501,3 +1501,48 @@ describe('F14 fisso_date — lista piatta (guard cross-data findNextDose)', () =
     expect(result.prompt).toBeNull();
   });
 });
+
+// ============================================================
+// P3 -- nessuna scrittura su una dose senza orario (ORARIO_NON_RISOLVIBILE).
+// ============================================================
+describe('P3 -- le scritture su una dose senza orario sono rifiutate con DomainError', () => {
+  const farmaco = makeFarmaco({ tipo_frequenza: 'intervallo', intervallo_ore: 8, dosi_giornaliere: 2 });
+  const orario = makeOrario(1, 1);
+  const orfana = (stato = 'prevista') => ({
+    ...makeEntry(farmaco, orario, '2026-07-15', null, { stato }),
+    orario_non_risolvibile: true,
+  });
+
+  function attesoRifiuto(fn) {
+    let err = null;
+    try {
+      fn();
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeInstanceOf(DomainError);
+    expect(err.code).toBe('ORARIO_NON_RISOLVIBILE');
+  }
+
+  it('applyAssunzione, applySalto, applySospensione', () => {
+    const plan = [orfana()];
+    attesoRifiuto(() => applyAssunzione(plan, { entryKey: plan[0].key, dataEffettiva: '2026-07-15', oraEffettiva: '08:00' }));
+    attesoRifiuto(() => applySalto(plan, plan[0].key));
+    attesoRifiuto(() => applySospensione(plan, plan[0].key));
+  });
+
+  it('applyRipristino, da saltata e da sospesa', () => {
+    attesoRifiuto(() => applyRipristino([orfana('saltata')], '2026-07-15-1-1', 'attiva'));
+    attesoRifiuto(() => applyRipristino([orfana('sospesa')], '2026-07-15-1-1', 'attiva'));
+  });
+
+  it('il rifiuto non tocca il piano: le altre dosi restano scrivibili', () => {
+    const altra = makeEntry(farmaco, makeOrario(1, 2), '2026-07-15', '16:00');
+    const plan = [orfana(), altra];
+    attesoRifiuto(() => applySalto(plan, plan[0].key));
+    const { plan: dopo, logWrites } = applySalto(plan, altra.key);
+    expect(dopo.find((e) => e.key === altra.key).stato).toBe('saltata');
+    expect(logWrites).toHaveLength(1);
+    expect(dopo.find((e) => e.key === plan[0].key)).toBe(plan[0]);
+  });
+});

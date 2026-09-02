@@ -36,14 +36,17 @@ import { TOLLERANZA_MIN } from '../domain/constants.js';
  * (always 'HH:MM'). Exported for Sessione 11 §6.206 selectAnchorEntry
  * (formerly internal helper §6.116b).
  *
+ * Null for a dose without a time (P3 containment, orario_non_risolvibile):
+ * every consumer below treats null as "unplaced", never as a time.
+ *
  * @param {import('../domain/types.js').PlanEntry} entry
- * @returns {string}  'HH:MM'
+ * @returns {string|null}  'HH:MM', or null
  */
 export function effHHMM(entry) {
   if (entry.ora_ricalcolata) {
     return parseIsoDateTime(entry.ora_ricalcolata).hhmm;
   }
-  return entry.ora_prevista;
+  return entry.ora_prevista ?? null;
 }
 
 /**
@@ -95,7 +98,12 @@ export function getCardState(entry, now) {
   // effHHMM(entry) is compared against today's now.minutes.
   if (effectiveDateStr(entry) !== now.dateStr) return 'in_attesa';
 
-  const doseMin = timeToMinutes(effHHMM(entry));
+  // A dose without a time (P3) is neither next nor late: neutral state,
+  // never a beep and never a red badge on a time nobody can place.
+  const hhmm = effHHMM(entry);
+  if (hhmm == null) return 'in_attesa';
+
+  const doseMin = timeToMinutes(hhmm);
   const diff = doseMin - now.minutes;
   if (diff < -TOLLERANZA_MIN) return 'in_ritardo';
   if (diff > 30) return 'in_attesa';
@@ -246,8 +254,9 @@ export function formatDateLabelFrom(dateStr, refDateStr) {
  * group, mirroring any other shared value.
  *
  * `primaOra` is the effective time of the group's first entry as 'HH:MM'
- * (extracted from ora_ricalcolata ISO when set — §6.116b). Consumers use it
- * directly in the "ORE HH:MM — DESCRIZIONE_MOMENTO" header.
+ * (extracted from ora_ricalcolata ISO when set — §6.116b), or null when that
+ * entry has no time (P3). Consumers use it directly in the
+ * "ORE HH:MM — DESCRIZIONE_MOMENTO" header.
  *
  * The helper is pure: it returns a fresh structure and never mutates `entries`.
  *
@@ -256,7 +265,7 @@ export function formatDateLabelFrom(dateStr, refDateStr) {
  *   dateStr: string,
  *   groups: Array<{
  *     descrizioneMomento: string | null,
- *     primaOra: string,
+ *     primaOra: string | null,
  *     entries: import('../domain/types.js').PlanEntry[]
  *   }>
  * }>}
@@ -287,10 +296,13 @@ export function groupEntriesByDayAndMomento(entries) {
   const NO_PREV = Symbol('no-prev');
 
   for (const dateStr of sortedDateKeys) {
+    // A dose without a time (P3) sorts LAST within its day.
+    const sortMinutes = (e) => {
+      const h = effHHMM(e);
+      return h == null ? Number.POSITIVE_INFINITY : timeToMinutes(h);
+    };
     const sorted = byDate.get(dateStr).slice().sort((a, b) => {
-      const am = timeToMinutes(effHHMM(a));
-      const bm = timeToMinutes(effHHMM(b));
-      return am - bm;
+      return sortMinutes(a) - sortMinutes(b);
     });
 
     const groups = [];

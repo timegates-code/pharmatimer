@@ -2,13 +2,16 @@
 # session_state.env, impegni.tsv e close_step.sh (sessione di smontaggio).
 #
 #   make check       GATE DI SESSIONE. Apertura e chiusura si fanno su questo.
-#                    lint + test frontend + test backend + inventario + albero.
+#                    lint + test frontend + controllo DST + test backend +
+#                    inventario + albero.
 #   make check-prepush  Lo stesso gate, lanciato dallo hook di pre-push:
 #                    asserisce TREE e non AHEAD, che prima del push non e zero.
 #   make check-ci    Lo stesso gate, lanciato da GitHub Actions su ogni push.
 #   make prod-check  SOLO QUANDO SI DEPLOYA. Tocca il Mini via rete: stato del
 #                    servizio, bundle, openapi, censimento, e G-21.
 #   make lint        ruff (backend) + eslint (frontend) + tipografia.
+#   make controllo-dst  i file *.dst.test.js lanciati SENZA ora legale devono
+#                    arrossare tutti: un pin mai visto rosso non e una guardia.
 #   make inventario  le diciannove voci, rigenerate dal disco.
 #
 # PRINCIPIO: nessun atteso e pinnato in un file a parte. Cio che si puo derivare
@@ -21,13 +24,13 @@ BASE := https://marketreader-server.taila127de.ts.net
 MINI_MYSQL := /opt/homebrew/bin/mysql --defaults-file=/Users/marketreader/.my-pharmatimer.cnf
 
 .PHONY: check check-prepush check-ci _gate prod-check lint lint-backend lint-frontend \
-        test test-frontend test-frontend-compatto test-backend inventario \
+        test test-frontend test-frontend-compatto controllo-dst test-backend inventario \
         inventario-compatto albero g21 help
 
 help:
 	@echo "gate di sessione : make check"
 	@echo "prima di deployare: make prod-check"
-	@echo "singoli          : lint | test-frontend | test-backend | inventario | albero"
+	@echo "singoli          : lint | test-frontend | controllo-dst | test-backend | inventario | albero"
 
 # ----------------------------------------------------------------- LINT
 lint-backend:
@@ -113,6 +116,15 @@ test-frontend-compatto:
 	fi; \
 	exit $$rc
 
+# ----------------------------------------------------------------- CONTROLLO DST
+# Un pin verde non e un pin efficace (CLAUDE.md sez. 6). I file *.dst.test.js
+# misurano lo ora legale: lo script li fa girare con TZ=Etc/UTC e una config
+# senza pin, e pretende che OGNI loro test arrossi. E lo unico blocco del gate
+# che e verde quando la suite che lancia e rossa, ed e voluto: il rosso e la
+# misura. Dettaglio degli esiti in testa a scripts/audit/controllo_dst.py.
+controllo-dst:
+	@python3 scripts/audit/controllo_dst.py
+
 test-backend:
 	@echo "== TEST BACKEND (pytest) =="
 	@echo "-- precondizione: MySQL di dev raggiungibile (ex sonda DEV_UUID) --"
@@ -175,6 +187,7 @@ _gate:
 	@rc=0; \
 	$(MAKE) --no-print-directory lint || rc=1; \
 	echo; $(MAKE) --no-print-directory test-frontend-compatto || rc=1; \
+	echo; $(MAKE) --no-print-directory controllo-dst || rc=1; \
 	echo; $(MAKE) --no-print-directory test-backend || rc=1; \
 	echo; $(MAKE) --no-print-directory inventario-compatto || rc=1; \
 	echo; $(MAKE) --no-print-directory albero || rc=1; \

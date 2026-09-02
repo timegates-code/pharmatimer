@@ -1,5 +1,9 @@
 import { timeToMinutes, addMinutesToIso } from '../utils/time.js';
-import { computeOraPrevista } from './orarioResolver.js';
+import {
+  computeOraPrevista,
+  computeOraPrevistaOnDay,
+  isOrarioNonRisolvibile,
+} from './orarioResolver.js';
 import {
   isExtendedInterval,
   computeExtendedOccurrencesInWindow,
@@ -155,12 +159,26 @@ export function buildMultiDayPlan(ctx) {
         // Dexie local-mode row lacking the column is treated as recurring.
         // Model-agnostic: indifferent to Pattern S vs flat list.
         if (orario.data_specifica != null && orario.data_specifica !== dateStr) continue;
-        const oraPrevista = computeOraPrevista(orario, profilo);
+        // Decisione 1 (DST): the label is resolved ON THIS DAY, so a dose
+        // planned in the skipped hour slides to the first existing time.
+        // P3 containment, PER DOSE: an orario the profile cannot resolve
+        // becomes a visible entry with no time and the flag set; the rest of
+        // the plan is untouched. Any other error still propagates.
+        let oraPrevista = null;
+        let nonRisolvibile = false;
+        try {
+          oraPrevista = computeOraPrevistaOnDay(orario, profilo, dateStr);
+        } catch (err) {
+          if (!isOrarioNonRisolvibile(err)) throw err;
+          nonRisolvibile = true;
+        }
         // P20 par.4.8 visibility rule: occurrence generated <=>
         // T_dose >= T_inizio (ISO string compare, sub-day precision on
         // the creation day). SENTINEL_P20_PLAN_SKIP
+        // Not applied to a dose without a time: absence of information
+        // must never hide it (fail-safe, CLAUDE.md sez. 1).
         const tInizio = tInizioByFarmaco.get(farmaco.id);
-        if (tInizio != null && `${dateStr}T${oraPrevista}` < tInizio) continue;
+        if (oraPrevista !== null && tInizio != null && `${dateStr}T${oraPrevista}` < tInizio) continue;
         /** @type {import('./types.js').PlanEntry} */
         const entry = {
           key: entryKey(dateStr, farmaco.id, orario.dose_numero),
@@ -178,6 +196,7 @@ export function buildMultiDayPlan(ctx) {
           stato: 'prevista',
           dose_prec_saltata: false,
         };
+        if (nonRisolvibile) entry.orario_non_risolvibile = true;
         const log = logByKey.get(entry.key);
         if (log) mergeLogIntoEntry(entry, log);
         plan.push(entry);
@@ -216,16 +235,20 @@ export function buildMultiDayPlan(ctx) {
         stato: 'prevista',
         dose_prec_saltata: false,
       };
+      if (occ.nonRisolvibile) entry.orario_non_risolvibile = true;
       const log = logByKey.get(entry.key);
       if (log) mergeLogIntoEntry(entry, log);
       plan.push(entry);
     }
   }
 
-  // Sort: dateStr ASC, then ora_prevista ASC.
+  // Sort: dateStr ASC, then ora_prevista ASC. A dose without a time (P3
+  // containment) sorts LAST within its day and never breaks the sort.
+  const sortMinutes = (e) =>
+    e.ora_prevista === null ? Number.POSITIVE_INFINITY : timeToMinutes(e.ora_prevista);
   plan.sort((a, b) => {
     if (a.dateStr !== b.dateStr) return a.dateStr < b.dateStr ? -1 : 1;
-    return timeToMinutes(a.ora_prevista) - timeToMinutes(b.ora_prevista);
+    return sortMinutes(a) - sortMinutes(b);
   });
 
   return plan;

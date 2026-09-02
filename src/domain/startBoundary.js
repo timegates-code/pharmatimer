@@ -26,6 +26,7 @@
  */
 
 import { firstKOnOrAfterIso, occurrenceDateAt } from './extendedStride.js';
+import { normalizeWallTime } from '../utils/time.js';
 
 const ISO_MIN_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 
@@ -64,6 +65,10 @@ export function computeTInizio(dataInizio, createdAt) {
  * `orari` = normalized payload rows carrying ora_prevista 'HH:MM'
  * (BUG-k s.6.246 snapshot) and, for fisso_date, data_specifica.
  *
+ * The returned hhmm is the label ON ITS DAY (decisione 1, DST): the
+ * comparisons with tInizio run on the recurring label, the announced time
+ * passes through normalizeWallTime, like every plan label.
+ *
  * @returns {{dateStr: string, hhmm: string} | null}
  */
 export function firstDoseAfterTInizio({
@@ -87,7 +92,9 @@ export function firstDoseAfterTInizio({
         `${a.dateStr}T${a.hhmm}`.localeCompare(`${b.dateStr}T${b.hhmm}`),
       );
     for (const p of pairs) {
-      if (tInizio == null || `${p.dateStr}T${p.hhmm}` >= tInizio) return p;
+      if (tInizio == null || `${p.dateStr}T${p.hhmm}` >= tInizio) {
+        return { dateStr: p.dateStr, hhmm: normalizeWallTime(p.dateStr, p.hhmm) };
+      }
     }
     return null;
   }
@@ -109,7 +116,7 @@ export function firstDoseAfterTInizio({
         : 0;
     const dateStr = occurrenceDateAt(dataInizio, hhmm, intervalloOre, k);
     if (dataFine && dateStr > dataFine) return null;
-    return { dateStr, hhmm };
+    return { dateStr, hhmm: normalizeWallTime(dateStr, hhmm) };
   }
 
   // Standard daily recurrence (fisso / intervallo <= 24h). Chronological
@@ -120,10 +127,10 @@ export function firstDoseAfterTInizio({
   for (const hh of hours) {
     if (tInizio == null || `${day0}T${hh}` >= tInizio) {
       if (dataFine && day0 > dataFine) return null;
-      return { dateStr: day0, hhmm: hh };
+      return { dateStr: day0, hhmm: normalizeWallTime(day0, hh) };
     }
   }
   const day1 = addDaysIso(day0, 1);
   if (dataFine && day1 > dataFine) return null;
-  return { dateStr: day1, hhmm: hours[0] };
+  return { dateStr: day1, hhmm: normalizeWallTime(day1, hours[0]) };
 }

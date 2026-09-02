@@ -256,6 +256,7 @@ describe('selectFarmacoById', () => {
 // ============================================================
 
 import { selectDataInizioTerapia } from './selectors.js';
+import { selectProssimaDose as selectProssimaDoseP3, selectAnchorEntry as selectAnchorEntryP3 } from './selectors.js';
 
 describe('selectDataInizioTerapia (CP5 §6.179)', () => {
   it('ritorna null per lista vuota / state.farmaci assente, picks min su attivi, skip inactive + null data_inizio', () => {
@@ -297,5 +298,40 @@ describe('selectDataInizioTerapia (CP5 §6.179)', () => {
     expect(selectDataInizioTerapia({
       farmaci: [{ id: 1, attivo: 1, data_inizio: null }],
     })).toBeNull();
+  });
+});
+
+// ============================================================
+// P3 -- una dose senza orario (orario_non_risolvibile) nei selettori.
+// ============================================================
+describe('P3 -- dose senza orario nei selettori temporali', () => {
+  const orfana = (over = {}) => mkEntry({
+    key: 'orfana', ora_prevista: null, ora_ricalcolata: null, orario_non_risolvibile: true, ...over,
+  });
+
+  it('selectCountersForDay: conta la dose fra le restanti, mai fra le in ritardo, e non la usa per prossimoIn', () => {
+    const plan = [orfana(), mkEntry({ key: 'b', ora_prevista: '10:30' })];
+    const out = selectCountersForDay(mkState(plan), '2026-04-19', REF);
+    expect(out.restanti).toBe(2);
+    expect(out.inRitardo).toBe(0);
+    expect(out.prossimoIn).toBe(30);
+  });
+
+  it('selectCountersForDay: sola dose senza orario -> restanti 1, prossimoIn null, nessun lancio', () => {
+    const out = selectCountersForDay(mkState([orfana()]), '2026-04-19', REF);
+    expect(out).toEqual({ presi: 0, saltate: 0, sospese: 0, inRitardo: 0, prossimoIn: null, restanti: 1 });
+  });
+
+  it('selectProssimaDose salta la dose senza orario e sceglie quella collocata', () => {
+    const b = mkEntry({ key: 'b', ora_prevista: '10:30' });
+    expect(selectProssimaDoseP3(mkState([orfana(), b]), REF)).toBe(b);
+    expect(selectProssimaDoseP3(mkState([orfana()]), REF)).toBeNull();
+  });
+
+  it('selectAnchorEntry non lancia e preferisce una dose collocata; sola orfana -> e lei la ancora', () => {
+    const b = mkEntry({ key: 'b', ora_prevista: '10:30' });
+    expect(selectAnchorEntryP3(mkState([orfana(), b]), REF)).toBe(b);
+    const sola = orfana();
+    expect(selectAnchorEntryP3(mkState([sola]), REF)).toBe(sola);
   });
 });

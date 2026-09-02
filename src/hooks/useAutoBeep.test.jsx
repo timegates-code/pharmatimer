@@ -72,3 +72,32 @@ describe('useAutoBeep', () => {
     expect(beep).toHaveBeenCalledTimes(1);
   });
 });
+
+// ============================================================
+// P3 -- una dose senza orario (orario_non_risolvibile) non suona mai e non
+// rompe il tick.
+// ============================================================
+describe('useAutoBeep -- P3, dose senza orario', () => {
+  it('non lancia e non suona a nessun tick; la dose collocata accanto suona normalmente', () => {
+    vi.useFakeTimers();
+    const beep = vi.fn();
+    const orfana = mkEntry({ key: 'orfana', ora_prevista: null, ora_ricalcolata: null, orario_non_risolvibile: true });
+    const collocata = mkEntry({ key: 'c', ora_prevista: '10:02' });
+    const { result, rerender } = renderHook(
+      ({ entries, now, play }) => useAutoBeep(entries, now, play),
+      { initialProps: { entries: [orfana, collocata], now: mkNow(600), play: beep } }
+    );
+    act(() => {
+      rerender({ entries: [orfana, collocata], now: mkNow(601), play: beep });
+    });
+    expect(beep).not.toHaveBeenCalled();
+    act(() => {
+      rerender({ entries: [orfana, collocata], now: mkNow(602), play: beep });
+    });
+    expect(beep).toHaveBeenCalledTimes(1);
+    expect(result.current.has('c')).toBe(true);
+    expect(result.current.has('orfana')).toBe(false);
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+});

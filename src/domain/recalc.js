@@ -46,7 +46,11 @@
 import { calcolaDelta, composeIsoDateTime, addMinutesToIso, parseIsoDateTime } from '../utils/time.js';
 import { SOGLIA_PROMPT_RECUPERO } from './constants.js';
 import { DomainError } from './errors.js';
-import { computeOraPrevista } from './orarioResolver.js';
+import {
+  computeOraPrevistaOnDay,
+  isOrarioNonRisolvibile,
+  ORARIO_NON_RISOLVIBILE,
+} from './orarioResolver.js';
 
 // ============================================================
 // INTERNAL HELPERS (not exported)
@@ -73,6 +77,26 @@ function buildLogWrite(entry) {
     stato: entry.stato,
     note: null,
   };
+}
+
+/**
+ * Refuse any write on a dose whose time could not be resolved (P3
+ * containment, decisione 1). Such an entry carries ora_prevista null and the
+ * flag orario_non_risolvibile: a log row built from it would reach the
+ * server with a NULL ora_prevista on a NOT NULL column and park as a broken
+ * request, with a false explanation. The refusal is named instead, and the
+ * UI hides the buttons on the same predicate (DoseCard).
+ *
+ * @param {import('./types.js').PlanEntry} entry
+ * @throws {DomainError} ORARIO_NON_RISOLVIBILE
+ */
+function assertOrarioRisolto(entry) {
+  if (entry.orario_non_risolvibile === true || entry.ora_prevista == null) {
+    throw new DomainError(
+      ORARIO_NON_RISOLVIBILE,
+      'Questa dose non ha un orario risolvibile: correggi il profilo o gli orari del farmaco prima di registrarla.'
+    );
+  }
 }
 
 /**
@@ -188,6 +212,7 @@ export function calcolaRecuperoMax(farmaco, gapMinuti) {
  * @returns {import('./types.js').ApplyResult}
  */
 export function applySospensione(plan, entryKey) {
+  assertOrarioRisolto(plan.find((e) => e.key === entryKey));
   const { plan: newPlan, entry } = patchEntry(plan, entryKey, {
     stato: 'sospesa',
   });
@@ -221,6 +246,7 @@ export function applySospensione(plan, entryKey) {
 export function applySalto(plan, entryKey) {
   const target = plan.find((e) => e.key === entryKey);
   // Contract: entryKey is always valid (caller guarantees). No defensive check.
+  assertOrarioRisolto(target);
 
   // Patch the target: stato='saltata'.
   let { plan: p, entry: targetPatched } = patchEntry(plan, entryKey, {
@@ -347,6 +373,7 @@ export function applyAssunzione(plan, input) {
   const { entryKey, dataEffettiva, oraEffettiva } = input;
   const target = plan.find((e) => e.key === entryKey);
   // Contract: entryKey always valid.
+  assertOrarioRisolto(target);
 
   // Snapshot target's pre-assumption gap/recupero: these feed the newGap formula.
   const gapBefore = target.gap_minuti;
@@ -635,10 +662,22 @@ export function applyAnnullaAssunzione(plan, entryKey) {
  */
 export function ricalcolaPianoDaProfilo(plan, nuovoProfilo) {
   return plan.map((e) => {
-    const nuovaOraPrevista = computeOraPrevista(e.orario, nuovoProfilo);
+    // Decisione 1 (DST): label ON THE ENTRY'S DAY. P3 containment, PER DOSE:
+    // a dose the new profile cannot resolve keeps its place with no time
+    // and the flag set; a previous flag is cleared when it resolves again.
+    let nuovaOraPrevista = null;
+    let nonRisolvibile = false;
+    try {
+      nuovaOraPrevista = computeOraPrevistaOnDay(e.orario, nuovoProfilo, e.dateStr);
+    } catch (err) {
+      if (!isOrarioNonRisolvibile(err)) throw err;
+      nonRisolvibile = true;
+    }
+    const { orario_non_risolvibile: _precedente, ...base } = e;
+    const flag = nonRisolvibile ? { orario_non_risolvibile: true } : {};
     if (e.stato === 'ricalcolata') {
       return {
-        ...e,
+        ...base,
         ora_prevista: nuovaOraPrevista,
         ora_ricalcolata: null,
         ora_ricalcolata_originale: null,
@@ -647,10 +686,11 @@ export function ricalcolaPianoDaProfilo(plan, nuovoProfilo) {
         recupero_minuti: 0,
         stato: 'prevista',
         dose_prec_saltata: false,
+        ...flag,
       };
     }
     // For 'prevista', 'presa', 'saltata', 'sospesa': only ora_prevista is refreshed.
-    return { ...e, ora_prevista: nuovaOraPrevista };
+    return { ...base, ora_prevista: nuovaOraPrevista, ...flag };
   });
 }
 
@@ -700,6 +740,7 @@ export function ricalcolaPianoDaProfilo(plan, nuovoProfilo) {
 export function applyRipristino(plan, entryKey, to) {
   const target = plan.find((e) => e.key === entryKey);
   // Contract: entryKey always valid.
+  assertOrarioRisolto(target);
 
   if (target.stato !== 'saltata' && target.stato !== 'sospesa') {
     throw new DomainError(

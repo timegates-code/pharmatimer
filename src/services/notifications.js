@@ -28,6 +28,7 @@
 // (Q-CP2.3 + AMB-9.H). entryKey convenzione: dose-{farmaco_id}-{dose_numero}-{dateStr}.
 
 import { formatRelazionePastoCopy } from '../utils/copy';
+import { parseIsoDateTime, wallToInstant } from '../utils/time.js';
 import {
   selectToday,
   selectEntriesForDay,
@@ -110,11 +111,15 @@ export function createNotificationsService() {
     // §6.138 (Sessione 9-B parte 4/4 hotfix, est.): dose_numero anche
     // nested sotto entry.orario (canonical shape, parallelo farmaco_id).
     const entryKey = `dose-${farmaco.id}-${entry.orario?.dose_numero}-${dateStr}`;
+    // Decisione 1 (DST): wall time to instant through the single door, so a
+    // dose planned in the skipped hour fires at the first existing instant
+    // and a time in the double hour fires at its first occurrence.
+    // A dose without a time (P3, ora_prevista null) is never scheduled.
     let fireAt;
     if (entry.ora_ricalcolata) {
-      fireAt = new Date(entry.ora_ricalcolata).getTime();
+      fireAt = parseIsoDateTime(entry.ora_ricalcolata).dateObj.getTime();
     } else if (entry.ora_prevista && dateStr) {
-      fireAt = new Date(`${dateStr}T${entry.ora_prevista}`).getTime();
+      fireAt = wallToInstant(dateStr, entry.ora_prevista).getTime();
     } else {
       return; // Defensive: no schedulable timestamp.
     }

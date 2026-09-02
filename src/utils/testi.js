@@ -27,6 +27,14 @@
  * SENTINEL_S6272_TESTI
  */
 
+/**
+ * Label shown IN PLACE OF the time on a dose whose orario could not be
+ * resolved (P3 containment, decisione 1): the profile lacks the anchor, the
+ * anchor is unknown, or the offset is not a number. The dose stays visible
+ * and inert; the label says what is missing, never a time nobody chose.
+ */
+export const ORARIO_NON_RISOLVIBILE_ETICHETTA = 'orario non risolvibile';
+
 /** Line 1 -- names what happened, asks nothing. */
 export const AVVISO_CONFLITTO_TITOLO =
   'Una registrazione non è andata a buon fine';

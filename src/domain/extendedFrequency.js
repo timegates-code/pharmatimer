@@ -34,8 +34,8 @@
  * Pure function: no Date.now(), no DB, no globals.
  */
 
-import { addDays } from '../utils/time.js';
-import { computeOraPrevista } from './orarioResolver.js';
+import { addDays, normalizeWallTime } from '../utils/time.js';
+import { computeOraPrevista, isOrarioNonRisolvibile } from './orarioResolver.js';
 import { computeTInizio } from './startBoundary.js';
 import { firstKOnOrAfterIso, occurrenceDateAt } from './extendedStride.js';
 
@@ -67,7 +67,9 @@ export function isExtendedInterval(farmaco) {
  * @param {import('./types.js').Profilo} profilo
  * @param {string} startDate 'YYYY-MM-DD' inclusive window start
  * @param {number} numDays — window length in days, exclusive end
- * @returns {Array<{dateStr: string, orario: import('./types.js').OrarioBase, oraPrevista: string}>}
+ * @returns {Array<{dateStr: string, orario: import('./types.js').OrarioBase, oraPrevista: string|null, nonRisolvibile?: true}>}
+ *   oraPrevista is the label ON THAT DAY (DST slide applied); null with
+ *   nonRisolvibile=true when the orario cannot be resolved (P3 containment).
  */
 export function computeExtendedOccurrencesInWindow(
   farmaco,
@@ -84,7 +86,20 @@ export function computeExtendedOccurrencesInWindow(
   // Defensively use the first orario row as the anchor template.
   const orario = orariFarmaco[0];
 
-  const oraPrevista = computeOraPrevista(orario, profilo);
+  // Recurring label, CONSTANT across k: the canon needs it only for the
+  // millisecond branch and for the boundary compare. P3 containment: an
+  // unresolvable orario keeps the farmaco visible -- the civil cadence does
+  // not depend on the time, midnight stands in for the search, and every
+  // occurrence is materialised with no time and the flag set.
+  let oraPrevista;
+  let nonRisolvibile = false;
+  try {
+    oraPrevista = computeOraPrevista(orario, profilo);
+  } catch (err) {
+    if (!isOrarioNonRisolvibile(err)) throw err;
+    nonRisolvibile = true;
+    oraPrevista = '00:00';
+  }
 
   // P20 par.4.8 (s.6.254): therapy-start boundary -- filtered HERE, at
   // the single generation point (Q3-P20=G): covers planBuilder AND the
@@ -115,12 +130,19 @@ export function computeExtendedOccurrencesInWindow(
     const dateStr = occurrenceDateAt(farmaco.data_inizio, oraPrevista, ore, k);
     if (dateStr >= windowEndDate) break;
     if (farmaco.data_fine && dateStr > farmaco.data_fine) break;
+    if (nonRisolvibile) {
+      // No time: the visibility rule cannot hide what it cannot place.
+      out.push({ dateStr, orario, oraPrevista: null, nonRisolvibile: true });
+      continue;
+    }
+    // Decisione 1 (DST): the label ON THIS DAY, slid out of a skipped hour.
+    const label = normalizeWallTime(dateStr, oraPrevista);
     // SENTINEL_P20_EXT_SKIP -- visibility rule: T_dose >= T_inizio.
-    if (tInizio != null && `${dateStr}T${oraPrevista}` < tInizio) continue;
+    if (tInizio != null && `${dateStr}T${label}` < tInizio) continue;
     out.push({
       dateStr,
       orario,
-      oraPrevista,
+      oraPrevista: label,
     });
   }
 

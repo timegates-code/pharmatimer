@@ -407,3 +407,33 @@ describe('DoseCard (11-B AMB-11.B.2 — bucketDateStr suppresses badge in effect
     expect(screen.getByText('⚠ orario: domani')).toBeInTheDocument();
   });
 });
+
+// ============================================================
+// P3 -- una dose senza orario si mostra con la etichetta ed e INERTE.
+// ============================================================
+describe('DoseCard -- P3, dose senza orario (orario_non_risolvibile)', () => {
+  const plan = buildTestPlan();
+  const orfana = { ...plan[0], ora_prevista: null, orario_non_risolvibile: true };
+
+  it('mostra la etichetta al posto della ora e nasconde presa, altro e i tap di correzione', () => {
+    const onPresa = vi.fn();
+    const onAltro = vi.fn();
+    const { container } = renderWithProvider(
+      <DoseCard entry={orfana} state="in_attesa" onPresa={onPresa} onAltro={onAltro} />,
+      { stateOverrides: THEME_LIGHT }
+    );
+    expect(within(container).getByText('orario non risolvibile')).toBeInTheDocument();
+    expect(within(container).queryByText('08:00')).toBeNull();
+    expect(within(container).queryByLabelText('Registra dose presa')).toBeNull();
+    expect(within(container).queryAllByRole('button')).toHaveLength(0);
+    expect(onPresa).not.toHaveBeenCalled();
+  });
+
+  it('una dose collocata con gli stessi callback mostra il bottone presa: il gate dipende dal predicato, non dai callback', () => {
+    const { container } = renderWithProvider(
+      <DoseCard entry={plan[0]} state="prossima" onPresa={vi.fn()} onAltro={vi.fn()} />,
+      { stateOverrides: THEME_LIGHT }
+    );
+    expect(within(container).getByLabelText('Registra dose presa')).toBeInTheDocument();
+  });
+});

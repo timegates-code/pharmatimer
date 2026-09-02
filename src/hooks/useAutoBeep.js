@@ -73,7 +73,9 @@ export function useAutoBeep(entries, now, playBeepFn) {
     for (const e of entries) {
       if (e.dateStr !== now.dateStr) continue;
       if (e.stato !== 'prevista' && e.stato !== 'ricalcolata') continue;
-      const doseMin = timeToMinutes(e.ora_ricalcolata ?? e.ora_prevista);
+      const eff = e.ora_ricalcolata ?? e.ora_prevista;
+      if (eff == null) continue; // P3: a dose without a time never beeps.
+      const doseMin = timeToMinutes(eff);
       // Forward crossing only. Backward motion (e.g. slider drag) is ignored
       // by the inequality; same-dose re-crosses are blocked by the Set.
       if (prev < doseMin && doseMin <= nowMin && !triggeredKeys.current.has(e.key)) {

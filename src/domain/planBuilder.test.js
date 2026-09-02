@@ -458,3 +458,101 @@ describe('F14 fisso_date — lista piatta (predicato per-data)', () => {
     expect(plan.map((e) => e.dateStr)).toEqual(['2026-06-25', '2026-06-26', '2026-06-27']);
   });
 });
+
+// ============================================================
+// P3 -- contenimento PER SINGOLA DOSE di ORARIO_NON_RISOLVIBILE (decisione 1).
+// Ratificato: se il resolver lancia per una voce, quella voce compare nel
+// piano come "orario non risolvibile" e le altre dosi del giorno restano; il
+// piano intero non sparisce mai per un errore su una voce.
+// ============================================================
+describe('P3 -- contenimento per singola dose (ORARIO_NON_RISOLVIBILE)', () => {
+  const profiloSenzaCena = { ...profiloStandard, ora_cena: undefined };
+  const farmacoA = makeFarmaco({ id: 1, nome: 'A ancora cena' });
+  const farmacoB = makeFarmaco({ id: 2, nome: 'B ancora colazione' });
+  const orari = [makeOrario(1, 1, 0, 'cena'), makeOrario(2, 1, 0, 'colazione')];
+
+  it('profilo senza ancora, due farmaci: il piano mostra lo altro, e la dose orfana resta visibile senza orario', () => {
+    const plan = buildMultiDayPlan({
+      profilo: profiloSenzaCena,
+      farmaci: [farmacoA, farmacoB],
+      orari,
+      logAssunzioni: [],
+      startDate: '2026-07-15',
+      numDays: 1,
+    });
+    expect(plan).toHaveLength(2);
+    const b = plan.find((e) => e.farmaco.id === 2);
+    expect(b.ora_prevista).toBe('07:30');
+    expect(b.orario_non_risolvibile).toBeUndefined();
+    const a = plan.find((e) => e.farmaco.id === 1);
+    expect(a.ora_prevista).toBeNull();
+    expect(a.orario_non_risolvibile).toBe(true);
+    expect(a.stato).toBe('prevista');
+    // La dose senza orario ordina ULTIMA nel giorno, e lo ordinamento non lancia.
+    expect(plan[0]).toBe(b);
+    expect(plan[1]).toBe(a);
+  });
+
+  it('la dose senza orario non viene nascosta dal confine T_inizio, la dose collocata si', () => {
+    // Inserimento a meta giornata: T_inizio = created_at 12:00. La dose B
+    // delle 07:30 e prima del confine ed e esclusa (P20); la dose A non ha
+    // un orario da confrontare e resta visibile (fail-safe: assenza di
+    // informazione non nasconde).
+    const inseritiOggi = [
+      { ...farmacoA, data_inizio: '2026-07-15', created_at: '2026-07-15T12:00:00' },
+      { ...farmacoB, data_inizio: '2026-07-15', created_at: '2026-07-15T12:00:00' },
+    ];
+    const plan = buildMultiDayPlan({
+      profilo: profiloSenzaCena,
+      farmaci: inseritiOggi,
+      orari,
+      logAssunzioni: [],
+      startDate: '2026-07-15',
+      numDays: 1,
+    });
+    expect(plan.map((e) => [e.farmaco.id, e.ora_prevista])).toEqual([[1, null]]);
+  });
+
+  it('un registro gia scritto sulla dose orfana viene fuso come per ogni altra voce', () => {
+    const plan = buildMultiDayPlan({
+      profilo: profiloSenzaCena,
+      farmaci: [farmacoA],
+      orari: [orari[0]],
+      logAssunzioni: [
+        {
+          farmaco_id: 1, data: '2026-07-15', dose_numero: 1, ora_prevista: '20:00',
+          ora_effettiva: '2026-07-15T20:05:00', delta_minuti: 5, ora_ricalcolata: null,
+          gap_minuti: 0, recupero_minuti: 0, stato: 'presa', note: null,
+        },
+      ],
+      startDate: '2026-07-15',
+      numDays: 1,
+    });
+    expect(plan).toHaveLength(1);
+    expect(plan[0].stato).toBe('presa');
+    expect(plan[0].ora_effettiva).toBe('2026-07-15T20:05:00');
+    expect(plan[0].ora_prevista).toBeNull();
+    expect(plan[0].orario_non_risolvibile).toBe(true);
+  });
+
+  it('ramo esteso: un farmaco ogni 48h con ancora mancante resta nel piano, senza orario', () => {
+    const esteso = makeFarmaco({
+      id: 3, nome: 'Esteso', tipo_frequenza: 'intervallo', intervallo_ore: 48,
+      data_inizio: '2026-07-13',
+    });
+    const plan = buildMultiDayPlan({
+      profilo: profiloSenzaCena,
+      farmaci: [esteso, farmacoB],
+      orari: [makeOrario(3, 1, 0, 'cena'), orari[1]],
+      logAssunzioni: [],
+      startDate: '2026-07-15',
+      numDays: 2,
+    });
+    expect(plan.map((e) => [e.dateStr, e.farmaco.id, e.ora_prevista])).toEqual([
+      ['2026-07-15', 2, '07:30'],
+      ['2026-07-15', 3, null],
+      ['2026-07-16', 2, '07:30'],
+    ]);
+    expect(plan[1].orario_non_risolvibile).toBe(true);
+  });
+});

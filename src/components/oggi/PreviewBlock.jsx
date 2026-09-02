@@ -14,6 +14,7 @@
 // Trigger logic (par.6.171): see selectProssimoGiornoConDosi.
 // ============================================================
 
+import { ORARIO_NON_RISOLVIBILE_ETICHETTA } from '../../utils/testi.js';
 import { useTheme } from "../../hooks/useTheme.js";
 import { useAppContext } from "../../state/AppContext.jsx";
 
@@ -33,7 +34,7 @@ function PreviewCard({ entry }) {
           className="text-sm font-semibold"
           style={{ color: t.textPrimary }}
         >
-          {entry.ora_prevista}
+          {entry.ora_prevista ?? ORARIO_NON_RISOLVIBILE_ETICHETTA}
         </span>
         <span className="text-sm" style={{ color: t.textPrimary }}>
           {farmaco?.nome ?? "—"}

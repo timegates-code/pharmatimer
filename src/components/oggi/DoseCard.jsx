@@ -112,6 +112,7 @@
 //   flash-alert) so keyframes travel with their only consumer.
 // ============================================================
 
+import { ORARIO_NON_RISOLVIBILE_ETICHETTA } from '../../utils/testi.js';
 import { useTheme } from '../../hooks/useTheme.js';
 import { Badge } from '../shared/Badge.jsx';
 import { TapBadge } from '../shared/TapBadge.jsx';
@@ -253,7 +254,13 @@ export function DoseCard({
     : null;
   const recalcHHMM = recalcParsed?.hhmm ?? null;
   const isRecalc = recalcHHMM !== null;
-  const isTimeDifferent = isRecalc && recalcHHMM !== entry.ora_prevista;
+  // P3 containment (decisione 1): a dose whose orario could not be resolved
+  // has ora_prevista null and the flag set. It is shown with a label in
+  // place of the time and it is INERT: no presa, no altro, no tap on the
+  // saltata/sospesa marks. The domain refuses the same writes (recalc.js
+  // assertOrarioRisolto), so the two guards agree on one predicate.
+  const nonRisolvibile = entry.orario_non_risolvibile === true || entry.ora_prevista == null;
+  const isTimeDifferent = isRecalc && !nonRisolvibile && recalcHHMM !== entry.ora_prevista;
   // §6.118: ISO-aware cross-midnight detector. Reads only the entry — no
   // external "today" arg needed (§6.116a was reverted as wrongly-scoped).
   const crossMidnight = isCrossMidnightRecalc(entry);
@@ -267,7 +274,8 @@ export function DoseCard({
     recalcParsed !== null &&
     bucketDateStr === recalcParsed.dateStr;
 
-  const displayTime = recalcHHMM || entry.ora_prevista;
+  const displayTime =
+    recalcHHMM || (nonRisolvibile ? ORARIO_NON_RISOLVIBILE_ETICHETTA : entry.ora_prevista);
 
   // 7d-2 CP6 (§6.47a): gap residuo = gap_minuti − recupero_minuti. When a
   // RecuperoModal application partially (or fully) covers the gap, the badge
@@ -294,12 +302,12 @@ export function DoseCard({
   // Undo is actually enabled only if BOTH conditions hold.
   const undoEnabled = isPresa && isLastPreso && typeof onUndo === 'function';
   // PRESA button shown only for non-done states AND only when onPresa is provided.
-  const showPresaButton = !isDone && typeof onPresa === 'function';
+  const showPresaButton = !isDone && !nonRisolvibile && typeof onPresa === 'function';
   // ALTRO pill shown only for non-done states AND only when onAltro is provided (7c-1).
-  const showAltroButton = !isDone && typeof onAltro === 'function';
+  const showAltroButton = !isDone && !nonRisolvibile && typeof onAltro === 'function';
   // Saltata / sospesa tap wiring (7c-1).
-  const hasSaltataTap = typeof onSaltataTap === 'function';
-  const hasSospesaTap = typeof onSospesaTap === 'function';
+  const hasSaltataTap = !nonRisolvibile && typeof onSaltataTap === 'function';
+  const hasSospesaTap = !nonRisolvibile && typeof onSospesaTap === 'function';
   // Gap tap wiring (7c-1 + 7d-2 CP6 §6.47a): mount only when a handler is
   // provided AND the residual gap (after any applied recupero) is positive.
   const hasGapTap = typeof onGapTap === 'function' && gapResiduo > 0 && !isExtendedFarmaco;

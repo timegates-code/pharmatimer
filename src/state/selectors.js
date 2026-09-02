@@ -41,7 +41,10 @@ import {
   effectiveDateStr,
 } from '../utils/uiState.js';
 // CP10 v3.0.0 Step 2 (§6.188): selectProssimaDoseFuoriPlan dependencies.
-import { computeOraPrevista } from '../domain/orarioResolver.js';
+import {
+  computeOraPrevistaOnDay,
+  isOrarioNonRisolvibile,
+} from '../domain/orarioResolver.js';
 import {
   isExtendedInterval,
   computeExtendedOccurrencesInWindow,
@@ -51,6 +54,16 @@ import {
 function hhmmToMinutes(hhmm) {
   const [h, m] = hhmm.split(':').map(Number);
   return h * 60 + m;
+}
+
+/**
+ * Effective time of a plan entry, or null for a dose without a time (P3
+ * containment: orario_non_risolvibile). Every temporal selector below skips
+ * such a dose -- it is neither late nor next, it is unplaced -- while the
+ * counters still count it among the doses still to take.
+ */
+function effOrNull(e) {
+  return e.ora_ricalcolata ?? e.ora_prevista ?? null;
 }
 
 /**
@@ -92,12 +105,10 @@ export function selectProssimaDose(state, now = new Date()) {
   const candidates = state.plan
     .filter(e =>
       e.dateStr === today &&
-      (e.stato === 'prevista' || e.stato === 'ricalcolata')
+      (e.stato === 'prevista' || e.stato === 'ricalcolata') &&
+      effOrNull(e) !== null
     )
-    .map(e => {
-      const eff = e.ora_ricalcolata ?? e.ora_prevista;
-      return { entry: e, min: hhmmToMinutes(eff) };
-    })
+    .map(e => ({ entry: e, min: hhmmToMinutes(effOrNull(e)) }))
     .filter(x => x.min >= nowMin)
     .sort((a, b) => a.min - b.min);
 
@@ -236,14 +247,15 @@ export function selectCountersForDay(state, dateStr, now = new Date()) {
   let prossimoIn = null;
 
   if (isToday) {
-    inRitardo = pending.filter(e => {
-      const m = hhmmToMinutes(e.ora_ricalcolata ?? e.ora_prevista);
+    const collocate = pending.filter(e => effOrNull(e) !== null);
+    inRitardo = collocate.filter(e => {
+      const m = hhmmToMinutes(effOrNull(e));
       return m < nowMin - TOLLERANZA_MIN;
     }).length;
     restanti = pending.length - inRitardo;
 
-    const future = pending
-      .map(e => ({ entry: e, min: hhmmToMinutes(e.ora_ricalcolata ?? e.ora_prevista) }))
+    const future = collocate
+      .map(e => ({ entry: e, min: hhmmToMinutes(effOrNull(e)) }))
       .filter(x => x.min >= nowMin)
       .sort((a, b) => a.min - b.min);
     prossimoIn = future.length > 0 ? future[0].min - nowMin : null;
@@ -525,10 +537,21 @@ export function selectProssimaDoseFuoriPlan(state, today) {
 function nextStandardOccurrence(farmaco, orariFarmaco, profilo, today) {
   if (!farmaco.data_inizio) return null;
   if (farmaco.data_inizio <= today) return null; // === today: già nel plan
-  const orariConOra = orariFarmaco.map((o) => ({
-    orario: o,
-    oraPrevista: computeOraPrevista(o, profilo),
-  }));
+  // Label ON data_inizio (decisione 1, DST). P3 containment: an orario the
+  // profile cannot resolve is left out of this PREVIEW -- the dose itself
+  // stays visible in the plan on its day, with its flag.
+  const orariConOra = [];
+  for (const o of orariFarmaco) {
+    try {
+      orariConOra.push({
+        orario: o,
+        oraPrevista: computeOraPrevistaOnDay(o, profilo, farmaco.data_inizio),
+      });
+    } catch (err) {
+      if (!isOrarioNonRisolvibile(err)) throw err;
+    }
+  }
+  if (orariConOra.length === 0) return null;
   orariConOra.sort((a, b) => a.oraPrevista.localeCompare(b.oraPrevista));
   return {
     dateStr: farmaco.data_inizio,
@@ -551,7 +574,9 @@ function nextExtendedOccurrence(farmaco, orariFarmaco, profilo, today) {
     today,
     365,
   );
-  const future = occ.filter((o) => o.dateStr > today);
+  // A farmaco whose orario cannot be resolved (P3) yields occurrences with
+  // no time: they are not previewed here, they stay visible in the plan.
+  const future = occ.filter((o) => o.dateStr > today && o.oraPrevista !== null);
   if (future.length === 0) return null;
   return future[0];
 }
@@ -597,10 +622,15 @@ export function selectAnchorEntry(state, now = new Date()) {
   );
   if (candidates.length === 0) return null;
 
+  // A dose without a time (P3) is 'in_attesa' by getCardState and sorts
+  // LAST among the pending: it is never the anchor while a placed dose is.
   const annotated = candidates.map((entry) => ({
     entry,
     cardState: getCardState(entry, resolvedNow),
-    effMinutes: hhmmToMinutes(effHHMM(entry)),
+    effMinutes:
+      effHHMM(entry) == null
+        ? Number.POSITIVE_INFINITY
+        : hhmmToMinutes(effHHMM(entry)),
   }));
 
   // P1: in_ritardo → max effMinutes (most recent late, AMB-10.A)

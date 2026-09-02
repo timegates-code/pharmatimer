@@ -76,7 +76,8 @@
  * @property {string} dateStr                       - 'YYYY-MM-DD'.
  * @property {Farmaco} farmaco
  * @property {OrarioBase} orario
- * @property {string} ora_prevista                  - 'HH:MM' computed from active profile + offset.
+ * @property {string|null} ora_prevista             - 'HH:MM' computed from active profile + offset ON THE ENTRY'S DAY
+ *                                                    (DST slide, decisione 1); null when orario_non_risolvibile.
  * @property {string|null} ora_ricalcolata          - ISO datetime 'YYYY-MM-DDTHH:MM' or null (§6.18 closure, §6.117).
  * @property {string|null} ora_ricalcolata_originale - ISO datetime 'YYYY-MM-DDTHH:MM' or null (pre-recovery snapshot, §6.18 closure).
  * @property {string|null} ora_effettiva            - ISO datetime or null.
@@ -86,6 +87,9 @@
  * @property {number} recupero_minuti
  * @property {'prevista'|'presa'|'saltata'|'sospesa'|'ricalcolata'} stato
  * @property {boolean} dose_prec_saltata            - Warning flag on next dose when previous was skipped.
+ * @property {true} [orario_non_risolvibile]        - Present (true) only when the orario could not be resolved
+ *                                                    (P3 containment): ora_prevista is null, the dose is visible
+ *                                                    and no write is possible on it.
  */
 
 /**

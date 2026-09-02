@@ -80,9 +80,11 @@ chiusura. Non ci sono allineamenti da verificare, sentinel da contare o env da
 leggere: erano l'apparato, e l'apparato non c'e piu.
 
 `make check` esegue, in questo ordine: **lint** (ruff piu eslint, in modo
-baseline), **test frontend** (vitest), **test backend** (pytest, con il MySQL di
-dev come precondizione dichiarata), **inventario** (le diciannove voci), e
-**albero** (`TREE` e `AHEAD` letti da git vivo).
+baseline), **test frontend** (vitest), **controllo DST** (i file
+`*.dst.test.js` lanciati senza ora legale devono arrossare tutti: e un pin
+visto rosso a ogni gate), **test backend** (pytest, con il MySQL di dev come
+precondizione dichiarata), **inventario** (le diciannove voci), e **albero**
+(`TREE` e `AHEAD` letti da git vivo).
 
 **Se e verde si lavora. Se e rosso si legge quale blocco lo ha fatto arrossare
 e si decide, prima di qualunque lavoro di scopo.**

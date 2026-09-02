@@ -10,6 +10,7 @@ import {
   formatDateLabelFrom,
   groupEntriesByDayAndMomento,
 } from './uiState.js';
+import { getCardState as getCardStateP3, groupEntriesByDayAndMomento as groupP3, effHHMM as effHHMMP3 } from './uiState.js';
 
 // Minimal entry factory — only the fields uiState reads from.
 // Note (9-A): `ora_ricalcolata` shape is now ISO 'YYYY-MM-DDTHH:MM' (§6.18 fix
@@ -432,5 +433,36 @@ describe('getCardState (11-B CP3 - cross-midnight recalc effective-day awareness
     });
     const now = { dateStr: '2026-04-19', minutes: 13 * 60 + 30 };
     expect(getCardState(entry, now)).toBe('prossima');
+  });
+});
+
+// ============================================================
+// P3 -- una dose senza orario (orario_non_risolvibile) non rompe la vista.
+// ============================================================
+describe('P3 -- dose senza orario: contenimento nella vista Oggi', () => {
+  const senzaOrario = (over = {}) => ({
+    ...mkEntry({ key: 'orfana', ora_prevista: null, ora_ricalcolata: null }),
+    orario_non_risolvibile: true,
+    ...over,
+  });
+
+  it('effHHMM rende null, e getCardState rende in_attesa oggi come negli altri giorni', () => {
+    const e = senzaOrario();
+    expect(effHHMMP3(e)).toBeNull();
+    expect(getCardStateP3(e, { dateStr: e.dateStr, minutes: 600 })).toBe('in_attesa');
+    expect(getCardStateP3(e, { dateStr: e.dateStr, minutes: 1400 })).toBe('in_attesa');
+    expect(getCardStateP3(e, { dateStr: '2030-01-01', minutes: 600 })).toBe('in_attesa');
+  });
+
+  it('groupEntriesByDayAndMomento non lancia, ordina la dose senza orario ultima, e il suo gruppo ha primaOra null', () => {
+    const collocata = mkEntry({ key: 'a', ora_prevista: '15:00' });
+    const orfana = senzaOrario({ orario: { dose_numero: 1, descrizione_momento: 'sera' } });
+    const out = groupP3([orfana, collocata]);
+    expect(out).toHaveLength(1);
+    const giorno = out[0];
+    const chiavi = giorno.groups.flatMap((g) => g.entries.map((x) => x.key));
+    expect(chiavi).toEqual(['a', 'orfana']);
+    expect(giorno.groups[giorno.groups.length - 1].primaOra).toBeNull();
+    expect(giorno.groups[0].primaOra).toBe('15:00');
   });
 });

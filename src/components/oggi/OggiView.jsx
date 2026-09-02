@@ -108,6 +108,7 @@ import { selectFarmaciAttivi, selectProssimoGiornoConDosi, selectProssimaDoseFuo
 import EmptyStateZeroFarmaci from './EmptyStateZeroFarmaci.jsx';
 import PreviewBlock from './PreviewBlock.jsx';
 import IndicatoreCoda from '../shared/IndicatoreCoda.jsx'; // SENTINEL_QMETOPA_IMPORT
+import { ORARIO_NON_RISOLVIBILE_ETICHETTA } from '../../utils/testi.js';
 
 const IS_DEV = import.meta.env.DEV;
 
@@ -609,7 +610,9 @@ export default function OggiView() {
                       className="text-xs font-semibold uppercase tracking-wider mb-2 mt-3 px-1"
                       style={{ color: t.textSecondary }}
                     >
-                      ORE {group.primaOra}
+                      {group.primaOra == null
+                        ? ORARIO_NON_RISOLVIBILE_ETICHETTA.toUpperCase()
+                        : `ORE ${group.primaOra}`}
                       {group.descrizioneMomento
                         ? ` — ${group.descrizioneMomento.toUpperCase()}`
                         : ''}
