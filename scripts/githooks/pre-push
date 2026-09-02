@@ -1,0 +1,18 @@
+#!/bin/sh
+# PharmaTimer -- hook di pre-push: il gate e OBBLIGATORIO prima di ogni push.
+#
+# Lancia make check-prepush, che e make check con TREE asserito e AHEAD no:
+# prima del push AHEAD non e zero per costruzione, e asserirlo bloccherebbe
+# ogni push. AHEAD resta nel make check di chiusura.
+#
+# Attivazione, una volta per clone (il file e tracciato, la config no):
+#     git config core.hooksPath scripts/githooks
+# Verifica: git config core.hooksPath  ->  scripts/githooks
+#
+# Nessun --no-verify nel repo: aggirare il gate si fa a mano e si dichiara.
+set -u
+radice="$(git rev-parse --show-toplevel)" || exit 1
+cd "$radice" || exit 1
+echo "pre-push: make check-prepush (per saltarlo, e dichiararlo: git push --no-verify)"
+umask 022
+exec make --no-print-directory check-prepush

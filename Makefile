@@ -3,6 +3,8 @@
 #
 #   make check       GATE DI SESSIONE. Apertura e chiusura si fanno su questo.
 #                    lint + test frontend + test backend + inventario + albero.
+#   make check-prepush  Lo stesso gate, lanciato dallo hook di pre-push:
+#                    asserisce TREE e non AHEAD, che prima del push non e zero.
 #   make prod-check  SOLO QUANDO SI DEPLOYA. Tocca il Mini via rete: stato del
 #                    servizio, bundle, openapi, censimento, e G-21.
 #   make lint        ruff (backend) + eslint (frontend).
@@ -17,9 +19,9 @@ LINT_BASELINE := scripts/audit/lint-baseline.txt
 BASE := https://marketreader-server.taila127de.ts.net
 MINI_MYSQL := /opt/homebrew/bin/mysql --defaults-file=/Users/marketreader/.my-pharmatimer.cnf
 
-.PHONY: check prod-check lint lint-backend lint-frontend test test-frontend \
-        test-frontend-compatto test-backend inventario inventario-compatto \
-        albero g21 help
+.PHONY: check check-prepush _gate prod-check lint lint-backend lint-frontend \
+        test test-frontend test-frontend-compatto test-backend inventario \
+        inventario-compatto albero g21 help
 
 help:
 	@echo "gate di sessione : make check"
@@ -135,6 +137,12 @@ inventario-compatto:
 	@echo "   dettaglio: make inventario"
 
 # ----------------------------------------------------------------- ALBERO
+# ALBERO_AHEAD=no asserisce il solo TREE. Serve allo hook di pre-push, dove
+# AHEAD NON e zero PER COSTRUZIONE -- il push esiste appunto per portarlo a
+# zero -- e asserirlo bloccherebbe ogni push, cioe sarebbe un gate sempre
+# chiuso, che e la forma peggiore di guardia. Li AHEAD si STAMPA come INFO.
+ALBERO_AHEAD ?= si
+
 albero:
 	@echo "== ALBERO (da git VIVO, nessun atteso pinnato) =="
 	@rc=0; \
@@ -144,14 +152,21 @@ albero:
 	echo "   DESCRIBE = $$(git describe --tags 2>/dev/null || echo '(nessun tag)')"; \
 	if [ "$$tree" = "0" ]; then echo "   OK    TREE  = 0"; \
 	else echo "   ROSSO TREE  = $$tree (voci non committate)"; git status --porcelain | sed 's/^/         /'; rc=1; fi; \
-	if [ "$$ahead" = "0" ]; then echo "   OK    AHEAD = 0"; \
-	else echo "   ROSSO AHEAD = $$ahead (commit non spinti)"; rc=1; fi; \
+	if [ "$(ALBERO_AHEAD)" = "si" ]; then \
+	  if [ "$$ahead" = "0" ]; then echo "   OK    AHEAD = 0"; \
+	  else echo "   ROSSO AHEAD = $$ahead (commit non spinti)"; rc=1; fi; \
+	else \
+	  echo "   INFO  AHEAD = $$ahead -- NON asserito: prima del push non e zero per costruzione"; \
+	fi; \
 	exit $$rc
 
 # ----------------------------------------------------------------- CHECK
-check:
+# Un solo corpo per i due gate, cosi non possono divergere. TITOLO e
+# ALBERO_AHEAD lo parametrizzano; le variabili da riga di comando scendono
+# da sole ai sub-make.
+_gate:
 	@echo "###############################################"
-	@echo "# make check -- gate di sessione PharmaTimer"
+	@echo "# $(TITOLO)"
 	@echo "###############################################"
 	@rc=0; \
 	$(MAKE) --no-print-directory lint || rc=1; \
@@ -163,6 +178,16 @@ check:
 	if [ $$rc -eq 0 ]; then echo "# VERDETTO: VERDE"; else echo "# VERDETTO: ROSSO -- vedi i blocchi marcati sopra"; fi; \
 	echo "###############################################"; \
 	exit $$rc
+
+check:
+	@$(MAKE) --no-print-directory _gate ALBERO_AHEAD=si \
+	  TITOLO="make check -- gate di sessione PharmaTimer"
+
+# Lanciato dallo hook scripts/githooks/pre-push. Identico a check tranne che
+# AHEAD non e asserito (vedi ALBERO).
+check-prepush:
+	@$(MAKE) --no-print-directory _gate ALBERO_AHEAD=no \
+	  TITOLO="make check-prepush -- gate di pre-push: TREE asserito, AHEAD no"
 
 # ----------------------------------------------------------------- G-21
 g21:
