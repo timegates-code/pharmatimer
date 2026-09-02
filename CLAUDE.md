@@ -84,10 +84,19 @@ e si decide, prima di qualunque lavoro di scopo.**
 
 Poi si legge `STATO_CORRENTE.md`, che e corto e dice cosa e successo per ultimo.
 
-**Sotto Claude Code il gate NON e interamente eseguibile:** MySQL e negato sul
-loopback e la tailnet non e raggiungibile, quindi `test-backend` arrossa per
-ambiente e non per mondo. In quel regime lo esegue Roberto dal Terminale e ne
-passa lesito. Questo si dichiara ogni volta, non si aggira.
+**Sotto Claude Code il gate E interamente eseguibile**, da quando
+`.claude/settings.local.json` porta `sandbox.network` con `allowLocalBinding` e
+`allowUnixSockets`. Prima non lo era: il sandbox negava il loopback con EPERM su
+socket e su TCP, e `test-backend` arrossava per ambiente e non per mondo.
+Il **Mini resta fuori**, ed e voluto: `allowLocalBinding` apre il solo loopback,
+quindi `make prod-check` e `make g21`, che toccano la tailnet, restano da
+eseguire dal Terminale.
+
+Resta vero che `make check` non puo essere verde PRIMA di un commit: il blocco
+`albero` misura `TREE` da git vivo e lo albero e sporco per costruzione finche
+il commit non esiste. Prima del commit si pretendono verdi lint, frontend,
+backend e inventario, e rosso il solo `albero` su `TREE`; dopo commit e push, il
+gate e verde per intero.
 
 ---
 
@@ -258,9 +267,11 @@ Esegue lint, test frontend, test backend, inventario e albero, e stampa un
 verdetto unico. **Prima di un deploy, e solo allora, `make prod-check`**, che
 tocca il Mini e include `make g21`.
 
-Sotto Claude Code il gate non e interamente eseguibile e lo dichiara da se:
-`test-backend` arrossa sulla precondizione MySQL, che il sandbox nega su socket
-e su TCP. Non e mondo, e ambiente.
+Sotto Claude Code il gate gira per intero: la precondizione MySQL di
+`test-backend` passa perche il sandbox ammette il loopback. Cio che resta fuori
+e la tailnet, quindi `make prod-check` e `make g21`. La configurazione che lo
+permette sta in `.claude/settings.local.json`, non e tracciata, e va rimessa a
+mano su una macchina nuova.
 
 Frontend, dalla root:
 

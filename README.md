@@ -14,7 +14,7 @@ PharmaTimer è una Progressive Web App (PWA) per la gestione di terapie con più
 - Calcola automaticamente quando prendere ogni dose, con avvisi per anticipi e ritardi
 - Tiene traccia di cosa hai preso e quando, con possibilità di correzione (saltata, sospesa, ricalcolata)
 - Gestisce sia farmaci cronici sia farmaci temporanei con data di fine
-- Notifiche locali sul telefono (anche con app chiusa)
+- Notifiche locali mentre l app e aperta -- vedi il limite dichiarato piu sotto
 - Profili giornalieri multipli (es. settimana lavorativa vs weekend)
 - Vista **Log** con storico assunzioni filtrabile per data e farmaco
 - **Export CSV** scaricabile dei dati di assunzione (Excel-friendly, separatore `;`)
@@ -43,7 +43,18 @@ URL: <https://timegates-code.github.io/pharmatimer/>
 
 Da questo momento l'app funziona offline come un'app nativa.
 
-> **Nota iOS.** Le notifiche locali a app chiusa richiedono iOS 16.4 o superiore. Su versioni precedenti l'app funziona ma le notifiche scattano solo a app aperta.
+> **Limite delle notifiche, misurato sul codice.** Gli avvisi sono programmati
+> con un timer dentro la pagina: `setTimeout` piu `new Notification`. Vivono
+> quanto vive la pagina. Se chiudi l app, o il sistema sospende il dispositivo,
+> quel timer non esiste piu e l avviso **non parte**. Al rientro in primo piano
+> gli avvisi vengono riprogrammati, quindi cio che era in arretrato non torna:
+> arriva quando riapri.
+>
+> Oggi non c e nessun meccanismo indipendente dalla pagina: ne notifiche dal
+> service worker, ne schedulazione affidata al sistema operativo, ne Web Push.
+> La tabella `push_subscriptions` esiste nello schema ma il codice non la usa.
+> Questo e cio che il codice fa: la riga precedente prometteva le notifiche a
+> app chiusa e non era vera.
 
 ---
 
@@ -69,7 +80,7 @@ Da quel momento l'app è personalizzata per te.
 - **Gestione ritardi e anticipi** — se prendi una dose in ritardo o in anticipo, l'app può ricalcolare automaticamente le dosi successive del giorno per rispettare gli intervalli minimi
 - **Stati dose** — ogni dose può essere `prevista` / `presa` / `saltata` / `sospesa` / `ricalcolata`, con modifica retroattiva
 - **Recupero gap** — se accumuli ritardo significativo, l'app suggerisce strategie di recupero (anticipa di N minuti, ripristina, salta)
-- **Notifiche locali** — avvisi schedulati con tono d'attenzione e copy contestualizzato per dose
+- **Notifiche locali** -- avvisi con tono d attenzione e testo contestualizzato per dose, programmati mentre l app e aperta (vedi il limite qui sopra)
 - **Profili giornalieri multipli** — passa da un profilo all'altro e tutti gli orari si ricalcolano automaticamente
 - **Vista Log** — storico assunzioni read-only con filtri per intervallo di date e farmaco singolo/tutti
 - **Export CSV** — scarica i dati di assunzione in formato CSV apribile direttamente in Excel italiano (separatore `;`, BOM UTF-8). Riusa i filtri della vista Log.

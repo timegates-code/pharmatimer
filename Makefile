@@ -115,8 +115,11 @@ test-backend:
 	  umask 022 && cd backend && venv/bin/python -m pytest -q ; \
 	else \
 	  echo "ROSSO  MySQL di dev NON raggiungibile: la suite backend non puo girare."; \
-	  echo "       Sotto il sandbox di Claude Code il loopback e negato con EPERM su"; \
-	  echo "       socket e su TCP: e ambiente, non mondo. Eseguire dal Terminale."; \
+	  echo "       Se il messaggio e Operation not permitted, e il sandbox di Claude"; \
+	  echo "       Code: serve sandbox.network in .claude/settings.local.json, con"; \
+	  echo "       allowLocalBinding per il TCP e allowUnixSockets per il socket,"; \
+	  echo "       scritto col path RISOLTO /private/tmp/mysql.sock. Altrimenti e"; \
+	  echo "       MySQL che non gira: avviarlo, o eseguire dal Terminale."; \
 	  exit 1; \
 	fi
 

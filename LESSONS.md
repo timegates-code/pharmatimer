@@ -430,6 +430,15 @@
 
 <!-- SENTINEL_MINT_81_PAR_22_198_NOVEMSEPTUAGIES -->
 
+### #82 -- L-allowlist-path-risolto
+- Stato: minted
+- Origine: sessione di rimedio con gate nuovo (ratifica esplicita in sessione)
+- Nota: non porta token `LC-*`; e parente stretto di `#66`, che pure e un guasto di AMBIENTE scambiabile per guasto di CODICE.
+- Regola: un path scritto in una allowlist di sandbox va dato RISOLTO. Il motore confronta il path dopo avere sciolto i symlink, quindi allowlistare un symlink NON allowlista il suo bersaglio: la voce entra, la configurazione si legge bene, e il permesso non arriva. Il sintomo e il peggiore possibile -- una configurazione che SEMBRA giusta e un accesso che resta negato -- e induce a cercare il difetto ovunque tranne che nella forma del path. Si isola tenendo UNA voce per volta.
+- Contesto: `sandbox.network.allowUnixSockets` di Claude Code su macOS, dove `/tmp` e un symlink a `private/tmp`. Misurato e non dedotto: con la sola voce `/tmp/mysql.sock` il client MySQL restava a `ERROR 2002 ... (1)`, cioe EPERM, mentre il socket esisteva; aggiunta `/private/tmp/mysql.sock` il client si e connesso; tenuta la SOLA `/private/tmp/mysql.sock` la connessione via `/tmp/mysql.sock` funziona lo stesso, il che isola la voce efficace e dimostra che la prima era un no-op. Vale per qualunque allowlist di path che sciolga i symlink, non per il solo sandbox.
+
+<!-- SENTINEL_MINT_82_SESSIONE_RIMEDIO -->
+
 ---
 
 ## Candidate (pronte al mint, sbloccate dalla creazione del registro -- par.130)
