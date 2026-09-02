@@ -10,6 +10,9 @@
 #   make prod-check  SOLO QUANDO SI DEPLOYA. Tocca il Mini via rete: stato del
 #                    servizio, bundle, openapi, censimento, e G-21.
 #   make lint        ruff (backend) + eslint (frontend) + tipografia.
+#   make openapi     esporta lo schema OpenAPI dal backend vivo in
+#                    backend/openapi.json (ignorato da git); lo legge il test
+#                    del contratto dei tipi, e test-frontend lo rigenera prima.
 #   make controllo-dst  i file *.dst.test.js lanciati SENZA ora legale devono
 #                    arrossare tutti: un pin mai visto rosso non e una guardia.
 #   make inventario  le diciannove voci, rigenerate dal disco.
@@ -25,12 +28,12 @@ MINI_MYSQL := /opt/homebrew/bin/mysql --defaults-file=/Users/marketreader/.my-ph
 
 .PHONY: check check-prepush check-ci _gate prod-check lint lint-backend lint-frontend \
         test test-frontend test-frontend-compatto controllo-dst test-backend inventario \
-        inventario-compatto albero g21 help
+        inventario-compatto albero g21 openapi help
 
 help:
 	@echo "gate di sessione : make check"
 	@echo "prima di deployare: make prod-check"
-	@echo "singoli          : lint | test-frontend | controllo-dst | test-backend | inventario | albero"
+	@echo "singoli          : lint | test-frontend | controllo-dst | test-backend | inventario | albero | openapi"
 
 # ----------------------------------------------------------------- LINT
 lint-backend:
@@ -96,14 +99,30 @@ lint:
 	fi; \
 	exit $$rc
 
+# ----------------------------------------------------------------- OPENAPI
+# Il contratto dei tipi (decisione 3). Lo schema OpenAPI e ESPORTATO dal codice
+# vivo del backend in backend/openapi.json, ignorato da git e mai pinnato. Lo
+# legge src/data/repository/ApiRepository.contratto.test.js, che arrossa
+# nominando questo target se il file manca. I due target di test frontend lo
+# rigenerano PRIMA di vitest, cosi il gate confronta il ponte con lo schema di
+# adesso e non con una copia invecchiata; `npx vitest run` da solo legge il
+# file che trova sul disco, e lo si dichiara.
+openapi:
+	@echo "== OPENAPI: export dal backend vivo =="
+	@if [ -x backend/venv/bin/python ]; then \
+	  cd backend && venv/bin/python export_openapi.py openapi.json; \
+	else \
+	  echo "ROSSO  backend/venv/bin/python assente: python -m venv backend/venv; backend/venv/bin/pip install -e 'backend[dev]'"; exit 1; \
+	fi
+
 # ----------------------------------------------------------------- TEST
-test-frontend:
+test-frontend: openapi
 	@echo "== TEST FRONTEND (vitest) =="
 	@umask 022 && npx vitest run
 
 # Forma usata da make check: stampa il solo riepilogo quando e verde, e
 # l output integrale quando e rosso, perche un fallimento va potuto leggere.
-test-frontend-compatto:
+test-frontend-compatto: openapi
 	@echo "== TEST FRONTEND (vitest, riepilogo) =="
 	@out=$$(umask 022 && npx vitest run 2>&1); rc=$$?; \
 	if [ $$rc -eq 0 ]; then \

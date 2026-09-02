@@ -36,3 +36,6 @@ introspect_*.py
 DESIGN_multiutente_attivazione.md
 backend/rotate_owner_token_dev.py
 *.egg-info/
+# Decisione 3: lo schema OpenAPI e derivato dal backend vivo da `make openapi`
+# e letto dal test del contratto dei tipi. Mai pinnato, quindi mai tracciato.
+backend/openapi.json

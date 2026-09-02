@@ -61,7 +61,11 @@
  * @property {string} data                 YYYY-MM-DD
  * @property {number} dose_numero
  * @property {string} ora_prevista         HH:MM
- * @property {string|null} [ora_effettiva] HH:MM or null
+ * @property {string|null} [ora_effettiva] ISO datetime 'YYYY-MM-DDTHH:MM:SS' or null: the RECORDED
+ *           instant of the intake, whose date may differ from `data` across midnight (a dose of
+ *           the 16th taken at 00:30 of the 17th). Was documented as 'HH:MM' while the producer
+ *           (recalc.js buildLogWrite) and domain/types.js said ISO: rectified by decisione 3, and
+ *           pinned by ApiRepository.contratto.test.js against the OpenAPI document.
  * @property {number|null} [delta_minuti]
  * @property {string|null} [ora_ricalcolata] ISO 'YYYY-MM-DDTHH:MM' (post-§6.18 fix Sessione 9-A; was HH:MM in schema v1, migrated by §6.117 upgrade hook in v2)
  * @property {number} gap_minuti
