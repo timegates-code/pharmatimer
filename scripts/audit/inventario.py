@@ -14,7 +14,7 @@ possono divergere.
 
 Origine: sessione di audit par.22.198-unoctogies.
 """
-import contextlib, io, json, os, re, subprocess, sys
+import contextlib, io, json, os, re, subprocess, sys, tomllib
 
 SKIP_DIRS = {"node_modules", "venv", ".git", "dist", "dist-mini",
              "__pycache__", ".pytest_cache", "pharmatimer_api.egg-info"}
@@ -208,12 +208,29 @@ def voce5():
             npm_non_fissate += 0 if pin == "SI" else 1
             print("     %-28s %-12s usato=%-3s fissato=%s" % (k, v, "SI" if used else "NO", pin))
     print("\n-- pip: requirements.txt contro pyproject.toml")
+    ha_req = os.path.exists("backend/requirements.txt")
     req = [l.strip() for l in read("backend/requirements.txt").split("\n") if l.strip()]
-    pyp = re.findall(r'"([^"]+)"', re.search(r"dependencies = \[(.*?)\]", read("backend/pyproject.toml"), re.S).group(1))
-    print("   requirements.txt : %d voci, fissate=%d" % (len(req), sum(1 for r in req if re.search(r"[<>=~]", r))))
-    righe(["req  " + r for r in req])
-    print("   pyproject        : %d voci, fissate=%d" % (len(pyp), sum(1 for r in pyp if re.search(r"[<>=~]", r))))
-    righe(["pyp  " + r for r in pyp])
+    # Il pyproject si legge con un parser vero, non con un regex. Il regex
+    # precedente, "dependencies = \[(.*?)\]" non greedy, si fermava sul primo
+    # ] della stringa -- cioe su quello DENTRO "uvicorn[standard]" -- e rendeva
+    # una sola dipendenza su sei. La voce ha misurato male finche il confronto
+    # con requirements.txt ha nascosto lo sbaglio.
+    with open("backend/pyproject.toml", "rb") as fh:
+        _proj = tomllib.load(fh).get("project", {})
+    pyp = list(_proj.get("dependencies", []))
+    pyp_dev = list(_proj.get("optional-dependencies", {}).get("dev", []))
+    if not ha_req:
+        print("   requirements.txt : ASSENTE -- fonte unica pyproject.toml.")
+        print("   Rimosso alla sessione di rimedio: nessuno lo leggeva, e")
+        print("   deploy/02-setup-pharmatimer-venv.sh lo saltava di proposito")
+        print("   installando da pyproject (rimedio D-NEW#3 e D-NEW#4).")
+    else:
+        print("   requirements.txt : %d voci, fissate=%d" % (len(req), sum(1 for r in req if re.search(r"[<>=~]", r))))
+    righe(["req  " + r for r in req], "nessuna -- il file non esiste piu")
+    print("   pyproject        : %d voci di prodotto, fissate=%d; piu %d dev, fissate=%d"
+          % (len(pyp), sum(1 for r in pyp if re.search(r"[<>=~]", r)),
+             len(pyp_dev), sum(1 for r in pyp_dev if re.search(r"[<>=~]", r))))
+    righe(["pyp  " + r for r in pyp] + ["dev  " + r for r in pyp_dev])
     def nome(x): return re.split(r"[<>=~\[]", x)[0]
     solo_req = sorted(set(map(nome, req)) - set(map(nome, pyp)))
     solo_pyp = sorted(set(map(nome, pyp)) - set(map(nome, req)))
@@ -221,10 +238,15 @@ def voce5():
     print("   presenti SOLO in pyproject.toml  : %s" % (solo_pyp or "nessuna"))
     req_non_fissate = sum(1 for r in req if not re.search(r"[<>=~]", r))
     pyp_non_fissate = sum(1 for r in pyp if not re.search(r"[<>=~]", r))
-    esito("npm %d: non usate %d, non fissate %d | pip: solo-req %d, solo-pyp %d, "
-          "non fissate req %d pyp %d",
-          npm_tot, npm_non_usate, npm_non_fissate,
-          len(solo_req), len(solo_pyp), req_non_fissate, pyp_non_fissate)
+    if ha_req:
+        esito("npm %d: non usate %d, non fissate %d | pip: solo-req %d, solo-pyp %d, "
+              "non fissate req %d pyp %d",
+              npm_tot, npm_non_usate, npm_non_fissate,
+              len(solo_req), len(solo_pyp), req_non_fissate, pyp_non_fissate)
+    else:
+        esito("npm %d: non usate %d, non fissate %d | pip: fonte unica pyproject, "
+              "%d voci, non fissate %d",
+              npm_tot, npm_non_usate, npm_non_fissate, len(pyp), pyp_non_fissate)
 
 
 # ---------------------------------------------------------------- 6
