@@ -10,90 +10,67 @@ poi `bash deploy/deploy-mini.sh` dal Terminale.
 
 ---
 
-## Ultima sessione -- le tre decisioni di dominio, in codice e test
+## Ultima sessione -- schieramento di 0.7.7 sul Mini
 
-Un commit per decisione, ratifica esplicita prima di ogni modifica al
-percorso della presa, collaudo per mutazione su ogni cancello: diciannove
-mutazioni, diciannove rossi attesi, ripristini verificati per impronta.
-Nessun deploy: il Mini gira ancora `0.7.6`, il repo porta `0.7.7`.
+Deploy sul pilota con dati veri, nessun codice nuovo. Ogni atto sul Mini
+lanciato da Roberto dal Terminale, un comando per volta, esito riportato prima
+del successivo. **Il Mini gira `0.7.7` con `v06`, bundle `index-AqLOZx4F`,
+misurato; il telefono ha il bundle corrente, misurato dal log.**
 
-1. **DST, ibrido dichiarato** (`dc00f61`). Il piano vive in ora di parete, le
-   guardie in minuti reali. `wallToInstant` in `src/utils/time.js` e la porta
-   unica fra i due mondi: la ora inesistente di marzo scivola al primo istante
-   esistente (02:30 del 29 marzo diventa 03:00; prima collassava su 03:30), la
-   ora doppia di ottobre conta la prima occorrenza. `computeOraPrevistaOnDay`
-   risolve la etichetta sul giorno nelle cinque sedi che la materializzano.
-   `DomainError('ORARIO_NON_RISOLVIBILE')` al posto di TypeError e `'NaN:NaN'`,
-   con contenimento PER DOSE: la voce resta nel piano come "orario non
-   risolvibile", inerte, e le altre dosi restano. `make controllo-dst` e nel
-   gate: i file `*.dst.test.js` girano senza ora legale e devono arrossare
-   tutti (24 su 24). Il ricalcolo resta aritmetica di parete: 7 ore reali il
-   29 marzo e 9 il 25 ottobre, dichiarato in `recalc.dst.test.js`.
-2. **Intervallo minimo lato server** (`f5b7e88`). La presa si registra
-   sempre; se e sotto `intervallo_minimo_ore` dalla presa piu vicina dello
-   stesso farmaco, nei due versi, qualunque dose e qualunque data, il 201
-   porta `avviso` in minuti reali (`backend/pharmatimer_api/tempo.py`, via
-   UTC: 420 nella notte del 29 marzo, non 480) e il client mostra la scheda
-   "Due dosi molto vicine", che resta finche letta. Il ricalcolo nested sotto
-   il minimo dalla presa non scrive D+1 e risponde
-   `ricalcolo: rifiutato_intervallo_minimo`; `applicato` e
-   `omesso_stato_destinazione` nominano gli altri esiti, il secondo era muto
-   dal s.6.269. Minimo NULL = nessuna guardia. Nessuna migrazione.
-3. **Contratto dei tipi** (`012e34a`). `make openapi` esporta lo schema dal
-   backend vivo in `backend/openapi.json` (ignorato da git, rigenerato prima
-   dei test frontend). `src/data/repository/ApiRepository.contratto.test.js`
-   confronta campo per campo pydantic, i due typedef `LogAssunzione` e il
-   ponte vero: i sei campi di una copia sola della voce 16 sono dichiarati per
-   scelta con il motivo, `ora_effettiva` e pinnata nei due versi, scavalco
-   della mezzanotte compreso. Il typedef di `IRepository.js` diceva HH:MM:
-   rettificato a ISO con secondi, come il produttore.
+1. **Backup.** `mysqldump --single-transaction` piu i flag del backup
+   notturno, in bash sul Mini per `PIPESTATUS`: `pipe rc 0 0`, `gzip -t` ok,
+   `Dump completed` presente. `pharmatimer_pre-0.7.7_20260902_191125.sql.gz`,
+   3214 byte, md5 `4897801853af0a241b03d92366bce096` identico su Mini
+   (`~/PharmaTimer/backups/`) e Studio (`backups_dev/`, ignorato da git).
+2. **Guardie.** `make prod-check` e `make g21` verdi: bundle `index-D0r-90Wl`,
+   openapi `0.7.6`, `v06 PRESENTE`. Il censimento diceva `LOG 11` contro un
+   atteso "almeno 13" dichiarato da me leggendo un id come un conteggio:
+   sonda `COUNT 11, MAX(id) 13`, le due righe mancanti sono sotto il 10,
+   cancellazioni vecchie. Atteso mio sbagliato, dati coerenti.
+3. **Fotografia a mano** prima del `rsync --delete`, perche lo script ancora
+   non la fa (rimedio 4): `web.bak.20260902_191529` con `index-D0r-90Wl` e
+   `backend.predeploy.20260902_191529.tgz`, 112 voci, in `~/PharmaTimer/backups/`.
+4. **Deploy.** `bash deploy/deploy-mini.sh` da `820e1ed`: sette passi verdi,
+   `rc 0`, `Version: 0.7.7` dal pip del Mini, LaunchAgent pid 90772,
+   prod-check finale con openapi `0.7.7` da 40685 byte. Curl esplicito di
+   `openapi.json`: `0.7.7`.
+5. **Sonda.** `db_probe.sql` dopo il deploy contro quella dopo 0.7.6: differiscono
+   solo i denominatori (`log_assunzioni` 9 -> 11, prese 4 -> 6), la targa
+   `10 1 11` in P3g, e lo orologio. Ogni contatore di anomalia resta 0.
+6. **Il telefono.** L'access log di uvicorn sta in
+   `~/PharmaTimer/logs/api.out.log` (handler `access` su stdout), vivo riga per
+   riga: verificato con un curl dallo Studio. Tre riaperture della PWA non
+   hanno prodotto alcuna richiesta al Mini, neanche da Safari; causa non
+   misurata. Alla quarta, "chiusa, riaperta e ricaricata al toast", il log
+   porta da `100.95.100.6`: `GET /`, `GET /sw.js`,
+   `GET /assets/index-AqLOZx4F.js 200`, `GET /sw.js`. Bundle corrente sul
+   telefono.
 
-**Divergenza vera, fatta vedere e non sanata.** Il ponte manda `client_op_id`
-dentro `ricalcolo_dose_successiva` e il server non lo dichiara (commento in
-`ApiRepository.js` :399-404). Misurato con una sonda transitoria: 201,
-ricalcolo applicato, la riga della presa porta la targa di primo livello, la
-riga D+1 ha `client_op_id` NULL, pydantic scarta il campo in silenzio. Il test
-R4 e in forma `it.fails`, lo xfail stretto di vitest: passa finche la
-divergenza esiste e arrossa il giorno in cui un lato la chiude, cosi chiusura
-e rimozione del marcatore viaggiano insieme. Quale lato muovere e in coda.
+Gli output stanno in `backups_dev/`: `prodcheck_pre_0.7.7_20260902.txt`,
+`log_pre_0.7.7.txt`, `deploy_0.7.7_20260902.txt`, `probe_dopo_0.7.7.txt`.
 
-Il venv dello Studio e stato reinstallato in modo editable, senza dipendenze,
-perche lo export dello schema legga `0.7.7`; il Mini non e stato toccato.
+**Verifica della targa in produzione: CHIUSA.** La riga 13 di
+`log_assunzioni`, presa del 2 settembre alle 14:32, porta `client_op_id`
+`858c8837-`; la riga 12, delle 14:09, e senza targa perche fatta col bundle di
+luglio prima dell'aggiornamento. Una con targa su undici, coerente.
 
----
-
-## Verifica pendente -- la targa in produzione
-
-La prima presa registrata dopo il deploy deve avere `client_op_id` non nullo.
-Condizione: la PWA sul telefono deve avere gia il bundle nuovo (accettare lo
-aggiornamento proposto allo avvio; in Impostazioni la versione deve leggere
-`3.2.0-rc.1`), perche la targa la genera il client. Una presa col bundle
-vecchio arriverebbe senza targa e la sonda direbbe il falso.
-
-Dopo la prima presa, dal Terminale:
-
-```
-ssh mini '/opt/homebrew/bin/mysql --defaults-file=/Users/marketreader/.my-pharmatimer.cnf pharmatimer -e "SELECT id, utente_id, stato, created_at, client_op_id FROM log_assunzioni ORDER BY id DESC LIMIT 3; SELECT COUNT(*) AS righe, SUM(client_op_id IS NOT NULL) AS con_targa FROM log_assunzioni;"'
-```
-
-Atteso: la riga piu recente con `client_op_id` in forma UUID v4 e `con_targa`
-salito di uno. Se e `NULL`, prima si controlla la versione del bundle sul
-telefono, poi si apre un reperto.
+**Decisione 5 presa, targa annidata nel batch: forma (a).** Il server dichiara
+`client_op_id` dentro `ricalcolo_dose_successiva` come campo accettato e
+ignorato; il dedup resta sulla targa di primo livello; la riga D+1 resta senza
+targa. E' codice e non e entrato in questo deploy: rimedio 2 sotto.
 
 ---
 
 ## Coda di rimedio
 
-Si esegue, non si rimisura. Ordinata per rischio clinico. Uscite in questa
-sessione le righe DST, salto di primavera, `computeOraPrevista` ai confini e
-contratto di campo.
+Si esegue, non si rimisura. Ordinata per rischio clinico.
 
 | # | mancante | invariante | stato |
 |---|---|---|---|
 | 1 | **`/recupero` senza guardia sul minimo** | **M1** | Spec 4.7 :431 tiene il TODO su `intervallo_minimo_ore`; la decisione 2 ha guardato la sola presa. Il server accetta un recupero che anticipa sotto il minimo: oggi lo ferma solo lo slider del client (`calcolaRecuperoMax`). Stessa sede e stesso `tempo.minuti_reali`. |
-| 2 | **targa annidata nel batch** | **M3** | Divergenza vera fra ponte e server, misurata sopra e guardata da R4. Aspetta la decisione 5 sotto, poi un commit che chiude un lato e toglie `it.fails` insieme. |
+| 2 | **targa annidata nel batch, forma (a) decisa** | **M3** | Meccanico: il modello pydantic del ricalcolo dichiara `client_op_id` opzionale e ignorato, con il motivo nel docstring; R4 in `ApiRepository.contratto.test.js` arrossa e il marcatore `it.fails` si toglie nello stesso commit. Nessuna sede VIETATA, nessuna migrazione, wire-neutro. |
 | 3 | **estrarre il SQL dai router** in `repository/` | -- | Refactor, sessione propria, se ancora voluto. Norma dichiarata: SQL nel router (`CLAUDE.md` 13). |
-| 4 | **`deploy-mini.sh` non fotografa il bundle** prima del `rsync --delete` | -- | Il rollback richiede `web.bak.*` e `backend.predeploy.*.tgz`, fatti a mano allo ultimo deploy. Lo script deve farlo da se, come passo fra le guardie e il rsync. |
+| 4 | **`deploy-mini.sh` non fotografa il bundle** prima del `rsync --delete` | -- | Fatto a mano per la seconda volta (`web.bak.*` e `backend.predeploy.*.tgz`). Lo script deve farlo da se, come passo fra le guardie e il rsync. |
 
 ### Impegni ereditati ancora vivi
 
@@ -107,6 +84,10 @@ contratto di campo.
 
 - `/api/health` risponde `"version":"0.1.0"` anche a `0.7.7`: il campo e
   cablato nel router e non legge la versione del pacchetto.
+- Le prime tre riaperture della PWA non hanno raggiunto il Mini, neanche da
+  Safari, e la quarta si. Causa non misurata (tailnet del telefono, o PWA non
+  davvero chiusa): se ricapita, il testimone e `api.out.log` e la sonda e un
+  curl dallo Studio per distinguere log muto da rete assente.
 - I due typedef `LogAssunzione` concordano su nomi e tipi ma non sulle
   parentesi di opzionalita (`IRepository.js` marca opzionali i campi nullable,
   `types.js` no): non e sul filo, dichiarato nel test S3.
@@ -118,6 +99,10 @@ contratto di campo.
 - Sette endpoint backend non sono mai chiamati dal frontend.
 - npm: due dipendenze non usate e venti non fissate.
 - Il pip del venv del Mini e `26.1.1`, disponibile `26.2.1`: avviso, non errore.
+- Sul Mini restano le fotografie di stamattina e di stasera in
+  `~/PharmaTimer/backups/` (`web.bak.20260902_112714`, `web.bak.20260902_191529`
+  e i due `backend.predeploy.*.tgz`): la prima e rimovibile, la seconda e il
+  rollback di `0.7.7`.
 - Fuori dal repo, da rifare su una macchina nuova: `.claude/settings.local.json`
   con `sandbox.network`, e `git config core.hooksPath scripts/githooks`.
 
@@ -126,8 +111,8 @@ contratto di campo.
 ## Decisioni che spettano a Roberto
 
 1. **`ricostruzione-mini`: chiuderla o no.** Il mandato diceva installazione
-   completa e non incrementale, verificata per misura. Lo ultimo deploy ha
-   rifatto per intero `backend/`, `deploy/` e `web/` con `rsync --delete` e ha
+   completa e non incrementale, verificata per misura. Due deploy hanno
+   rifatto per intero `backend/`, `deploy/` e `web/` con `rsync --delete` e
    reinstallato il pacchetto; il **venv** e stato aggiornato, non ricostruito.
    Se per FATTO basta il codice, e chiusa; se serve anche il venv da zero,
    resta aperta con quel solo perimetro.
@@ -136,29 +121,15 @@ contratto di campo.
    `new Notification`, e `push_subscriptions` sta nel DB con zero riferimenti.
 3. **CS-5.7, il blocco Centro invii, resta SOSPESA e non abbandonata.** Il suo
    mandato integrale vive nel Changelog archiviato e in `git log`.
-4. **Schierare `0.7.7`.** Porta la guardia dello intervallo minimo e gli
-   esiti del ricalcolo sul 201, il contratto dei tipi e il DST. Nessuna
-   migrazione: `make g21` resta su v06. Ordine: `make prod-check` dal
-   Terminale, poi `bash deploy/deploy-mini.sh`. Il bundle nuovo serve anche
-   al telefono: la scheda "Due dosi molto vicine" e lo scivolamento DST
-   vivono nel client.
-5. **La targa annidata nel batch: quale lato muovere.** (a) Il server la
-   dichiara come campo opzionale ignorato, formalizzando cio che gia fa;
-   (b) il ponte smette di mandarla, coerente con Spec 14.6 p.1 (UNA targa per
-   elemento, sulla presa), ma tocca `ApiRepository.js`, che e VIETATO e
-   richiede ratifica; (c) il server la scrive sulla riga D+1, che cambia il
-   dedupe della coppia (14.6 p.4: "o tutta o niente") e va progettato.
-   In ogni caso R4 arrossa e il marcatore `it.fails` si toglie nello stesso
-   commit.
-6. **"sonno + 60 = 00:30 dello stesso giorno."** Spec 3.6 :258: `ora_prevista`
+4. **"sonno + 60 = 00:30 dello stesso giorno."** Spec 3.6 :258: `ora_prevista`
    e HH:MM e "mai cross-midnight, AMB-9.D". Pinnato come DICHIARATO in
    `src/domain/orarioResolver.test.js`. Tenere il wrap, o portare la dose al
    giorno dopo (cambia Spec, `planBuilder`, e le chiavi delle voci).
-7. **Trascrivere la regola DST in Spec**, sezione 4: oggi vive nel commento in
+5. **Trascrivere la regola DST in Spec**, sezione 4: oggi vive nel commento in
    testa alla sezione di `src/utils/time.js` e nei test `*.dst`.
-8. **Spec 3.1 :175, default 50% di `intervallo_minimo_ore`.** Nessuna sede lo
+6. **Spec 3.1 :175, default 50% di `intervallo_minimo_ore`.** Nessuna sede lo
    realizza, ne il server ne `calcolaRecuperoMax`. Realizzarlo, nei due lati,
    o togliere la riga.
-9. **Fuso fisso del server** (`tempo.FUSO_PARETE = Europe/Rome`) contro fuso
+7. **Fuso fisso del server** (`tempo.FUSO_PARETE = Europe/Rome`) contro fuso
    del telefono sul client: se il paziente viaggia i due divergono. Limite
    dichiarato, non da risolvere ora.
