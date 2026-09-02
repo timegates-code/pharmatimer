@@ -42,6 +42,27 @@ Le sonde sono in `backups_dev/probe_prima.txt`, `probe_dopo_v06.txt`,
 
 ---
 
+## Lettura misurata -- uso del percorso server (2 settembre 2026)
+
+Sonde in sola lettura sul Mini: le 9 righe di `log_assunzioni`, il bundle
+servito prima del deploy, la storia di `.env.mini`, la serie dei backup
+notturni da `backup.out.log`, e il log di accesso di uvicorn (senza timestamp
+per riga: attribuzione allo intervallo fra due riavvii datati del wrapper).
+
+- Il pilota ha usato il percorso server **dal 27 giugno al 19 luglio**, da un
+  client sulla tailnet (`100.95.100.6`, che non e lo Studio): 9 presa,
+  5 saltata, 1 sospesa, 7 undo, piu farmaci e orari. Ogni bundle mai
+  fotografato sul Mini porta `VITE_USE_API:"1"`, e `.env.mini` nasce cosi il
+  30 maggio. Dopo il 19 luglio nessuna scrittura; il dump notturno e piatto a
+  3.0K dallo 8 luglio al 2 settembre, con risoluzione di circa 100 byte.
+- **Poi fermo.** Ragione DICHIARATA da Roberto, non misurata: le notifiche
+  non partono ad app chiusa.
+- Verifica della targa: PENDENTE sulla prima presa, sezione sotto.
+
+Nessuna interpretazione oltre questa.
+
+---
+
 ## Verifica pendente -- la targa in produzione
 
 La prima presa registrata dopo il deploy deve avere `client_op_id` non nullo.
@@ -59,8 +80,6 @@ ssh mini '/opt/homebrew/bin/mysql --defaults-file=/Users/marketreader/.my-pharma
 Atteso: la riga piu recente con `client_op_id` in forma UUID v4 e `con_targa`
 salito di uno. Se e `NULL`, prima si controlla la versione del bundle sul
 telefono, poi si apre un reperto.
-
-Fatto misurato di passaggio: le ultime righe di log sono del 19 e 20 luglio.
 
 ---
 
