@@ -4,9 +4,14 @@ PWA clinica per la gestione della terapia farmacologica quotidiana.
 React + Vite, FastAPI + MySQL, Dexie/IndexedDB. Fase 3, percorso rc verso v3.2.0.
 Pilota unico: Roberto (id=2). **Non esiste produzione con utenti terzi.**
 
-Convenzione tipografica di TUTTI gli artefatti, codice compreso: **ASCII puro**.
-Zero lettere accentate, zero virgolette o trattini tipografici, nessun apostrofo
-di elisione. Vale anche per i messaggi di commit, parentesi tonde comprese.
+**Convenzione tipografica**, misurata da `make lint` e nient'altro:
+- identificatori, path e comandi **solo ASCII**; la prosa e UTF-8 (lettere
+  accentate e apostrofi ASCII ammessi);
+- **vietati** i caratteri invisibili (NBSP, zero-width, BOM), le virgolette
+  tipografiche (U+2018, U+2019, U+201C, U+201D) e i fine riga misti.
+Chi misura: `scripts/audit/tipografia.py` per invisibili, virgolette, fine riga
+e path; `ruff` (PLC2401, PLC2403) ed `eslint` (`id-match`) per gli
+identificatori. I due Changelog archiviati sono fuori perimetro e dichiarati.
 Codice e commenti in inglese; UI, messaggi utente e documentazione in italiano.
 
 ---

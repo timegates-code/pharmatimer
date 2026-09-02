@@ -8,7 +8,7 @@
 #   make check-ci    Lo stesso gate, lanciato da GitHub Actions su ogni push.
 #   make prod-check  SOLO QUANDO SI DEPLOYA. Tocca il Mini via rete: stato del
 #                    servizio, bundle, openapi, censimento, e G-21.
-#   make lint        ruff (backend) + eslint (frontend).
+#   make lint        ruff (backend) + eslint (frontend) + tipografia.
 #   make inventario  le diciannove voci, rigenerate dal disco.
 #
 # PRINCIPIO: nessun atteso e pinnato in un file a parte. Cio che si puo derivare
@@ -58,6 +58,8 @@ lint:
 	fi; \
 	nb=$$(cd backend && venv/bin/ruff check --quiet --output-format=concise . 2>/dev/null | grep -c . || true); \
 	nf=$$(npx eslint . --format json 2>/dev/null | python3 -c 'import json,sys; print(sum(len(f["messages"]) for f in json.load(sys.stdin)))' 2>/dev/null || echo ERR); \
+	nt=$$(python3 scripts/audit/tipografia.py --conteggio 2>/dev/null || true); \
+	case "$$nt" in ''|*[!0-9]*) echo "ROSSO  tipografia: scripts/audit/tipografia.py non ha reso un conteggio"; exit 1;; esac; \
 	if [ "$$nf" = "ERR" ]; then \
 	  echo "ROSSO  eslint non ha prodotto un rapporto leggibile: e la HARNESS a essere"; \
 	  echo "       rotta, non il codice. Prima il conteggio ripiegava a 0, che in modo"; \
@@ -79,10 +81,11 @@ lint:
 	  fi; \
 	else \
 	  echo "== LINT (modo STRETTO: nessuna baseline, ogni reperto e rosso) =="; \
-	  echo "   backend  reperti=$$nb"; \
-	  echo "   frontend reperti=$$nf"; \
-	  echo "   dettaglio: make lint-backend | make lint-frontend"; \
-	  if [ "$$nb" -gt 0 ] || [ "$$nf" -gt 0 ]; then \
+	  echo "   backend    reperti=$$nb"; \
+	  echo "   frontend   reperti=$$nf"; \
+	  echo "   tipografia reperti=$$nt   (invisibili, virgolette tipografiche, fine riga misti, path)"; \
+	  echo "   dettaglio: make lint-backend | make lint-frontend | python3 scripts/audit/tipografia.py"; \
+	  if [ "$$nb" -gt 0 ] || [ "$$nf" -gt 0 ] || [ "$$nt" -gt 0 ]; then \
 	    echo "ROSSO  reperti presenti: il modo stretto non ne ammette"; rc=1; \
 	  else \
 	    echo "VERDE  zero reperti"; \

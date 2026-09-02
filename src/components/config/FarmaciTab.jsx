@@ -1818,7 +1818,7 @@ function FarmacoDrawer({
             {/* SENTINEL_PAR_22_158_UXE_NESTING -- R1: nesting righe sotto data + gerarchia bottoni + box periodo (presentazionale) */}
 
             <p className="text-xs italic" style={{ color: t.textSecondary }}>
-              Aggiungi una riga per ogni assunzione: scegli la data e l’orario.
+              Aggiungi una riga per ogni assunzione: scegli la data e l'orario.
             </p>
 
             {/* SENTINEL_PAR_22_160_UXF_WIZARD -- UX-f: flusso guidato anziani (parallelo opt-in, inline) */}

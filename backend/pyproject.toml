@@ -63,7 +63,10 @@ exclude = ["venv", "__pycache__", "db/migrations", "*.bak", "*.bak.*"]
 [tool.ruff.lint]
 # E/W pycodestyle, F pyflakes (import e nomi morti), I ordinamento import,
 # B bugbear (trappole reali, non stile), UP modernizzazioni sicure.
-select = ["E", "W", "F", "I", "B", "UP"]
+# PLC2401 e PLC2403: identificatori e nomi di import solo ASCII, che e la
+# parte di convenzione tipografica (CLAUDE.md, in testa) misurabile da un
+# linter. Il resto la misura scripts/audit/tipografia.py.
+select = ["E", "W", "F", "I", "B", "UP", "PLC2401", "PLC2403"]
 ignore = [
     "E501",  # lunghezza riga: gia governata da line-length e non si impone qui
     # B008 -- "non chiamare funzioni nei default degli argomenti". Con FastAPI

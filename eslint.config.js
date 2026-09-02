@@ -48,6 +48,10 @@ export default [
     linterOptions: { reportUnusedDisableDirectives: false },
     rules: {
       "no-undef": "error",
+      // Identificatori solo ASCII, proprieta comprese: e la parte della
+      // convenzione tipografica (CLAUDE.md, in testa) che un linter puo
+      // misurare. Il resto lo misura scripts/audit/tipografia.py.
+      "id-match": ["error", "^[A-Za-z_$][A-Za-z0-9_$]*$", { "properties": true }],
       "no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
       "no-unreachable": "error",
       "no-constant-condition": ["error", { checkLoops: false }],
