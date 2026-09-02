@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
 """PharmaTimer -- inventario di struttura e qualita (audit in sola lettura).
 
-Uso:  python3 scripts/audit/inventario.py [--voce N]
-Non modifica nulla. Stampa, per ciascuna delle dodici voci, lo elenco vivo
+Uso:  python3 scripts/audit/inventario.py [--voce N] [--compatto]
+Non modifica nulla. Stampa, per ciascuna delle diciannove voci, lo elenco vivo
 rigenerato dal disco. Nessun atteso e cablato: le liste si DERIVANO, cosi
 non possono invecchiare. Uscita 0 sempre: e un inventario, non un gate.
 
+Con --compatto stampa il SOLO esito per voce, che e la forma usata da
+make check; il dettaglio resta su make inventario. Lo esito non e un
+riassunto scritto a mano: lo calcola la voce stessa dai propri dati, e in
+modo esteso viene stampato in coda alla voce, cosi le due forme non
+possono divergere.
+
 Origine: sessione di audit par.22.198-unoctogies.
 """
-import io, json, os, re, subprocess, sys
+import contextlib, io, json, os, re, subprocess, sys
 
 SKIP_DIRS = {"node_modules", "venv", ".git", "dist", "dist-mini",
              "__pycache__", ".pytest_cache", "pharmatimer_api.egg-info"}
@@ -36,10 +42,26 @@ def tracked(p):
                           capture_output=True).returncode == 0
 
 
+COMPATTO = False
+_REALE = sys.stdout          # lo stdout vero, prima di ogni redirect
+
+
 def head(n, titolo):
+    if COMPATTO:
+        _REALE.write("VOCE %2d  %s\n" % (n, titolo))
+        return
     print("\n" + "=" * 72)
     print("VOCE %d -- %s" % (n, titolo))
     print("=" * 72)
+
+
+def esito(fmt, *a):
+    """Lo esito di una voce: una riga sola, derivata dai dati della voce.
+
+    Scrive sul flusso VERO, non su quello redirezionato, cosi sopravvive
+    alla soppressione del dettaglio in modo compatto.
+    """
+    _REALE.write("         %s\n" % (fmt % a if a else fmt))
 
 
 def righe(items, vuoto="nessuna"):
@@ -78,12 +100,18 @@ def voce1():
     print("\n-- router definiti contro registrati in app.py")
     app = read("backend/pharmatimer_api/app.py")
     rd = "backend/pharmatimer_api/routers"
+    n_router, n_reg = 0, 0
     for fn in sorted(os.listdir(rd)):
         if not fn.endswith(".py") or fn == "__init__.py":
             continue
         r = fn[:-3]
         reg = ("include_router(%s" % r) in app or ("include_router(_%s_module" % r) in app
+        n_router += 1
+        n_reg += 1 if reg else 0
         print("  %-16s registrato=%s" % (r, "SI" if reg else "NO -- ROTTA NON REGISTRATA"))
+    esito("orfani: frontend %d, backend %d; router registrati %d/%d%s",
+          len(orfani), len(orf), n_reg, n_router,
+          "" if n_reg == n_router else "  <-- ROTTA NON REGISTRATA")
 
 
 # ---------------------------------------------------------------- 2
@@ -106,14 +134,22 @@ def voce2():
     for k, v in sorted(nm):
         dims = ["%s(%d righe)" % (p, len(read(p).split("\n"))) for p in v]
         print("  %-24s %s" % (k, " | ".join(dims)))
+    esito("duplicati esatti %d; basename ripetuti in cartelle diverse %d",
+          len(dup), len(nm))
 
 
 # ---------------------------------------------------------------- 3
 def voce3():
     head(3, "cartelle fuori convenzione")
-    print("-- NESSUNA convenzione di cartelle e DICHIARATA in CLAUDE.md o README.")
-    print("   Senza norma dichiarata non esiste il predicato *fuori convenzione*:")
-    print("   qui si stampa la struttura viva, che e un inventario e non un giudizio.")
+    dichiarata = "CONVENZIONE DI CARTELLE" in read("CLAUDE.md")
+    if dichiarata:
+        print("-- convenzione di cartelle DICHIARATA in CLAUDE.md (sezione omonima).")
+        print("   Il confronto fra struttura viva e norma resta da fare a occhio:")
+        print("   qui si stampa la struttura, che e la meta misurabile.")
+    else:
+        print("-- NESSUNA convenzione di cartelle e DICHIARATA in CLAUDE.md.")
+        print("   Senza norma dichiarata non esiste il predicato *fuori convenzione*:")
+        print("   qui si stampa la struttura viva, che e un inventario e non un giudizio.")
     print("\n-- cartelle di primo livello sotto src/ (con conteggio moduli non-test)")
     for d in sorted(x for x in os.listdir("src") if os.path.isdir(os.path.join("src", x))):
         n = len([p for p in walk(os.path.join("src", d), (".js", ".jsx"))
@@ -126,6 +162,9 @@ def voce3():
             dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
             baks += [os.path.join(root, f) for f in files if ".bak" in f]
     righe(["%-58s %s" % (p, "TRACCIATO" if tracked(p) else "ignorato") for p in sorted(baks)])
+    esito("%s; .bak in alberi di codice: %d (tracciati %d)",
+          "convenzione DICHIARATA in CLAUDE.md" if dichiarata else "nessuna convenzione dichiarata",
+          len(baks), sum(1 for p in baks if tracked(p)))
 
 
 # ---------------------------------------------------------------- 4
@@ -147,6 +186,7 @@ def voce4():
                 out.append("%-50s %-28s (%d occorrenze nel proprio file)"
                            % (p, n, len(re.findall(r"\b%s\b" % re.escape(n), t))))
     righe(sorted(out))
+    esito("export mai referenziati fuori dal proprio file: %d", len(out))
 
 
 # ---------------------------------------------------------------- 5
@@ -156,12 +196,16 @@ def voce5():
     corpus = "".join(read(p) for p in walk(".", (".js", ".jsx", ".mjs", ".html", ".cjs"))
                      if "package" not in os.path.basename(p))
     print("-- npm (la sorgente package.json e ESCLUSA dal corpus: evita la tautologia)")
+    npm_tot, npm_non_usate, npm_non_fissate = 0, 0, 0
     for lab in ("dependencies", "devDependencies"):
         print("   [%s]" % lab)
         for k, v in sorted(pkg.get(lab, {}).items()):
             used = bool(re.search(r"""(from\s+['"]%s['"/]|require\(['"]%s['"/]|['"]%s['"])"""
                                   % ((re.escape(k),) * 3), corpus)) or k in corpus
             pin = "SI" if not re.match(r"^[\^~]", v) else "no"
+            npm_tot += 1
+            npm_non_usate += 0 if used else 1
+            npm_non_fissate += 0 if pin == "SI" else 1
             print("     %-28s %-12s usato=%-3s fissato=%s" % (k, v, "SI" if used else "NO", pin))
     print("\n-- pip: requirements.txt contro pyproject.toml")
     req = [l.strip() for l in read("backend/requirements.txt").split("\n") if l.strip()]
@@ -172,7 +216,15 @@ def voce5():
     righe(["pyp  " + r for r in pyp])
     def nome(x): return re.split(r"[<>=~\[]", x)[0]
     solo_req = sorted(set(map(nome, req)) - set(map(nome, pyp)))
+    solo_pyp = sorted(set(map(nome, pyp)) - set(map(nome, req)))
     print("   presenti SOLO in requirements.txt: %s" % (solo_req or "nessuna"))
+    print("   presenti SOLO in pyproject.toml  : %s" % (solo_pyp or "nessuna"))
+    req_non_fissate = sum(1 for r in req if not re.search(r"[<>=~]", r))
+    pyp_non_fissate = sum(1 for r in pyp if not re.search(r"[<>=~]", r))
+    esito("npm %d: non usate %d, non fissate %d | pip: solo-req %d, solo-pyp %d, "
+          "non fissate req %d pyp %d",
+          npm_tot, npm_non_usate, npm_non_fissate,
+          len(solo_req), len(solo_pyp), req_non_fissate, pyp_non_fissate)
 
 
 # ---------------------------------------------------------------- 6
@@ -186,10 +238,14 @@ def voce6():
     gen = read("scripts/genera-icone.mjs")
     righe([p for p in bins if os.path.basename(p) in gen], "nessuno")
     print("\n-- artefatti di build tracciati (attesi ZERO)")
-    righe([p for p in ls if re.match(r"^(dist|dist-mini|node_modules)/", p)], "nessuno")
+    build = [p for p in ls if re.match(r"^(dist|dist-mini|node_modules)/", p)]
+    righe(build, "nessuno")
     print("\n-- untracked NON ignorati (produrrebbero DRIFT sul CP0)")
     porc = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True).stdout
-    righe([l for l in porc.split("\n") if l.strip()], "nessuno -- TREE pulito")
+    drift = [l for l in porc.split("\n") if l.strip()]
+    righe(drift, "nessuno -- TREE pulito")
+    esito("binari tracciati %d; artefatti di build tracciati %d; TREE sporco %d",
+          len(bins), len(build), len(drift))
 
 
 # ---------------------------------------------------------------- 7
@@ -211,15 +267,24 @@ def voce7():
     print("-- lette dal frontend (%d): %s" % (len(vite), sorted(vite)))
     alldef = set().union(*envs.values()) if envs else set()
     print("\n-- DEFINITE e MAI LETTE")
+    n_mute = 0
     for f, ks in envs.items():
-        righe(["%s: %s" % (f, k) for k in sorted(ks - lette - vite)], "%s: nessuna" % f)
+        mute = sorted(ks - lette - vite)
+        n_mute += len(mute)
+        righe(["%s: %s" % (f, k) for k in mute], "%s: nessuna" % f)
     print("\n-- LETTE e MAI DEFINITE in alcun file .env (hanno default nel codice o vengono da CLI)")
-    righe(sorted((lette | vite) - alldef))
+    orfane = sorted((lette | vite) - alldef)
+    righe(orfane)
     print("\n-- divergenza .env.dev contro .env.dev.example")
+    n_div = 0
     if "backend/.env.dev" in envs and "backend/.env.dev.example" in envs:
         a, b = envs["backend/.env.dev"], envs["backend/.env.dev.example"]
+        n_div = len(a ^ b)
         print("   solo nel reale: %s" % (sorted(a - b) or "nessuna"))
         print("   solo nello example: %s" % (sorted(b - a) or "nessuna"))
+    esito("lette be %d fe %d; definite e mai lette %d; lette e mai definite %d; "
+          "divergenza dev/example %d",
+          len(lette), len(vite), n_mute, len(orfane), n_div)
 
 
 # ---------------------------------------------------------------- 8
@@ -250,6 +315,10 @@ def voce8():
                           "MIGRAZIONE one-shot" if "/migrations/" in p else "CODICE DI PRODOTTO"))
     print("   except nudo: %d" % len(nudo)); righe(nudo, "nessuno")
     print("   except-pass: %d" % len(ep)); righe(ep, "nessuno")
+    ep_prod = sum(1 for x in ep if "CODICE DI PRODOTTO" in x)
+    esito("JS catch muti %d, annotati %d; py except nudo %d, except-pass %d "
+          "(di cui in codice di prodotto %d)",
+          len(vuoti), len(commentati), len(nudo), len(ep), ep_prod)
 
 
 # ---------------------------------------------------------------- 9
@@ -271,10 +340,12 @@ def voce9():
     print("-- endpoint dichiarati: %d" % len(eps))
     print("-- path /api citati dal frontend non-test: %d" % len(calls))
     print("\n-- MAI CHIAMATI dal frontend")
-    righe(["%-6s %-46s %s" % (m, p, f) for m, p, f in sorted(eps, key=lambda x: x[1])
-           if not any(base(c).startswith(base(p)) for c in calls)], "nessuno")
+    muti = [(m, p, f) for m, p, f in sorted(eps, key=lambda x: x[1])
+            if not any(base(c).startswith(base(p)) for c in calls)]
+    righe(["%-6s %-46s %s" % (m, p, f) for m, p, f in muti], "nessuno")
     print("\n-- CHIAMATE senza endpoint dichiarato")
-    righe(sorted(c for c in calls if not any(base(c).startswith(base(p)) for _, p, _ in eps)), "nessuna")
+    orfane = sorted(c for c in calls if not any(base(c).startswith(base(p)) for _, p, _ in eps))
+    righe(orfane, "nessuna")
     print("\n-- copie dei tipi di payload")
     md = "backend/pharmatimer_api/models"
     n_py = len([f for f in os.listdir(md) if f.endswith(".py") and f != "__init__.py"])
@@ -282,8 +353,12 @@ def voce9():
                ("src/data/repository/IRepository.js", "src/domain/types.js"))
     print("   pydantic backend : %d moduli in %s" % (n_py, md))
     print("   JSDoc frontend   : %d typedef fra IRepository.js e domain/types.js" % n_js)
+    n_gen = len([p for p in walk("src", (".js",)) if "openapi" in read(p).lower()])
     print("   client generato da openapi: %d file (0 = i tipi vivono in DUE copie non collegate)"
-          % len([p for p in walk("src", (".js",)) if "openapi" in read(p).lower()]))
+          % n_gen)
+    esito("endpoint %d, mai chiamati %d; chiamate senza endpoint %d; "
+          "tipi in %d copie non collegate",
+          len(eps), len(muti), len(orfane), 1 if n_gen else 2)
 
 
 # ---------------------------------------------------------------- 10
@@ -310,9 +385,14 @@ def voce10():
     for p in walk("src", (".js", ".jsx")):
         d = os.path.dirname(p)
         agg[d][1 if (".test." in p or ".spec." in p) else 0] += 1
+    zero = 0
     for d in sorted(agg):
         s, t = agg[d]
+        if s and not t:
+            zero += 1
         print("   %-42s src=%-3d test=%-3d%s" % (d, s, t, "   <-- ZERO TEST" if s and not t else ""))
+    esito("file di test fe %d be %d; marcatori di salto js %d py %d; aree a zero test %d",
+          len(ft), len(bt), len(skip_js), len(skip_py), zero)
 
 
 # ---------------------------------------------------------------- 11
@@ -332,6 +412,9 @@ def voce11():
     print("   linter python          : %s" % (pyt or "NESSUNO"))
     print("\n   ESITO: %s" % ("configurato" if (cfgs and tools) else
           "NON CONFIGURATO -- non esiste lint da eseguire in questo repo"))
+    esito("lint %s: config %d, pacchetti npm %d, script npm %d, linter python %s",
+          "CONFIGURATO" if (cfgs and tools) else "NON CONFIGURATO",
+          len(cfgs), len(tools), len(scripts), ",".join(pyt) or "nessuno")
 
 
 # ---------------------------------------------------------------- 12
@@ -347,8 +430,11 @@ def voce12():
             d, "SI" if b in claude else "no", "SI" if b in readme else "no",
             "tracciato" if tracked(d) else "IGNORED"))
     print("\n-- NON referenziati da nessuno dei due")
-    righe([d for d in docs if os.path.basename(d) not in claude
-           and os.path.basename(d) not in readme])
+    muti = [d for d in docs if os.path.basename(d) not in claude
+            and os.path.basename(d) not in readme]
+    righe(muti)
+    esito("documenti %d, non referenziati ne da CLAUDE.md ne da README %d",
+          len(docs), len(muti))
 
 
 
@@ -423,8 +509,11 @@ def voce13():
         ("FK verso farmaci", r"fk_log_farmaco"),
         ("colonna client_op_id", r"client_op_id CHAR\(36\)"),
     ]
+    n_dich = 0
     for nome, pat in attesi:
-        print("  %-26s %s" % (nome, "DICHIARATO" if re.search(pat, ddl) else "ASSENTE -- RISCHIO"))
+        ok = bool(re.search(pat, ddl))
+        n_dich += 1 if ok else 0
+        print("  %-26s %s" % (nome, "DICHIARATO" if ok else "ASSENTE -- RISCHIO"))
     print("\n-- colonne di log_assunzioni DOPO il ripiegamento della catena")
     print("   (fonte: CREATE TABLE piu ogni MODIFY/ADD COLUMN successivo, in ordine)")
     for nome, tipo, nullable in cols.get("log_assunzioni", []):
@@ -448,6 +537,8 @@ def voce13():
     righe(mosse, "nessuna -- il CREATE iniziale e ancora esatto")
     print("\n  NOTA: questo e lo schema DICHIARATO. Lo schema REALE si misura solo")
     print("        col DB vivo: vedi scripts/audit/db_probe.sql")
+    esito("vincoli attesi dichiarati %d/%d; colonne di log_assunzioni %d, mosse dalla catena %d",
+          n_dich, len(attesi), len(cols.get("log_assunzioni", [])), len(mosse))
 
 
 # ---------------------------------------------------------------- 14
@@ -470,12 +561,20 @@ def voce14():
         print("          Il fuso del DB non e pinnato dalla catena: si misura con")
         print("          il blocco P4a di db_probe.sql (@@time_zone).")
     print("\n-- client: costruzioni di Date sensibili al fuso")
+    n_date = 0
     for p2 in walk("src", (".js", ".jsx")):
         if ".test." in p2:
             continue
         for i, l in enumerate(read(p2).split("\n")):
             if re.search(r"new Date\(`?\$?\{?[^)]*T\$?\{?", l) or "toISOString" in l:
+                n_date += 1
                 print("   %s:%d  %s" % (p2, i + 1, l.strip()[:74]))
+    esito("DATETIME %d, TIMESTAMP %d, TIME %d, DATE %d -> %s; sedi client sensibili al fuso %d",
+          len(per_tipo["DATETIME"]), len(per_tipo["TIMESTAMP"]),
+          len(per_tipo["TIME"]), len(per_tipo["DATE"]),
+          "DUE SEMANTICHE nella stessa base"
+          if (per_tipo["DATETIME"] and per_tipo["TIMESTAMP"]) else "una sola semantica",
+          n_date)
 
 
 # ---------------------------------------------------------------- 15
@@ -497,9 +596,13 @@ def voce15():
     ob = read("src/domain/outboxSplitter.js")
     m = re.search(r"function defaultNewId\(\)\s*\{([^}]*)\}", ob)
     corpo = m.group(1).strip() if m else "non trovata"
+    fallback = "catch" in corpo or "||" in corpo
     print("   %s" % corpo)
     print("   fallback se crypto.randomUUID manca: %s"
-          % ("SI" if ("catch" in corpo or "||" in corpo) else "NESSUNO -- solleva e la presa non viene targata"))
+          % ("SI" if fallback else "NESSUNO -- solleva e la presa non viene targata"))
+    esito("livelli di guardia presenti %d/%d; fallback della targa: %s",
+          sum(1 for _, ok in liv if ok), len(liv),
+          "SI" if fallback else "NESSUNO -- RISCHIO")
 
 
 # ---------------------------------------------------------------- 16
@@ -518,12 +621,17 @@ def voce16():
         for m in re.finditer(r"@property \{([^}]+)\}\s*\[?(\w+)\]?", tb.group(1)):
             campi_js[m.group(2)] = m.group(1)
     print("  %-26s %-34s %s" % ("campo", "pydantic (server)", "typedef (client)"))
+    soli = 0
     for k in sorted(set(campi_py) | set(campi_js)):
         a = campi_py.get(k, "-- ASSENTE --")
         b = campi_js.get(k, "-- ASSENTE --")
-        flag = "" if (k in campi_py and k in campi_js) else "   <-- SOLO IN UNA COPIA"
-        print("  %-26s %-34s %s%s" % (k, a[:33], b[:26], flag))
+        comune = k in campi_py and k in campi_js
+        soli += 0 if comune else 1
+        print("  %-26s %-34s %s%s" % (k, a[:33], b[:26],
+                                      "" if comune else "   <-- SOLO IN UNA COPIA"))
     print("\n  copie: 2, non collegate da alcuno schema generato.")
+    esito("campi confrontati %d (pydantic %d, typedef %d); presenti in una sola copia %d",
+          len(set(campi_py) | set(campi_js)), len(campi_py), len(campi_js), soli)
 
 
 # ---------------------------------------------------------------- 17
@@ -543,12 +651,18 @@ def voce17():
     print("\n  ESITO: %s" % ("SOLO TIMER DI PAGINA -- con app chiusa o device sospeso"
                               " il timer non esiste e la notifica NON parte." if solo_timer
                               else "presente almeno un meccanismo indipendente dalla pagina"))
+    tab_push = "push_subscriptions" in "".join(
+        read("backend/db/migrations/" + f) for f in os.listdir("backend/db/migrations")
+        if f.endswith(".sql"))
+    rif_push = sum(1 for p2 in walk("src", (".js", ".jsx")) + walk("backend", (".py",))
+                   if "push_subscriptions" in read(p2) or "pushManager" in read(p2))
     print("  tabella push_subscriptions nello schema: %s; riferimenti nel codice: %d"
-          % ("SI" if "push_subscriptions" in "".join(
-              read("backend/db/migrations/" + f) for f in os.listdir("backend/db/migrations")
-              if f.endswith(".sql")) else "no",
-             sum(1 for p2 in walk("src", (".js", ".jsx")) + walk("backend", (".py",))
-                 if "push_subscriptions" in read(p2) or "pushManager" in read(p2))))
+          % ("SI" if tab_push else "no", rif_push))
+    esito("meccanismi presenti %d/%d -> %s; tabella push %s, riferimenti %d",
+          sum(1 for _, ok in mecc if ok), len(mecc),
+          "SOLO TIMER DI PAGINA: ad app chiusa la notifica NON parte" if solo_timer
+          else "presente un meccanismo indipendente dalla pagina",
+          "SI" if tab_push else "no", rif_push)
 
 
 # ---------------------------------------------------------------- 18
@@ -575,6 +689,8 @@ def voce18():
              else "NON sono messe in cache: il SW non puo servire prese stale"))
     print("  La staleness vive altrove: nello specchio IndexedDB di SyncRepository,")
     print("  che e deliberato e marcato per freschezza (getMirrorFreshness).")
+    esito("runtimeCaching attive %d, commentate %d; risposte /api in cache: %s",
+          len(attive), len(commentate), "SI -- verificare la staleness" if api_cached else "no")
 
 
 
@@ -606,8 +722,9 @@ def voce19():
     print("  Ogni DB bersaglio sotto questo livello e INCOMPATIBILE col codice attuale.")
     print("  L ORDINE DI SCHIERAMENTO E VINCOLANTE: migrazione PRIMA, codice DOPO.")
     print("\n  applicatori di produzione presenti nel repo")
-    righe(sorted("backend/db/migrations/" + f for f in os.listdir("backend/db/migrations")
-                 if f.startswith("apply_") and "prod" in f), "nessuno")
+    appl = sorted("backend/db/migrations/" + f for f in os.listdir("backend/db/migrations")
+                  if f.startswith("apply_") and "prod" in f)
+    righe(appl, "nessuno")
     print("\n  COPERTURA DEL GATE, dichiarata e non dedotta")
     mk = read("Makefile")
     print("     versione del backend in produzione : %s (make prod-check, INFO)"
@@ -617,6 +734,10 @@ def voce19():
              if "client_op_id" in mk else "NON SORVEGLIATO"))
     print("     NOTA: fino allo smontaggio del gate questa riga leggeva scripts/cp0.sh,")
     print("     che sorvegliava la versione ma NON le migrazioni. Ora la coppia e chiusa.")
+    esito("livello minimo richiesto dal codice: %s; applicatori di produzione %d; "
+          "migrazioni del bersaglio %s",
+          richiesto or "nessuna oltre v01", len(appl),
+          "sorvegliate da make g21" if "client_op_id" in mk else "NON sorvegliate")
 
 
 VOCI = {1: voce1, 2: voce2, 3: voce3, 4: voce4, 5: voce5, 6: voce6,
@@ -629,9 +750,17 @@ if __name__ == "__main__":
     sel = None
     if "--voce" in sys.argv:
         sel = int(sys.argv[sys.argv.index("--voce") + 1])
-    print("PharmaTimer -- INVENTARIO DI STRUTTURA E QUALITA (sola lettura)")
-    for n in sorted(VOCI):
-        if sel is None or sel == n:
-            VOCI[n]()
-    print("\n" + "=" * 72)
-    print("FINE INVENTARIO -- nessun file e stato modificato.")
+    COMPATTO = "--compatto" in sys.argv
+    if COMPATTO:
+        print("== INVENTARIO (compatto: solo lo esito per voce; dettaglio con make inventario) ==")
+        for n in sorted(VOCI):
+            if sel is None or sel == n:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    VOCI[n]()
+    else:
+        print("PharmaTimer -- INVENTARIO DI STRUTTURA E QUALITA (sola lettura)")
+        for n in sorted(VOCI):
+            if sel is None or sel == n:
+                VOCI[n]()
+        print("\n" + "=" * 72)
+        print("FINE INVENTARIO -- nessun file e stato modificato.")

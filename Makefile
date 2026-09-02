@@ -17,8 +17,9 @@ LINT_BASELINE := scripts/audit/lint-baseline.txt
 BASE := https://marketreader-server.taila127de.ts.net
 MINI_MYSQL := /opt/homebrew/bin/mysql --defaults-file=/Users/marketreader/.my-pharmatimer.cnf
 
-.PHONY: check prod-check lint lint-backend lint-frontend test test-frontend test-backend \
-        inventario albero g21 help
+.PHONY: check prod-check lint lint-backend lint-frontend test test-frontend \
+        test-frontend-compatto test-backend inventario inventario-compatto \
+        albero g21 help
 
 help:
 	@echo "gate di sessione : make check"
@@ -42,15 +43,16 @@ lint-frontend:
 	  echo "ROSSO  eslint non installato: npm i -D eslint"; exit 1; \
 	fi
 
+# I conteggi: unica fonte per i due modi. --format json perche il formato unix
+# non esiste in eslint 10 e rendeva 0, che e un falso verde.
 lint:
 	@rc=0; \
+	nb=$$(cd backend && venv/bin/ruff check --quiet --output-format=concise . 2>/dev/null | grep -c . || true); \
+	nf=$$(npx eslint . --format json 2>/dev/null | python3 -c 'import json,sys; print(sum(len(f["messages"]) for f in json.load(sys.stdin)))' 2>/dev/null || echo 0); \
 	if [ -f "$(LINT_BASELINE)" ]; then \
 	  echo "== LINT (modo BASELINE: rosso solo se i reperti CRESCONO) =="; \
-	  echo "   conteggio da --format json: il formato unix non esiste in eslint 10 e rendeva 0"; \
 	  bb=$$(grep '^backend=' "$(LINT_BASELINE)" | cut -d= -f2); \
 	  bf=$$(grep '^frontend=' "$(LINT_BASELINE)" | cut -d= -f2); \
-	  nb=$$(cd backend && venv/bin/ruff check --quiet --output-format=concise . 2>/dev/null | grep -c . || true); \
-	  nf=$$(npx eslint . --format json 2>/dev/null | python3 -c 'import json,sys; print(sum(len(f["messages"]) for f in json.load(sys.stdin)))' 2>/dev/null || echo 0); \
 	  echo "   backend  baseline=$$bb  ora=$$nb"; \
 	  echo "   frontend baseline=$$bf  ora=$$nf"; \
 	  if [ "$$nb" -gt "$$bb" ] || [ "$$nf" -gt "$$bf" ]; then \
@@ -62,8 +64,14 @@ lint:
 	  fi; \
 	else \
 	  echo "== LINT (modo STRETTO: nessuna baseline, ogni reperto e rosso) =="; \
-	  $(MAKE) --no-print-directory lint-backend || rc=1; \
-	  $(MAKE) --no-print-directory lint-frontend || rc=1; \
+	  echo "   backend  reperti=$$nb"; \
+	  echo "   frontend reperti=$$nf"; \
+	  echo "   dettaglio: make lint-backend | make lint-frontend"; \
+	  if [ "$$nb" -gt 0 ] || [ "$$nf" -gt 0 ]; then \
+	    echo "ROSSO  reperti presenti: il modo stretto non ne ammette"; rc=1; \
+	  else \
+	    echo "VERDE  zero reperti"; \
+	  fi; \
 	fi; \
 	exit $$rc
 
@@ -71,6 +79,21 @@ lint:
 test-frontend:
 	@echo "== TEST FRONTEND (vitest) =="
 	@umask 022 && npx vitest run
+
+# Forma usata da make check: stampa il solo riepilogo quando e verde, e
+# l output integrale quando e rosso, perche un fallimento va potuto leggere.
+test-frontend-compatto:
+	@echo "== TEST FRONTEND (vitest, riepilogo) =="
+	@out=$$(umask 022 && npx vitest run 2>&1); rc=$$?; \
+	if [ $$rc -eq 0 ]; then \
+	  printf '%s\n' "$$out" | grep -E '^[[:space:]]*(Test Files|Tests|Duration)' \
+	    | sed 's/^[[:space:]]*/   /'; \
+	  echo "   dettaglio: make test-frontend"; \
+	else \
+	  echo "ROSSO  vitest: segue lo output integrale"; \
+	  printf '%s\n' "$$out"; \
+	fi; \
+	exit $$rc
 
 test-backend:
 	@echo "== TEST BACKEND (pytest) =="
@@ -90,6 +113,11 @@ test: test-frontend test-backend
 # ----------------------------------------------------------------- INVENTARIO
 inventario:
 	@python3 scripts/audit/inventario.py
+
+# Forma usata da make check: il solo esito per voce, calcolato dalla voce stessa.
+inventario-compatto:
+	@python3 scripts/audit/inventario.py --compatto
+	@echo "   dettaglio: make inventario"
 
 # ----------------------------------------------------------------- ALBERO
 albero:
@@ -112,9 +140,9 @@ check:
 	@echo "###############################################"
 	@rc=0; \
 	$(MAKE) --no-print-directory lint || rc=1; \
-	echo; $(MAKE) --no-print-directory test-frontend || rc=1; \
+	echo; $(MAKE) --no-print-directory test-frontend-compatto || rc=1; \
 	echo; $(MAKE) --no-print-directory test-backend || rc=1; \
-	echo; $(MAKE) --no-print-directory inventario || rc=1; \
+	echo; $(MAKE) --no-print-directory inventario-compatto || rc=1; \
 	echo; $(MAKE) --no-print-directory albero || rc=1; \
 	echo; echo "###############################################"; \
 	if [ $$rc -eq 0 ]; then echo "# VERDETTO: VERDE"; else echo "# VERDETTO: ROSSO -- vedi i blocchi marcati sopra"; fi; \
