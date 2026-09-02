@@ -17,7 +17,6 @@ from pharmatimer_api.models.farmaco import (
     FarmacoUpdate,
 )
 
-
 router = APIRouter(prefix="/api", tags=["farmaci"])
 
 

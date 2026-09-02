@@ -12,8 +12,6 @@ is used WITHOUT a context manager to avoid lifespan pool re-init (Lesson #19).
 """
 
 import importlib
-import os
-import sys
 
 import pytest
 from fastapi.testclient import TestClient

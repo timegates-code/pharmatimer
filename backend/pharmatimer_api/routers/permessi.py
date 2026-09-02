@@ -15,8 +15,6 @@ Pattern Lesson #25 (autocommit pool transaction implicit-then-commit):
 # SENTINEL_N5E_BETA_CP1_ROUTER_PERMESSI
 from __future__ import annotations
 
-from typing import List
-
 from fastapi import APIRouter, Depends, status
 from mysql.connector import IntegrityError
 
@@ -36,11 +34,11 @@ from pharmatimer_api.models.permesso import (
 router = APIRouter(prefix="/api/permessi", tags=["permessi"])
 
 
-@router.get("", response_model=List[PermessoResponse])
+@router.get("", response_model=list[PermessoResponse])
 def list_permessi(
     current_user: CurrentUser = Depends(get_current_user),
     conn=Depends(get_db),
-) -> List[PermessoResponse]:
+) -> list[PermessoResponse]:
     """List permessi visible to current_user (bidirectional scope).
 
     Returns rows where current_user is caregiver_id OR paziente_id.

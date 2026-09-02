@@ -69,6 +69,17 @@ ignore = [
     # e dependencies, nessuno un difetto. Baselinarli sarebbe rumore permanente,
     # perche non possono scendere finche si usa FastAPI.
     "B008",
+    # UP042 -- "usa StrEnum invece di ereditare da str e Enum". Due reperti,
+    # RepositoryErrorCode e RepositoryErrorSeverity in exceptions.py. Ruff
+    # stesso marca il fix UNSAFE, e StrEnum esiste solo da python 3.11: la
+    # versione che gira sul Mini di produzione NON e misurabile da qui, e
+    # convertire alla cieca romperebbe lo import allo avvio del servizio.
+    # Misurato che la conversione sarebbe neutra sul filo: il handler
+    # serializza con .value esplicito e nessuna sede usa str() o una
+    # f-string su quei membri. Resta quindi una scelta di schieramento, non
+    # un difetto: si toglie da qui il giorno in cui si misura python >= 3.11
+    # sul Mini.
+    "UP042",
 ]
 
 [tool.ruff.lint.per-file-ignores]

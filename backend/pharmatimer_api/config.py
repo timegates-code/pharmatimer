@@ -12,7 +12,6 @@ N+5.M-pivot-exec-beta-1 refactor (s.6.NN-Fase3 Q-I.1=(b)+Q-I.3=(b)):
 
 SENTINEL_N5M_PIVOT_EXEC_BETA1_BACKEND_REFACTOR_APPLIED
 """
-from typing import Optional
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -29,12 +28,12 @@ class Settings(BaseSettings):
     # Database (mysql-connector-python direct, no ORM)
     DB_HOST: str = "localhost"
     DB_PORT: int = 3306
-    DB_USER: Optional[str] = None
-    DB_PASSWORD: Optional[str] = None
-    DB_NAME: Optional[str] = None
+    DB_USER: str | None = None
+    DB_PASSWORD: str | None = None
+    DB_NAME: str | None = None
     DB_NAME_TEST: str = "pharmatimer_test"
     DB_POOL_SIZE: int = 5
-    DB_DEFAULTS_FILE: Optional[str] = None
+    DB_DEFAULTS_FILE: str | None = None
 
     # API server
     API_HOST: str = "127.0.0.1"

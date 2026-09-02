@@ -15,7 +15,7 @@ Optional ricalcolo_dose_successiva (CP1.C): atomic UPSERT dose D+1 'ricalcolata'
 Scope F3-S3alpha: only /presa command. /saltata, /sospesa, /undo, /recupero
 deferred F3-S3beta (par.11.D-S3 F3-S3.F split ratified).
 """
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query, Response, status
 from mysql.connector.pooling import PooledMySQLConnection
@@ -31,7 +31,6 @@ from pharmatimer_api.models.log_assunzione import (
     LogAssunzioneUndoPayload,
     LogAssunzioneVerboResponse,
 )
-
 
 router = APIRouter(prefix="/api", tags=["log_assunzioni"])
 
@@ -645,7 +644,7 @@ def post_undo(
                 ),
             )
 
-        audit_ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        audit_ts = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
         note_new = _compose_undo_audit_note(existing["note"], audit_ts)
         target_stato = (
             "ricalcolata" if existing["ora_ricalcolata"] is not None else "prevista"

@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import hashlib
 import secrets
+from collections.abc import Callable, Generator
 from datetime import date
-from typing import Callable, Generator, Tuple
 
 import pytest
 from fastapi.testclient import TestClient
@@ -20,7 +20,6 @@ from pharmatimer_api.app import app
 from pharmatimer_api.config import settings
 from pharmatimer_api.db import connection as conn_module
 from pharmatimer_api.db.dependencies import get_db
-
 
 _TRUNCATE_ORDER = [
     "log_assunzioni",
@@ -76,7 +75,7 @@ def cleanup_test_data(db_test_pool: MySQLConnectionPool) -> Generator[None, None
 
 
 @pytest.fixture
-def seed_owner_test(db_test_pool: MySQLConnectionPool) -> Tuple[str, int]:
+def seed_owner_test(db_test_pool: MySQLConnectionPool) -> tuple[str, int]:
     """Inline idempotent owner seed for tests. Returns (token_plaintext, owner_id)."""
     token = secrets.token_urlsafe(32)
     token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
@@ -102,9 +101,9 @@ def seed_owner_test(db_test_pool: MySQLConnectionPool) -> Tuple[str, int]:
 
 
 @pytest.fixture
-def insert_test_user(db_test_pool: MySQLConnectionPool) -> Callable[..., Tuple[str, int]]:
+def insert_test_user(db_test_pool: MySQLConnectionPool) -> Callable[..., tuple[str, int]]:
     """Factory fixture: insert additional user. Returns (token_plaintext, user_id)."""
-    def _insert(nome: str = "OtherUser", ruolo: str = "paziente", attivo: bool = True) -> Tuple[str, int]:
+    def _insert(nome: str = "OtherUser", ruolo: str = "paziente", attivo: bool = True) -> tuple[str, int]:
         token = secrets.token_urlsafe(32)
         token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
         conn = db_test_pool.get_connection()

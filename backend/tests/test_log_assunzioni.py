@@ -5,16 +5,16 @@ Pytest READ + POST presa log_assunzioni scoped utente+farmaco (4 test).
 GET /api/farmaci/{id}/log: T1 empty + T2 scoped cross-farmaco isolation.
 POST /api/farmaci/{id}/log/presa: T3 happy + nested ricalcolo + T4 scope 404.
 """
-from datetime import date, datetime, time as dtime
-from typing import Callable, Tuple
+from collections.abc import Callable
+from datetime import date, datetime
+from datetime import time as dtime
 
-import pytest
 from fastapi.testclient import TestClient
 
 
 def test_get_log_empty(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T1: GET log per farmaco senza eventi -> 200 + []."""
@@ -32,7 +32,7 @@ def test_get_log_empty(
 
 def test_get_log_scoped_cross_farmaco(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T2: POST presa su farmaco A + GET log su farmaco B -> [] (no leak)."""
@@ -74,7 +74,7 @@ def test_get_log_scoped_cross_farmaco(
 
 def test_post_presa_with_ricalcolo(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T3: POST presa con ricalcolo_dose_successiva -> 201 + dose D+1 ricalcolata."""
@@ -132,8 +132,8 @@ def test_post_presa_with_ricalcolo(
 
 def test_post_presa_scope_violation(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
-    insert_test_user: Callable[..., Tuple[str, int]],
+    seed_owner_test: tuple[str, int],
+    insert_test_user: Callable[..., tuple[str, int]],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T4: POST presa su farmaco di altro utente -> 404 (security-by-obscurity)."""

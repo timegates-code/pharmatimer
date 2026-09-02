@@ -5,10 +5,9 @@ Pytest orari_base nested scoped utente+farmaco (4 test).
 GET /api/farmaci/{id}/orari: T1 empty + T2 scoped cross-farmaco isolation.
 PUT /api/farmaci/{id}/orari: T3 bulk replace happy + T4 scope violation 404.
 """
+from collections.abc import Callable
 from datetime import date, timedelta
-from typing import Callable, Tuple
 
-import pytest
 from fastapi.testclient import TestClient
 
 
@@ -27,7 +26,7 @@ def _orario(dose_numero: int = 1, **overrides) -> dict:
 
 def test_get_orari_empty(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T1: GET orari per farmaco senza orari -> 200 + []."""
@@ -43,7 +42,7 @@ def test_get_orari_empty(
 
 def test_get_orari_scoped_cross_farmaco(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T2: PUT orari su farmaco A + GET su farmaco B -> [] (no leak cross-farmaco)."""
@@ -75,7 +74,7 @@ def test_get_orari_scoped_cross_farmaco(
 
 def test_put_bulk_replace_happy(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T3: PUT 3 orari -> 200 + 3 items, poi PUT 1 orario -> only 1 (full replace)."""
@@ -115,8 +114,8 @@ def test_put_bulk_replace_happy(
 
 def test_put_orari_scope_violation_other_user(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
-    insert_test_user: Callable[..., Tuple[str, int]],
+    seed_owner_test: tuple[str, int],
+    insert_test_user: Callable[..., tuple[str, int]],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T4: PUT orari su farmaco di altro utente -> 404 (security-by-obscurity)."""
@@ -144,7 +143,7 @@ def _orario_assoluto(dose_numero: int, data_specifica: str, **overrides) -> dict
 
 def test_put_orari_fisso_date_roundtrip(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T5: PUT fisso_date 2 date x 2 dosi (assoluto) -> round-trip + ORDER BY data,dose."""
@@ -175,7 +174,7 @@ def test_put_orari_fisso_date_roundtrip(
 
 def test_put_orari_fisso_date_mixed_422(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T6: payload misto (valorizzata + NULL) -> 422 (farmaco mono-tipo, Q-F)."""
@@ -195,7 +194,7 @@ def test_put_orari_fisso_date_mixed_422(
 
 def test_put_orari_fisso_date_anchor_not_assoluto_422(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T7: riga con data_specifica e ancora != 'assoluto' -> 422 (Q-H)."""
@@ -212,7 +211,7 @@ def test_put_orari_fisso_date_anchor_not_assoluto_422(
 
 def test_put_orari_fisso_date_over_30_dates_422(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T8: > 30 date distinte -> 422 (Q-G)."""
@@ -233,7 +232,7 @@ def test_put_orari_fisso_date_over_30_dates_422(
 
 def test_put_orari_fisso_date_broken_sequence_422(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T9: sequenza dose_numero per-data con gap (1,3) -> 422."""
@@ -253,7 +252,7 @@ def test_put_orari_fisso_date_broken_sequence_422(
 
 def test_put_orari_recurring_null_regression(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T10: regressione righe ricorrenti (data_specifica NULL) -> 200 + campo None."""
@@ -276,7 +275,7 @@ def test_put_orari_recurring_null_regression(
 
 def test_put_orari_fisso_date_variable_kd_roundtrip(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T11: k_D variabile per data (1 dose il 07-01, 2 dosi il 07-02) -> 200 (Spec v1.16).
@@ -307,7 +306,7 @@ def test_put_orari_fisso_date_variable_kd_roundtrip(
 
 def test_put_orari_fisso_date_variable_kd_broken_seq_422(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T12: k_D variabile ma sequenza per-data con gap (07-02: 1,3) -> 422.

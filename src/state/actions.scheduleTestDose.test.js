@@ -194,6 +194,7 @@ describe('actions.scheduleTestDose — state freshness (§6.145)', () => {
     // The rescheduler iterates the state passed to it; if the thunk passed a
     // freshly-built state, the synthetic entry is in there. If the thunk
     // re-read getState(), the state.plan is still [] (no mutation in mock).
+    expect(getStateCallsAfterDispatch).toBe(0);
     expect(services.notifications.showDoseNotification).toHaveBeenCalledTimes(1);
     const [notifEntry] = services.notifications.showDoseNotification.mock.calls[0];
     expect(notifEntry.orario).toMatchObject({ farmaco_id: 10, dose_numero: 999 });

@@ -7,8 +7,9 @@ NULL, reset a zero s.6.264.
 Conteggio RIMISURATO sul file: la dicitura precedente dichiarava 4 ed era
 stantia da piu sessioni.
 """
-from datetime import date, datetime, time as dtime, timedelta
-from typing import Callable, Tuple
+from collections.abc import Callable
+from datetime import date, datetime, timedelta
+from datetime import time as dtime
 
 from fastapi.testclient import TestClient
 
@@ -19,7 +20,7 @@ def _setup_interval_drug_with_gap(
     owner_id: int,
     insert_test_farmaco: Callable[..., int],
     gap_minutes: int,
-) -> Tuple[int, date]:
+) -> tuple[int, date]:
     """Helper: create interval drug, POST /presa dose 1 late by `gap_minutes`,
     nested ricalcolo dose 2 -> D+1 'ricalcolata' with gap_minuti.
     Returns (farmaco_id, today).
@@ -60,7 +61,7 @@ def _setup_interval_drug_with_gap(
 
 def test_post_recupero_happy(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T1: /recupero 30min su ricalcolata gap=60 -> 200 + nuova ora_ricalcolata."""
@@ -116,7 +117,7 @@ def test_post_recupero_happy(
 
 def test_post_recupero_exceeds_gap(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T2: /recupero > gap_minuti -> 409 (eccesso)."""
@@ -143,7 +144,7 @@ def test_post_recupero_exceeds_gap(
 
 def test_post_recupero_invalid_state(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T3: /recupero su stato != 'ricalcolata' -> 409."""
@@ -177,7 +178,7 @@ def test_post_recupero_invalid_state(
 
 def test_post_recupero_no_gap(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T4: /recupero su dose 'ricalcolata' ma gap_minuti=0 -> 409 no_gap.
@@ -238,7 +239,7 @@ def test_post_recupero_no_gap(
 
 def test_post_recupero_cross_midnight_no_false_anticipation(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """Q-D (migration v04): dose 'ricalcolata' cross-midnight.
@@ -325,7 +326,7 @@ def _setup_gap120(
     owner_id: int,
     insert_test_farmaco: Callable[..., int],
     nome: str,
-) -> Tuple[int, date, datetime]:
+) -> tuple[int, date, datetime]:
     """Interval drug, dose 1 taken 2h late, dose 2 left 'ricalcolata'.
 
     Returns (farmaco_id, today, base_ricalcolata), where base_ricalcolata is
@@ -391,7 +392,7 @@ def _post_recupero(
 
 def test_post_recupero_repeated_is_absolute(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T6 (s.6.263): the same total posted twice is inert, not cumulative.
@@ -424,7 +425,7 @@ def test_post_recupero_repeated_is_absolute(
 
 def test_post_recupero_increase_reanchors(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T7 (s.6.263): raising the total re-anchors to the original time.
@@ -447,7 +448,7 @@ def test_post_recupero_increase_reanchors(
 
 def test_post_recupero_decrease_moves_dose_later(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T8 (s.6.263): lowering the total moves the dose later.
@@ -471,7 +472,7 @@ def test_post_recupero_decrease_moves_dose_later(
 
 def test_post_recupero_cumulative_stays_within_gap(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T9 (s.6.263): with an absolute total the gap check regains its meaning.
@@ -502,7 +503,7 @@ def test_post_recupero_cumulative_stays_within_gap(
 
 def test_post_recupero_reset_to_zero_restores_original(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T11 (s.6.264): recupero_minuti=0 is a legitimate gesture -- RESET.
@@ -551,7 +552,7 @@ def test_post_recupero_reset_to_zero_restores_original(
 
 def test_post_recupero_null_ora_ricalcolata_rejected(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
     db_test_pool,
 ) -> None:

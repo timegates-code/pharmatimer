@@ -8,6 +8,14 @@ RepositoryError exception handler deferred CP3 (vocabulary mapping with router).
 import os
 from contextlib import asynccontextmanager
 
+# SENTINEL_N5M_PIVOT_EXEC_BETA2_ATTEMPT2_APP_VERSION_DYNAMIC
+# F3-S6 N+5.M-pivot-exec-beta-2-attempt-2: dynamic version from package metadata.
+# Mini editable install -> real version (e.g. "0.7.0").
+# Studio venv non-editable -> fallback "0.0.0-dev" (drift-N45 carry-forward
+# par.22.98/22.99, Lesson #31 strong applicazione).
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _pkg_version
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -16,14 +24,13 @@ from fastapi.staticfiles import StaticFiles
 from pharmatimer_api.config import settings
 from pharmatimer_api.db.connection import close_pool, init_pool
 from pharmatimer_api.exceptions import RepositoryError, repository_error_handler
-from pharmatimer_api.routers import farmaci, health, log_assunzioni, orari, utenti  # CP1 F3-S4-alpha N+5.E-alpha applied SENTINEL
-
-# SENTINEL_N5M_PIVOT_EXEC_BETA2_ATTEMPT2_APP_VERSION_DYNAMIC
-# F3-S6 N+5.M-pivot-exec-beta-2-attempt-2: dynamic version from package metadata.
-# Mini editable install -> real version (e.g. "0.7.0").
-# Studio venv non-editable -> fallback "0.0.0-dev" (drift-N45 carry-forward
-# par.22.98/22.99, Lesson #31 strong applicazione).
-from importlib.metadata import PackageNotFoundError, version as _pkg_version
+from pharmatimer_api.routers import (  # CP1 F3-S4-alpha N+5.E-alpha applied SENTINEL
+    farmaci,
+    health,
+    log_assunzioni,
+    orari,
+    utenti,
+)
 
 try:
     __version__ = _pkg_version("pharmatimer-api")
@@ -66,6 +73,7 @@ app.include_router(utenti.router)
 # SENTINEL_N5E_BETA_CP1_APP_INCLUDE_PERMESSI
 # F3-S4-beta N+5.E-beta CP1 -- CRUD permessi caregiver
 from pharmatimer_api.routers import permessi as _permessi_module  # noqa: E402
+
 app.include_router(_permessi_module.router)
 
 # SENTINEL_N5QC_CP1_STATIC_SERVE -- Q-W.5 Pattern A static-serve PWA prod (Arch-1/A1-fastapi).

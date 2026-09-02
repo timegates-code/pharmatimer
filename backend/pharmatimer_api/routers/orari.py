@@ -18,7 +18,6 @@ from pharmatimer_api.db.dependencies import CurrentUser, get_current_user, get_d
 from pharmatimer_api.exceptions import RepositoryError, RepositoryErrorCode
 from pharmatimer_api.models.orario import OrariBulkPayload, OrarioResponse
 
-
 router = APIRouter(prefix="/api", tags=["orari"])
 
 

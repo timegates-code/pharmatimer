@@ -4,7 +4,6 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App.jsx";
 import { AppProvider } from "./state/AppContext.jsx";
 import { setupPWA } from "./pwa/registerSW.js";
-import { runSeedIfNeeded } from "./data/seed.js";
 import { installDevCheck } from "./data/devCheck.js";
 import "./index.css";
 

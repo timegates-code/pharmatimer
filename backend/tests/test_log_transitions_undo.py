@@ -4,15 +4,16 @@ PharmaTimer F3-S3-beta CP1
 Pytest /undo transitions (4 test): presa fisso, presa intervallo + D+1 rollback,
 saltata -> prevista, nothing_to_undo 409.
 """
-from datetime import date, datetime, time as dtime
-from typing import Callable, Tuple
+from collections.abc import Callable
+from datetime import date, datetime
+from datetime import time as dtime
 
 from fastapi.testclient import TestClient
 
 
 def test_post_undo_from_presa_fisso(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T1: /undo da 'presa' su farmaco 'fisso' -> 200 + stato 'prevista' + audit note."""
@@ -57,7 +58,7 @@ def test_post_undo_from_presa_fisso(
 
 def test_post_undo_from_presa_intervallo_rolls_back_d_plus_one(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T2: /undo da 'presa' su farmaco 'intervallo' con D+1 ricalcolata -> rollback D+1."""
@@ -126,7 +127,7 @@ def test_post_undo_from_presa_intervallo_rolls_back_d_plus_one(
 
 def test_post_undo_from_saltata(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T3: /undo da 'saltata' -> 200 + stato 'prevista' con audit note."""
@@ -157,7 +158,7 @@ def test_post_undo_from_saltata(
 
 def test_post_undo_nothing_to_undo(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T4: /undo su stato 'prevista' -> 409 nothing_to_undo."""

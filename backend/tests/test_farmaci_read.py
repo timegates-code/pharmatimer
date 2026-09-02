@@ -3,12 +3,12 @@ PharmaTimer F3-S1-bis-delta parte 2/2 CP4
 Tests for GET /api/farmaci (auth-scoped read endpoint).
 Validates: empty user, scoped per utente_id (no leak), inactive excluded, ordered by nome.
 """
-from typing import Callable, Tuple
+from collections.abc import Callable
 
 from fastapi.testclient import TestClient
 
 
-def test_farmaci_empty_user(client: TestClient, seed_owner_test: Tuple[str, int]) -> None:
+def test_farmaci_empty_user(client: TestClient, seed_owner_test: tuple[str, int]) -> None:
     """User with no farmaci receives 200 + empty list."""
     token, _ = seed_owner_test
     response = client.get("/api/farmaci", headers={"X-User-Token": token})
@@ -18,8 +18,8 @@ def test_farmaci_empty_user(client: TestClient, seed_owner_test: Tuple[str, int]
 
 def test_farmaci_scoped_utente(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
-    insert_test_user: Callable[..., Tuple[str, int]],
+    seed_owner_test: tuple[str, int],
+    insert_test_user: Callable[..., tuple[str, int]],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """User A token returns only farmaci of user A (no leak of user B farmaci)."""
@@ -39,7 +39,7 @@ def test_farmaci_scoped_utente(
 
 def test_farmaci_inactive_excluded(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """Farmaci with attivo=FALSE are excluded from response."""
@@ -56,7 +56,7 @@ def test_farmaci_inactive_excluded(
 
 def test_farmaci_ordered_by_nome(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """Response is ordered by nome ASC regardless of insertion order."""

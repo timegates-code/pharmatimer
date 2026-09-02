@@ -188,7 +188,7 @@ const CLOSED = { open: false, entry: null, triggerEl: null };
 
 export default function OggiView() {
   const { state, actions } = useAppContext();
-  const { dark, tokens: t, mode } = useTheme();
+  const { tokens: t, mode } = useTheme();
   const now = useNow();
 
   // --- 7c-1 modal open-state (+ 7d-1 triggerEl for a11y focus restore) ---

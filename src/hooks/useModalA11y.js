@@ -74,7 +74,7 @@ export function useModalA11y({
 
         try {
           if (typeof target.focus === 'function') target.focus();
-        } catch (_) {
+        } catch {
           /* ignore focus restoration errors (detached nodes, etc.) */
         }
 
@@ -95,7 +95,7 @@ export function useModalA11y({
       // onClose (the parent has already decided to close).
       try {
         trap.deactivate({ onDeactivate: false, returnFocus: false });
-      } catch (_) {
+      } catch {
         /* ignore teardown errors */
       }
     };

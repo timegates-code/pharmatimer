@@ -15,10 +15,9 @@ Schema aligned with backend/db/schema/permessi.sql (post N+5.E-alpha-bis):
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 # ENUM aligned with DDL permessi.permesso
 PermessoLevel = Literal["read", "write", "admin"]
@@ -30,7 +29,7 @@ class PermessoCreate(BaseModel):
     caregiver_id: int = Field(..., gt=0, description="Utente che riceve il permesso")
     paziente_id: int = Field(..., gt=0, description="Utente sui cui dati il caregiver opera")
     permesso: PermessoLevel = Field(..., description="Livello di accesso")
-    notifiche_caregiver_attive: Optional[bool] = Field(
+    notifiche_caregiver_attive: bool | None = Field(
         default=False,
         description="Opt-in notifiche caregiver (Q16=B)",
     )
@@ -42,8 +41,8 @@ class PermessoUpdate(BaseModel):
     All fields optional; empty body returns row unchanged (idempotent no-op).
     """
 
-    permesso: Optional[PermessoLevel] = None
-    notifiche_caregiver_attive: Optional[bool] = None
+    permesso: PermessoLevel | None = None
+    notifiche_caregiver_attive: bool | None = None
 
 
 class PermessoResponse(BaseModel):

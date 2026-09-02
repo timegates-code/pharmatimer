@@ -8,10 +8,9 @@ DELETE /api/farmaci/{id} (4 test): happy SOFT + already-inactive + NOT_FOUND + G
 
 Covers RepositoryError vocabulary (code/severity/message body shape par.22.34-Fase2).
 """
+from collections.abc import Callable
 from datetime import date, timedelta
-from typing import Callable, Tuple
 
-import pytest
 from fastapi.testclient import TestClient
 
 
@@ -54,7 +53,7 @@ def _payload_intervallo(**overrides) -> dict:
 
 
 def test_post_happy_fisso(
-    client: TestClient, seed_owner_test: Tuple[str, int]
+    client: TestClient, seed_owner_test: tuple[str, int]
 ) -> None:
     """T1: POST happy fisso -> 201 + Location header + body con id/created_at."""
     token, _ = seed_owner_test
@@ -77,7 +76,7 @@ def test_post_happy_fisso(
 
 
 def test_post_happy_intervallo(
-    client: TestClient, seed_owner_test: Tuple[str, int]
+    client: TestClient, seed_owner_test: tuple[str, int]
 ) -> None:
     """T2: POST happy intervallo -> 201 + Location + Decimal serializzato come stringa."""
     token, _ = seed_owner_test
@@ -94,7 +93,7 @@ def test_post_happy_intervallo(
 
 
 def test_post_fail_fisso_with_intervallo_ore(
-    client: TestClient, seed_owner_test: Tuple[str, int]
+    client: TestClient, seed_owner_test: tuple[str, int]
 ) -> None:
     """T3: POST fisso + intervallo_ore valorizzato -> 422 (cross-field validator)."""
     token, _ = seed_owner_test
@@ -109,7 +108,7 @@ def test_post_fail_fisso_with_intervallo_ore(
 
 
 def test_post_fail_intervallo_without_intervallo_ore(
-    client: TestClient, seed_owner_test: Tuple[str, int]
+    client: TestClient, seed_owner_test: tuple[str, int]
 ) -> None:
     """T4: POST intervallo + intervallo_ore NULL -> 422 (cross-field validator)."""
     token, _ = seed_owner_test
@@ -122,7 +121,7 @@ def test_post_fail_intervallo_without_intervallo_ore(
 
 
 def test_post_fail_data_fine_before_data_inizio(
-    client: TestClient, seed_owner_test: Tuple[str, int]
+    client: TestClient, seed_owner_test: tuple[str, int]
 ) -> None:
     """T5: POST data_fine < data_inizio -> 422 (date range validator)."""
     token, _ = seed_owner_test
@@ -140,7 +139,7 @@ def test_post_fail_data_fine_before_data_inizio(
 
 def test_put_happy_full_replace(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T6: PUT happy full replace -> 200 + body con campi aggiornati."""
@@ -160,7 +159,7 @@ def test_put_happy_full_replace(
 
 
 def test_put_not_found(
-    client: TestClient, seed_owner_test: Tuple[str, int]
+    client: TestClient, seed_owner_test: tuple[str, int]
 ) -> None:
     """T7: PUT id inesistente -> 404 RepositoryError NOT_FOUND."""
     token, _ = seed_owner_test
@@ -178,8 +177,8 @@ def test_put_not_found(
 
 def test_put_scope_violation_other_user(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
-    insert_test_user: Callable[..., Tuple[str, int]],
+    seed_owner_test: tuple[str, int],
+    insert_test_user: Callable[..., tuple[str, int]],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T8: PUT su farmaco di altro utente -> 404 (security-by-obscurity, NON 403)."""
@@ -197,7 +196,7 @@ def test_put_scope_violation_other_user(
 
 def test_delete_happy_soft(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
     db_test_pool,
 ) -> None:
@@ -222,7 +221,7 @@ def test_delete_happy_soft(
 
 def test_delete_already_inactive(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T10: DELETE su farmaco gia attivo=FALSE -> 404 (F3-S2.B-bis ratified)."""
@@ -240,7 +239,7 @@ def test_delete_already_inactive(
 
 
 def test_delete_not_found(
-    client: TestClient, seed_owner_test: Tuple[str, int]
+    client: TestClient, seed_owner_test: tuple[str, int]
 ) -> None:
     """T11: DELETE id inesistente -> 404 NOT_FOUND."""
     token, _ = seed_owner_test
@@ -253,7 +252,7 @@ def test_delete_not_found(
 
 def test_delete_then_get_filters_out(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T12: DELETE poi GET non lista farmaco soft-deleted."""
@@ -272,7 +271,7 @@ def test_delete_then_get_filters_out(
 
 
 def test_post_happy_fisso_date(
-    client: TestClient, seed_owner_test: Tuple[str, int]
+    client: TestClient, seed_owner_test: tuple[str, int]
 ) -> None:
     """T13: POST fisso_date con intervallo_ore None -> 201."""
     token, _ = seed_owner_test
@@ -287,7 +286,7 @@ def test_post_happy_fisso_date(
 
 
 def test_post_fail_fisso_date_with_intervallo_ore(
-    client: TestClient, seed_owner_test: Tuple[str, int]
+    client: TestClient, seed_owner_test: tuple[str, int]
 ) -> None:
     """T14: POST fisso_date + intervallo_ore valorizzato -> 422 (cross-field validator)."""
     token, _ = seed_owner_test

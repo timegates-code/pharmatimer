@@ -15,10 +15,9 @@ JSON and use Pydantic native parser). ora_ricalcolata is now DATETIME (migration
 v04) and is parsed natively by Pydantic (no timedelta coercion needed).
 """
 from datetime import date, datetime, time, timedelta
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-
 
 StatoAssunzione = Literal[
     "prevista", "presa", "saltata", "sospesa", "ricalcolata"
@@ -73,9 +72,9 @@ class LogAssunzioneCreatePresa(BaseModel):
     delta_minuti: int
     gap_minuti: int = 0
     recupero_minuti: int = 0
-    note: Optional[str] = Field(default=None, max_length=200)
-    ricalcolo_dose_successiva: Optional[RicalcoloDoseSuccessivaPayload] = None
-    client_op_id: Optional[str] = Field(default=None, max_length=36)
+    note: str | None = Field(default=None, max_length=200)
+    ricalcolo_dose_successiva: RicalcoloDoseSuccessivaPayload | None = None
+    client_op_id: str | None = Field(default=None, max_length=36)
 
 
 class LogAssunzioneResponse(BaseModel):
@@ -89,13 +88,13 @@ class LogAssunzioneResponse(BaseModel):
     data: date
     dose_numero: int
     ora_prevista: time
-    ora_effettiva: Optional[datetime] = None
-    delta_minuti: Optional[int] = None
-    ora_ricalcolata: Optional[datetime] = None
+    ora_effettiva: datetime | None = None
+    delta_minuti: int | None = None
+    ora_ricalcolata: datetime | None = None
     gap_minuti: int
     recupero_minuti: int
     stato: StatoAssunzione
-    note: Optional[str] = None
+    note: str | None = None
     created_at: datetime
 
     _coerce_ora_prevista = field_validator("ora_prevista", mode="before")(
@@ -124,14 +123,14 @@ class LogAssunzioneSlotPayload(BaseModel):
 
     data: date
     dose_numero: int = Field(..., ge=1)
-    client_op_id: Optional[str] = Field(default=None, max_length=36)
+    client_op_id: str | None = Field(default=None, max_length=36)
 
 
 class LogAssunzioneCreateSaltata(LogAssunzioneSlotPayload):
     """POST /saltata payload. ora_prevista is NOT NULL in DDL."""
 
     ora_prevista: time
-    note: Optional[str] = Field(default=None, max_length=200)
+    note: str | None = Field(default=None, max_length=200)
 
 
 class LogAssunzioneCreateSospesa(LogAssunzioneSlotPayload):
@@ -143,7 +142,7 @@ class LogAssunzioneCreateSospesa(LogAssunzioneSlotPayload):
     """
 
     ora_prevista: time
-    note: Optional[str] = Field(default=None, max_length=200)
+    note: str | None = Field(default=None, max_length=200)
 
 
 class LogAssunzioneUndoPayload(LogAssunzioneSlotPayload):

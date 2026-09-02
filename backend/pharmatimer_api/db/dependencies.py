@@ -6,9 +6,12 @@ FastAPI dependencies:
 """
 # CP3 F3-S1-bis-delta SENTINEL get_current_user
 import hashlib
-from typing import Generator
+from collections.abc import Generator
 
-from fastapi import Depends, Header  # SENTINEL_N5K_CP1_DEPS_IMPORT_CLEANUP_HTTPEXCEPTION removed HTTPException+status post-N+5.K
+from fastapi import (  # SENTINEL_N5K_CP1_DEPS_IMPORT_CLEANUP_HTTPEXCEPTION removed HTTPException+status post-N+5.K
+    Depends,
+    Header,
+)
 from mysql.connector.pooling import PooledMySQLConnection
 from pydantic import BaseModel
 

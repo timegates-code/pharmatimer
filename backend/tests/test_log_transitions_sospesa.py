@@ -4,15 +4,16 @@ PharmaTimer F3-S3-beta CP1
 Pytest /sospesa transitions (4 test): INSERT, idempotent, source 'presa' refused,
 lateral from 'saltata' refused.
 """
-from datetime import date, datetime, time as dtime
-from typing import Callable, Tuple
+from collections.abc import Callable
+from datetime import date, datetime
+from datetime import time as dtime
 
 from fastapi.testclient import TestClient
 
 
 def test_post_sospesa_insert_empty_slot(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T1: POST /sospesa su slot vuoto -> 201 + stato 'sospesa'."""
@@ -38,7 +39,7 @@ def test_post_sospesa_insert_empty_slot(
 
 def test_post_sospesa_idempotent_block(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T2: POST /sospesa due volte sullo stesso slot -> seconda 409."""
@@ -68,7 +69,7 @@ def test_post_sospesa_idempotent_block(
 
 def test_post_sospesa_source_presa_refused(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T3 (Sub-Q-NEW.2 = A): /sospesa rifiuta sorgente 'presa' -> 409."""
@@ -109,7 +110,7 @@ def test_post_sospesa_source_presa_refused(
 
 def test_post_sospesa_lateral_from_saltata_refused(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T4 (Q-RES-3 = A): /sospesa da 'saltata' -> 409 (richiede /undo)."""

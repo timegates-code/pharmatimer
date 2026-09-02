@@ -10,10 +10,8 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Tuple
 
 from mysql.connector.pooling import MySQLConnectionPool
-
 
 BACKEND_DIR = Path(__file__).parent.parent
 
@@ -32,7 +30,7 @@ def _run_seed_owner(owner_name: str) -> subprocess.CompletedProcess:
     )
 
 
-def test_seed_owner_idempotent(db_test_pool: MySQLConnectionPool, seed_owner_test: Tuple[str, int]) -> None:
+def test_seed_owner_idempotent(db_test_pool: MySQLConnectionPool, seed_owner_test: tuple[str, int]) -> None:
     """Second invocation refuses with exit 1 + stderr 'Owner gia esistente'."""
     # seed_owner_test fixture already created an owner in pharmatimer_test
     result = _run_seed_owner(owner_name="SecondOwner")

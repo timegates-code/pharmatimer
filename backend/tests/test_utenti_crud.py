@@ -30,7 +30,6 @@ from __future__ import annotations
 
 import re
 
-
 BASE64URL_TOKEN_RE = re.compile(r"^[A-Za-z0-9_\-]{43}$")
 
 

@@ -16,8 +16,9 @@ client; ora_ricalcolata as ISO datetime string.
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, time as dtime
-from typing import Callable, Tuple
+from collections.abc import Callable
+from datetime import date, datetime
+from datetime import time as dtime
 
 from fastapi.testclient import TestClient
 
@@ -36,7 +37,7 @@ def _make_ricalcolata_dose(
     token: str,
     owner_id: int,
     insert_test_farmaco: Callable[..., int],
-) -> Tuple[int, date]:
+) -> tuple[int, date]:
     """Create interval drug, POST /presa dose 1 late (gap 60), nested ricalcolo
     dose 2 -> dose 2 in stato 'ricalcolata' (ora_ricalcolata 17:00, gap 60).
 
@@ -85,7 +86,7 @@ def _make_ricalcolata_dose(
 # ---------------------------------------------------------------------------
 def test_regina_recupero_replay_same_targa_is_noop(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     token, owner_id = seed_owner_test
@@ -124,7 +125,7 @@ def test_regina_recupero_replay_same_targa_is_noop(
 
 def test_presa_replay_same_targa_dedup(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     token, owner_id = seed_owner_test
@@ -158,7 +159,7 @@ def test_presa_replay_same_targa_dedup(
 
 def test_saltata_replay_same_targa_dedup(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     token, owner_id = seed_owner_test
@@ -186,7 +187,7 @@ def test_saltata_replay_same_targa_dedup(
 
 def test_sospesa_replay_same_targa_dedup(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     token, owner_id = seed_owner_test
@@ -214,7 +215,7 @@ def test_sospesa_replay_same_targa_dedup(
 
 def test_undo_replay_same_targa_dedup(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     token, owner_id = seed_owner_test
@@ -250,7 +251,7 @@ def test_undo_replay_same_targa_dedup(
 
 def test_presa_distinct_targa_still_conflicts(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """Same slot, DIFFERENT targa = a genuine second touch on an already-taken
@@ -299,7 +300,7 @@ def test_presa_distinct_targa_still_conflicts(
 
 def test_verbo_without_targa_backward_compatible(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """No client_op_id = pre-v06 behavior preserved (201, dedup false/absent)."""

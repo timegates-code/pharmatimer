@@ -26,5 +26,19 @@
 #                  nessuno ha mai configurato.
 #
 # Quando un reperto si chiude, si abbassa il numero qui. Mai alzarlo.
-backend=169
-frontend=20
+#
+# SESSIONE DI RIMEDIO, gruppo 2. I numeri scendono a 0 e 8:
+#   backend 169 -> 0. 159 chiusi da ruff --fix su UP e I; 26 F401 chiusi a mano
+#                  dopo sonda per simbolo (unica occorrenza = la riga di import;
+#                  le tre eccezioni erano dentro commenti e docstring) e dopo
+#                  sonda di uso dinamico (importlib, getattr, globals): le tre
+#                  sedi trovate non possono risolvere alcuno dei simboli tolti.
+#                  I 2 UP042 restano, ma spostati in ignore con motivazione
+#                  dentro pyproject: StrEnum esiste da python 3.11 e la versione
+#                  del Mini non e misurabile da qui.
+#   frontend 20 -> 8. Chiuse le 12 no-unused-vars. Restano gli 8 riferimenti a
+#                  regole di plugin non installati, che questo file gia
+#                  chiamava un difetto reale del repo: la loro sorte e una
+#                  ratifica aperta, non una dimenticanza.
+backend=0
+frontend=8

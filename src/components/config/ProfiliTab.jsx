@@ -47,8 +47,7 @@ export default function ProfiliTab(props) {
   const profili = selectProfili(state);
 
   // Dirty lifted (pattern ImpostazioniTab).
-  const [localDirty, setLocalDirty] = useState(false);
-  const dirty = props?.dirty ?? localDirty;
+  const [, setLocalDirty] = useState(false);
   const setDirty = props?.setDirty ?? setLocalDirty;
 
   // Drawer state: null = closed; { mode: 'create' } or

@@ -14,7 +14,7 @@ field_validator(mode='before') coerces to datetime.time. String/time input from
 JSON pass through to Pydantic native parser.
 """
 from datetime import date, time, timedelta
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import (
     BaseModel,
@@ -24,7 +24,6 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-
 
 AncoraRiferimento = Literal[
     "sveglia", "colazione", "pranzo", "cena", "sonno", "assoluto"
@@ -55,8 +54,8 @@ class OrarioBase(BaseModel):
     offset_minuti: int
     ancora_riferimento: AncoraRiferimento
     ora_prevista: time
-    descrizione_momento: Optional[str] = Field(default=None, max_length=100)
-    data_specifica: Optional[date] = None
+    descrizione_momento: str | None = Field(default=None, max_length=100)
+    data_specifica: date | None = None
 
     _coerce_ora_prevista = field_validator("ora_prevista", mode="before")(
         _coerce_timedelta_to_time

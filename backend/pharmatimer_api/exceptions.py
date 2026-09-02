@@ -16,7 +16,6 @@ Code -> HTTP status mapping (Q2=a):
     GENERIC -> 500
 """
 from enum import Enum
-from typing import Optional
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -76,7 +75,7 @@ class RepositoryError(Exception):
         self,
         code: RepositoryErrorCode,
         message: str,
-        severity: Optional[RepositoryErrorSeverity] = None,
+        severity: RepositoryErrorSeverity | None = None,
     ) -> None:
         super().__init__(message)
         self.code = code

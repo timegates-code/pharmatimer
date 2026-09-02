@@ -792,17 +792,6 @@ describe('applyAnnullaAssunzione guard DOWNSTREAM_USER_EDITS', () => {
 // ricalcolaPianoDaProfilo — fixtures + tests (AMB-3)
 // ============================================================
 
-const profiloStandard = {
-  id: 1,
-  nome_profilo: 'Standard',
-  ora_sveglia: '07:00',
-  ora_colazione: '07:30',
-  ora_pranzo: '13:00',
-  ora_cena: '20:30',
-  ora_sonno: '23:30',
-  attivo: 1,
-};
-
 const profiloNottambulo = {
   id: 2,
   nome_profilo: 'Nottambulo',
@@ -1143,7 +1132,7 @@ describe('T13 — applyRipristino: saltata → attiva (con rollback)', () => {
 });
 
 describe('T13 — applyRipristino: rollback conservativo (N+1 non eleggibile)', () => {
-  let farmaco, orario1, orario2, plan;
+  let farmaco, orario1, orario2;
 
   beforeEach(() => {
     farmaco = makeFarmaco({
@@ -1276,7 +1265,7 @@ describe('T13 — applyRipristino: immutabilità', () => {
 // ============================================================
 
 describe('CP3 §6.115b — recalc cross-midnight ISO propagation (Sessione 9-A)', () => {
-  let farmaco, orario1, orario2, e1, e2;
+  let farmaco;
 
   beforeEach(() => {
     farmaco = makeFarmaco({
@@ -1286,8 +1275,6 @@ describe('CP3 §6.115b — recalc cross-midnight ISO propagation (Sessione 9-A)'
       intervallo_minimo_ore: 4,
       dosi_giornaliere: 3,
     });
-    orario1 = makeOrario(1, 1);
-    orario2 = makeOrario(1, 1); // same dose_numero per cross-day same farmaco
   });
 
   it('applyAssunzione: dose 8h presa alle 23:00 il 26 → N+1 ricalcolata 2026-04-27T07:00', () => {

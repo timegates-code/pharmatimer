@@ -110,8 +110,9 @@ defect and names its own guard.
 """
 from __future__ import annotations
 
-from datetime import date, datetime, time as dtime, timedelta
-from typing import Any, Dict, NamedTuple
+from datetime import date, datetime, timedelta
+from datetime import time as dtime
+from typing import Any, NamedTuple
 
 # `import pytest` was removed with the eleven markers: it had no other
 # consumer here, measured at zero `pytest.` references. Opposite call to
@@ -146,7 +147,7 @@ if settings.DB_NAME_TEST == settings.DB_NAME:
 # back on a remembered copy.
 # ---------------------------------------------------------------------------
 try:
-    from .test_log_transitions_recupero import _setup_gap120, _post_recupero
+    from .test_log_transitions_recupero import _post_recupero, _setup_gap120
 except ImportError as exc:  # pragma: no cover - loud by design
     raise RuntimeError(
         "SUITE ABORTITA: sagoma test_log_transitions_recupero non importabile "
@@ -157,7 +158,7 @@ except ImportError as exc:  # pragma: no cover - loud by design
 _PASSI_DISCRIMINANTI_ATTESI = 13
 _CONTROLLI_ATTESI = 2
 
-_REGISTRO: Dict[str, Dict[str, Any]] = {}
+_REGISTRO: dict[str, dict[str, Any]] = {}
 
 _GUARDIA_COPPIA = "s.6.268 / fix-invariante-coppia"
 _GUARDIA_N3 = "n3-stato-destinazione"
@@ -232,7 +233,7 @@ def _controllo(chiave: str, sede: str, atteso: Any, misurato: Any) -> None:
 # Helper di lettura e di verbo
 # ===========================================================================
 def _read_row(pool, utente_id: int, farmaco_id: int, data_: date,
-              dose_numero: int) -> Dict[str, Any]:
+              dose_numero: int) -> dict[str, Any]:
     """Ground truth straight from the table.
 
     Deliberately NOT the verb response body: the Response model exposes 14 of
@@ -261,7 +262,7 @@ def _read_row(pool, utente_id: int, farmaco_id: int, data_: date,
     return row
 
 
-def _hdr(token: str) -> Dict[str, str]:
+def _hdr(token: str) -> dict[str, str]:
     return {"X-User-Token": token}
 
 

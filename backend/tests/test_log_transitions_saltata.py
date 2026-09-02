@@ -3,15 +3,16 @@
 PharmaTimer F3-S3-beta CP1
 Pytest /saltata transitions (4 test): INSERT, UPDATE, idempotent, scope.
 """
-from datetime import date, datetime, time as dtime
-from typing import Callable, Tuple
+from collections.abc import Callable
+from datetime import date, datetime
+from datetime import time as dtime
 
 from fastapi.testclient import TestClient
 
 
 def test_post_saltata_insert_empty_slot(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T1: POST /saltata su slot vuoto -> 201 + stato 'saltata' nuovo."""
@@ -38,7 +39,7 @@ def test_post_saltata_insert_empty_slot(
 
 def test_post_saltata_update_from_presa_blocked(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T2: /saltata su slot in stato 'presa' -> 409 (richiede /undo)."""
@@ -77,7 +78,7 @@ def test_post_saltata_update_from_presa_blocked(
 
 def test_post_saltata_idempotent_block(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
+    seed_owner_test: tuple[str, int],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T3: POST /saltata due volte sullo stesso slot -> seconda 409."""
@@ -111,8 +112,8 @@ def test_post_saltata_idempotent_block(
 
 def test_post_saltata_scope_violation(
     client: TestClient,
-    seed_owner_test: Tuple[str, int],
-    insert_test_user: Callable[..., Tuple[str, int]],
+    seed_owner_test: tuple[str, int],
+    insert_test_user: Callable[..., tuple[str, int]],
     insert_test_farmaco: Callable[..., int],
 ) -> None:
     """T4: /saltata su farmaco di altro utente con TOKEN owner -> 404."""
