@@ -78,7 +78,7 @@ export function useNotifications() {
         document.removeEventListener('visibilitychange', onVisibilityChange);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // deps volutamente incomplete -- react-hooks non e installato in eslint.config.js
   }, [notificheAttive]);
 
   const requestEnable = useCallback(async () => {

@@ -695,7 +695,7 @@ function FarmacoDrawer({
       }
     }
     return { ...EMPTY_FORM, data_inizio: tomorrowIso(), orari: [makeDefaultOrario(1)] };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // deps volutamente incomplete -- react-hooks non e installato in eslint.config.js
   }, []);
 
   const [form, setForm] = useState(initial);

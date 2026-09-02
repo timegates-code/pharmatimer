@@ -47,8 +47,20 @@ lint-frontend:
 # non esiste in eslint 10 e rendeva 0, che e un falso verde.
 lint:
 	@rc=0; \
+	if [ ! -x backend/venv/bin/ruff ]; then \
+	  echo "ROSSO  ruff non installato: backend/venv/bin/pip install ruff"; exit 1; \
+	fi; \
+	if [ ! -x node_modules/.bin/eslint ]; then \
+	  echo "ROSSO  eslint non installato: npm i -D eslint"; exit 1; \
+	fi; \
 	nb=$$(cd backend && venv/bin/ruff check --quiet --output-format=concise . 2>/dev/null | grep -c . || true); \
-	nf=$$(npx eslint . --format json 2>/dev/null | python3 -c 'import json,sys; print(sum(len(f["messages"]) for f in json.load(sys.stdin)))' 2>/dev/null || echo 0); \
+	nf=$$(npx eslint . --format json 2>/dev/null | python3 -c 'import json,sys; print(sum(len(f["messages"]) for f in json.load(sys.stdin)))' 2>/dev/null || echo ERR); \
+	if [ "$$nf" = "ERR" ]; then \
+	  echo "ROSSO  eslint non ha prodotto un rapporto leggibile: e la HARNESS a essere"; \
+	  echo "       rotta, non il codice. Prima il conteggio ripiegava a 0, che in modo"; \
+	  echo "       stretto e un FALSO VERDE. Dettaglio: make lint-frontend"; \
+	  exit 1; \
+	fi; \
 	if [ -f "$(LINT_BASELINE)" ]; then \
 	  echo "== LINT (modo BASELINE: rosso solo se i reperti CRESCONO) =="; \
 	  bb=$$(grep '^backend=' "$(LINT_BASELINE)" | cut -d= -f2); \

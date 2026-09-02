@@ -349,7 +349,7 @@ export default function OggiView() {
     });
     // CP2-SUB-3 ratified: deps intentionally discrete per AMB-10.B; reading
     // state/now inside is correct (closure captures latest values at trigger).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // deps volutamente incomplete -- react-hooks non e installato in eslint.config.js
   }, [state.status, today]);
 
   // --- loading / error branches ---

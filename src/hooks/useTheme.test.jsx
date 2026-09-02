@@ -31,7 +31,7 @@ function makeWrapper(mode) {
     impostazioni: mode == null ? {} : { tema: mode },
   };
   const value = { state, actions: {}, tickMs: Date.now() };
-  // eslint-disable-next-line react/prop-types
+  // prop-types non verificate qui -- react non e installato in eslint.config.js
   return function Wrapper({ children }) {
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
   };

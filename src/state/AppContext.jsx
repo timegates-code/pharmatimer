@@ -99,7 +99,7 @@ export function AppProvider({ children, initialStateProp }) {
 
   // Action bag built once. dispatch/getState/repo/services are all stable.
   const actions = useMemo(
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // deps volutamente incomplete -- react-hooks non e installato in eslint.config.js
     () => createActions({ dispatch, getState: getStateRef.current, repo, services }),
     [services]
   );
@@ -130,7 +130,7 @@ export function AppProvider({ children, initialStateProp }) {
       return;
     }
     actions.init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // deps volutamente incomplete -- react-hooks non e installato in eslint.config.js
   }, [actions]);
 
   // Rolling-30 tick counter (§6.130). Survives across renders.

@@ -227,7 +227,7 @@ function ProfiloDrawer({ mode, editingId, onClose, setDirty, triggerRef, theme: 
     return { ...EMPTY_FORM };
     // mode and editingId are stable for the life of this drawer instance
     // (drawer remounts on open). `state` snapshot at mount is intentional.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // deps volutamente incomplete -- react-hooks non e installato in eslint.config.js
   }, []);
 
   const [form, setForm] = useState(initial);

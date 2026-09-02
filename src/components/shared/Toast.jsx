@@ -47,7 +47,7 @@ export default function Toast() {
     }, AUTO_DISMISS_MS);
     return () => clearTimeout(id);
     // Re-run on key change so identical messages can re-arm cleanly.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // deps volutamente incomplete -- react-hooks non e installato in eslint.config.js
   }, [toast?.key]);
 
   if (!toast) return null;
