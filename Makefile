@@ -5,6 +5,7 @@
 #                    lint + test frontend + test backend + inventario + albero.
 #   make check-prepush  Lo stesso gate, lanciato dallo hook di pre-push:
 #                    asserisce TREE e non AHEAD, che prima del push non e zero.
+#   make check-ci    Lo stesso gate, lanciato da GitHub Actions su ogni push.
 #   make prod-check  SOLO QUANDO SI DEPLOYA. Tocca il Mini via rete: stato del
 #                    servizio, bundle, openapi, censimento, e G-21.
 #   make lint        ruff (backend) + eslint (frontend).
@@ -19,7 +20,7 @@ LINT_BASELINE := scripts/audit/lint-baseline.txt
 BASE := https://marketreader-server.taila127de.ts.net
 MINI_MYSQL := /opt/homebrew/bin/mysql --defaults-file=/Users/marketreader/.my-pharmatimer.cnf
 
-.PHONY: check check-prepush _gate prod-check lint lint-backend lint-frontend \
+.PHONY: check check-prepush check-ci _gate prod-check lint lint-backend lint-frontend \
         test test-frontend test-frontend-compatto test-backend inventario \
         inventario-compatto albero g21 help
 
@@ -188,6 +189,12 @@ check:
 check-prepush:
 	@$(MAKE) --no-print-directory _gate ALBERO_AHEAD=no \
 	  TITOLO="make check-prepush -- gate di pre-push: TREE asserito, AHEAD no"
+
+# Lanciato da .github/workflows/gate.yml su ogni push. Stesso corpo; AHEAD non
+# e asserito perche un checkout di CI non ha upstream e il push e gia avvenuto.
+check-ci:
+	@$(MAKE) --no-print-directory _gate ALBERO_AHEAD=no \
+	  TITOLO="make check-ci -- gate di GitHub Actions: TREE asserito, AHEAD no"
 
 # ----------------------------------------------------------------- G-21
 g21:

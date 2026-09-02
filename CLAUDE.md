@@ -364,7 +364,8 @@ Derivata dalla struttura viva e verificata con sonda, non imposta a priori.
 Dice dove mettere il PROSSIMO file; cio che non la rispetta si dichiara qui.
 
 - Cartelle di radice tracciate: `src/`, `backend/`, `scripts/`, `deploy/`,
-  `docs/`, `public/`. Non se ne aprono altre senza ratifica.
+  `docs/`, `public/`, e `.github/` per il solo workflow del gate. Non se ne
+  aprono altre senza ratifica.
 - `src/domain/` e `src/utils/` sono PURI. Verificato: zero React, zero Dexie,
   zero rete.
 - `src/data/` e la SOLA sede che tocca IndexedDB o la rete, e la catena

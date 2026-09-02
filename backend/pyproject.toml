@@ -34,6 +34,9 @@ dependencies = [
 dev = [
     "pytest>=9.0,<10",
     "pytest-asyncio>=1.3,<2",
+    # ruff sta qui e non in un requirements a parte: fonte unica. Il Makefile
+    # lo pretende in backend/venv/bin/ruff, e la CI lo installa da qui.
+    "ruff>=0.16,<0.17",
 ]
 
 [tool.setuptools.packages.find]

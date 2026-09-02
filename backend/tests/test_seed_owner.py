@@ -3,7 +3,11 @@ PharmaTimer F3-S1-bis-delta parte 2/2 CP4
 Tests for seed_owner.py CLI script (idempotency + token format).
 
 Strategy: subprocess invocation with DB_NAME overridden via env var to
-point seed_owner.py at pharmatimer_test (pydantic-settings env > .env.dev).
+point seed_owner.py at settings.DB_NAME_TEST (pydantic-settings env > .env.dev).
+The name is DERIVED, not hardcoded: with a hardcoded "pharmatimer_test" the
+fixtures truncated DB_NAME_TEST while the subprocess wrote elsewhere, and the
+suite passed only when the two happened to coincide (measured against a
+database rebuilt from the migration chain: 1 failed, 129 passed).
 """
 import hashlib
 import os
@@ -13,14 +17,16 @@ from pathlib import Path
 
 from mysql.connector.pooling import MySQLConnectionPool
 
+from pharmatimer_api.config import settings
+
 BACKEND_DIR = Path(__file__).parent.parent
 
 
 def _run_seed_owner(owner_name: str) -> subprocess.CompletedProcess:
-    """Invoke seed_owner.py with DB_NAME overridden to pharmatimer_test."""
+    """Invoke seed_owner.py with DB_NAME overridden to settings.DB_NAME_TEST."""
     env = os.environ.copy()
     env["OWNER_NAME"] = owner_name
-    env["DB_NAME"] = "pharmatimer_test"
+    env["DB_NAME"] = settings.DB_NAME_TEST
     return subprocess.run(
         [sys.executable, "seed_owner.py"],
         cwd=str(BACKEND_DIR),
@@ -32,7 +38,7 @@ def _run_seed_owner(owner_name: str) -> subprocess.CompletedProcess:
 
 def test_seed_owner_idempotent(db_test_pool: MySQLConnectionPool, seed_owner_test: tuple[str, int]) -> None:
     """Second invocation refuses with exit 1 + stderr 'Owner gia esistente'."""
-    # seed_owner_test fixture already created an owner in pharmatimer_test
+    # seed_owner_test fixture already created an owner in DB_NAME_TEST
     result = _run_seed_owner(owner_name="SecondOwner")
 
     assert result.returncode == 1, (

@@ -1,0 +1,95 @@
+# PharmaTimer -- il gate di sessione, su ogni push.
+#
+# E lo STESSO gate del Makefile: make check-ci ha lo stesso corpo di make check
+# (lint, test frontend, test backend, inventario, albero) e non asserisce AHEAD,
+# perche un checkout di CI non ha upstream e il push e gia avvenuto.
+#
+# Il backend pretende MySQL: qui e un servizio, e lo schema si ricostruisce DA
+# ZERO applicando la catena delle migrazioni in ordine, v01..v06. Misurato in
+# locale prima di scrivere questo file: la catena da zero rende 76 colonne e 25
+# indici identici a pharmatimer_test, e la suite passa 130 su 130 sul DB cosi
+# ricostruito. Se un giorno qui arrossa in quel passo, e un reperto sulla
+# catena, non un ostacolo da aggirare.
+name: gate
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      mysql:
+        image: mysql:9
+        env:
+          MYSQL_ROOT_PASSWORD: root_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -proot_ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 24
+
+    env:
+      # Letti da pydantic-settings al posto di backend/.env.dev, che non c e.
+      DB_HOST: 127.0.0.1
+      DB_PORT: "3306"
+      DB_USER: pharmatimer
+      DB_PASSWORD: pharmatimer_ci
+      DB_NAME: pharmatimer_dev
+      DB_NAME_TEST: pharmatimer_test
+      TZ: Europe/Rome
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # git describe --tags nello albero: senza storia stamperebbe (nessun tag).
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: dipendenze frontend
+        run: npm ci
+
+      - name: venv backend, dove il Makefile lo pretende
+        run: |
+          python -m venv backend/venv
+          backend/venv/bin/pip install --quiet --upgrade pip
+          backend/venv/bin/pip install --quiet -e "backend[dev]"
+
+      - name: client mysql per la precondizione di make test-backend
+        run: command -v mysql || (sudo apt-get update -q && sudo apt-get install -y -q mysql-client)
+
+      - name: utente, database, e catena delle migrazioni applicata da zero
+        run: |
+          cat > ~/.my.cnf <<'EOF'
+          [client]
+          host=127.0.0.1
+          port=3306
+          user=root
+          password=root_ci
+          EOF
+          chmod 600 ~/.my.cnf
+          mysql -e "CREATE USER 'pharmatimer'@'%' IDENTIFIED BY 'pharmatimer_ci';"
+          for db in pharmatimer_dev pharmatimer_test; do
+            mysql -e "CREATE DATABASE $db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL PRIVILEGES ON $db.* TO 'pharmatimer'@'%';"
+            for f in backend/db/migrations/v0*.sql; do
+              echo "== $db <- $f"
+              mysql --database="$db" < "$f"
+            done
+          done
+          mysql -N -e "SELECT TABLE_SCHEMA, COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA LIKE 'pharmatimer_%' GROUP BY TABLE_SCHEMA"
+
+      - name: gate
+        run: make check-ci
