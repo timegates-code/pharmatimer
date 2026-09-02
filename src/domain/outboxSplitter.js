@@ -177,8 +177,44 @@ export function isAtomicPresaPlusRicalc(logs) {
   );
 }
 
-function defaultNewId() {
-  return globalThis.crypto.randomUUID();
+/**
+ * Generate the targa (client_op_id) of ONE outbox element.
+ *
+ * `crypto.randomUUID` is SecureContext-gated: it is undefined when the PWA is
+ * served over plain http on the LAN, which is exactly how the Mini serves it.
+ * `crypto.getRandomValues` has no such gate, so it is the fallback.
+ *
+ * `Math.random` is NOT an option at any level. It is seeded and predictable,
+ * and two devices can produce the same value: a colliding targa makes the
+ * server discard a REAL presa as a replay, which is M2 with extra steps.
+ *
+ * If neither source exists the function THROWS instead of inventing a weak
+ * targa. Failing loudly loses the gesture visibly; a weak targa loses it
+ * silently, days later, and nobody knows why.
+ *
+ * @returns {string} a RFC 4122 version 4 UUID, lowercase
+ */
+export function defaultNewId() {
+  const c = globalThis.crypto;
+  if (c && typeof c.randomUUID === 'function') return c.randomUUID();
+
+  if (!c || typeof c.getRandomValues !== 'function') {
+    throw new Error(
+      'targa non generabile: ne crypto.randomUUID ne crypto.getRandomValues ' +
+        'sono disponibili. Nessun ripiego pseudocasuale: una targa debole fa ' +
+        'scartare una presa vera come replay.',
+    );
+  }
+
+  const b = new Uint8Array(16);
+  c.getRandomValues(b);
+  b[6] = (b[6] & 0x0f) | 0x40; // versione 4
+  b[8] = (b[8] & 0x3f) | 0x80; // variante RFC 4122
+  const h = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+  return (
+    h.slice(0, 8) + '-' + h.slice(8, 12) + '-' + h.slice(12, 16) + '-' +
+    h.slice(16, 20) + '-' + h.slice(20)
+  );
 }
 
 function defaultNow() {

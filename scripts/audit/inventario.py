@@ -615,16 +615,30 @@ def voce15():
     for nome, ok in liv:
         print("  %-48s %s" % (nome, "PRESENTE" if ok else "ASSENTE -- RISCHIO M1"))
     print("\n-- generazione della targa nel client")
+    # La sonda nomina il MECCANISMO, non un carattere. La forma precedente
+    # cercava "||" o "catch" dentro un corpo ritagliato con [^}]*, che si
+    # ferma alla prima graffa: bastava un qualunque || in una condizione per
+    # farla dire SI. Un esito compatibile con le due ipotesi non e una misura.
     ob = read("src/domain/outboxSplitter.js")
-    m = re.search(r"function defaultNewId\(\)\s*\{([^}]*)\}", ob)
-    corpo = m.group(1).strip() if m else "non trovata"
-    fallback = "catch" in corpo or "||" in corpo
-    print("   %s" % corpo)
+    m = re.search(r"function defaultNewId\(\)\s*\{\n(.*?)\n\}", ob, re.S)
+    corpo = m.group(1) if m else ""
+    if not corpo:
+        print("   defaultNewId NON TROVATA in src/domain/outboxSplitter.js")
+    sorgenti = [
+        ("crypto.randomUUID (solo SecureContext)", "randomUUID" in corpo),
+        ("crypto.getRandomValues (anche in http)", "getRandomValues" in corpo),
+        ("solleva se non ha sorgenti forti", "throw" in corpo),
+        ("Math.random", "Math.random" in corpo),
+    ]
+    for nome, ok in sorgenti:
+        print("   %-42s %s" % (nome, "SI" if ok else "no"))
+    forte = "getRandomValues" in corpo and "Math.random" not in corpo
     print("   fallback se crypto.randomUUID manca: %s"
-          % ("SI" if fallback else "NESSUNO -- solleva e la presa non viene targata"))
+          % ("getRandomValues in forma UUID v4" if forte
+             else "ASSENTE o DEBOLE -- la presa non viene targata, o male"))
     esito("livelli di guardia presenti %d/%d; fallback della targa: %s",
           sum(1 for _, ok in liv if ok), len(liv),
-          "SI" if fallback else "NESSUNO -- RISCHIO")
+          "getRandomValues, nessun Math.random" if forte else "ASSENTE o DEBOLE -- RISCHIO")
 
 
 # ---------------------------------------------------------------- 16
