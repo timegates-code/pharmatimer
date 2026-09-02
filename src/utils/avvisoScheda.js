@@ -36,7 +36,21 @@
  * SENTINEL_QTRAMA_SCHEDA
  */
 
-import { testoAvvisoConflitto, testoAvvisoDegradato } from './testi.js';
+import {
+  testoAvvisoConflitto,
+  testoAvvisoDegradato,
+  testoAvvisoIntervalloMinimo,
+  testoAvvisoIntervalloMinimoDegradato,
+} from './testi.js';
+import { formatDuration } from './time.js';
+
+/**
+ * Decisione 2 -- the motivo of the "due dosi molto vicine" notice. A LITERAL
+ * and not an import: `src/utils/` stays pure (no edge towards `src/data/`),
+ * and avvisoScheda.test.js pins this literal equal to
+ * MOTIVI_AVVISO.INTERVALLO_MINIMO, so the two cannot drift in silence.
+ */
+export const MOTIVO_INTERVALLO_MINIMO = 'INTERVALLO_MINIMO';
 
 /**
  * Frozen vocabulary of junction outcomes. APPEND-ONLY, same discipline as
@@ -110,16 +124,62 @@ export function formatOraAvviso(istante) {
 }
 
 /**
+ * Duration label for the "due dosi molto vicine" card. Never throws.
+ *
+ * @param {unknown} minuti non-negative integer minutes
+ * @returns {string|null} null when the value cannot be trusted
+ */
+export function formatDurataAvviso(minuti) {
+  if (!Number.isInteger(minuti) || minuti < 0) return null;
+  return formatDuration(minuti);
+}
+
+/**
+ * The "due dosi molto vicine" card from one persisted notice (decisione 2).
+ * The numbers live in `record.dettagli`; the time shown is the RECORDED
+ * dose time (`ora_effettiva`), never the tap: a missing one degrades the card
+ * instead of naming a time nobody declared (M3).
+ */
+function componiSchedaIntervalloMinimo(r) {
+  const d = r.dettagli && typeof r.dettagli === 'object' ? r.dettagli : {};
+  const testi = testoAvvisoIntervalloMinimo({
+    farmacoNome: r.farmaco_nome,
+    doseNumero: r.dose_numero,
+    dataLabel: formatDataAvviso(r.data),
+    oraLabel: formatOraAvviso(d.ora_effettiva),
+    lato: d.lato,
+    minutiLabel: formatDurataAvviso(d.minuti_dalla_vicina),
+    minimoLabel: formatDurataAvviso(d.intervallo_minimo_minuti),
+  });
+  if (testi) {
+    return Object.freeze({ esito: ESITI_SCHEDA.COMPLETA, testi });
+  }
+  return Object.freeze({
+    esito: ESITI_SCHEDA.DEGRADATA,
+    testi: testoAvvisoIntervalloMinimoDegradato(),
+  });
+}
+
+/**
  * Compose the card for ONE persisted notice. NEVER returns null, NEVER throws.
  *
  * Q-TRAMA-5=A: the contract is one record, never a list. Selecting which one
  * and remounting after "Ho letto" are acts of the Gate, which is P-3.
+ *
+ * Branch on `motivo` (decisione 2): INTERVALLO_MINIMO has its own card; every
+ * other record -- CONFLITTO, and any motivo this junction does not know --
+ * takes the conflict path, complete or degraded, which is the pre-existing
+ * surface. Never silent.
  *
  * @param {unknown} record one entry from `elencaAvvisi()`
  * @returns {{esito: string, testi: object}}
  */
 export function componiScheda(record) {
   const r = record && typeof record === 'object' ? record : {};
+
+  if (r.motivo === MOTIVO_INTERVALLO_MINIMO) {
+    return componiSchedaIntervalloMinimo(r);
+  }
 
   const testi = testoAvvisoConflitto({
     farmacoNome: r.farmaco_nome,

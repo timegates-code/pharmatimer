@@ -315,7 +315,13 @@ def _posa_cross_midnight(client, token, owner_id, insert_test_farmaco, nome):
     """
     farmaco_id = insert_test_farmaco(
         utente_id=owner_id, nome=nome, tipo_frequenza="intervallo",
-        intervallo_ore="8.0", intervallo_minimo_ore="4.0", dosi_giornaliere=3,
+        intervallo_ore="8.0",
+        # Decisione 2 (intervallo minimo lato server): the scenario posts the
+        # recalculated dose 210 real minutes after the presa (22:00 -> 01:30),
+        # under a 4-hour minimum the server would now REFUSE D+1 and the
+        # scenario would measure nothing. The minimum is not what this file
+        # measures -- tests/test_intervallo_minimo.py does -- so it is off.
+        intervallo_minimo_ore=None, dosi_giornaliere=3,
     )
     today = date.today()
     planned = datetime.combine(today, dtime(23, 30))

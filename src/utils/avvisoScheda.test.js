@@ -32,6 +32,13 @@ import {
   AVVISO_CONFLITTO_FATTI_ASSENTI,
   AVVISO_CONFLITTO_CHIUSURA_ASSENTI,
 } from './testi.js';
+import { MOTIVO_INTERVALLO_MINIMO, formatDurataAvviso } from './avvisoScheda.js';
+import { MOTIVI_AVVISO } from '../data/repository/avvisiStore.js';
+import {
+  AVVISO_INTERVALLO_TITOLO,
+  AVVISO_INTERVALLO_CHIUSURA,
+  AVVISO_INTERVALLO_SPIEGAZIONE_ASSENTE,
+} from './testi.js';
 
 /** A record in the shape `avvisiStore.salvaAvviso` persists. */
 const RECORD = Object.freeze({
@@ -240,5 +247,84 @@ describe('componiScheda -- la giunzione (Q-TRAMA-3=A, Q-TRAMA-4=A)', () => {
     expect(Object.isFrozen(componiScheda(RECORD))).toBe(true);
     expect(Object.isFrozen(ESITI_SCHEDA)).toBe(true);
     expect(Object.values(ESITI_SCHEDA)).toEqual(['completa', 'degradata']);
+  });
+});
+
+// ============================================================
+// Decisione 2 -- la scheda "due dosi molto vicine" (motivo INTERVALLO_MINIMO).
+// ============================================================
+describe('D2 -- scheda "due dosi molto vicine"', () => {
+  const DETTAGLI = Object.freeze({
+    lato: 'precedente',
+    minuti_dalla_vicina: 60,
+    intervallo_minimo_minuti: 240,
+    ora_effettiva: '2026-07-24T10:00:00',
+    ora_effettiva_vicina: '2026-07-24T09:00:00',
+  });
+  const RECORD_D2 = Object.freeze({ ...RECORD, motivo: 'INTERVALLO_MINIMO', dettagli: DETTAGLI });
+
+  it('I1 il letterale della giunzione e lo stesso dello store: i due non possono divergere in silenzio', () => {
+    expect(MOTIVO_INTERVALLO_MINIMO).toBe(MOTIVI_AVVISO.INTERVALLO_MINIMO);
+  });
+
+  it('I2 record completo -> COMPLETA, con la ora della PRESA e non del tocco', () => {
+    const s = componiScheda(RECORD_D2);
+    expect(s.esito).toBe(ESITI_SCHEDA.COMPLETA);
+    expect(s.testi.titolo).toBe(AVVISO_INTERVALLO_TITOLO);
+    expect(s.testi.fatti).toBe(
+      'Cardioaspirina, dose 2 del 24 luglio 2026. Presa alle 10:00, 1h dopo la dose precedente.',
+    );
+    expect(s.testi.spiegazione).toBe('Per questo farmaco fra due dosi devono passare almeno 4h.');
+    expect(s.testi.chiusura).toBe(AVVISO_INTERVALLO_CHIUSURA);
+    expect(s.testi.azione).toBe('Ho letto');
+    // Il tocco (13:05) NON compare: la ora e quella registrata della dose.
+    expect(s.testi.fatti).not.toContain('13:05');
+  });
+
+  it('I3 lato successiva: la frase cambia verso e la durata e formattata', () => {
+    const s = componiScheda({
+      ...RECORD_D2,
+      dettagli: { ...DETTAGLI, lato: 'successiva', minuti_dalla_vicina: 90 },
+    });
+    expect(s.esito).toBe(ESITI_SCHEDA.COMPLETA);
+    expect(s.testi.fatti).toBe(
+      'Cardioaspirina, dose 2 del 24 luglio 2026. Presa alle 10:00, 1h 30min prima della dose successiva.',
+    );
+  });
+
+  it('I4 dettagli assenti o malformati -> DEGRADATA col titolo nuovo, mai la scheda del conflitto e mai null', () => {
+    const casi = [
+      { ...RECORD_D2, dettagli: undefined },
+      { ...RECORD_D2, dettagli: 'x' },
+      { ...RECORD_D2, dettagli: { ...DETTAGLI, lato: 'altrove' } },
+      { ...RECORD_D2, dettagli: { ...DETTAGLI, minuti_dalla_vicina: -1 } },
+      { ...RECORD_D2, dettagli: { ...DETTAGLI, intervallo_minimo_minuti: '240' } },
+      { ...RECORD_D2, dettagli: { ...DETTAGLI, ora_effettiva: null } },
+      { ...RECORD_D2, dettagli: { ...DETTAGLI, ora_effettiva: '2026-07-24' } },
+    ];
+    for (const record of casi) {
+      const s = componiScheda(record);
+      expect(s.esito).toBe(ESITI_SCHEDA.DEGRADATA);
+      expect(s.testi.titolo).toBe(AVVISO_INTERVALLO_TITOLO);
+      expect(s.testi.spiegazione).toBe(AVVISO_INTERVALLO_SPIEGAZIONE_ASSENTE);
+      expect(s.testi.chiusura).toBe(AVVISO_INTERVALLO_CHIUSURA);
+      expect(s.testi.azione).toBe('Ho letto');
+    }
+  });
+
+  it('I5 formatDurataAvviso: interi non negativi, altrimenti null', () => {
+    expect(formatDurataAvviso(0)).toBe('0 min');
+    expect(formatDurataAvviso(45)).toBe('45 min');
+    expect(formatDurataAvviso(60)).toBe('1h');
+    expect(formatDurataAvviso(450)).toBe('7h 30min');
+    for (const v of [-1, 1.5, '60', null, undefined, NaN]) {
+      expect(formatDurataAvviso(v)).toBeNull();
+    }
+  });
+
+  it('I6 il record del conflitto resta sulla propria scheda: il ramo nuovo non lo tocca', () => {
+    const s = componiScheda(RECORD);
+    expect(s.esito).toBe(ESITI_SCHEDA.COMPLETA);
+    expect(s.testi.titolo).not.toBe(AVVISO_INTERVALLO_TITOLO);
   });
 });

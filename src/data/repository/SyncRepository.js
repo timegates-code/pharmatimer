@@ -504,7 +504,10 @@ export class SyncRepository {
    * on none of the five payloads, it only selects the branch, so forcing
    * it cannot falsify the record (M3).
    *
-   * @returns {Promise<"delivered"|"parked"|"halted"|"refused">}
+   * @returns {Promise<"delivered"|"parked"|"halted"|"refused"|"ritentabile">}
+   *   `ritentabile` (decisione 2): delivered, but the notice the 2xx asked
+   *   for could not be persisted -- the element stays pending, no attempt
+   *   charged, redelivered at the next pass (dedup server side).
    */
   async _deliverElement(element) {
     const delivery = deriveDelivery(element);
@@ -517,12 +520,13 @@ export class SyncRepository {
       return "parked";
     }
     const rows = delivery.rows || [];
+    let risposta = null;
     try {
       if (delivery.method === "batch") {
         // Atomic couple (Q2.A): the copies keep `stato`, because
         // ApiRepository detects the couple by predicate. COPIES only --
         // the frozen logs are never mutated (M3).
-        await this._api.upsertLogsBatch(
+        risposta = await this._api.upsertLogsBatch(
           rows.map((r) => ({ ...r, client_op_id: element.client_op_id }))
         );
       } else {
@@ -539,7 +543,7 @@ export class SyncRepository {
           );
           return "parked";
         }
-        await this._api.upsertLog(
+        risposta = await this._api.upsertLog(
           head.farmaco_id,
           head.data,
           head.dose_numero,
@@ -634,8 +638,69 @@ export class SyncRepository {
       await this._local.outboxPark(element.id, reason);
       return "parked";
     }
+    // SENTINEL_D2_AVVISO_INTERVALLO
+    // Decisione 2. A 2xx on /presa may carry `avviso`: the presa IS
+    // registered (M2 holds, nothing to roll back) but lies under the minimum
+    // interval from another presa of the same farmaco, in real minutes
+    // measured server side. The person must see it (Spec 14.5 p.4), so the
+    // notice is persisted BEFORE the drop, in the order the conflict notice
+    // already uses: if it cannot be written the element STAYS QUEUED and the
+    // redelivery earns dedup:true with the avviso recomputed server side --
+    // nothing lost, nothing doubled (targa). The batch answer of
+    // ApiRepository is [presaRow, ricalcEcho]: the body is its first element.
+    // `ritentabile` is the outcome that leaves the element pending without
+    // charging an attempt: the server did not fail, the phone's store did.
+    const corpo = Array.isArray(risposta) ? risposta[0] : risposta;
+    if (corpo && corpo.avviso && typeof corpo.avviso === "object") {
+      const scritto = await this._avvisaSuIntervalloMinimo(element, rows, corpo.avviso);
+      if (!scritto) return "ritentabile";
+    }
     await this._local.outboxRemove(element.id);
     return "delivered";
+  }
+
+  /**
+   * Decisione 2 -- persist the "due dosi molto vicine" notice for a presa
+   * the server registered with an `avviso`. NEVER throws, same clause and
+   * same reason as _avvisaSuConflitto. `false` means the caller must NOT
+   * drop the element yet.
+   *
+   * The time shown is the RECORDED dose time, read from the presa row that
+   * was actually sent (M3: never the tap for a retroactive presa); the
+   * numbers are the server's, in real minutes.
+   *
+   * @param {object} element the outbox element
+   * @param {any[]} rows delivery.rows -- the rows actually SENT
+   * @param {object} avviso the server `avviso` object
+   * @returns {Promise<boolean>} true only if the notice reads back
+   */
+  async _avvisaSuIntervalloMinimo(element, rows, avviso) {
+    const presa =
+      Array.isArray(rows) ? rows.find((r) => r && r.stato === "presa") : null;
+    let farmaco = null;
+    try {
+      farmaco = await this._local.getFarmaco(element.farmaco_id);
+    } catch {
+      return false;
+    }
+    if (!farmaco || typeof farmaco.nome !== "string") return false;
+
+    return salvaAvviso({
+      client_op_id: element.client_op_id,
+      farmaco_nome: farmaco.nome,
+      dose_numero: element.dose_numero,
+      data: element.data,
+      ora_tocco: element.created_at,
+      op: element.op,
+      motivo: MOTIVI_AVVISO.INTERVALLO_MINIMO,
+      dettagli: {
+        lato: avviso.lato,
+        minuti_dalla_vicina: avviso.minuti_dalla_vicina,
+        intervallo_minimo_minuti: avviso.intervallo_minimo_minuti,
+        ora_effettiva: presa ? (presa.ora_effettiva ?? null) : null,
+        ora_effettiva_vicina: avviso.ora_effettiva_vicina ?? null,
+      },
+    });
   }
 
   /**

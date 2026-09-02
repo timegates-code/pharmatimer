@@ -239,3 +239,42 @@ describe('avvisiStore -- vocabolario append-only', () => {
     expect(Object.values(MOTIVI_AVVISO)).not.toContain('CONFLITTO_VERO');
   });
 });
+
+// ============================================================
+// Decisione 2 -- `dettagli` opzionali del record e il motivo nuovo.
+// ============================================================
+describe('D2 -- dettagli opzionali e motivo INTERVALLO_MINIMO', () => {
+  it('D1 un oggetto dettagli viene copiato nel record e riletto uguale', () => {
+    montaStub();
+    const dettagli = { lato: 'precedente', minuti_dalla_vicina: 60, intervallo_minimo_minuti: 240 };
+    expect(
+      salvaAvviso({ ...FATTI, motivo: MOTIVI_AVVISO.INTERVALLO_MINIMO, dettagli }, ORA),
+    ).toBe(true);
+    const [r] = elencaAvvisi();
+    expect(r.motivo).toBe('INTERVALLO_MINIMO');
+    expect(r.dettagli).toEqual(dettagli);
+    expect(r.dettagli).not.toBe(dettagli);
+  });
+
+  it('D2 dettagli non oggetto (stringa, array, null, assenti) non entrano nel record', () => {
+    for (const dettagli of ['x', [1], null, undefined]) {
+      montaStub();
+      expect(salvaAvviso({ ...FATTI, dettagli }, ORA)).toBe(true);
+      const [r] = elencaAvvisi();
+      expect('dettagli' in r).toBe(false);
+    }
+  });
+
+  it('D3 i sette fatti restano obbligatori anche col motivo nuovo', () => {
+    montaStub();
+    expect(
+      salvaAvviso({ ...FATTI, motivo: MOTIVI_AVVISO.INTERVALLO_MINIMO, farmaco_nome: '' }, ORA),
+    ).toBe(false);
+    expect(elencaAvvisi()).toEqual([]);
+  });
+
+  it('D4 MOTIVI_AVVISO e append-only: CONFLITTO poi INTERVALLO_MINIMO, congelato', () => {
+    expect(Object.keys(MOTIVI_AVVISO)).toEqual(['CONFLITTO', 'INTERVALLO_MINIMO']);
+    expect(Object.isFrozen(MOTIVI_AVVISO)).toBe(true);
+  });
+});

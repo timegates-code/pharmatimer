@@ -23,6 +23,7 @@ from mysql.connector.pooling import PooledMySQLConnection
 from pharmatimer_api.db.dependencies import CurrentUser, get_current_user, get_db
 from pharmatimer_api.exceptions import RepositoryError, RepositoryErrorCode
 from pharmatimer_api.models.log_assunzione import (
+    AvvisoIntervalloMinimo,
     LogAssunzioneCreatePresa,
     LogAssunzioneCreateSaltata,
     LogAssunzioneCreateSospesa,
@@ -31,6 +32,7 @@ from pharmatimer_api.models.log_assunzione import (
     LogAssunzioneUndoPayload,
     LogAssunzioneVerboResponse,
 )
+from pharmatimer_api.tempo import minuti_reali, parete
 
 router = APIRouter(prefix="/api", tags=["log_assunzioni"])
 
@@ -93,6 +95,102 @@ def _verify_farmaco_ownership(cur, farmaco_id: int, utente_id: int) -> None:
         )
 
 
+# ---------------------------------------------------------------------------
+# Decisione 2 -- intervallo minimo LATO SERVER, in minuti REALI.
+#
+# A presa is ALWAYS registered (M2). If it lands too close to another presa
+# of the same farmaco, the 201 carries an `avviso` and the client shows it.
+# The nested recalculation is verified: if the recalculated time would fall
+# under the minimum interval from the presa just registered, D+1 is NOT
+# written and the 201 says `ricalcolo: rifiutato_intervallo_minimo` -- the
+# presa stays registered without recalculation, and the client realigns on
+# the reread of the window, exactly as it does for the s.6.269 omission.
+#
+# Why the refusal rides on a 2xx and not on a 4xx (P1=A): any RepositoryError
+# raised here rolls the whole transaction back, presa included, and a 4xx
+# parks the queued couple on the phone with no retry (Spec 14.3): a presa the
+# server DID register would then show up as "Da controllare" -- a false alarm
+# on a legitimate gesture.
+#
+# `intervallo_minimo_ore` NULL means NO guard, neither avviso nor refusal
+# (P2=A): absence of information never produces a warning. Spec 3.1 declares
+# a 50% default that no site realises, client included; open decision.
+#
+# The neighbour is the nearest presa of the SAME FARMACO on EITHER side, any
+# dose_numero, any date, never the row itself (P3=B). Two doses too close are
+# almost always dose 1 and dose 2 of the same farmaco, or the evening and the
+# next morning: a comparison limited to the slot would never see them. The
+# later side matters for a RETROACTIVE presa, the case where the person's
+# memory is least certain and the avviso serves most.
+#
+# Minutes are REAL (tempo.minuti_reali): 23:00 -> 07:00 across the spring
+# transition is 420, not the 480 the wall clock shows.
+# ---------------------------------------------------------------------------
+
+
+def _intervallo_minimo_minuti(cur, farmaco_id: int) -> int | None:
+    """Minimum interval of the farmaco in minutes; None when the column is NULL."""
+    cur.execute(
+        "SELECT intervallo_minimo_ore FROM farmaci WHERE id = %s",
+        (farmaco_id,),
+    )
+    row = cur.fetchone()
+    if row is None or row["intervallo_minimo_ore"] is None:
+        return None
+    # DECIMAL(4,1) arrives as Decimal: one decimal of hours is a whole number
+    # of minutes, so int() truncates nothing.
+    return int(row["intervallo_minimo_ore"] * 60)
+
+
+_PRESA_VICINA_SELECT = (
+    "SELECT ora_effettiva FROM log_assunzioni "
+    "WHERE utente_id = %s AND farmaco_id = %s AND stato = 'presa' "
+    "AND ora_effettiva IS NOT NULL AND id <> %s "
+)
+
+
+def _avviso_intervallo_minimo(
+    cur,
+    utente_id: int,
+    farmaco_id: int,
+    riga_id: int,
+    ora_effettiva: datetime,
+    minimo_minuti: int,
+) -> AvvisoIntervalloMinimo | None:
+    """The nearest presa of the same farmaco on either side, in real minutes.
+
+    Returns the avviso when that distance is under the minimum, else None.
+    """
+    eff = parete(ora_effettiva)
+    cur.execute(
+        _PRESA_VICINA_SELECT + "AND ora_effettiva <= %s ORDER BY ora_effettiva DESC LIMIT 1",
+        (utente_id, farmaco_id, riga_id, eff),
+    )
+    prima = cur.fetchone()
+    cur.execute(
+        _PRESA_VICINA_SELECT + "AND ora_effettiva > %s ORDER BY ora_effettiva ASC LIMIT 1",
+        (utente_id, farmaco_id, riga_id, eff),
+    )
+    dopo = cur.fetchone()
+
+    vicina: tuple[str, datetime, int] | None = None
+    if prima is not None:
+        vicina = ("precedente", prima["ora_effettiva"], minuti_reali(eff, prima["ora_effettiva"]))
+    if dopo is not None:
+        distanza = minuti_reali(dopo["ora_effettiva"], eff)
+        if vicina is None or distanza < vicina[2]:
+            vicina = ("successiva", dopo["ora_effettiva"], distanza)
+    if vicina is None or vicina[2] >= minimo_minuti:
+        return None
+    lato, ora_vicina, minuti = vicina
+    return AvvisoIntervalloMinimo(
+        lato=lato,
+        minuti_dalla_vicina=minuti,
+        intervallo_minimo_minuti=minimo_minuti,
+        ora_effettiva_vicina=ora_vicina,
+    )
+
+
 @router.get(
     "/farmaci/{farmaco_id}/log",
     response_model=list[LogAssunzioneResponse],
@@ -151,10 +249,13 @@ def post_presa(
     response: Response,
     current_user: CurrentUser = Depends(get_current_user),
     conn: PooledMySQLConnection = Depends(get_db),
-) -> LogAssunzioneResponse:
+) -> LogAssunzioneVerboResponse:
     """Register 'presa' state transition atomically with optional ricalcolo dose D+1.
 
     Uses SELECT FOR UPDATE to lock the row during state-machine branch (CP1.A).
+    Decisione 2: `avviso` when the presa is under the minimum interval from
+    another presa of the farmaco, `ricalcolo` with the fate of the nested
+    recalculation (block at the top of this module).
     """
     cur = conn.cursor(dictionary=True)
     try:
@@ -166,9 +267,24 @@ def post_presa(
             )
             dedup_row = cur.fetchone()
             if dedup_row is not None:
+                # SENTINEL_D2_AVVISO_DEDUP -- the avviso is DERIVED from stored
+                # rows, so a first response lost on the wire does not lose it:
+                # recomputed on the replay, same transaction. `ricalcolo` is
+                # not stored and stays None on a replay.
+                avviso_dedup = None
+                minimo_dedup = _intervallo_minimo_minuti(cur, farmaco_id)
+                if minimo_dedup is not None and dedup_row["ora_effettiva"] is not None:
+                    avviso_dedup = _avviso_intervallo_minimo(
+                        cur,
+                        current_user.id,
+                        farmaco_id,
+                        dedup_row["id"],
+                        dedup_row["ora_effettiva"],
+                        minimo_dedup,
+                    )
                 conn.commit()
                 response.status_code = status.HTTP_200_OK
-                return LogAssunzioneVerboResponse(**dedup_row, dedup=True)
+                return LogAssunzioneVerboResponse(**dedup_row, dedup=True, avviso=avviso_dedup)
         cur.execute(
             "SELECT id, stato, recupero_minuti FROM log_assunzioni "
             "WHERE utente_id = %s AND farmaco_id = %s "
@@ -240,8 +356,37 @@ def post_presa(
             )
             target_id = cur.lastrowid
 
+        # SENTINEL_D2_AVVISO_PRESA -- decisione 2, block at the top of this
+        # module. Read AFTER the write of dose D, so the row itself is excluded
+        # by id and every other presa of the farmaco is a candidate neighbour.
+        minimo_minuti = _intervallo_minimo_minuti(cur, farmaco_id)
+        avviso = None
+        if minimo_minuti is not None:
+            avviso = _avviso_intervallo_minimo(
+                cur,
+                current_user.id,
+                farmaco_id,
+                target_id,
+                payload.ora_effettiva,
+                minimo_minuti,
+            )
+
         ricalc = payload.ricalcolo_dose_successiva
-        if ricalc is not None:
+        esito_ricalcolo = None
+        if (
+            ricalc is not None
+            and minimo_minuti is not None
+            and minuti_reali(ricalc.ora_ricalcolata, payload.ora_effettiva) < minimo_minuti
+        ):
+            # SENTINEL_D2_RICALCOLO_RIFIUTATO -- the recalculated time would
+            # fall under the minimum interval from the presa just registered:
+            # D+1 is NOT written, the presa stays, the 201 names the refusal.
+            # Reachable when the client's wall-clock arithmetic crosses a DST
+            # transition with a minimum close to the interval, or from a
+            # client that computed the time otherwise. The refusal never rolls
+            # back dose D (P1=A).
+            esito_ricalcolo = "rifiutato_intervallo_minimo"
+        elif ricalc is not None:
             cur.execute(
                 "SELECT id, stato FROM log_assunzioni "
                 "WHERE utente_id = %s AND farmaco_id = %s "
@@ -288,6 +433,11 @@ def post_presa(
                             next_dose["id"],
                         ),
                     )
+                    esito_ricalcolo = "applicato"
+                else:
+                    # Decisione 2 (P5=A): the s.6.269 omission is NAMED on the
+                    # wire instead of staying silent. Action unchanged.
+                    esito_ricalcolo = "omesso_stato_destinazione"
             else:
                 cur.execute(
                     "INSERT INTO log_assunzioni ("
@@ -304,6 +454,7 @@ def post_presa(
                         ricalc.gap_minuti,
                     ),
                 )
+                esito_ricalcolo = "applicato"
 
         cur.execute(
             "SELECT id, utente_id, farmaco_id, data, dose_numero, ora_prevista, "
@@ -319,7 +470,7 @@ def post_presa(
         raise
     finally:
         cur.close()
-    return LogAssunzioneResponse(**row)
+    return LogAssunzioneVerboResponse(**row, avviso=avviso, ricalcolo=esito_ricalcolo)
 
 
 # F3-S3-beta CP1 idempotency_marker v01

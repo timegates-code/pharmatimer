@@ -51,6 +51,11 @@ const AVVISO_KEY_PREFIX = 'pharmatimer.avviso.';
  */
 export const MOTIVI_AVVISO = Object.freeze({
   CONFLITTO: 'CONFLITTO',
+  // Decisione 2 -- the presa IS registered, but too close to another presa
+  // of the same farmaco: the server said so on the 201 (`avviso`), in real
+  // minutes. Not a drop and not a park: the registration went through. The
+  // details travel in the optional `dettagli` of the record.
+  INTERVALLO_MINIMO: 'INTERVALLO_MINIMO',
 });
 
 /** Required facts. Missing any of them means the record cannot be composed. */
@@ -111,7 +116,9 @@ function fattiCompleti(fatti) {
  * on quota in ways that leave the value absent, and this write is the thing
  * that authorises a drop. "It did not throw" is not "it is there".
  *
- * @param {object} fatti frozen facts; see CAMPI_OBBLIGATORI
+ * @param {object} fatti frozen facts; see CAMPI_OBBLIGATORI. An optional
+ *   plain-object `dettagli` is copied into the record as is (decisione 2):
+ *   the junction reads it per motivo and degrades when it cannot.
  * @param {() => string} [now] injected for deterministic tests
  * @returns {boolean} true only if the record is readable back, byte-equal
  */
@@ -130,6 +137,13 @@ export function salvaAvviso(fatti, now = () => new Date().toISOString()) {
     motivo: fatti.motivo,
     creato_at: now(),
   };
+  if (
+    fatti.dettagli &&
+    typeof fatti.dettagli === 'object' &&
+    !Array.isArray(fatti.dettagli)
+  ) {
+    record.dettagli = { ...fatti.dettagli };
+  }
 
   let serializzato;
   try {

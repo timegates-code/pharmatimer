@@ -99,6 +99,86 @@ export function testoAvvisoConflitto(fatti = {}) {
   });
 }
 
+/* ============================================================
+ * Decisione 2 -- avviso "due dosi molto vicine". The server registered the
+ * presa (M3: the dose WAS taken and IS recorded) and measured, in real
+ * minutes, that it lies under the minimum interval from another presa of the
+ * same farmaco, before or after. The card says the fact, the limit, and that
+ * nothing is up to the person now (14.5 p.7); it names no server, no queue.
+ * `Presa alle` states the RECORDED time of the dose, not the tap.
+ * ------------------------------------------------------------ */
+
+/** Line 1 -- names what happened, asks nothing. */
+export const AVVISO_INTERVALLO_TITOLO = 'Due dosi molto vicine';
+
+/** Line 4 -- the registration stands; the only pointer is to the doctor. */
+export const AVVISO_INTERVALLO_CHIUSURA =
+  'La registrazione è valida e non devi fare niente adesso. Se hai un dubbio, parlane con il medico.';
+
+/** Line 3 of the degraded card -- the fact without its numbers. */
+export const AVVISO_INTERVALLO_SPIEGAZIONE_ASSENTE =
+  'Due registrazioni di questo farmaco risultano più vicine del limite previsto.';
+
+/**
+ * Compose the four lines of the "due dosi molto vicine" card.
+ *
+ * Same totality rule as testoAvvisoConflitto: `null` when any fact is
+ * missing, malformed or blank, never a sentence with a hole in it.
+ *
+ * @param {object} [fatti]
+ * @param {string} [fatti.farmacoNome]
+ * @param {number} [fatti.doseNumero]   1-based dose index
+ * @param {string} [fatti.dataLabel]    already formatted by the caller
+ * @param {string} [fatti.oraLabel]     already formatted; the RECORDED dose time
+ * @param {'precedente'|'successiva'} [fatti.lato] on which side the near presa lies
+ * @param {string} [fatti.minutiLabel]  already formatted duration to the near presa
+ * @param {string} [fatti.minimoLabel]  already formatted minimum interval
+ * @returns {{titolo: string, fatti: string, spiegazione: string,
+ *            chiusura: string, azione: string}|null}
+ */
+export function testoAvvisoIntervalloMinimo(fatti = {}) {
+  const { farmacoNome, doseNumero, dataLabel, oraLabel, lato, minutiLabel, minimoLabel } =
+    fatti || {};
+  if (!testoPresente(farmacoNome)) return null;
+  if (!testoPresente(dataLabel)) return null;
+  if (!testoPresente(oraLabel)) return null;
+  if (!testoPresente(minutiLabel)) return null;
+  if (!testoPresente(minimoLabel)) return null;
+  if (!Number.isInteger(doseNumero) || doseNumero < 1) return null;
+  if (lato !== 'precedente' && lato !== 'successiva') return null;
+
+  const relazione =
+    lato === 'precedente'
+      ? `${minutiLabel} dopo la dose precedente`
+      : `${minutiLabel} prima della dose successiva`;
+
+  return Object.freeze({
+    titolo: AVVISO_INTERVALLO_TITOLO,
+    fatti: `${farmacoNome}, dose ${doseNumero} del ${dataLabel}. Presa alle ${oraLabel}, ${relazione}.`,
+    spiegazione: `Per questo farmaco fra due dosi devono passare almeno ${minimoLabel}.`,
+    chiusura: AVVISO_INTERVALLO_CHIUSURA,
+    azione: AVVISO_CONFLITTO_AZIONE,
+  });
+}
+
+/**
+ * The SAME "due dosi molto vicine" card with the numbers left out, for a
+ * record whose details cannot be read back. Never null: the server DID
+ * warn, and showing nothing would be a silent discard of the warning.
+ *
+ * @returns {{titolo: string, fatti: string, spiegazione: string,
+ *            chiusura: string, azione: string}}
+ */
+export function testoAvvisoIntervalloMinimoDegradato() {
+  return Object.freeze({
+    titolo: AVVISO_INTERVALLO_TITOLO,
+    fatti: AVVISO_CONFLITTO_FATTI_ASSENTI,
+    spiegazione: AVVISO_INTERVALLO_SPIEGAZIONE_ASSENTE,
+    chiusura: AVVISO_INTERVALLO_CHIUSURA,
+    azione: AVVISO_CONFLITTO_AZIONE,
+  });
+}
+
 /**
  * The SAME card with the facts left out, for a record whose facts cannot be
  * read back (Q-TRAMA-4=A).

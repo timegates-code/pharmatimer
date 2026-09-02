@@ -260,7 +260,11 @@ def test_post_recupero_cross_midnight_no_false_anticipation(
         nome="CrossMidnight",
         tipo_frequenza="intervallo",
         intervallo_ore="8.0",
-        intervallo_minimo_ore="4.0",
+        # Decisione 2: the ricalcolo below sits 210 real minutes after the
+        # presa (22:00 -> 01:30); under a 4-hour minimum the server refuses
+        # D+1 and /recupero would 404. The minimum is not what this test
+        # measures (tests/test_intervallo_minimo.py does): guard off.
+        intervallo_minimo_ore=None,
         dosi_giornaliere=3,
     )
     today = date.today()

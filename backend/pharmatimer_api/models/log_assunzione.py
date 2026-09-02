@@ -102,15 +102,48 @@ class LogAssunzioneResponse(BaseModel):
     )
 
 
+class AvvisoIntervalloMinimo(BaseModel):
+    """Decisione 2 -- the presa was registered TOO CLOSE to another presa of
+    the same farmaco (any dose_numero, any date: P3=B, both neighbours).
+
+    It is an AVVISO and not an error: the presa is registered (M2), the body
+    travels on the 201, and the client shows it (Spec 14.5 p.4). `lato` says
+    on which side the nearest presa lies; `minuti_dalla_vicina` are REAL
+    minutes (tempo.minuti_reali), never wall-clock ones.
+    """
+
+    codice: Literal["PRESA_SOTTO_INTERVALLO_MINIMO"] = "PRESA_SOTTO_INTERVALLO_MINIMO"
+    lato: Literal["precedente", "successiva"]
+    minuti_dalla_vicina: int
+    intervallo_minimo_minuti: int
+    ora_effettiva_vicina: datetime
+
+
+# Decisione 2 -- what became of `ricalcolo_dose_successiva` on /presa. None
+# when the payload carried none. `omesso_stato_destinazione` names the guard
+# of s.6.269 (P5=A), which used to skip in silence; `rifiutato_intervallo_minimo`
+# is the new refusal: the recalculated time would fall under the minimum
+# interval from the presa just registered, so D+1 is NOT written and the presa
+# stays registered without recalculation. The client realigns on the reread.
+EsitoRicalcolo = Literal[
+    "applicato", "omesso_stato_destinazione", "rifiutato_intervallo_minimo"
+]
+
+
 class LogAssunzioneVerboResponse(LogAssunzioneResponse):
     """Verb-endpoint response = full row + dedup flag (Spec sez. 14.6).
 
     dedup=True only on a first-gesture dedupe hit (client_op_id already applied
     to this row): the row is returned unchanged, the transition NOT re-applied.
     dedup=False on the normal path. GET list stays on LogAssunzioneResponse.
+
+    `avviso` and `ricalcolo` (decisione 2) are set by /presa only; the other
+    four verbs carry them as None.
     """
 
     dedup: bool = False
+    avviso: AvvisoIntervalloMinimo | None = None
+    ricalcolo: EsitoRicalcolo | None = None
 
 
 # F3-S3-beta CP1 idempotency_marker v01

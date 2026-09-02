@@ -21,6 +21,13 @@ import {
   INDICATORE_DA_INVIARE_SENZA_COLLEGAMENTO,
   INDICATORE_DA_CONTROLLARE_SENZA_COLLEGAMENTO,
 } from './testi.js';
+import {
+  testoAvvisoIntervalloMinimo,
+  testoAvvisoIntervalloMinimoDegradato,
+  AVVISO_INTERVALLO_TITOLO,
+  AVVISO_INTERVALLO_CHIUSURA,
+  AVVISO_INTERVALLO_SPIEGAZIONE_ASSENTE,
+} from './testi.js';
 
 const FATTI = Object.freeze({
   farmacoNome: 'Cardioaspirina',
@@ -328,3 +335,66 @@ describe('testi -- il collegamento APPENDE e non sostituisce', () => {
   });
 });
 
+
+// ============================================================
+// Decisione 2 -- le frasi della scheda "due dosi molto vicine".
+// ============================================================
+describe('D2 -- testoAvvisoIntervalloMinimo', () => {
+  const F = Object.freeze({
+    farmacoNome: 'Cardioaspirina',
+    doseNumero: 2,
+    dataLabel: '24 luglio 2026',
+    oraLabel: '10:00',
+    lato: 'precedente',
+    minutiLabel: '1h',
+    minimoLabel: '4h',
+  });
+
+  it('compone le quattro righe e il bottone, lato precedente', () => {
+    const t = testoAvvisoIntervalloMinimo(F);
+    expect(t.titolo).toBe(AVVISO_INTERVALLO_TITOLO);
+    expect(t.fatti).toBe('Cardioaspirina, dose 2 del 24 luglio 2026. Presa alle 10:00, 1h dopo la dose precedente.');
+    expect(t.spiegazione).toBe('Per questo farmaco fra due dosi devono passare almeno 4h.');
+    expect(t.chiusura).toBe(AVVISO_INTERVALLO_CHIUSURA);
+    expect(t.azione).toBe('Ho letto');
+    expect(Object.isFrozen(t)).toBe(true);
+  });
+
+  it('lato successiva cambia il verso della frase', () => {
+    const t = testoAvvisoIntervalloMinimo({ ...F, lato: 'successiva', minutiLabel: '1h 30min' });
+    expect(t.fatti).toBe('Cardioaspirina, dose 2 del 24 luglio 2026. Presa alle 10:00, 1h 30min prima della dose successiva.');
+  });
+
+  it('null su ogni fatto mancante, vuoto o malformato: mai una frase col buco', () => {
+    for (const chiave of Object.keys(F)) {
+      expect(testoAvvisoIntervalloMinimo({ ...F, [chiave]: undefined })).toBeNull();
+      expect(testoAvvisoIntervalloMinimo({ ...F, [chiave]: '' })).toBeNull();
+    }
+    expect(testoAvvisoIntervalloMinimo({ ...F, lato: 'altrove' })).toBeNull();
+    expect(testoAvvisoIntervalloMinimo({ ...F, doseNumero: 0 })).toBeNull();
+    expect(testoAvvisoIntervalloMinimo({ ...F, doseNumero: '2' })).toBeNull();
+    expect(testoAvvisoIntervalloMinimo()).toBeNull();
+    expect(testoAvvisoIntervalloMinimo(null)).toBeNull();
+  });
+
+  it('clausole cliniche: la registrazione e detta valida, niente da fare, nessun gergo', () => {
+    const t = testoAvvisoIntervalloMinimo(F);
+    expect(t.chiusura).toMatch(/valida/);
+    expect(t.chiusura).toMatch(/non devi fare niente/);
+    const tutto = Object.values(t).join(' ');
+    expect(tutto).not.toMatch(/server|coda|sync|retry|errore/i);
+    // M3: mai dire o lasciar intendere che la dose non e stata presa.
+    expect(tutto).not.toMatch(/non (e|è) stata presa|non presa/i);
+  });
+
+  it('degradato: mai null, titolo nuovo, spiegazione senza numeri, stessa chiusura', () => {
+    const t = testoAvvisoIntervalloMinimoDegradato();
+    expect(t.titolo).toBe(AVVISO_INTERVALLO_TITOLO);
+    expect(t.spiegazione).toBe(AVVISO_INTERVALLO_SPIEGAZIONE_ASSENTE);
+    expect(t.spiegazione).not.toMatch(/\d/);
+    expect(t.chiusura).toBe(AVVISO_INTERVALLO_CHIUSURA);
+    expect(t.azione).toBe('Ho letto');
+    expect(typeof t.fatti).toBe('string');
+    expect(t.fatti.trim()).not.toBe('');
+  });
+});
