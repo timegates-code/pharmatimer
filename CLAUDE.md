@@ -215,7 +215,7 @@ richiede. Il resto lo stampa come `INFO` e dice che e INFO.
 - Backend venv in `backend/venv/`, NON in `.venv/`. **Non si attiva: si invoca
   per percorso esplicito** -- `venv/bin/python` da `backend/` -- perche una
   attivazione non sopravvive fra due comandi (stessa proprieta della umask,
-  sezione 13).
+  sezione 11).
 - MySQL Studio: `/usr/local/mysql/bin/mysql --defaults-file="$HOME/.my.cnf"` (con lo UGUALE).
 - MySQL Mini: `/opt/homebrew/bin/mysql --defaults-file=/Users/marketreader/.my-pharmatimer.cnf`, via `ssh mini`.
 - Output MySQL **sempre** via redirect su file piu `cat`, mai in pipe a `grep`.
@@ -355,3 +355,32 @@ log_assunzioni, utenti, permessi, health; `RepositoryError` mappato a
 exception handler. Multi-tenant con permessi caregiver; pilota id=2.
 `backend/tests/conftest.py` punta a `DB_NAME_TEST` e fa TRUNCATE autouse in
 ordine FK-safe: non tocca mai `pharmatimer_dev`.
+
+---
+
+## 13. CONVENZIONE DI CARTELLE
+
+Derivata dalla struttura viva e verificata con sonda, non imposta a priori.
+Dice dove mettere il PROSSIMO file; cio che non la rispetta si dichiara qui.
+
+- Cartelle di radice tracciate: `src/`, `backend/`, `scripts/`, `deploy/`,
+  `docs/`, `public/`. Non se ne aprono altre senza ratifica.
+- `src/domain/` e `src/utils/` sono PURI. Verificato: zero React, zero Dexie,
+  zero rete.
+- `src/data/` e la SOLA sede che tocca IndexedDB o la rete, e la catena
+  repository vive in `src/data/repository/`. Verificato: fuori di li il nome
+  `apiClient` compare soltanto dentro commenti.
+- `src/state/` possiede reducer e thunk; `src/hooks/` e `src/services/` stanno
+  fra stato e piattaforma. Verificato: nessuno dei tre importa da `components/`.
+- `src/components/<vista>/`, una cartella per vista -- `auth`, `config`,
+  `cronologia`, `oggi`, `onboarding` -- piu `shared/` per cio che due viste
+  usano davvero. Un componente usato da una sola vista sta nella sua vista.
+- Il test sta ACCANTO al file che prova, stesso nome piu `.test.js` o
+  `.test.jsx`. `src/test/` porta solo setup, finti condivisi e i pin di suite.
+- `backend/pharmatimer_api/` ha un solo strato: **il SQL sta nel router**.
+  Verificato con 67 `cur.execute` nei cinque router. Le due impalcature vuote
+  `repository/` e `services/`, che portavano il solo `__init__.py` e che
+  nessuno importava, sono state rimosse alla sessione di rimedio: non si
+  ricreano se non insieme al codice che le abita.
+- `backend/db/migrations/` e append-only: un file per migrazione, mai riscritto.
+- Una cartella che resta senza file si rimuove nello stesso commit che la svuota.
