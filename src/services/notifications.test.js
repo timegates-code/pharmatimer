@@ -310,6 +310,82 @@ describe('rescheduleAllNotifications — CP4 fix §6.127 + §6.128', () => {
 });
 
 // ============================================================
+// Chrome Android: `new Notification()` lancia sempre TypeError.
+//
+// Il costruttore in contesto di pagina non e implementato su Chrome per
+// Android (MDN browser-compat-data, chrome_android "partial"): l'oggetto
+// Notification esiste, `permission` risponde, ma la costruzione lancia
+// "Illegal constructor. Use ServiceWorkerRegistration.showNotification()".
+// Il fire-callback lo chiamava senza guardia, quindi sul moto g06 lo scatto
+// del timer moriva sull'eccezione e portava con se tutto cio che viene dopo.
+//
+// Pinnato nei due versi:
+//   - costruttore che lancia -> lo scatto non propaga, il resto della catena
+//     (onclick a parte, che non esiste) gira lo stesso, gli altri timer
+//     scattano, la contabilita dei pendenti resta consistente;
+//   - costruttore funzionante (iOS in PWA installata) -> nulla cambia: la
+//     notifica si costruisce, onclick e assegnato, onFire e chiamato. La
+//     guardia non deve inghiottire il percorso buono.
+// ============================================================
+describe('scheduleNotification -- costruttore che lancia (Chrome Android)', () => {
+  let ThrowingNotification;
+
+  beforeEach(() => {
+    vi.setSystemTime(new Date('2026-04-27T12:00:00'));
+    ThrowingNotification = vi.fn(function () {
+      throw new TypeError(
+        "Failed to construct 'Notification': Illegal constructor. Use " +
+          'ServiceWorkerRegistration.showNotification() instead.',
+      );
+    });
+    ThrowingNotification.permission = 'granted';
+    ThrowingNotification.requestPermission = vi.fn().mockResolvedValue('granted');
+    globalThis.Notification = ThrowingNotification;
+  });
+
+  it('lo scatto del timer non propaga il TypeError', () => {
+    const svc = createNotificationsService();
+    svc.scheduleNotification({ entryKey: 'k1', fireAt: Date.now() + 60_000, title: 't', body: 'b' });
+    expect(() => vi.advanceTimersByTime(60_000)).not.toThrow();
+    expect(ThrowingNotification).toHaveBeenCalledTimes(1);
+    expect(svc.getPendingCount()).toBe(0);
+  });
+
+  it('onFire viene chiamato lo stesso: la catena non cade sul costruttore', () => {
+    const svc = createNotificationsService();
+    const onFire = vi.fn();
+    svc.scheduleNotification({ entryKey: 'k1', fireAt: Date.now() + 60_000, title: 't', body: 'b', onFire });
+    vi.advanceTimersByTime(60_000);
+    expect(onFire).toHaveBeenCalledTimes(1);
+  });
+
+  it('un timer che fallisce non impedisce agli altri di scattare', () => {
+    const svc = createNotificationsService();
+    const primo = vi.fn();
+    const secondo = vi.fn();
+    svc.scheduleNotification({ entryKey: 'k1', fireAt: Date.now() + 60_000, title: 't1', body: 'b', onFire: primo });
+    svc.scheduleNotification({ entryKey: 'k2', fireAt: Date.now() + 120_000, title: 't2', body: 'b', onFire: secondo });
+    expect(() => vi.advanceTimersByTime(200_000)).not.toThrow();
+    expect(primo).toHaveBeenCalledTimes(1);
+    expect(secondo).toHaveBeenCalledTimes(1);
+    expect(svc.getPendingCount()).toBe(0);
+  });
+
+  it('verso opposto: con costruttore funzionante nulla cambia (iOS)', () => {
+    const svc = createNotificationsService();
+    const onFire = vi.fn();
+    globalThis.Notification = MockNotification;
+    svc.scheduleNotification({ entryKey: 'k1', fireAt: Date.now() + 60_000, title: 't', body: 'b', onFire });
+    vi.advanceTimersByTime(60_000);
+    expect(MockNotification).toHaveBeenCalledTimes(1);
+    expect(MockNotification).toHaveBeenCalledWith('t', { body: 'b', tag: 'k1' });
+    const istanza = MockNotification.mock.instances[0];
+    expect(typeof istanza.onclick).toBe('function');
+    expect(onFire).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ============================================================
 // Dose oltre la mezzanotte -- M2 sul promemoria.
 //
 // The reschedule window is the EFFECTIVE day, not `entry.dateStr`: a dose

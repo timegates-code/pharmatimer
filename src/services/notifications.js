@@ -71,12 +71,24 @@ export function createNotificationsService() {
       pending.delete(entryKey);
       // Q-CP2.4=A: defensive permission check al fire (cattura revoche post-schedule).
       if (globalThis.Notification.permission !== 'granted') return;
-      const notif = new globalThis.Notification(title, { body, tag: entryKey });
-      // Q-CP2.2=A: click handler porta su /oggi.
-      notif.onclick = () => {
-        try { window.focus(); } catch { /* noop */ }
-        try { window.location.href = '/oggi'; } catch { /* noop */ }
-      };
+      // Chrome Android: `new Notification()` in page context always throws
+      // TypeError ("Illegal constructor. Use
+      // ServiceWorkerRegistration.showNotification() instead", MDN BCD
+      // chrome_android partial). The object exists and `permission` answers,
+      // so neither isSupported() nor the check above sees it coming. Without
+      // this guard the throw took down the rest of the fire-callback and, with
+      // it, every later timer of the same tick. The guard restores the
+      // fail-safe: no notification on that platform is a KNOWN limit, a dead
+      // chain is not. It changes nothing where the constructor works (iOS in
+      // an installed PWA): same construction, same onclick, same onFire.
+      try {
+        const notif = new globalThis.Notification(title, { body, tag: entryKey });
+        // Q-CP2.2=A: click handler porta su /oggi.
+        notif.onclick = () => {
+          try { window.focus(); } catch { /* noop */ }
+          try { window.location.href = '/oggi'; } catch { /* noop */ }
+        };
+      } catch { /* costruttore non disponibile in pagina: si prosegue */ }
       if (typeof onFire === 'function') {
         try { onFire(); } catch { /* swallow */ }
       }
