@@ -35,7 +35,17 @@ mutazione; nessun canale nuovo, nessuna decisione di dominio, nessun deploy.
   resta dovuta**: qui e esercitata la conseguenza nel nostro codice, non il
   comportamento del telefono, che resta dedotto da MDN BCD.
 
-Collaudo di entrambi: pin visti rossi PRIMA del fix (isolati: uno su quattro
+- **`8a37e64` -- la voce 17 dello inventario misurava un token nel commento.**
+  Guasto introdotto da me con la guardia sopra e visto al gate di chiusura: il
+  commento cita il messaggio di errore vero di Chrome, che contiene il
+  letterale `showNotification`, e la sonda cercava quella sottostringa nel file
+  intero. Lo inventario ha dichiarato per due commit "presente un meccanismo
+  indipendente dalla pagina", che e falso. Corretta la SONDA, non il commento:
+  i commenti si spogliano prima di sondare. Vista nei due versi (commento -> no,
+  chiamata vera in codice -> SI); prima non li distingueva, quindi non era una
+  misura.
+
+Collaudo dei due fix: pin visti rossi PRIMA del fix (isolati: uno su quattro
 per il primo, tre su quattro per il secondo, col verso opposto gia verde),
 poi cinque mutazioni una variabile per volta, ognuna con il proprio rosso
 atteso, tutte ripristinate.
