@@ -1,0 +1,149 @@
+# repo:backend -- lato server e schieramento
+
+Fase: Misura. Agente `ac2a4ab6c67468b07`, esito: completato. Resa leggibile generata meccanicamente da `02-repo-backend.json`, che e il risultato restituito dall'agente cosi come registrato nel journal del workflow: contenuto invariato, solo forma.
+
+## Sintesi
+
+LATO SERVER E SCHIERAMENTO, misurato per contenuto (sola lettura, repo /Users/roberto/Sviluppo/pharmatimer, HEAD e966859).
+
+(1) ORA PREVISTA DI OGGI CON I SOLI DATI DEL SERVER. Parzialmente si, con una lacuna strutturale: il PROFILO NON ARRIVA MAI AL SERVER. La tabella profilo_utente esiste in v01_init.sql (ora_sveglia, ora_colazione, ora_pranzo, ora_cena, ora_sonno TIME, attivo, demo) ma nessun router la legge o scrive: grep di "profilo_utente" in backend/pharmatimer_api trova solo un commento in routers/utenti.py; backend/openapi.json non ha alcun path /profil*; ApiRepository.js delega i 7 metodi Profili e i 3 Setting al LocalRepository (IndexedDB del telefono). Il server ha quindi: farmaci (tipo_frequenza intervallo|fisso|fisso_date, intervallo_ore, intervallo_minimo_ore, dosi_giornaliere, data_inizio, data_fine, attivo, created_at, relazione_pasto, dettaglio_pasto, nome), orari_base (dose_numero, offset_minuti, ancora_riferimento ENUM sveglia|colazione|pranzo|cena|sonno|assoluto, ora_prevista TIME, descrizione_momento, data_specifica DATE NULL), log_assunzioni (data, dose_numero, stato, ora_prevista TIME, ora_effettiva DATETIME, ora_ricalcolata DATETIME, gap_minuti, recupero_minuti, client_op_id). orari_base.ora_prevista e la ETICHETTA RICORRENTE materializzata dal client al salvataggio con il profilo attivo di allora (orarioResolver.js: "It is what orari_base stores"); il piano vivo pero la ricalcola OGNI volta da offset_minuti + ancora + profilo (planBuilder.js chiama computeOraPrevistaOnDay(orario, profilo, dateStr), non legge orario.ora_prevista). Quindi un motore server che usasse orari_base.ora_prevista sarebbe corretto finche il profilo attivo sul telefono non cambia; al cambio profilo (setProfiloAttivoConCleanup, solo locale) le righe orari_base sul server NON vengono riscritte e la etichetta diverge. Cosa manca inoltre al server rispetto al client: (a) normalizeWallTime del giorno (decisione 1 DST: dose nella ora saltata scivola al primo istante esistente, computeOraPrevistaOnDay); (b) T_inizio di startBoundary.js (data_inizio vs DATE(created_at), occorrenza visibile solo se >= T_inizio) -- dati presenti sul server, logica da replicare; (c) ramo esteso intervallo_ore > 24 (extendedFrequency.js + extendedStride.js, cadenza a giorni civili per multipli di 24, ms altrimenti) -- da replicare; (d) fisso_date: riga orari_base materializzata solo sul proprio data_specifica -- dato presente; (e) wrap oltre mezzanotte: Spec 3.6 dice che ora_prevista non attraversa mezzanotte, sonno 23:30 + 60 = 00:30 dello STESSO giorno (dichiarato aperto in orarioResolver.js); (f) sospensioni e salti sono STATI di riga log (sospesa, saltata), non tabelle: il server li ha; (g) il ricalcolo a catena non esiste: /presa scrive solo D+1 come stato ricalcolata con ora_ricalcolata DATETIME (post_recupero: "Q5 = A minimal scope: only 1 target dose, no cascade") -- il server ha gia il valore finale, non deve ricalcolare; (h) orario_non_risolvibile (profilo senza ancora) e contenimento per dose -- irrilevante server-side se si usa la etichetta materializzata. Fuso: tempo.py fissa FUSO_PARETE = Europe/Rome come costante di modulo; il DB e in wall-clock naive (MySQL session tz = SYSTEM = CEST su dev e prod).
+
+(2) DOSE GIA PRESA AL MOMENTO DI SPINGERE. Chiave dello slot: (utente_id, farmaco_id, data, dose_numero), UNIQUE idx_log_slot_unique da v02_unique_log.sql; e la stessa chiave che ogni verbo usa in SELECT ... FOR UPDATE. Query: SELECT stato, ora_ricalcolata FROM log_assunzioni WHERE utente_id=%s AND farmaco_id=%s AND data=%s AND dose_numero=%s -- nessuna riga = prevista implicita (il server non materializza le previste: la riga nasce solo al primo verbo o come D+1 ricalcolata); stato presa|saltata|sospesa = non notificare; ricalcolata = notificare a ora_ricalcolata (DATETIME completo, v04) invece che a ora_prevista. Ulteriore indice utile: idx_log_utente_data (utente_id, data). Limite clinico: una presa fatta offline resta nella coda del telefono e il server non la vede finche la coda non si consegna (Spec 14.0-14.2, refresh on-open, nessun polling): in quel lasso un push server-side puo suonare su una dose gia presa (M1 sul lato avviso, non sul record). Il dedup per tocco esiste: client_op_id CHAR(36) UNIQUE (v06), _LOG_ROW_SELECT_BY_TARGA in tutti e 5 i verbi.
+
+(3) PROCESSO PERIODICO: NON ESISTE nel backend (grep di BackgroundTasks|asyncio.|threading|apscheduler|schedule|cron|repeat_every|create_task in backend/pharmatimer_api, pyproject.toml e deploy/: zero righe). app.py ha un solo lifespan che fa init_pool()/close_pool(). Sul Mini girano due LaunchAgent tracciati in deploy/launchd/: com.pharmatimer.api-wrapper (RunAtLoad + KeepAlive true, ProgramArguments api-wrapper.sh, EnvironmentVariables DB_DEFAULTS_FILE, DB_NAME=pharmatimer, PATH; WorkingDirectory ~/PharmaTimer; log api.out.log/api.err.log) e com.pharmatimer.backup (StartCalendarInterval 03:00, backup.sh mysqldump gzip retention 7gg). api-wrapper.sh: cd ~/PharmaTimer/backend, while true: .venv/bin/uvicorn pharmatimer_api.app:app --host 0.0.0.0 --port 8000 --log-level info; sleep 5 on exit. Vincoli per un pianificatore: uvicorn e a PROCESSO SINGOLO (nessun --workers), quindi un thread o task asyncio nel lifespan avrebbe una sola istanza; il wrapper riavvia uvicorn a ogni crash e launchd riavvia il wrapper (KeepAlive), quindi un pianificatore in-process riparte da solo ma perde lo stato in RAM a ogni riavvio (va ricostruito dal DB); pytest usa TestClient senza context manager (conftest.py: "lifespan startup/shutdown NOT triggered"), quindi un task avviato nel lifespan non girerebbe nei test. Alternative: secondo LaunchAgent con StartInterval (pattern gia in repo: backup.plist) che invoca uno script venv che legge il DB e spinge; oppure cron classico (non usato nel progetto). Config: Settings legge env_file=.env.dev relativo alla cwd (backend/ sul Mini) piu env del plist; il deploy esclude .env* dal rsync e --delete non cancella gli esclusi, quindi il Mini conserva il proprio .env.dev.
+
+(4) CORS: config.py CORS_ORIGINS default "http://localhost:5173", parsato in cors_origins_list (CSV); app.py CORSMiddleware allow_origins=settings.cors_origins_list, allow_credentials True, methods e headers *. Il plist NON porta CORS_ORIGINS (Changelog Fase3 :7297 lo misura: "viene da backend/.env.dev"), quindi in prod la lista arriva dal .env.dev che vive sul Mini e non viaggia col deploy; ultima misura in Changelog :7294: ['http://localhost:5173','https://marketreader-server.taila127de.ts.net']; lo stesso valore sta in .env.dev.example :21 e nello .env.dev locale :21. Nota: la PWA installata da ts.net e servita SAME-ORIGIN dal catch-all statico di app.py (_WEB_DIR /Users/marketreader/PharmaTimer/web, mount /assets, guardia /api), quindi CORS conta solo per dev Vite :5173. Il Mini ascolta su 0.0.0.0:8000 (wrapper), tailscale serve fa proxy 443 -> localhost:8000.
+
+(5) ENDPOINT MAI CHIAMATI DAL FRONTEND (openapi: 22 operazioni; ApiRepository.js chiama 12: GET/POST /api/farmaci, PUT/DELETE /api/farmaci/{id}, GET/PUT .../orari, GET .../log, POST .../log/presa|saltata|sospesa|undo|recupero; sonda: grep "/api" in src fuori dai test trova path solo in ApiRepository.js; nessuna occorrenza di "health" in src/data/repository, src/state, src/hooks). I sette mai chiamati: 1 GET /api/health; 2 GET /api/permessi; 3 POST /api/permessi; 4 PUT /api/permessi/{permesso_id}; 5 DELETE /api/permessi/{permesso_id}; 6 POST /api/utenti; 7 DELETE /api/utenti/{utente_id}. Conseguenza: permessi.notifiche_caregiver_attive si scrive solo da POST/PUT /api/permessi (routers/permessi.py) e come FALSE fisso in utenti.py create_utente, seed_owner.py e conftest; si legge solo nelle SELECT di permessi.py; nessun altro sito la consulta. Nessuna via applicativa oggi la porta a 1 (coerente con i tutti 0 misurati sul Mini).
+
+(6) PYTHON E DIPENDENZE: pyproject requires-python >=3.12, classifiers 3.12/3.13, ruff target py312; deploy/02-setup-pharmatimer-venv.sh crea il venv con /opt/homebrew/opt/python@3.13/bin/python3.13; il venv locale e Python 3.13.12 (symlink a homebrew). Dipendenze: fastapi, uvicorn[standard], mysql-connector-python, pydantic, pydantic-settings, httpx; dev: pytest, pytest-asyncio, ruff. Nel venv locale NON esistono cryptography, cffi, requests, py_vapid, http_ece, pywebpush (ls di site-packages). Aggiungere pywebpush porta cryptography (estensione nativa: wheel abi3 macOS arm64 disponibile su PyPI, nessuna compilazione attesa su Python 3.13 arm64), cffi, py-vapid, http-ece e requests (secondo client HTTP accanto a httpx); il deploy fa pip install -e sul Mini via rete PyPI (deploy-mini.sh passo 6); memoria di progetto: la reinstallazione editable fallisce nel sandbox di Claude Code e va fatta dal Terminale. Serve anche una coppia VAPID persistita fuori dal repo (nessuna sede oggi; il plist e il .env.dev sono i due canali di config esistenti). Il rischio e in installazione, non in runtime: nessun compilatore richiesto se il wheel c'e.
+
+(7) HEALTH CON VERSIONE CABLATA: backend/pharmatimer_api/routers/health.py, VERSION = "0.1.0", restituito come "version" da GET /api/health; pinnato da backend/tests/test_health.py: assert body["version"] == "0.1.0". Diverge da app.py, dove __version__ viene da importlib.metadata version("pharmatimer-api") (0.7.7 in openapi.json info.version, fallback "0.0.0-dev" se il pacchetto non e installato) ed e cio che prod-check legge come OPENAPI_VER. Quindi /api/health dice sempre 0.1.0 anche sul Mini a 0.7.7.
+
+ALTRO MISURATO. Makefile: g21 misura via ssh mini la presenza di log_assunzioni.client_op_id (v06) contro il livello richiesto da inventario --voce 19; prod-check: curl BASE/ e /openapi.json, censimento via ssh (utenti, permessi, farmaci attivi, log), poi g21; deploy-mini.sh: prod-check, g21, albero pulito, build:mini, rsync backend/ deploy/ dist-mini/ verso mini:~/PharmaTimer/{backend,deploy,web} escludendo .env*, venv, egg-info, __pycache__, .bak, poi pip install -e e bootout/bootstrap del LaunchAgent, poi prod-check. deploy/03-apply-schema.sh applica solo v01..v03 (v04..v06 hanno wrapper apply_*_prod.py). conftest.py _TRUNCATE_ORDER nomina push_subscriptions in quinta posizione (log_assunzioni, orari_base, farmaci, impostazioni_app, push_subscriptions, profilo_utente, permessi, utenti) ed e la sola sede di codice che la nomina fuori dal DDL e da db_probe.sql (P0 censimento). Auth: get_current_user hash SHA-256 di X-User-Token contro utenti.token_hash AND attivo; una subscription push dovrebbe agganciarsi a utente_id via questa stessa dipendenza. /presa: SELECT FOR UPDATE sullo slot; prevista|ricalcolata -> UPDATE presa; presa|saltata|sospesa -> 409 CONFLICT; no riga -> INSERT presa; avviso intervallo minimo (AvvisoIntervalloMinimo, minuti reali via tempo.minuti_reali, vicina precedente o successiva dello stesso farmaco) viaggia sul 201; ricalcolo D+1: rifiutato_intervallo_minimo se sotto il minimo dalla presa, omesso_stato_destinazione se D+1 e gia chiusa, altrimenti applicato (UPDATE o INSERT stato ricalcolata con ora_ricalcolata, gap_minuti, recupero_minuti=0). Colonna intervallo_minimo_ore NULL = nessuna guardia.
+
+## Fatti
+
+### 1. Il profilo (ancoraggi sveglia/colazione/pranzo/cena/sonno) non raggiunge mai il server: nessun router legge o scrive profilo_utente e ApiRepository delega i profili al LocalRepository.
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/src/data/repository/ApiRepository.js`
+- Evidenza: // Profili (7 delegate LocalRepository) ... getProfiloAttivo() { return this._local.getProfiloAttivo(); } -- e grep profilo_utente in backend/pharmatimer_api: solo il commento 'No cascade on farmaci/profilo_utente/permessi' in routers/utenti.py; openapi.json non ha path /profil*
+
+### 2. orari_base.ora_prevista e la etichetta ricorrente materializzata dal client; il piano vivo la ricalcola da offset+ancora+profilo e non legge la colonna.
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/src/domain/orarioResolver.js`
+- Evidenza: computeOraPrevista(orario, profilo) -> 'HH:MM', the RECURRING label ... It is what orari_base stores; planBuilder.js: oraPrevista = computeOraPrevistaOnDay(orario, profilo, dateStr)
+
+### 3. Schema orari_base: dose_numero, offset_minuti, ancora_riferimento ENUM a 6 valori, ora_prevista TIME, descrizione_momento, data_specifica (v05).
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/backend/db/migrations/v01_init.sql`
+- Evidenza: ancora_riferimento ENUM('sveglia','colazione','pranzo','cena','sonno','assoluto') NOT NULL, ora_prevista TIME NOT NULL ... v05: ALTER TABLE orari_base ADD COLUMN data_specifica DATE NULL
+
+### 4. Chiave dello slot dose e UNIQUE (utente_id, farmaco_id, data, dose_numero) da v02; ogni verbo la usa in SELECT FOR UPDATE.
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/backend/db/migrations/v02_unique_log.sql`
+- Evidenza: ADD UNIQUE INDEX idx_log_slot_unique (utente_id, farmaco_id, data, dose_numero); log_assunzioni.py: SELECT id, stato, recupero_minuti FROM log_assunzioni WHERE utente_id = %s AND farmaco_id = %s AND data = %s AND dose_numero = %s FOR UPDATE
+
+### 5. Il server non materializza le dosi previste: una riga di log nasce solo al primo verbo o come D+1 ricalcolata; assenza di riga significa prevista.
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/backend/pharmatimer_api/routers/log_assunzioni.py`
+- Evidenza: docstring modulo: 'no row -> INSERT new presa'; INSERT ... stato 'ricalcolata' nel ramo ricalcolo_dose_successiva quando next_dose is None
+
+### 6. ora_ricalcolata e DATETIME completo (v04), quindi il server conosce l'istante spostato di D+1 senza ricalcolo.
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/backend/db/migrations/v04_ora_ricalcolata_datetime.sql`
+- Evidenza: ALTER TABLE log_assunzioni MODIFY COLUMN ora_ricalcolata DATETIME NULL; models/log_assunzione.py: ora_ricalcolata: datetime
+
+### 7. Il ricalcolo lato server tocca solo D+1, nessuna catena.
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/backend/pharmatimer_api/routers/log_assunzioni.py`
+- Evidenza: post_recupero docstring: 'Q5 = A (minimal scope): only 1 target dose, no cascade D+1..D+N'; post_presa scrive solo ricalc.data/ricalc.dose_numero
+
+### 8. Il dedup per tocco e client_op_id CHAR(36) UNIQUE (v06), consultato da tutti e cinque i verbi.
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/backend/db/migrations/v06_client_op_id.sql`
+- Evidenza: ADD COLUMN client_op_id CHAR(36) NULL; ADD UNIQUE INDEX idx_log_client_op_unique (client_op_id); log_assunzioni.py _LOG_ROW_SELECT_BY_TARGA usato in presa/saltata/sospesa/undo/recupero
+
+### 9. Nessun processo periodico nel backend: il lifespan fa solo init_pool/close_pool.
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/backend/pharmatimer_api/app.py`
+- Evidenza: async def lifespan(app): init_pool(); yield; close_pool() -- grep BackgroundTasks|asyncio.|threading|apscheduler|schedule|cron|repeat_every|create_task in backend/pharmatimer_api, pyproject.toml, deploy/: zero righe
+
+### 10. Il LaunchAgent api-wrapper e KeepAlive con while-loop su uvicorn a processo singolo 0.0.0.0:8000, sleep 5 su uscita.
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/deploy/launchd/api-wrapper.sh`
+- Evidenza: while true; do "${VENV_PATH}/bin/uvicorn" pharmatimer_api.app:app --host 0.0.0.0 --port 8000 --log-level info; ... sleep 5; done -- plist: <key>KeepAlive</key><true/>
+
+### 11. Esiste gia un pattern di LaunchAgent a calendario nel repo (backup notturno), replicabile per un pianificatore.
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/deploy/launchd/com.pharmatimer.backup.plist`
+- Evidenza: <key>StartCalendarInterval</key><dict><key>Hour</key><integer>3</integer><key>Minute</key><integer>0</integer></dict>
+
+### 12. I test non eseguono il lifespan: un task avviato li dentro non girerebbe in pytest.
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/backend/tests/conftest.py`
+- Evidenza: No context manager -> lifespan startup/shutdown NOT triggered, so init_pool() does not overwrite the patched _pool
+
+### 13. CORS in prod viene dal .env.dev del Mini, non dal plist; default 'http://localhost:5173'; valore misurato dual-origin localhost:5173 + FQDN tailnet.
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/backend/pharmatimer_api/config.py`
+- Evidenza: CORS_ORIGINS: str = "http://localhost:5173"; cors_origins_list split su virgola -- plist EnvironmentVariables: solo DB_DEFAULTS_FILE, DB_NAME, PATH -- .env.dev.example:21 CORS_ORIGINS=http://localhost:5173,https://marketreader-server.taila127de.ts.net -- Changelog Fase3 :7297 'CORS_ORIGINS NON in plist -> viene da backend/.env.dev'
+
+### 14. Il deploy esclude .env* dal rsync e --delete non cancella gli esclusi: il .env.dev del Mini sopravvive a ogni deploy.
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/deploy/deploy-mini.sh`
+- Evidenza: ESCL=(--exclude 'venv/' --exclude '.venv/' ... --exclude '.env*' ...); rsync -a --delete "${ESCL[@]}" backend/ "$MINI:$DEST/backend/"
+
+### 15. La PWA in prod e servita same-origin dal catch-all statico di app.py, quindi CORS conta solo per il dev Vite.
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/backend/pharmatimer_api/app.py`
+- Evidenza: _WEB_DIR = os.environ.get("PHARMATIMER_WEB_DIR", "/Users/marketreader/PharmaTimer/web"); app.mount("/assets", ...); @app.get("/{full_path:path}") ... if full_path == "api" or full_path.startswith("api/"): raise HTTPException(404)
+
+### 16. Il frontend chiama 12 operazioni su 22; i sette mai chiamati sono GET /api/health, GET/POST /api/permessi, PUT/DELETE /api/permessi/{id}, POST /api/utenti, DELETE /api/utenti/{id}.
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/src/data/repository/ApiRepository.js`
+- Evidenza: apiClient.get("/api/farmaci"); post("/api/farmaci"); put(`/api/farmaci/${id}`); delete(`/api/farmaci/${id}`); get/put `/api/farmaci/${farmacoId}/orari`; get `/api/farmaci/${f.id}/log?data_from=...`; post .../log/presa|saltata|sospesa|undo|recupero -- grep '/api' in src fuori dai test: path solo qui; grep 'health' in src/data/repository, src/state, src/hooks: zero
+
+### 17. notifiche_caregiver_attive si scrive solo in permessi.py (POST/PUT) e come FALSE fisso in utenti.py, seed_owner.py e conftest; si legge solo nelle SELECT di permessi.py.
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/backend/pharmatimer_api/routers/permessi.py`
+- Evidenza: INSERT INTO permessi (caregiver_id, paziente_id, permesso, notifiche_caregiver_attive) VALUES (%s, %s, %s, %s); if payload.notifiche_caregiver_attive is not None: updates.append("notifiche_caregiver_attive = %s") -- utenti.py: VALUES (%s, %s, 'admin', FALSE)
+
+### 18. pyproject: requires-python >=3.12; dipendenze senza cryptography/webpush; il venv del Mini e homebrew python@3.13 e quello locale e 3.13.12.
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/backend/pyproject.toml`
+- Evidenza: requires-python = ">=3.12"; dependencies = [fastapi, uvicorn[standard], mysql-connector-python, pydantic, pydantic-settings, httpx] -- deploy/02-setup-pharmatimer-venv.sh: PYTHON_BIN=/opt/homebrew/opt/python@3.13/bin/python3.13 -- ls backend/venv/lib/python3.13/site-packages | grep -i 'crypt|webpush|vapid|ece|cffi|requests': vuoto
+
+### 19. /api/health restituisce una versione cablata 0.1.0, pinnata dal test, mentre app.py usa la versione dinamica del pacchetto (0.7.7).
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/backend/pharmatimer_api/routers/health.py`
+- Evidenza: VERSION = "0.1.0" ... return {"status": "ok", "db": db_status, "version": VERSION} -- tests/test_health.py: assert body["version"] == "0.1.0" -- app.py: __version__ = _pkg_version("pharmatimer-api") ; openapi.json info.version 0.7.7
+
+### 20. Il fuso del server e una costante di modulo Europe/Rome e il DB e in wall-clock naive; la guardia sull'intervallo minimo usa minuti reali via UTC.
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/backend/pharmatimer_api/tempo.py`
+- Evidenza: FUSO_PARETE = ZoneInfo("Europe/Rome") ... def minuti_reali(a, b): return round((istante(a) - istante(b)).total_seconds() / 60)
+
+### 21. push_subscriptions e nominata nel codice solo dal TRUNCATE di conftest (quinta posizione) e da db_probe P0; nessun router, modello o test la usa.
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/backend/tests/conftest.py`
+- Evidenza: _TRUNCATE_ORDER = ["log_assunzioni", "orari_base", "farmaci", "impostazioni_app", "push_subscriptions", "profilo_utente", "permessi", "utenti"]
+
+### 22. g21 misura la sola presenza di client_op_id sul Mini via ssh; prod-check e deploy-mini.sh la includono come guardia di schieramento.
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/Makefile`
+- Evidenza: app=$$(ssh mini '$(MINI_MYSQL) pharmatimer -N -B -e "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE ... COLUMN_NAME='client_op_id'"'); if [ "$$app" = "1" ]; then ... OK livelli compatibili
+
+### 23. Il ramo esteso (intervallo_ore > 24) e il confine T_inizio sono logica pura del client da replicare per un motore server.
+
+- Sede: `/Users/roberto/Sviluppo/pharmatimer/src/domain/extendedFrequency.js`
+- Evidenza: anchor = (data_inizio at computeOraPrevista(orario, profilo)); t_k = k-esima occorrenza dell ancora SECONDO IL CANONE (extendedStride.js) -- startBoundary.js: data_inizio > DATE(created_at) -> T_inizio = data_inizio 'T00:00' ...
+
+## Domande aperte
+
+- Quante righe ha profilo_utente sul Mini (db_probe P0 la conta, ma la misura del coordinatore non la riporta): se zero, un motore server puo contare solo su orari_base.ora_prevista materializzata, che invecchia al cambio di profilo sul telefono.
+- Il valore CORS_ORIGINS effettivo nel .env.dev del Mini oggi: la misura piu recente in repo e nel Changelog congelato (dual-origin); il file non e tracciato ne raggiungibile da questa sonda.
+- Se orari_base sul server viene riscritto quando il client cambia profilo attivo: la sonda su actions.js mostra replaceOrariForFarmaco solo nei flussi di creazione/modifica farmaco (:954, :1001), non nel cambio profilo (:599 setProfiloAttivoConCleanup, solo locale); da confermare leggendo il corpo di quei thunk.
+- Disponibilita del wheel abi3 di cryptography per l'esatta versione di Python del Mini (3.13.x homebrew) al momento del deploy: attesa presente, ma misurabile solo dal Terminale con pip download/dry-run fuori dal sandbox.
+- Dove custodire la coppia VAPID (plist EnvironmentVariables, .env.dev del Mini, o file 600 come ~/.my-pharmatimer.cnf): non esiste alcuna sede oggi.
+- Se il pin health 0.1.0 e voluto (targa dell'endpoint) o un drift: test_health.py lo asserisce e prod-check legge la versione da openapi.json, non da /api/health.

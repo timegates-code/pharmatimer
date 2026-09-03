@@ -1,0 +1,221 @@
+{
+  "findings": [
+    {
+      "claim": "RFC 8030 (Web Push protocol, dicembre 2016): l'application server fa POST sull'endpoint della subscription; 201 Created = messaggio accettato, con Location del push message resource. TTL (sez. 5.2) in secondi, obbligatorio (400 se omesso); TTL 0 = 'immediately delivered if the user agent is available' e il servizio puo scartare subito dopo; il servizio puo trattenere meno e lo segnala con un header TTL nella risposta. Urgency (5.3): very-low | low | normal | high, default normal, valori multipli = 400. Topic (5.4): max 32 caratteri dall'alfabeto base64 URL/filename-safe (RFC 4648), altrimenti 400; 'a push message with a topic replaces any outstanding push message with an identical topic', risposta 201 anche alla sostituzione.",
+      "source_url": "https://www.rfc-editor.org/rfc/rfc8030.txt",
+      "source_date": "dicembre 2016",
+      "confidence": "alta",
+      "note": "Sezioni 5, 5.2, 5.3, 5.4 citate verbatim dal testo RFC."
+    },
+    {
+      "claim": "RFC 8030 sez. 7.2: il push service PUO rispondere 413 Payload Too Large, ma 'MUST NOT return a 413 status code in responses to an entity body that is 4096 bytes or less'. Quindi 4096 byte di corpo cifrato sono il minimo garantito; oltre e a discrezione del servizio (Apple e FCM dichiarano 4 KB come limite effettivo).",
+      "source_url": "https://www.rfc-editor.org/rfc/rfc8030.txt",
+      "source_date": "dicembre 2016",
+      "confidence": "alta"
+    },
+    {
+      "claim": "RFC 8030 codici: 404 Not Found (7.3) 'if an application server attempts to send a push message to an expired push message subscription'; 429 Too Many Requests (8.4) quando l'application server supera il rate limit verso una push resource, con Retry-After consigliato ('SHOULD'); 410 Gone nel testo RFC riguarda le receipt subscription (6.2), ma tutti i servizi reali (Apple, Mozilla, FCM) usano 410 per subscription non piu valida. Azione pratica: 404 e 410 -> cancellare la subscription; 429 e 503 -> rispettare Retry-After; 400 -> difetto di richiesta (header mancanti o malformati); 401/403 -> VAPID assente o non valida.",
+      "source_url": "https://www.rfc-editor.org/rfc/rfc8030.txt",
+      "source_date": "dicembre 2016",
+      "confidence": "alta",
+      "note": "Il 410 'subscription morta' e prassi dei servizi (Autopush: 'Subscription no longer available'; Apple: 'The device token has expired'; web.dev: 'delete it'), non testo normativo di RFC 8030."
+    },
+    {
+      "claim": "RFC 8291 (novembre 2017): cifratura del payload con content coding 'aes128gcm' (unico valore ammesso di Content-Encoding). Il client genera per ogni subscription una chiave ECDH P-256 (p256dh) e un auth secret di 16 byte (auth); il server genera una coppia ECDH effimera per messaggio e deriva la chiave con HKDF. Con il limite di 4096 byte di corpo, il plaintext massimo e 3993 byte (sez. 4). Gli header HTTP NON sono protetti dalla cifratura (sez. 7).",
+      "source_url": "https://www.rfc-editor.org/rfc/rfc8291.html",
+      "source_date": "novembre 2017",
+      "confidence": "alta"
+    },
+    {
+      "claim": "RFC 8292 (VAPID, novembre 2017): il server firma un JWT ES256 con la propria chiave privata P-256. Claim: 'aud' MUST = origine (scheme://host) dell'endpoint push; 'exp' MUST essere presente e 'MUST NOT be more than 24 hours from the time of the request'; 'sub' SHOULD essere un contatto 'mailto:' o 'https:'. Header: Authorization: vapid t=<JWT>, k=<chiave pubblica base64url non compressa>. Sez. 4.2: subscription ristretta a una chiave applicationServerKey -> senza VAPID 401, con VAPID non valida 403. La chiave pubblica e 'a stable identifier for the server'.",
+      "source_url": "https://www.rfc-editor.org/rfc/rfc8292.html",
+      "source_date": "novembre 2017",
+      "confidence": "alta",
+      "note": "La forma legacy Crypto-Key: p256ecdsa=... (draft pre-RFC) e documentata in web.dev; pywebpush con aes128gcm usa la forma RFC 8292 'vapid t=,k='."
+    },
+    {
+      "claim": "web.dev, tabella dei codici del push service: 201 accettato; 429 rate limit con Retry-After; 400 header non validi; 404 subscription scaduta -> rimuovere e richiedere risottoscrizione; 410 subscription non piu valida -> cancellare; 413 payload troppo grande (minimo garantito 4 KB). JWT VAPID: aud = origine del push service, exp max 24 h (consigliate 12 h per lo skew), sub contatto.",
+      "source_url": "https://web.dev/articles/push-notifications-web-push-protocol",
+      "source_date": "2024-09-20",
+      "confidence": "alta"
+    },
+    {
+      "claim": "Apple, 'Sending web push notifications in web apps and browsers': 'You don't need to join the Apple Developer Program to send web push notifications'. Serve una coppia VAPID; 'The public key you include must match the public key you provided to PushManager.subscribe'. Rete: 'allow access for https://*.push.apple.com' (l'endpoint restituito e https://web.push.apple.com/...); TLS con SNI obbligatorio; 'APNs supports both HTTP/1.1 and HTTP/2.0. The default protocol is HTTP/1.1'; max 100 richieste pipelined non confermate. Header onorati e documentati: TTL ('The number of seconds before your message expires'), Urgency (very-low/low/normal/high, 'To attempt to deliver the notification immediately, specify high'), Topic ('Optional identifier that the push service uses to coalesce notifications. Use a maximum of 32 characters from the URL or filename-safe Base64'), Content-Encoding, Authorization (JWT + chiave; 'Don't refresh your JWT more frequently than once per hour'). Supporto: Safari 16 su macOS 13+, web app in Home Screen su iOS 16.4+.",
+      "source_url": "https://developer.apple.com/documentation/usernotifications/sending-web-push-notifications-in-web-apps-and-browsers",
+      "source_date": "non datata",
+      "confidence": "alta",
+      "note": "Pagina Apple Developer senza data visibile; letta tramite il JSON della documentazione."
+    },
+    {
+      "claim": "Apple, codici e reason JSON: 400 con BadTtl ('The TTL header is either missing or isn't a positive number'), BadUrgency, BadWebPushTopic, BadWebPushRequest, BadAuthorizationHeader, BadVapidPublicKey; 403 'There's an error with your authentication' con BadJwtToken ('The JWT is missing / signed with the wrong private key / subject claim isn't a URL or mailto: / audience claim isn't the origin of the push service / expiration parameter is more than one day into the future') e VapidPkHashMismatch ('The VAPID public key from the push subscription doesn't match the VAPID public key in the request'); 404 BadPath; 405 MethodNotAllowed; 410 'The device token has expired'; 413 PayloadTooLarge 'over the limit of 4 KB'; 429 TooManyRequests 'too many consecutive requests to the same device token'; 500, 503, Shutdown.",
+      "source_url": "https://developer.apple.com/documentation/usernotifications/sending-web-push-notifications-in-web-apps-and-browsers",
+      "source_date": "non datata",
+      "confidence": "alta",
+      "note": "Attenzione implementativa: BadTtl e definito per TTL 'missing or not a positive number'; se Apple tratti TTL 0 come non positivo non e documentato (vedi incognite). pywebpush ha ttl=0 di default."
+    },
+    {
+      "claim": "Apple: 'Safari doesn't support invisible push notifications. Present push notifications to the user immediately after your service worker receives them. If you don't, Safari revokes the push notification permission for your site.' WWDC22 (sessione 10098, giugno 2022) quantifica: 'after three push events where you fail to post a notification in a timely manner, your site's push subscription will be revoked'. Nel service worker: event.waitUntil(self.registration.showNotification(...)) sempre, in ogni push event.",
+      "source_url": "https://developer.apple.com/videos/play/wwdc2022/10098/",
+      "source_date": "giugno 2022 (WWDC22)",
+      "confidence": "alta",
+      "note": "Confermato sul campo da dev.to/progressier (30 giugno 2023): subscription iOS terminate dopo 3 push non mostrate, fix = showNotification dentro waitUntil."
+    },
+    {
+      "claim": "WWDC22 'Meet Web Push for Safari': 'We are using the same Apple Push Notification service that powers native push on all Macs and iOS devices, but no Apple Developer account is required to reach Safari users'; 'Here we use the standard technology called VAPID, the same as other browsers'; 'make sure you allow URLs from any subdomain of push.apple.com'. WebKit blog 'Meet Web Push' (7 giugno 2022) ripete: 'You don't need to join the Apple Developer Program'. WebKit blog 'Web Push for Web Apps on iOS and iPadOS' (16 febbraio 2023): iOS/iPadOS 16.4, solo web app aggiunte alla Home Screen (manifest display standalone/fullscreen), permesso richiesto da gesto utente; 'You do not need to be a member of the Apple Developer Program to use it'.",
+      "source_url": "https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/",
+      "source_date": "2023-02-16",
+      "confidence": "alta",
+      "note": "Nessun certificato APNs ne .p8 ne Team ID: il Web Push standard usa solo VAPID. Le fonti Apple non nominano mai un certificato per il Web Push standard (il certificato era il vecchio Safari Push 'website push ID', meccanismo legacy distinto)."
+    },
+    {
+      "claim": "Declarative Web Push (WebKit blog, 27 marzo 2025; disponibile iOS/iPadOS 18.4 e macOS Safari 18.5+): payload JSON con 'web_push': 8030, oggetto 'notification' (title, body, navigate obbligatorio...) e 'app_badge' opzionale; il browser mostra la notifica senza service worker. Il protocollo server-side (RFC 8030/8291/8292, VAPID, aes128gcm) e invariato; il push 'legacy' via service worker resta soggetto a userVisibleOnly e alla penalita silent push. Safari 26 (WWDC25) aggiunge strumenti di debug in Web Inspector per gli eventi push.",
+      "source_url": "https://webkit.org/blog/16535/meet-declarative-web-push/",
+      "source_date": "2025-03-27",
+      "confidence": "alta",
+      "note": "Per Chrome/FCM il formato dichiarativo non e supportato (fonte: stato 2026 riportato da terzi, non verificato su fonte primaria Google)."
+    },
+    {
+      "claim": "Client: pushManager.subscribe({userVisibleOnly: true, applicationServerKey}) dove applicationServerKey e la chiave pubblica VAPID come stringa base64url o ArrayBuffer/Uint8Array (punto P-256 non compresso di 65 byte che inizia con 0x04). Chrome/Edge rifiutano senza userVisibleOnly: true; serve contesto HTTPS e un gesto utente. PushSubscription: endpoint, expirationTime (DOMHighResTimeStamp o null), getKey('p256dh'), getKey('auth'); toJSON() -> {endpoint, expirationTime, keys: {p256dh, auth}} con chiavi base64url. unsubscribe() -> Promise<boolean>.",
+      "source_url": "https://developer.mozilla.org/en-US/docs/Web/API/PushSubscription",
+      "source_date": "2025-10-30 (PushSubscription), 2025-06-23 (subscribe)",
+      "confidence": "alta",
+      "note": "MDN PushManager.subscribe: https://developer.mozilla.org/en-US/docs/Web/API/PushManager/subscribe"
+    },
+    {
+      "claim": "W3C Push API (Working Draft 1 dicembre 2025): expirationTime = 'The time, in milliseconds since 00:00:00 UTC on 1 January 1970, at which the subscription will be deactivated'; subscribe con opzioni diverse (applicationServerKey diversa) da una subscription esistente -> reject con InvalidStateError; quando lo user agent o il push service rinfresca una subscription MUST fire 'pushsubscriptionchange' con oldSubscription/newSubscription.",
+      "source_url": "https://www.w3.org/TR/push-api/",
+      "source_date": "2025-12-01",
+      "confidence": "alta"
+    },
+    {
+      "claim": "pushsubscriptionchange (MDN, 18 settembre 2025): 'Limited availability', non Baseline; l'handler consigliato risottoscrive con event.oldSubscription.options e invia old+new al server dentro event.waitUntil. In pratica: Chrome e Firefox emettono expirationTime null (Firefox non lo supporta), Edge 30 giorni con refresh a 5 giorni dalla scadenza; Safari/iOS non espone expirationTime e sviluppatori riportano nei forum Apple (thread 727372, 2023-2024, senza risposta Apple) che iOS non consegna pushsubscriptionchange e revoca subscription senza avviso; il server lo scopre solo con 410/404 all'invio.",
+      "source_url": "https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/pushsubscriptionchange_event",
+      "source_date": "2025-09-18",
+      "confidence": "media",
+      "note": "La parte Safari e basata su forum Apple (https://developer.apple.com/forums/thread/727372) e su repository di esempio (andreinwald/webpush-ios-example) che mostrano JSON Apple senza expirationTime; non c'e policy Apple pubblicata sulla durata delle subscription."
+    },
+    {
+      "claim": "FCM (Chrome, Edge Chromium, Android Chrome): gli endpoint sono https://fcm.googleapis.com/fcm/send/... (storico) e https://fcm.googleapis.com/wp/... (formato attuale); FCM 'supports Web Push Protocol' con VAPID dal 2016 (Chrome blog, 2016-07-27). Dal 2024 Google rimuove le subscription che non si connettono da piu di 9 mesi e risponde 404: 'Undeliverable notifications due to stale registrations now return a 404 back to the sender' (Pushpad, 2024-06-28, che cita un rappresentante Google).",
+      "source_url": "https://pushpad.xyz/blog/fcm-returns-404-for-stale-push-subscriptions",
+      "source_date": "2024-06-28",
+      "confidence": "media",
+      "note": "Chrome blog: https://developer.chrome.com/blog/web-push-interop-wins (2016-07-27). Il /wp/ e da fonte secondaria."
+    },
+    {
+      "claim": "FCM e header Web Push: la documentazione FCM per l'API HTTP v1 espone webpush.headers come passthrough degli header del protocollo Web Push; la pagina 'setting message lifespan' (aggiornata 2026-09-01) mostra l'esempio webpush.headers.TTL='4500', TTL da 0 a 2.419.200 s (28 giorni), default quattro settimane, e 'a ttl value of 0 means messages that can't be delivered immediately are discarded'. La pagina 'About FCM messages' (concept-options), secondo il riassunto di ricerca, indica per web il 'Topic' header come meccanismo di collasso e l'header 'Urgency' per la priorita; la pagina non e stata leggibile direttamente (404 su tre tentativi).",
+      "source_url": "https://firebase.google.com/docs/cloud-messaging/customize-messages/setting-message-lifespan?hl=en",
+      "source_date": "2026-09-01",
+      "confidence": "media",
+      "note": "Conferma diretta che FCM onora Topic/Urgency sul canale Web Push standard (senza API FCM v1) non ottenuta da fonte primaria; il Node web-push (libreria di riferimento) documenta TTL/Urgency/Topic come opzioni generiche per tutti i servizi."
+    },
+    {
+      "claim": "Mozilla Autopush (Firefox), endpoint updates.push.services.mozilla.com: onora TTL (massimo circa un mese, la risposta riporta il TTL effettivo se ridotto), Topic ('32 bytes alpha-numeric string including _ and -', 'allows new messages to replace previously sent, unreceived subscription updates'), Urgency; codici: 201, 404 subscription non valida, 410 'Subscription no longer available', 413, 429, 401/403 VAPID; corpo di errore JSON con code/errno/error/message. Topics supportati dal novembre 2016 (Mozilla Hacks, 2016-11-08).",
+      "source_url": "https://mozilla-services.github.io/autopush-rs/http.html",
+      "source_date": "non datata",
+      "confidence": "alta",
+      "note": "Utile come riferimento se un caregiver usa Firefox; non rilevante per il pilota iOS."
+    },
+    {
+      "claim": "pywebpush: versione 2.5.0 caricata su PyPI il 2026-08-30 (2.4.0 il 2026-08-06, 2.3.0 il 2026-02-09, 2.2.0 il 2026-01-05, 2.1.x settembre-novembre 2025), requires-python >=3.10, wheel py3-none-any (puro Python, nessun problema arm64/3.13), autore JR Conlin, PyPI 'Critical Project' con un solo maintainer. Dipendenze da pyproject.toml: aiohttp, cryptography>=47.0.0, http-ece>=1.1.0, requests>=2.21.0, py-vapid>=1.7.0. 2.2.0 breaking: rimosso il supporto alle chiavi GCM/FCM legacy; 2.1.0 aggiunge async_webpush; 2.5.0 aggiunge le proprieta status_code e retry_after su WebPushException. Default content_encoding 'aes128gcm'.",
+      "source_url": "https://pypi.org/pypi/pywebpush/json",
+      "source_date": "2026-08-30",
+      "confidence": "alta",
+      "note": "Changelog: https://raw.githubusercontent.com/web-push-libs/pywebpush/main/CHANGELOG.md; pyproject: https://raw.githubusercontent.com/web-push-libs/pywebpush/main/pyproject.toml"
+    },
+    {
+      "claim": "pywebpush, firma da sorgente main: webpush(subscription_info, data, vapid_private_key, vapid_claims, content_encoding='aes128gcm', curl=False, timeout=None, ttl=0, verbose=False, headers=None, requests_session=None); webpush_async(...) con aiohttp_session. In send(): 'if ttl not in headers or ttl: headers[ttl] = str(ttl or 0)' -> TTL DI DEFAULT 0 (consegna solo se il device e online). vapid_claims: 'aud' derivato da scheme://netloc dell'endpoint se assente; 'exp' default now + 12 h se assente o scaduto; il dict passato viene mutato. Topic e Urgency si passano nel dict headers ({'Topic': '...', 'Urgency': 'high'}). HTTP via requests.post (sync) o aiohttp (async), HTTP/1.1, nessuna configurazione HTTP/2. WebPushException.status_code, .retry_after (Retry-After), .response.",
+      "source_url": "https://raw.githubusercontent.com/web-push-libs/pywebpush/main/pywebpush/__init__.py",
+      "source_date": "non datata (ramo main, letto 2026-09-03)",
+      "confidence": "alta",
+      "note": "Esempio minimo: from pywebpush import webpush, WebPushException; try: webpush(subscription_info={'endpoint': e, 'keys': {'p256dh': p, 'auth': a}}, data=json.dumps(payload), vapid_private_key='vapid_private.pem', vapid_claims={'sub': 'mailto:tu@dominio.it'}, ttl=3600, headers={'Urgency': 'high', 'Topic': 'dose-12-2026-09-03'}) except WebPushException as ex: if ex.status_code in (404, 410): elimina subscription; elif ex.status_code in (429, 503): riprova dopo ex.retry_after. Con Apple HTTP/1.1 e ammesso esplicitamente."
+    },
+    {
+      "claim": "py-vapid: versione 1.9.4 caricata il 2026-01-05 (1.9.3 dello stesso giorno yanked per 'Missing wheels'), wheel py2.py3-none-any, dipendenza cryptography>=46. API: Vapid().generate_keys(), save_key(path PEM), Vapid.from_file / from_pem / from_string (raw base64url); CLI 'vapid --gen' produce private_key.pem e public_key.pem, 'vapid --applicationServerKey' stampa la chiave pubblica base64url da dare a subscribe(), 'vapid --sign claims.json' genera gli header. Claims richiesti: sub (mailto:), aud (scheme+host dell'endpoint), exp (UTC, 'capped at 24 hours maximum').",
+      "source_url": "https://pypi.org/pypi/py-vapid/json",
+      "source_date": "2026-01-05",
+      "confidence": "alta"
+    },
+    {
+      "claim": "http-ece: versione 1.2.1 del 2024-08-08, solo sdist (http_ece-1.2.1.tar.gz, nessuna wheel), puro Python, dipendenza cryptography>=2.5, autore Martin Thomson (autore delle RFC), classifiers dichiarati fino a Python 3.12. cryptography: 50.0.1 del 2026-08-25 con wheel cp39-abi3-macosx_11_0_arm64 e cp311-abi3-macosx_11_0_arm64, supporto Python 3.9-3.14. Quindi su macOS arm64 con Python 3.13 (il venv del repo e Python 3.13.12 su arm64, misurato) l'intera catena pywebpush -> py-vapid/http-ece -> cryptography installa da wheel o da sdist puro Python senza compilazione nativa.",
+      "source_url": "https://pypi.org/pypi/http-ece/json",
+      "source_date": "2024-08-08",
+      "confidence": "alta",
+      "note": "cryptography files: https://pypi.org/project/cryptography/#files (50.0.1, 2026-08-25). http-ece non aggiornato da agosto 2024 ma la libreria e piccola e stabile."
+    },
+    {
+      "claim": "Alternativa: 'webpush' su PyPI (webpush-py, Alexey/delvinru), 1.0.6 del 2025-10-29, Python >=3.10, dipendenze cryptography>=46.0.1, pydantic>=2.11.7, pyjwt>=2.10.1, email-validator; costruisce solo il messaggio cifrato e gli header (WebPush(private_key=Path, public_key=Path).get(message, subscription) -> message.encrypted, message.headers) e lascia la POST a requests/httpx/aiohttp. Implementazione minima senza librerie di dominio: ECDH P-256 + HKDF + AES-128-GCM (RFC 8291) con cryptography, JWT ES256 (RFC 8292) firmato con la stessa cryptography, POST con requests: circa 100 righe, ma va collaudata contro Apple e FCM.",
+      "source_url": "https://pypi.org/pypi/webpush/json",
+      "source_date": "2025-10-29",
+      "confidence": "alta"
+    },
+    {
+      "claim": "Chiavi VAPID: una coppia P-256 per application server, generata una volta e riusata per tutte le subscription ('You should create these keys once, store them and use them for all future messages you send', README web-push-libs/web-push). Il push service lega ogni subscription alla chiave pubblica passata a subscribe (RFC 8292 sez. 4; Apple VapidPkHashMismatch). Se si perde la chiave privata: nessun recupero possibile, i JWT non si possono piu firmare, le subscription esistenti rispondono 403; il client non puo neppure ri-subscribe con una chiave diversa senza prima unsubscribe (Push API: InvalidStateError). Quindi TUTTE le subscription vanno rifatte: unsubscribe lato client + nuovo subscribe con la nuova applicationServerKey + nuovo invio al server.",
+      "source_url": "https://www.w3.org/TR/push-api/",
+      "source_date": "2025-12-01",
+      "confidence": "alta",
+      "note": "Custodia: la chiave privata PEM fuori dal repo, permessi 0600, letta via env/config (nel progetto: backend/.env.dev via pydantic-settings), con backup fuori macchina; la pubblica e non segreta e viene servita al frontend. Un thread w3c/push-api (#327, 2020) riporta che dopo cambio chiave anche la vecchia smette di funzionare, coerente con la necessita di rifare tutto."
+    },
+    {
+      "claim": "Requisiti di rete in uscita del server: HTTPS 443 verso https://*.push.apple.com (endpoint effettivo web.push.apple.com; TLS con SNI; HTTP/1.1 ammesso) e verso fcm.googleapis.com (FCM: 'fcm.googleapis.com' per l'invio su HTTPS 443; le porte 5228-5230 e mtalk.google.com riguardano solo i client Android, non il server); per Firefox updates.push.services.mozilla.com:443. Nessuna connessione entrante necessaria. Nessun certificato APNs, nessun account Apple Developer, nessun progetto Firebase: basta la coppia VAPID.",
+      "source_url": "https://firebase.google.com/docs/cloud-messaging/network-configuration",
+      "source_date": "2026-09-01",
+      "confidence": "alta",
+      "note": "Apple: https://developer.apple.com/documentation/usernotifications/sending-web-push-notifications-in-web-apps-and-browsers (non datata). Dal Mini, dietro tailnet, serve solo uscita 443 verso questi host."
+    },
+    {
+      "claim": "Semantica pratica per una dose: TTL = finestra entro cui la notifica ha ancora senso (es. secondi fino all'intervallo minimo o alla dose successiva); TTL 0 = solo se il device e raggiungibile in quell'istante, altrimenti scartata (Apple documenta esplicitamente TTL/Urgency/Topic; FCM li accetta come header Web Push e documenta TTL 0 come 'discarded'); Urgency high per la notifica di dose (Apple: 'To attempt to deliver the notification immediately, specify high'); Topic = chiave stabile per dose (es. d-<farmaco_id>-<dose_numero>-<yyyymmdd>, entro 32 caratteri base64url) cosi un reinvio o una notifica aggiornata sostituisce quella ancora in coda invece di accodarsi. Il Topic NON sostituisce una notifica gia consegnata e mostrata: per quello serve il tag della Notification lato service worker.",
+      "source_url": "https://developer.apple.com/documentation/usernotifications/sending-web-push-notifications-in-web-apps-and-browsers",
+      "source_date": "non datata",
+      "confidence": "media",
+      "note": "Il comportamento del Topic su Apple e documentato come 'coalesce'; nessuna fonte primaria misura se Apple sostituisce o solo raggruppa. Da collaudare con device offline."
+    },
+    {
+      "claim": "Pianificazione in processo Python singolo: APScheduler 3.11.3 (2026-06-28, Python >=3.8; 4.0.0a6 del 2025-04-27 ancora alpha) offre AsyncIOScheduler, trigger 'date' per 'spingi alle X', job store persistente SQLAlchemyJobStore; add_job(id=..., replace_existing=True) e OBBLIGATORIO con store persistente ('you MUST define an explicit ID for the job and use replace_existing=True or you will get a new copy of the job every time your application restarts'); misfire_grace_time (secondi di ritardo tollerati dopo l'orario, None = sempre) e coalesce=True (piu esecuzioni mancate collassano in una) governano cosa succede alle dosi la cui ora e passata mentre il processo era giu o il Mac dormiva.",
+      "source_url": "https://apscheduler.readthedocs.io/en/3.x/userguide.html",
+      "source_date": "non datata (docs 3.x); versione da PyPI 2026-06-28",
+      "confidence": "alta",
+      "note": "Schema alternativo senza dipendenze: loop asyncio che legge dal DB la prossima dose da notificare, await asyncio.sleep(fino a quell'istante, con cap es. 60 s per riallinearsi a modifiche e a risvegli), poi invia. Un loop di questo tipo con cap breve e piu robusto al sonno del Mac che un singolo sleep lungo: al risveglio il tempo monotono salta e il timer scade subito."
+    },
+    {
+      "claim": "Idempotenza dell'invio: la dedup va persistita fuori dal processo (tabella MySQL push_dispatch con chiave UNIQUE su (subscription_id, chiave_dose) dove chiave_dose = farmaco_id + dose_numero + data + tipo evento; INSERT prima della POST, stato pending -> sent/failed con status code e timestamp; al riavvio si riprende solo cio che non e 'sent' e la cui finestra TTL non e scaduta). Senza questo, un riavvio del processo o una doppia istanza rispinge la stessa dose (due notifiche = rischio M1 di doppia assunzione percepita). Lato client, la Notification con lo stesso tag rimpiazza la precedente come seconda rete. Coerente con la Spec 3.11 (tabella push_subscriptions gia prevista: endpoint, p256dh_key, auth_key, device_label, attiva).",
+      "source_url": "https://apscheduler.readthedocs.io/en/3.x/modules/schedulers/base.html",
+      "source_date": "non datata",
+      "confidence": "media",
+      "note": "Schema di progetto, non fonte esterna; la Spec del repo (PharmaTimer_Project_Spec_v1_18.md, sez. 3.11) gia definisce push_subscriptions e cita 'FCM Chrome/Android, Apple Push Apple iOS 16.4+'. Il TTL del push va scelto uguale alla finestra dopo la quale rispingere sarebbe fuorviante."
+    },
+    {
+      "claim": "Mac che dorme: launchd.plist(5) (30 luglio 2019): per StartCalendarInterval 'Unlike cron which skips job invocations when the computer is asleep, launchd will start the job the next time the computer wakes up. If multiple intervals transpire before the computer is woken, those events will be coalesced into one event upon wake from sleep'; per StartInterval 'If the system is asleep during the time of the next scheduled interval firing, that interval will be missed'. Se il Mac e spento, il job non gira fino alla prossima occorrenza (Apple Daemons and Services guide, 2016-09-13). Un processo residente (uvicorn/APScheduler) e semplicemente congelato durante il sonno: nessun invio fino al risveglio; con Power Nap il sistema fa dark wake per compiti di sistema (Time Machine, Mail) ma i job launchd utente 'are normally skipped' e le notifiche sono soppresse (forum Apple developer, non normativo).",
+      "source_url": "https://keith.github.io/xcode-man-pages/launchd.plist.5.html",
+      "source_date": "2019-07-30",
+      "confidence": "alta",
+      "note": "Apple guide: https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/ScheduledJobs.html (2016-09-13). Rimedio: impedire il sonno del Mini (pmset -c sleep 0 su alimentazione; e un server) oppure programmare risvegli."
+    },
+    {
+      "claim": "pmset: 'pmset repeat {sleep|wake|poweron|shutdown|wakeorpoweron} weekdays HH:mm:ss' (weekdays sottoinsieme di MTWRFSU) e 'pmset schedule wakeorpoweron \"MM/dd/yy HH:mm:ss\"' per eventi singoli; 'pmset -g sched' li elenca; serve root; una sola coppia di eventi ripetuti (un power-on e un power-off) alla volta, quindi non si possono programmare N risvegli al giorno per N dosi con 'repeat': servono 'schedule' singoli riprogrammati dal processo (sudo senza password via sudoers per il solo pmset) oppure niente sonno. La guida Apple per macOS 11-26 rimanda a pmset da Terminale (nessuna GUI) e avverte che con FileVault il login automatico e vietato.",
+      "source_url": "https://ss64.com/mac/pmset.html",
+      "source_date": "non datata",
+      "confidence": "media",
+      "note": "Apple support: https://support.apple.com/guide/mac-help/schedule-your-mac-to-turn-on-or-off-mchl40376151/mac (copre macOS Tahoe 26, non datata). Il Mini del progetto e un server su alimentazione: la via piu semplice e sleep disabilitato, e va misurata con 'pmset -g' sul Mini dal Terminale."
+    },
+    {
+      "claim": "Stato del repo (sonda: grep su src/, backend/, Spec, STATO, LESSONS, escludendo node_modules/venv/dist): nessun codice Web Push esiste; non compaiono pushManager, VAPID, pywebpush, pushsubscriptionchange in src/ ne in backend/. Le notifiche attuali sono locali: src/services/notifications.js (Notification API + setTimeout, tag-based replacement con entryKey dose-{farmaco_id}-{dose_numero}-{dateStr}, hook src/hooks/useNotifications.js). vite.config.js (LOCKED) usa vite-plugin-pwa registerType 'prompt' con service worker generato: un handler 'push' richiedera injectManifest o un SW custom, e vite.config.js non si tocca senza ratifica. La Spec 11.5 elenca 'Web Push notifications persistenti server-side' come deferito e la sez. 3.11 definisce gia la tabella push_subscriptions. Il venv backend e Python 3.13.12 su arm64 (macOS 26.5.2) senza pywebpush/py-vapid/cryptography installati.",
+      "source_url": "file:///Users/roberto/Sviluppo/pharmatimer/src/services/notifications.js",
+      "source_date": "2026-09-03 (lettura disco)",
+      "confidence": "alta",
+      "note": "Perimetro della sonda negativa: grep -rIl -E 'pushManager|VAPID|vapid|pywebpush|web-push|webpush|pushsubscriptionchange' su tutto il repo esclusi node_modules, venv, __pycache__, dist, dist-mini, *.bak*: unici hit PharmaTimer_Changelog_Fase2.md e scripts/audit/inventario.py (prosa/inventario, non codice)."
+    }
+  ],
+  "unknowns": [
+    "Apple e TTL 0: la reason BadTtl e definita per TTL 'missing or isn't a positive number'; non e documentato se 0 sia accettato (RFC 8030 lo ammette) o rifiutato con 400. pywebpush manda TTL 0 di default: va misurato con una POST reale verso web.push.apple.com prima di affidarsi al default, e comunque conviene passare ttl esplicito.",
+    "Apple e Topic: la documentazione dice 'coalesce'; non c'e fonte primaria che misuri se una notifica con lo stesso Topic sostituisce quella in coda verso un iPhone offline o se viene solo raggruppata. Da collaudare con device in modalita aereo.",
+    "FCM e Topic/Urgency sul canale Web Push standard (POST diretta su fcm.googleapis.com/wp/... senza API FCM v1): la pagina 'About FCM messages' non e stata leggibile (404 ripetuto); la prova viene da riassunti di ricerca e da web.dev. Confidenza media.",
+    "Durata delle subscription Apple: nessuna policy pubblicata; expirationTime non esposto; pushsubscriptionchange non consegnato su iOS secondo i forum Apple (senza risposta ufficiale). L'unica misura affidabile e il 410/404 all'invio, piu un controllo lato client di pushManager.getSubscription() a ogni apertura della PWA con re-subscribe e re-upload.",
+    "Forum Apple (thread 719990, 2022-2024) riportano 201 anche verso subscription che l'utente ha bloccato o che sono state sostituite: il server potrebbe non ricevere mai 410 in quei casi. Non confermato da Apple.",
+    "pywebpush 2.4.0 (2026-08-06): note di rilascio non trovate nel CHANGELOG letto (salta da 2.3.0 a 2.5.0); contenuto della 2.4.0 ignoto.",
+    "http-ece 1.2.1 dichiara classifiers fino a Python 3.12 e non ha wheel: l'installazione da sdist su 3.13 dovrebbe funzionare perche e puro Python, ma non e stata eseguita (vincolo di sola lettura di questa sonda).",
+    "Comportamento di un processo uvicorn/APScheduler durante dark wake (Power Nap) del Mini: non documentato da Apple per processi utente; misurare sul Mini con 'pmset -g' e 'pmset -g log' dal Terminale (fuori sandbox) quale politica di sonno e attiva oggi.",
+    "Declarative Web Push: supporto fuori da WebKit (Chrome/FCM) non verificato su fonte primaria Google; per un caregiver su Android resta il push classico via service worker.",
+    "Il service worker generato da vite-plugin-pwa (vite.config.js LOCKED, registerType 'prompt'): come aggiungere il listener 'push' (injectManifest vs importScripts) senza toccare il file bloccato non e stato indagato: e una decisione di ratifica, non di ricerca."
+  ],
+  "summary": "Lato server per Web Push da FastAPI su macOS servono: una coppia VAPID P-256 generata una volta (py-vapid 1.9.4, gennaio 2026) e custodita fuori repo; una libreria che cifri con aes128gcm (RFC 8291) e firmi il JWT VAPID (RFC 8292: aud = origine dell'endpoint, exp <= 24 h, sub mailto:/https:) e faccia la POST RFC 8030 con TTL, Urgency, Topic; uscita HTTPS 443 verso *.push.apple.com e fcm.googleapis.com. Nessun account Apple Developer, nessun certificato, nessun progetto Firebase: confermato da Apple Developer docs, WWDC22 e WebKit blog 2022-2023. pywebpush 2.5.0 (30 agosto 2026, Python >=3.10, puro Python; cryptography 50.0.1 ha wheel arm64 abi3 per 3.13) e la scelta pronta: webpush(subscription_info, data, vapid_private_key, vapid_claims, ttl, headers={'Urgency','Topic'}); attenzione al ttl=0 di default e alla mutazione del dict vapid_claims; gestire WebPushException.status_code: 404/410 cancella subscription, 429/503 Retry-After, 400/403 difetto di richiesta o VAPID (Apple restituisce reason JSON: BadJwtToken, VapidPkHashMismatch, BadTtl...). Il client si iscrive con pushManager.subscribe({userVisibleOnly:true, applicationServerKey}) e manda {endpoint, keys.p256dh, keys.auth, expirationTime}; su iOS serve PWA in Home Screen (16.4+), ogni push DEVE mostrare una notifica (3 push silenziosi = revoca), expirationTime e pushsubscriptionchange non sono affidabili su Safari: la verita e il 410 all'invio piu re-check a ogni apertura. Perdita della chiave privata = tutte le subscription da rifare (unsubscribe + subscribe con nuova chiave). Pianificazione: APScheduler 3.11.3 con job id + replace_existing + misfire_grace_time/coalesce, o loop asyncio con sleep a cap breve; dedup persistita in MySQL con UNIQUE (subscription, chiave dose) e stato sent/failed prima della POST; Topic = chiave dose per sostituire in coda. Il Mac che dorme congela il processo: launchd StartCalendarInterval recupera al risveglio, StartInterval e cron no, e pmset repeat ammette una sola coppia di eventi; per un server la via e sonno disabilitato, da misurare sul Mini. Nel repo non esiste alcun codice push (sonda grep dichiarata), ma la Spec 3.11 definisce gia push_subscriptions e vite.config.js LOCKED condiziona l'aggiunta del listener push al service worker."
+}

@@ -1,0 +1,157 @@
+# repo:client -- catena client delle notifiche
+
+Fase: Misura. Agente `ad822d84df527b668`, esito: completato. Resa leggibile generata meccanicamente da `01-repo-client.json`, che e il risultato restituito dall'agente cosi come registrato nel journal del workflow: contenuto invariato, solo forma.
+
+## Sintesi
+
+Catena client delle notifiche, misurata per contenuto. (1) TRIGGER: rescheduleAllNotifications e chiamata da AppContext (tick ogni TICK_INTERVAL_MS=60000 ms solo se rollover di giornata o ogni 30 tick, piu handler onForegroundEvent su visibilitychange e focus che riprogramma SEMPRE) e da actions.js (init, setSetting('notifiche_attive',1), maybeReschedule nei thunk apply*/config/profilo, scheduleTestDose). Ogni chiamata fa cancelAll e riprogramma le sole voci di OGGI con stato prevista|ricalcolata; fireAt <= now e no-op silenzioso, quindi una dose scaduta in background non suona mai, nemmeno in arretrato. Il codice stesso dichiara il rischio: AppContext commenta "iOS PWA risk of setTimeout killed during background suspend" e README "se chiudi l app ... quel timer non esiste piu e l avviso non parte"; il progetto non ha una sonda su iOS, e il pin si limita ai trigger. (2) TESTO: title = farmaco.nome; body = formatRelazionePastoCopy(farmaco) (dettaglio_pasto o mappa "prima dei pasti" ecc.) oppure "Promemoria farmaco" per indifferente. Non esiste un campo dosaggio ne in IRepository.Farmaco ne nella tabella farmaci del Mini (sonda: grep dosaggio su src, backend/pharmatimer_api, backend/db/migrations: zero hit; le sole occorrenze sono nella Spec 5.2 e 6.1, dove il dosaggio e parte del nome, es. "Medrol 16mg"). Nessun orario nel body, nessuna icon, nessun requireInteraction, nessun suono esplicito. (3) notifiche_attive: chiave SETTINGS_KEYS.NOTIFICHE_ATTIVE in impostazioni_app di Dexie, scritta da actions.setSetting via repo.setSetting; SyncRepository.setSetting -> ApiRepository.setSetting -> this._local.setSetting: mai verso il server. Il backend non ha alcun router impostazioni (sonda grep -i impostazioni su backend/pharmatimer_api: solo notifiche_caregiver_attive in utenti.py e permessi.py). useNotifications forza notifiche_attive=0 su revoca del permesso (mount e visibilitychange). (4) CLICK: notif.onclick = window.focus() + window.location.href = '/oggi' (path assoluto, ignora BASE_URL: corretto sulla build mini con base "/", errato su GitHub Pages con base /pharmatimer/); e un handler di pagina, vive solo finche la pagina vive; nessun notificationclick nel SW. (5) SW: generateSW puro in vite.config.js (LOCKED): registerType prompt, skipWaiting false, clientsClaim false, nessun importScripts, nessun injectManifest/strategies, nessun srcDir/filename; registerSW.js fa solo import di virtual:pwa-register e prompt di aggiornamento; sonda grep su src e vite.config.js per showNotification|pushManager|notificationclick|TimestampTrigger|importScripts|injectManifest|strategies: zero hit. (6) CHIAVI: due formati distinti. La chiave del piano (planBuilder.entryKey e actions.logRowToEntryKey) e `${dateStr}-${farmacoId}-${doseNumero}`; il tag della notifica (showDoseNotification) e `dose-${farmaco.id}-${entry.orario?.dose_numero}-${dateStr}`. Entrambe sono ricostruibili dal server da (farmaco_id, orari_base.dose_numero, data) e per le dosi gia loggate da log_assunzioni(data, farmaco_id, dose_numero); cio che il server non sa calcolare e l ISTANTE, perche ora_prevista del piano nasce da orarioResolver sugli ancoraggi del profilo attivo e ora_ricalcolata dal recalc, entrambi client-only; log_assunzioni.ora_ricalcolata sul server e TIME (non ISO). scheduleTestDose usa dose_numero=999 sentinella. (7) db.js: DB_VERSION 5 (v5 aggiunge lo store outbox); il commento BUG-m s.6.251 dichiara che su WebKit mobile il flag IndexedDB onboarding_completed non sopravvive ai ricaricamenti (Finding #10) mentre localStorage si (stessa sede di pharmatimer.userToken), da cui ONBOARDING_LS_KEY = "pharmatimer.onboardingCompleted" in doppia scrittura; notifiche_attive NON ha specchio in localStorage e vive solo in impostazioni_app di Dexie, quindi eredita la stessa fragilita finche una sonda non dice il contrario (STATO_CORRENTE: impegno durabilita-outbox aperto sullo stesso rilievo). (8) PIN: notifications.test.js 15 test (costruttore con title/body/tag, no-op passato, tag replacement, cancelAll, body Promemoria farmaco, filtro stati, farmaci array), notifications.dst.test.js 2 test node-only che devono arrossare senza DST, useNotifications.test.jsx 6, AppContext.test.jsx 5 test CP4 su services bag e setSetting on/off piu 4 pin trigger drenaggio (visibilitychange, online, tick a 60000, rimozione listener), ImpostazioniTab.test.jsx 4 test sulla SezioneNotifiche, copy.test.js 17, actions.scheduleTestDose.test.js 4, registerSW.test.js 3, pwaManifest.test.js 1.
+
+## Fatti
+
+### 1. La programmazione e un setTimeout di pagina piu new Notification; fireAt nel passato e scartato in silenzio e il permesso viene ricontrollato al fire.
+
+- Sede: `src/services/notifications.js`
+- Evidenza: const delay = fireAt - Date.now(); if (delay <= 0) return; // Q-CP2.3=A: no-op silenzioso ... const timeoutId = setTimeout(() => { pending.delete(entryKey); if (globalThis.Notification.permission !== 'granted') return; const notif = new globalThis.Notification(title, { body, tag: entryKey });
+
+### 2. Il click della notifica focalizza la finestra e naviga con path assoluto '/oggi', ignorando import.meta.env.BASE_URL.
+
+- Sede: `src/services/notifications.js`
+- Evidenza: notif.onclick = () => { try { window.focus(); } catch { /* noop */ } try { window.location.href = '/oggi'; } catch { /* noop */ } };  -- main.jsx monta BrowserRouter basename={import.meta.env.BASE_URL} e App.jsx ha <Route path="/oggi" element={<OggiView />} />
+
+### 3. Il testo della notifica e title=nome farmaco, body=relazione pasto o fallback; nessun dosaggio, nessun orario.
+
+- Sede: `src/services/notifications.js`
+- Evidenza: const title = farmaco.nome; const body = formatRelazionePastoCopy(farmaco) || 'Promemoria farmaco'; scheduleNotification({ entryKey, fireAt, title, body });
+
+### 4. formatRelazionePastoCopy restituisce dettaglio_pasto nudo, oppure la mappa senza prefisso Assumere, e null per indifferente.
+
+- Sede: `src/utils/copy.js`
+- Evidenza: if (f.relazione_pasto === 'indifferente') return null; if (f.dettaglio_pasto) return f.dettaglio_pasto; const map = { prima: 'prima dei pasti', durante: 'durante i pasti', dopo: 'dopo i pasti', stomaco_pieno: 'a stomaco pieno', lontano: 'lontano dai pasti' }; return map[f.relazione_pasto] || null;
+
+### 5. Il campo dosaggio non esiste nel modello Farmaco ne nella tabella farmaci; la Spec lo intende dentro il nome.
+
+- Sede: `src/data/repository/IRepository.js`
+- Evidenza: @typedef {Object} Farmaco: nome, principio_attivo, funzione, tipo_frequenza, intervallo_ore, intervallo_minimo_ore, dosi_giornaliere, relazione_pasto, dettaglio_pasto, note, data_inizio, data_fine, attivo, demo. backend/db/migrations/v01_init.sql CREATE TABLE farmaci: nome VARCHAR(100) ... nessuna colonna dosaggio. Sonda grep -rn dosaggio su src, backend/pharmatimer_api, backend/db/migrations: zero hit; PharmaTimer_Project_Spec_v1_18.md:499 '**Nome** e **dosaggio** (es. "Medrol 16mg")' e :549 'La notifica mostra: nome farmaco, dosaggio, relazione pasto'.
+
+### 6. Il tag della notifica e la chiave del piano hanno due formati diversi; entrambi derivano da (farmaco_id, dose_numero, dateStr).
+
+- Sede: `src/services/notifications.js`
+- Evidenza: const entryKey = `dose-${farmaco.id}-${entry.orario?.dose_numero}-${dateStr}`;  -- src/domain/planBuilder.js: function entryKey(dateStr, farmacoId, doseNumero) { return `${dateStr}-${farmacoId}-${doseNumero}`; }  -- src/state/actions.js: function logRowToEntryKey(logRow) { return `${logRow.data}-${logRow.farmaco_id}-${logRow.dose_numero}`; }
+
+### 7. Il server possiede gli ingredienti della chiave (farmaco_id, dose_numero, data) ma non l istante: ora_ricalcolata lato server e TIME e il piano e client-only.
+
+- Sede: `backend/db/migrations/v01_init.sql`
+- Evidenza: orari_base: farmaco_id INT NOT NULL, dose_numero INT NOT NULL, offset_minuti INT NOT NULL, ancora_riferimento ENUM('sveglia','colazione','pranzo','cena','sonno','assoluto') NOT NULL, ora_prevista TIME NOT NULL; log_assunzioni: data DATE NOT NULL, dose_numero INT NOT NULL, ora_prevista TIME NOT NULL, ora_ricalcolata TIME NULL
+
+### 8. L istante di fuoco passa da wallToInstant (dose senza orario mai schedulata); ora_ricalcolata ISO ha precedenza.
+
+- Sede: `src/services/notifications.js`
+- Evidenza: if (entry.ora_ricalcolata) { fireAt = parseIsoDateTime(entry.ora_ricalcolata).dateObj.getTime(); } else if (entry.ora_prevista && dateStr) { fireAt = wallToInstant(dateStr, entry.ora_prevista).getTime(); } else { return; }
+
+### 9. rescheduleAllNotifications cancella tutto e riprogramma solo le voci di OGGI con stato prevista|ricalcolata, con lookup farmaco per id.
+
+- Sede: `src/services/notifications.js`
+- Evidenza: services.cancelAll(); const today = selectToday(state); const entries = selectEntriesForDay(state, today); for (const entry of entries) { if (entry.stato !== 'prevista' && entry.stato !== 'ricalcolata') continue; const farmaco = selectFarmacoById(state, entry.orario?.farmaco_id); if (!farmaco) continue; services.showDoseNotification(entry, farmaco); }
+
+### 10. selectToday non e spostato da simulatedNow: resolveNow prende dateStr dal referenceDate reale e simula solo hh:mm.
+
+- Sede: `src/utils/now.js`
+- Evidenza: const dateStr = toLocalDateStr(referenceDate); ... if (simulated) { ... return { date: d, dateStr, hhmm: simulated, ... isSimulated: true }; }
+
+### 11. Trigger in AppContext: un solo setInterval a TICK_INTERVAL_MS=60000; il tick riprogramma solo su rollover di giornata o ogni 30 tick; visibilitychange e focus riprogrammano sempre; online NON riprogramma.
+
+- Sede: `src/state/AppContext.jsx`
+- Evidenza: const ROLLING_RESCHEDULE_TICKS = 30; ... if (didRebuild || rollingDue) { maybeReschedule(stateRef.current); } ... const onForegroundEvent = () => { setTickMs(Date.now()); ... maybeReschedule(stateRef.current); actions.drainOutbox(); }; const onOnline = () => { actions.drainOutbox(); }; const id = setInterval(tick, TICK_INTERVAL_MS); document.addEventListener('visibilitychange', onForegroundEvent); window.addEventListener('focus', onForegroundEvent);  -- src/domain/constants.js: export const TICK_INTERVAL_MS = 60_000;
+
+### 12. Il codice dichiara da se il rischio iOS: timer uccisi in background, riprogrammazione al rientro come sola mitigazione.
+
+- Sede: `src/state/AppContext.jsx`
+- Evidenza: // §6.130 -- rolling reschedule safety net cadence. Every Nth tick reschedules even when no rollover is detected, mitigating the iOS PWA risk of `setTimeout` killed during background suspend. ... the OS may have killed pending setTimeouts during background suspend, so a fresh reschedule on visibility regain is mandatory regardless of rollover state.  -- README.md: 'Se chiudi l app, o il sistema sospende il dispositivo, quel timer non esiste piu e l avviso **non parte**. Al rientro in primo piano gli avvisi vengono riprogrammati, quindi cio che era in arretrato non torna: arriva quando riapri.'
+
+### 13. Il gate maybeReschedule esiste due volte (AppContext e actions.js) e pretende status ready e notifiche_attive===1; il tick handler nota che nel ramo rollover puo riprogrammare sul piano pre-rebuild.
+
+- Sede: `src/state/actions.js`
+- Evidenza: function maybeReschedule(state) { if (!state || state.status !== 'ready') return; if (state.impostazioni?.notifiche_attive !== 1) return; rescheduleAllNotifications(state, services.notifications); }  -- AppContext.jsx: 'stateRef is read AFTER rebuildPlan dispatch but the dispatch is async: in the didRebuild branch we may reschedule against the pre-rebuild plan. The next tick (or any subsequent foreground event) corrects it.'
+
+### 14. Trigger in actions.js: init e setSetting('notifiche_attive') on/off bypassano il gate; scheduleTestDose e uno smoke test con dose_numero=999.
+
+- Sede: `src/state/actions.js`
+- Evidenza: // §6.126 -- Trigger 1 (init) ... maybeReschedule(getState());  ... if (chiave === 'notifiche_attive') { if (valore === 1) { const stateNow = getState(); if (stateNow.status === 'ready') { rescheduleAllNotifications(stateNow, services.notifications); } } else { services.notifications.cancelAll(); } }  ... orario: { farmaco_id: farmaco.id, dose_numero: 999, offset_minuti: 0 } ... rescheduleAllNotifications(freshState, services.notifications);
+
+### 15. notifiche_attive vive solo in impostazioni_app di Dexie; la catena repository lo tiene locale anche in modalita API.
+
+- Sede: `src/data/repository/ApiRepository.js`
+- Evidenza: getSetting(chiave) { return this._local.getSetting(chiave); } setSetting(chiave, valore) { return this._local.setSetting(chiave, valore); }  -- SyncRepository.js: setSetting(chiave, valore) { return this._api.setSetting(chiave, valore); }  -- LocalRepository.js: async setSetting(chiave, valore) { return this._wrap(() => db.impostazioni_app.put({ chiave, valore })); }  -- db.js: NOTIFICHE_ATTIVE: "notifiche_attive", // 0/1: master switch
+
+### 16. Il backend non espone alcuna via per impostazioni_app: le uniche parole con notif nei router sono permessi.notifiche_caregiver_attive.
+
+- Sede: `backend/pharmatimer_api/routers/permessi.py`
+- Evidenza: Sonda grep -rn -i -E 'notif|impostazioni' su backend/pharmatimer_api (escluso __pycache__): hit solo in utenti.py:96,102 e permessi.py:6,52,90,97,127,170-172, tutti su notifiche_caregiver_attive; zero hit su impostazioni. La tabella impostazioni_app (utente_id, chiave, valore) esiste in v01_init.sql ma nessun router la nomina.
+
+### 17. useNotifications: quattro stati standalone x permission; su revoca del permesso forza notifiche_attive=0 e cancelAll, al mount e a ogni visibilitychange visible.
+
+- Sede: `src/hooks/useNotifications.js`
+- Evidenza: const enabled = isStandalone && permission === 'granted' && notificheAttive; ... function checkRevocation() { const current = readPermission(notifications); setPermission(current); if (notificheAttive && current !== 'granted') { actions.setSetting('notifiche_attive', 0); notifications.cancelAll(); } }
+
+### 18. La UI Impostazioni promette 'Avviso poco prima di ogni dose' mentre il codice suona ALL istante della dose (delay = fireAt - now).
+
+- Sede: `src/components/config/ImpostazioniTab.jsx`
+- Evidenza: {showActiveHint && ( <p ...> Avviso poco prima di ogni dose. </p> )}  -- banner non standalone: 'Installa PharmaTimer sulla schermata Home per ricevere le notifiche delle dosi.'; denied: 'Permesso negato. Abilita le notifiche dalle impostazioni di sistema (Impostazioni -> PharmaTimer -> Notifiche).'
+
+### 19. Il beep e separato dalle notifiche: useAutoBeep in OggiView suona playBeep sul crossing forward del minuto corrente, solo con la vista montata e aperta.
+
+- Sede: `src/hooks/useAutoBeep.js`
+- Evidenza: if (prev < doseMin && doseMin <= nowMin && !triggeredKeys.current.has(e.key)) { newlyCrossed.push(e.key); ... } if (typeof playBeepFn === 'function') playBeepFn();  -- OggiView.jsx: const flashingKeys = useAutoBeep(todayEntries, now, playBeep); import { playBeep } from '../../services/audio.js'
+
+### 20. Il service worker e generateSW puro, senza punti di estensione.
+
+- Sede: `vite.config.js`
+- Evidenza: VitePWA({ registerType: "prompt", includeAssets: ["icons/*.png", "favicon.svg"], manifest: buildPwaManifest("/pharmatimer/"), workbox: { skipWaiting: false, clientsClaim: false, globPatterns: ["**/*.{js,css,html,png,svg,woff2}"], cleanupOutdatedCaches: true, runtimeCaching: [ { urlPattern: /\/icons\/.*\.(?:png|svg)$/, handler: "CacheFirst", ... } ] }, devOptions: { enabled: false } })  -- nessuna chiave strategies, srcDir, filename, importScripts. Sonda grep -rn showNotification|pushManager|notificationclick|TimestampTrigger|importScripts|injectManifest|strategies su src e vite.config.js: zero hit.
+
+### 21. registerSW.js registra il SW via virtual:pwa-register e gestisce solo onNeedRefresh/onOfflineReady; nei test il modulo virtuale e sostituito da un mock fisico via alias in vitest.config.js.
+
+- Sede: `src/pwa/registerSW.js`
+- Evidenza: return import('virtual:pwa-register').then(({ registerSW }) => { updateSWRef = registerSW({ onNeedRefresh() { updateAvailable = true; notifyAll(true); }, onOfflineReady() { console.log('[PWA] Ready to work offline.'); }, }); })  -- vitest.config.js: find: /^virtual:pwa-register$/, replacement: ./src/test/__mocks__/virtualPwaRegister.js; il mock espone registerSW, __setUpdateSWMock, __getLastOptions, __getCallCount, __reset.
+
+### 22. Manifest: display standalone, scope e start_url uguali alla base, nessun campo legato alle notifiche.
+
+- Sede: `src/config/pwaManifest.js`
+- Evidenza: display: 'standalone', orientation: 'portrait', scope: base, start_url: base, icons: [ { src: `${base}icons/icon-192.png` ... } ]
+
+### 23. db.js: DB_VERSION 5; la fragilita WebKit dichiarata riguarda il flag onboarding_completed in IndexedDB, mitigata con specchio localStorage; notifiche_attive non ha specchio.
+
+- Sede: `src/data/db.js`
+- Evidenza: export const DB_VERSION = 5; ... // BUG-m fix (s.6.251, par.22.193): localStorage mirror of the onboarding_completed flag. On mobile WebKit the IndexedDB flag does not survive reloads (Finding #10), so the no-skip OnboardingModal (§22.43) re-appeared at every launch and sealed the whole UI (BUG-m). localStorage DOES persist there (same store as pharmatimer.userToken, proven par.182-192). ... export const ONBOARDING_LS_KEY = "pharmatimer.onboardingCompleted";  -- commit 72a2b4d 'fix(onboarding): BUG-m mobile - persist onboarding flag in localStorage'. STATO_CORRENTE.md: '`durabilita-outbox` -- M2. src/data/db.js dichiara che su WebKit mobile il flag IndexedDB non sopravvive ai ricaricamenti. Rilievo di MISURA'.
+
+### 24. Pin del servizio: 15 test in notifications.test.js su costruttore, tag, no-op, cancel, body e filtri di rescheduleAllNotifications.
+
+- Sede: `src/services/notifications.test.js`
+- Evidenza: expect(MockNotification).toHaveBeenCalledWith('Test', { body: 'Body', tag: 'k1' }); ... 'scheduleNotification with fireAt in the past is silent no-op (Q-CP2.3=A)'; 'tag-based replacement: rescheduling same entryKey cancels previous timer'; toHaveBeenCalledWith('Pantorc 40mg', { body: '30 min prima colazione', tag: `dose-7-2-${dateStr}` }); toHaveBeenCalledWith('Levotuss 10ml', { body: 'Promemoria farmaco', tag: `dose-11-1-${dateStr}` }); 'skippa entries con stato non in {prevista,ricalcolata}'; '§6.128: legge state.farmaci come array (non come dict)'; 'integration: createNotificationsService + reschedule produce un timer pendente'
+
+### 25. Pin DST: 2 test node-only che pretendono il fuoco al primo istante esistente (29 marzo) e alla prima occorrenza (25 ottobre); il gate controllo-dst li vuole rossi senza ora legale.
+
+- Sede: `src/services/notifications.dst.test.js`
+- Evidenza: // @vitest-environment node ... Ogni test asserisce un fatto falso senza ora legale (`make controllo-dst`). it('29 marzo, dose alle 02:30: suona al primo istante esistente, 01:00Z (03:00 CEST), non alle 03:30'); it('25 ottobre, ricalcolata alle 02:30: suona alla PRIMA occorrenza, 00:30Z, non alla seconda')
+
+### 26. Pin del wiring: AppContext.test.jsx spia il singleton e pinna setSetting on/off e i trigger a evento (visibilitychange, online, tick a 60000 ms, rimozione listener); il pin visibilitychange misura drainOutbox, non il reschedule.
+
+- Sede: `src/state/AppContext.test.jsx`
+- Evidenza: it('§6.126: setSetting con chiave non-notifiche NON triggera reschedule ne cancelAll'); it('§6.126: setSetting toggle off (notifiche_attive=0) chiama services.notifications.cancelAll'); it('§6.126/§6.132: setSetting toggle on (notifiche_attive=1) triggera rescheduleAllNotifications'); it('trigger 2: visibilitychange chiede una passata') -> expect(repoMock.drainOutbox).toHaveBeenCalledTimes(1); it('trigger 4: il tick chiede una passata, senza toccare alcun timer') -> spiaInterval.mock.calls.find(([, ms]) => ms === 60000)
+
+### 27. Altri pin: useNotifications 6 test, ImpostazioniTab 4 test sulla SezioneNotifiche, copy.test.js 17 test su formatRelazionePastoCopy e formatPrimaDose, scheduleTestDose 4 test, registerSW 3 test, pwaManifest 1 test, useAutoBeep 2 describe.
+
+- Sede: `src/hooks/useNotifications.test.jsx`
+- Evidenza: useNotifications: '!isStandalone -> enabled:false, requestEnable throws not_standalone'; 'standalone + default + requestEnable happy path -> requestPermission + setSetting(1)'; 'disable -> setSetting(0) + cancelAll'; 'defensive revocation on mount: permission denied + notifiche_attive=1 -> setSetting(0) + cancelAll'.  ImpostazioniTab.test.jsx: '!isStandalone -> banner Installa + nessun toggle'; 'standalone + denied -> toggle disabilitato + banner permesso negato'.  copy.test.js: 'prima + dettaglio -> passthrough nudo (no "Assumere ")'; 'indifferente + null -> null (caller fallback "Promemoria farmaco")'.  actions.scheduleTestDose.test.js: '(1) happy path: dispatcha SET_PLAN con entry sintetica + chiama showDoseNotification'.
+
+### 28. La DoseCard mostra la relazione pasto con prefisso 'Assumere' mentre il body della notifica e volutamente nudo (drift dichiarato §6.124).
+
+- Sede: `src/components/oggi/DoseCard.jsx`
+- Evidenza: function getPastoText(f) { if (f.relazione_pasto === 'indifferente') { return 'Assumere indifferentemente dai pasti'; } if (f.dettaglio_pasto) { return `Assumere ${f.dettaglio_pasto}`; } ...  -- copy.js: 'Drift voluto §6.124 vs DoseCard.getPastoText: body stripped del prefisso "Assumere "'
+
+## Domande aperte
+
+- Comportamento reale su iOS a pagina in background: il codice dichiara il rischio (timer uccisi, riprogrammazione al rientro) ma nessuna sonda del repo lo misura; l unica evidenza sul telefono citata in STATO e il log api.out.log per le riaperture, non per le notifiche.
+- Se notifiche_attive in impostazioni_app di Dexie eredita la fragilita WebKit del flag onboarding_completed (nessuno specchio localStorage per notifiche_attive; impegno durabilita-outbox aperto su rilievo analogo).
+- Il click handler naviga a '/oggi' assoluto: sulla build GitHub Pages (base /pharmatimer/) esce dallo scope della PWA; non misurato a runtime, dedotto dal confronto fra notifications.js e main.jsx basename.
+- Il pin AppContext 'trigger 2: visibilitychange' misura drainOutbox e non maybeReschedule: rimuovere la sola riga maybeReschedule(stateRef.current) da onForegroundEvent non e coperto da un test visto rosso (rilievo dedotto dalla lettura, non esercitato).
+- Se il body della notifica debba includere l orario o il dosaggio: la Spec 6.1 chiede il dosaggio ma il modello non ha un campo dosaggio, e il nome lo ingloba (Spec 5.2 'Medrol 16mg').
