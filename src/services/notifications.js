@@ -31,7 +31,7 @@ import { formatRelazionePastoCopy } from '../utils/copy';
 import { parseIsoDateTime, wallToInstant } from '../utils/time.js';
 import {
   selectToday,
-  selectEntriesForDay,
+  selectEntriesForEffectiveDay,
   selectFarmacoById,
 } from '../state/selectors.js';
 
@@ -158,6 +158,12 @@ export const notifications = createNotificationsService();
  * §6.127 (CP4): plan source is `selectEntriesForDay(state, selectToday(state))`.
  *               The canonical state key is `state.plan` (multi-day); the
  *               selector projects today-only entries.
+ * Dose oltre la mezzanotte (M2): the window is `selectEntriesForEffectiveDay`,
+ *               not the raw `dateStr` filter. `cancelAll` + reschedule ran on
+ *               `dateStr === today` only, so a dose planned yesterday and
+ *               recalculated into today was cancelled at the first rollover
+ *               (or visibilitychange) and never rearmed. The union is a
+ *               superset: a dose recalculated OUT of today keeps its timer.
  * §6.128 (CP4): farmaco lookup via `selectFarmacoById(state, id)` (state.farmaci
  *               is an array, not a dict — pre-CP4 dict-access was a silent bug).
  *
@@ -173,7 +179,7 @@ export function rescheduleAllNotifications(state, services) {
   if (!state || !services) return;
   services.cancelAll();
   const today = selectToday(state);
-  const entries = selectEntriesForDay(state, today);
+  const entries = selectEntriesForEffectiveDay(state, today);
   for (const entry of entries) {
     if (entry.stato !== 'prevista' && entry.stato !== 'ricalcolata') continue;
     // §6.138 (Sessione 9-B parte 4/4 hotfix): entry shape canonico

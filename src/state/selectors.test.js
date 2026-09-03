@@ -5,6 +5,8 @@ import {
   selectUltimaPresa,
   selectEntryByKey,
   selectPromptEntry,
+  selectEntriesForDay,
+  selectEntriesForEffectiveDay,
 } from './selectors.js';
 
 // Minimal state factory — selectCountersForDay reads only `plan` and
@@ -142,6 +144,72 @@ describe('selectEntryByKey', () => {
     // Falsy entryKey.
     expect(selectEntryByKey(mkState(plan), '')).toBeNull();
     expect(selectEntryByKey(mkState(plan), null)).toBeNull();
+  });
+});
+
+// The reminder window: entries planned on the day PLUS entries recalculated
+// into it, minus nothing. Pinned as a superset of selectEntriesForDay so the
+// fail-safe direction (never fewer deliveries than before) is measurable and
+// not merely asserted in a comment.
+describe('selectEntriesForEffectiveDay', () => {
+  const OGGI = '2026-04-19';
+
+  it('e un soprainsieme di selectEntriesForDay sullo stesso giorno', () => {
+    const plan = [
+      mkEntry({ key: 'a' }),
+      mkEntry({ key: 'b', ora_prevista: '20:00' }),
+      mkEntry({ key: 'c', dateStr: '2026-04-20' }),
+    ];
+    const day = selectEntriesForDay(mkState(plan), OGGI);
+    const eff = selectEntriesForEffectiveDay(mkState(plan), OGGI);
+    expect(day.map(e => e.key)).toEqual(['a', 'b']);
+    for (const e of day) expect(eff).toContain(e);
+  });
+
+  it('include la dose di ieri ricalcolata DENTRO il giorno', () => {
+    const plan = [
+      mkEntry({
+        key: 'ieri-oltre-mezzanotte',
+        dateStr: '2026-04-18',
+        ora_prevista: '22:00',
+        ora_ricalcolata: '2026-04-19T07:00',
+        stato: 'ricalcolata',
+      }),
+    ];
+    expect(
+      selectEntriesForEffectiveDay(mkState(plan), OGGI).map(e => e.key),
+    ).toEqual(['ieri-oltre-mezzanotte']);
+  });
+
+  it('NON include la dose di ieri rimasta a ieri', () => {
+    const plan = [mkEntry({ key: 'ieri', dateStr: '2026-04-18' })];
+    expect(selectEntriesForEffectiveDay(mkState(plan), OGGI)).toEqual([]);
+  });
+
+  it('include ancora la dose del giorno ricalcolata FUORI, verso domani', () => {
+    const plan = [
+      mkEntry({
+        key: 'oggi-verso-domani',
+        ora_prevista: '23:30',
+        ora_ricalcolata: '2026-04-20T00:30',
+        stato: 'ricalcolata',
+      }),
+    ];
+    expect(
+      selectEntriesForEffectiveDay(mkState(plan), OGGI).map(e => e.key),
+    ).toEqual(['oggi-verso-domani']);
+  });
+
+  it('non duplica la dose ricalcolata dentro il proprio stesso giorno', () => {
+    const plan = [
+      mkEntry({
+        key: 'oggi-oggi',
+        ora_prevista: '07:00',
+        ora_ricalcolata: '2026-04-19T09:00',
+        stato: 'ricalcolata',
+      }),
+    ];
+    expect(selectEntriesForEffectiveDay(mkState(plan), OGGI)).toHaveLength(1);
   });
 });
 

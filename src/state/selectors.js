@@ -89,6 +89,33 @@ export function selectEntriesForDay(state, dateStr) {
 }
 
 /**
+ * Entries whose dose actually falls on `dateStr`: the ones PLANNED on that
+ * day, plus the ones planned on another day and recalculated INTO it (a
+ * recalc keeps its original `dateStr` and moves only `ora_ricalcolata`, so
+ * `effectiveDateStr` is the only field that tells where the dose lands).
+ *
+ * Superset of `selectEntriesForDay` by construction: the union adds, it
+ * never drops an entry the day filter would return. That is the fail-safe
+ * direction -- a dose recalculated OUT of `dateStr` (today -> tomorrow) is
+ * still returned here, because dropping a delivery is M2 whichever side of
+ * midnight it happens on.
+ *
+ * Single seat of the reminder window (`rescheduleAllNotifications`): any new
+ * delivery channel inherits this selector, not the raw `dateStr` filter.
+ *
+ * @param {import('./reducer.js').AppState} state
+ * @param {string} dateStr 'YYYY-MM-DD'
+ * @returns {import('../domain/types.js').PlanEntry[]}
+ */
+export function selectEntriesForEffectiveDay(state, dateStr) {
+  const pianificate = selectEntriesForDay(state, dateStr);
+  const ricalcolateDentro = (state.plan ?? []).filter(
+    e => e.dateStr !== dateStr && effectiveDateStr(e) === dateStr,
+  );
+  return [...pianificate, ...ricalcolateDentro];
+}
+
+/**
  * Next due dose for today: first entry with stato in
  * {'prevista','ricalcolata'} whose effective scheduled time
  * (ora_ricalcolata ?? ora_prevista) is >= current HH:MM. If none

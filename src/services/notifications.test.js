@@ -308,3 +308,105 @@ describe('rescheduleAllNotifications — CP4 fix §6.127 + §6.128', () => {
     expect(service.getPendingCount()).toBe(1);
   });
 });
+
+// ============================================================
+// Dose oltre la mezzanotte -- M2 sul promemoria.
+//
+// The reschedule window is the EFFECTIVE day, not `entry.dateStr`: a dose
+// planned yesterday and recalculated into today still has yesterday's
+// dateStr, so a dateStr-only window drops it and the first rollover (or
+// visibilitychange) after midnight cancels the timer armed the evening
+// before -- the delivery is lost without a tap. Fail-safe: the window only
+// ever ADDS entries, it never suppresses one that used to be armed.
+//
+// Pinned in both directions, one variable at a time:
+//   (a) ieri -> oggi   : must be scheduled  (the defect, seen red)
+//   (b) ieri -> ieri   : must NOT be scheduled (a window that swallows all
+//                        of yesterday would satisfy (a) too -- restrictive
+//                        verse, also covered by the §6.127 test above)
+//   (c) oggi -> domani : must STAY scheduled (an effective-day-only window
+//                        would suppress it: that is M2 the other way round)
+// ============================================================
+describe('rescheduleAllNotifications -- finestra sulla data EFFETTIVA', () => {
+  beforeEach(() => {
+    // Subito dopo il rollover: e l'istante in cui il difetto morde.
+    vi.setSystemTime(new Date('2026-04-27T00:10:00'));
+  });
+
+  it('(a) riprogramma la dose di IERI ricalcolata a OGGI', () => {
+    const state = makeMockState({
+      plan: [
+        {
+          dateStr: '2026-04-26',
+          stato: 'ricalcolata',
+          orario: { farmaco_id: 1, dose_numero: 3 },
+          ora_prevista: '22:00',
+          ora_ricalcolata: '2026-04-27T07:00',
+        },
+      ],
+      farmaci: [{ id: 1, nome: 'Test', relazione_pasto: 'durante' }],
+    });
+    const service = makeServiceMock();
+    rescheduleAllNotifications(state, service);
+    expect(service.showDoseNotification).toHaveBeenCalledTimes(1);
+    const entryArg = service.showDoseNotification.mock.calls[0][0];
+    expect(entryArg.dateStr).toBe('2026-04-26');
+    expect(entryArg.ora_ricalcolata).toBe('2026-04-27T07:00');
+  });
+
+  it('(b) NON riprogramma la dose di ieri rimasta a ieri', () => {
+    const state = makeMockState({
+      plan: [
+        {
+          dateStr: '2026-04-26',
+          stato: 'prevista',
+          orario: { farmaco_id: 1, dose_numero: 3 },
+          ora_prevista: '22:00',
+          ora_ricalcolata: null,
+        },
+      ],
+      farmaci: [{ id: 1, nome: 'Test', relazione_pasto: 'durante' }],
+    });
+    const service = makeServiceMock();
+    rescheduleAllNotifications(state, service);
+    expect(service.showDoseNotification).toHaveBeenCalledTimes(0);
+  });
+
+  it('(c) continua a riprogrammare la dose di OGGI ricalcolata a DOMANI', () => {
+    const state = makeMockState({
+      plan: [
+        {
+          dateStr: '2026-04-27',
+          stato: 'ricalcolata',
+          orario: { farmaco_id: 1, dose_numero: 1 },
+          ora_prevista: '23:30',
+          ora_ricalcolata: '2026-04-28T00:30',
+        },
+      ],
+      farmaci: [{ id: 1, nome: 'Test', relazione_pasto: 'durante' }],
+    });
+    const service = makeServiceMock();
+    rescheduleAllNotifications(state, service);
+    expect(service.showDoseNotification).toHaveBeenCalledTimes(1);
+    const entryArg = service.showDoseNotification.mock.calls[0][0];
+    expect(entryArg.dateStr).toBe('2026-04-27');
+  });
+
+  it('(d) niente doppioni: una entry entra una volta sola nella finestra', () => {
+    const state = makeMockState({
+      plan: [
+        {
+          dateStr: '2026-04-27',
+          stato: 'ricalcolata',
+          orario: { farmaco_id: 1, dose_numero: 1 },
+          ora_prevista: '07:00',
+          ora_ricalcolata: '2026-04-27T09:00',
+        },
+      ],
+      farmaci: [{ id: 1, nome: 'Test', relazione_pasto: 'durante' }],
+    });
+    const service = makeServiceMock();
+    rescheduleAllNotifications(state, service);
+    expect(service.showDoseNotification).toHaveBeenCalledTimes(1);
+  });
+});
