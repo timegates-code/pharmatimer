@@ -674,6 +674,13 @@ def voce16():
 def voce17():
     head(17, "notifiche: meccanismo di consegna e capacita ad app chiusa")
     n = read("src/services/notifications.js")
+    # Un token dentro un commento non e lo uso di quel token (CLAUDE.md sez. 5):
+    # questa sonda misura il CODICE, quindi i commenti si spogliano PRIMA. Senza
+    # questo passo, citare in un commento il messaggio di errore di Chrome
+    # ("Use ServiceWorkerRegistration.showNotification() instead") bastava a far
+    # dichiarare presente un meccanismo indipendente dalla pagina che non esiste.
+    n = re.sub(r"/\*.*?\*/", "", n, flags=re.S)
+    n = re.sub(r"^\s*//.*$", "", n, flags=re.M)
     mecc = [
         ("setTimeout in contesto di pagina", "setTimeout" in n),
         ("new Notification(...) (contesto pagina)", "new globalThis.Notification" in n or "new Notification" in n),
