@@ -10,39 +10,41 @@ poi `bash deploy/deploy-mini.sh` dal Terminale.
 
 ---
 
-## Ultima sessione -- analisi in sola lettura: promemoria ad app chiusa
+## Ultima sessione -- due pin rossi chiusi, piu una lettura del Mini
 
-Nessun codice, nessuna modifica di prodotto, nessun deploy. Un workflow a
-sedici agenti (nove di misura sul repo e sul web, tre progettisti
-indipendenti, tre giudici, una sintesi) piu misure mie sul repo e sul Mini in
-sola lettura. **Dodici agenti completati, quattro falliti per limite di
-spesa: i tre giudici e la sintesi; mai partite la confutazione a tre lenti e
-il critico di completezza.** Il rapporto e composto dai dodici risultati letti
-per intero.
+Due fix di promemoria, ciascuno con il proprio commit e il proprio collaudo per
+mutazione; nessun canale nuovo, nessuna decisione di dominio, nessun deploy.
 
-Tutto sta in **`docs/analisi/promemoria-app-chiusa/`**: `INDICE.md` (quale
-fase e stata eseguita e quale no), `rapporto.md` e `rapporto.html`, i dodici
-risultati in `agenti/` (JSON come restituito piu resa in Markdown), il journal
-grezzo del workflow in `workflow/`.
+- **`ccce837` -- dose oltre la mezzanotte persa al rollover (M2).** La finestra
+  di `rescheduleAllNotifications` era `selectEntriesForDay(oggi)`, un filtro su
+  `entry.dateStr`: la dose di ieri ricalcolata a oggi conserva il `dateStr` di
+  ieri, quindi il rollover cancellava il timer armato la sera prima e non lo
+  riarmava. Sede: nuovo selettore puro `selectEntriesForEffectiveDay`
+  (`src/state/selectors.js`), composto SOPRA `selectEntriesForDay` -- unione,
+  cosi la proprieta "aggiunge e non toglie mai" e strutturale. Consumatore
+  unico, una riga in `src/services/notifications.js`. Il piano non e toccato.
+  L'altra via nominata dallo STATO, il filtro sulla sola data effettiva, e
+  clinicamente NON sicura (sopprime la dose di oggi ricalcolata a domani) e
+  vive solo come mutazione e come rationale scartato.
+- **`3d098a6` -- `new Notification()` che lancia su Chrome Android.** Il
+  costruttore in pagina lancia sempre `TypeError`: misurato con la suite, la
+  eccezione usciva dallo scatto e portava via `onFire` e i timer successivi
+  dello stesso avanzamento. Guardia `try/catch` sulla sola costruzione piu
+  `onclick`, con `onFire` FUORI. Su Android il promemoria continua a non
+  suonare: e un limite noto, non piu una catena morta. **La sonda sul moto g06
+  resta dovuta**: qui e esercitata la conseguenza nel nostro codice, non il
+  comportamento del telefono, che resta dedotto da MDN BCD.
 
-Esito: i tre progettisti, con angoli diversi, hanno prodotto lo stesso ordine
-di opzioni. **A** calendario pubblicato dal telefono e Web Push dal Mini
-(dichiarativo su iOS 18.4+, service worker su Android; 6-10 sessioni, zero
-euro). **B** motore delle occorrenze sul Mini (10-15 sessioni, doppia verita
-del piano; sicura solo con profilo sul server, purge delle ricalcolate orfane
-e vettori d'oro in entrambe le suite). **C** Pushover come trasporto di
-riserva (1-3 sessioni sopra A, circa dieci dollari). **D** involucro Capacitor
-con notifiche locali di sistema (la piu forte sui TRE MAI, 99 USD/anno, tocca
-un VIETATO). La finestra M1 di una presa fatta offline non e eliminabile da
-nessun canale server-side; la chiude solo D.
+Collaudo di entrambi: pin visti rossi PRIMA del fix (isolati: uno su quattro
+per il primo, tre su quattro per il secondo, col verso opposto gia verde),
+poi cinque mutazioni una variabile per volta, ognuna con il proprio rosso
+atteso, tutte ripristinate.
 
-Misurato sul Mini: non dorme (`sleep 0`, zero eventi a log, uptime 28
-giorni); certificato ts.net rinnovato da solo, valido fino al 24 ottobre 2026;
-`profilo_utente` a zero righe; `push_subscriptions` a zero righe; egress verso
-Apple, Google e Mozilla push raggiungibile; venv in `~/PharmaTimer/.venv`
-senza cryptography ne pywebpush. Utente 2: 7 farmaci attivi, 5 nel ramo esteso
-o `fisso_date`, una riga `ricalcolata` orfana, 2 righe di log negli ultimi 7
-giorni.
+**Lettura del Mini in sola lettura (utente 2, comandi lanciati da Roberto dal
+Terminale, sessione MySQL `READ ONLY`).** RICONFERMA del rapporto: 7 farmaci
+attivi, 12 righe `orari_base`, 5 farmaci su 7 in ramo esteso o `fisso_date`,
+una sola riga `ricalcolata`. Dettaglio e conseguenze nella coda qui sotto.
+
 
 ---
 
@@ -57,20 +59,29 @@ Si esegue, non si rimisura. Ordinata per rischio clinico.
 | 3 | **estrarre il SQL dai router** in `repository/` | -- | Refactor, sessione propria, se ancora voluto. Norma dichiarata: SQL nel router (`CLAUDE.md` 13). |
 | 4 | **`deploy-mini.sh` non fotografa il bundle** prima del `rsync --delete` | -- | Fatto a mano per la seconda volta (`web.bak.*` e `backend.predeploy.*.tgz`). Lo script deve farlo da se, come passo fra le guardie e il rsync. |
 
-### Rilievi di misura di questa sessione, da pinnare rossi prima di contarli difetti
+### Rilievi chiusi, e cio che resta aperto sotto di loro
 
-- **Dose oltre la mezzanotte persa al rollover -- M2 sul promemoria.**
-  `rescheduleAllNotifications` fa `cancelAll` e riprogramma solo
-  `selectEntriesForDay(oggi)`: la dose di ieri con `ora_ricalcolata` a oggi
-  ha `dateStr` di ieri e non viene riprogrammata; il primo `visibilitychange`
-  dopo mezzanotte cancella il timer armato la sera prima. Sondato sui
-  selettori, non esercitato con vitest. Sede del fix da decidere (selettore
-  su data effettiva o finestra con ieri incluso). Qualunque canale nuovo
-  erediterebbe lo stesso selettore.
-- **`new Notification()` su Chrome Android.** Secondo MDN browser-compat-data
-  il costruttore lancia sempre `TypeError` e `notifications.js` lo chiama
-  senza `try/catch`: i timer di pagina non suonerebbero sul moto g06. Dedotto,
-  da esercitare sul telefono.
+I due rilievi di misura della sessione precedente sono stati pinnati rossi e
+chiusi (`ccce837`, `3d098a6`). Restano aperte due cose che quei commit NON
+toccano:
+
+- **La sonda sul moto g06.** Il `TypeError` del costruttore resta dedotto da
+  MDN browser-compat-data. Da esercitare sul telefono, senza codice nel repo.
+- **Righe di log aperte e irraggiungibili sul Mini: sono DUE, non una.**
+  Misurato oggi in sola lettura. La `ricalcolata` orfana e `id=6`: farmaco 10
+  TEST-Intervallo8, 2026-07-04, dose 2, `ora_prevista` 13:00, `ora_ricalcolata`
+  19:37, `gap_minuti` 247, nata nello stesso secondo della presa `id=5` come
+  D+1 di quella presa, con un intervallo di 8 ore che oggi vale 48.0. Il suo
+  slot NON esiste piu: `orari_base` per il farmaco 10 ha la sola dose 1
+  (`assoluto` +480). La giunzione `(farmaco_id, dose_numero)` fra
+  `log_assunzioni` e `orari_base` non e una FK, quindi nulla lo impedisce --
+  elemento non censito altrove (sonda a due chiavi su Changelog, `git log` e
+  STATO; la misura "zero orfani su tre giunzioni" del Changelog archiviato ha
+  un perimetro che la voce non enumera). La seconda riga e `id=11`: farmaco 11
+  TEST-Ext48, 2026-07-19, dose 1, stato **`prevista`**. Entrambe sono fuori
+  dalla finestra del piano (`[ieri, oggi, domani]`) per sempre: nessun verbo le
+  chiudera. Nessun effetto sul piano di oggi; si vedono solo in Cronologia.
+  Cancellarle e M3 applicato al record: serve una ratifica, vedi decisione 18.
 
 ### Impegni ereditati ancora vivi
 
@@ -178,3 +189,16 @@ la decisione 2 e "realizzarle".
     la scheda a quattro campi, poi migrazione prima del codice, backend con
     passata vista rossa, client con SW, settimana di accettazione con C
     pronta come riserva.
+
+L'ultima NON dipende dalla decisione 2: vale in qualunque caso, anche se le
+notifiche ad app chiusa non si fanno.
+
+18. **Le due righe di log aperte e irraggiungibili sul Mini.** Sono un record
+    di fatti realmente avvenuti, quindi cancellarle e M3 e non e un atto
+    meccanico. Tre vie, dalla piu conservativa: **(a)** lasciarle e
+    dichiararle, visto che non toccano il piano di oggi; **(b)** portare al
+    server la cancellazione che oggi il cambio profilo fa solo in locale;
+    **(c)** trattare come stantia ogni riga aperta piu vecchia della finestra
+    del piano. Per l'opzione B del rapporto la (b) o la (c) sono un
+    prerequisito: un motore sul Mini leggerebbe una dose aperta per uno slot
+    che in `orari_base` non esiste piu, ed e M1.
