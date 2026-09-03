@@ -56,6 +56,46 @@ attivi, 12 righe `orari_base`, 5 farmaci su 7 in ramo esteso o `fisso_date`,
 una sola riga `ricalcolata`. Dettaglio e conseguenze nella coda qui sotto.
 
 
+### Accesso alla PWA: come funziona, misurato il 3 settembre 2026
+
+La PWA reinstallata sull'iPhone chiedeva il token. Misura sul codice e lettura
+del Mini, piu una scrittura sul DB di produzione il cui esito non e a verbale.
+
+- **Il token e per UTENTE, non per dispositivo.** `apiClient` manda
+  `X-User-Token` letto solo da `localStorage['pharmatimer.userToken']`; il
+  server confronta lo SHA-256 con `utenti.token_hash`. Nessuna sessione,
+  nessuna scadenza, nessun refresh. Una riga per utente, nessuna tabella che
+  leghi un token a un device.
+- **Un token emesso NON e recuperabile dal server:** SHA-256 a senso unico.
+  Non e nel bundle (`VITE_USER_TOKEN` non compare in alcun file di codice o di
+  build; `.env.mini` e 15 byte con la sola `VITE_USE_API=`). Vive solo dove e
+  stato annotato e nel `localStorage` di un device autenticato. RICONFERMA:
+  gia escluso empiricamente per l'owner di dev, Changelog Fase 3 :10025.
+- **Non esiste una procedura di rotazione.** `seed_owner.py` rifiuta con exit 1
+  se un owner esiste; `utenti.py` espone solo `POST /utenti` (owner-only, crea
+  un utente NUOVO) e `DELETE /utenti/{id}`. Ruotare un token e un UPDATE
+  diretto sul DB di produzione, cioe una scrittura da ratificare ogni volta.
+- **Su `UNAUTHORIZED` la coda di uscita si FERMA e l'elemento RESTA**, mai
+  parcheggiato e mai scartato (`SyncRepository.js` :576): una rotazione di
+  token non perde prese. L'outbox vive in IndexedDB, e l'auto-clear del token
+  tocca solo `localStorage`.
+- **Gli utenti in produzione sono QUATTRO**, misurati: `id=1` Roberto **owner**
+  (27 maggio), `id=2` Roberto **paziente** (30 giugno), `id=3` Silvana e `id=4`
+  Franco, pazienti. L'owner ha admin su tutti e quattro, ciascun paziente ha il
+  self-permesso. **Tutti e 7 i farmaci attivi sono dell'utente 2**; 3 e 4 hanno
+  zero farmaci. Il pilota e dunque `id=2` per i dati, ma l'owner e `id=1`: sono
+  due segreti distinti, e quello dell'owner e l'unico che apre `POST /utenti`.
+- **Esito:** l'accesso e stato ripristinato con un token il cui SHA-256
+  coincide con `utenti.token_hash` di `id=2`, verificato contro il DB vivo.
+  **Non e a verbale se l'UPDATE di rotazione abbia toccato una riga o zero:**
+  la guardia proposta portava `ruolo = 'owner'` mentre l'utente 2 e `paziente`,
+  quindi avrebbe bloccato, e l'esito non e stato riportato. Se ha toccato una
+  riga, la fotografia del vecchio hash e in `~/pt-utente2-prima.txt` sullo
+  Studio ed e l'unica via per tornare indietro.
+- **Rilievo di metodo, mio.** La guardia dava per misurato che `id=2` fosse
+  owner -- lo suggerisce `CLAUDE.md`, ma non era stato sondato, e la sonda che
+  avevo dato filtrava su `id=2` senza mostrare gli altri: non poteva smentirmi.
+
 ---
 
 ## Coda di rimedio
@@ -212,3 +252,10 @@ notifiche ad app chiusa non si fanno.
     del piano. Per l'opzione B del rapporto la (b) o la (c) sono un
     prerequisito: un motore sul Mini leggerebbe una dose aperta per uno slot
     che in `orari_base` non esiste piu, ed e M1.
+
+19. **La riga di `CLAUDE.md` "Non esiste produzione con utenti terzi".** In
+    produzione ci sono `id=3` Silvana e `id=4` Franco, pazienti attivi con
+    self-permesso e zero farmaci, piu l'owner `id=1` distinto dal pilota. I
+    loro token sono validi. Allineare la riga, o dichiarare che quelle tre
+    righe sono di prova e restano senza dati clinici. E documento normativo:
+    la modifica spetta a te.
