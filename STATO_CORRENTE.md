@@ -10,51 +10,42 @@ poi `bash deploy/deploy-mini.sh` dal Terminale.
 
 ---
 
-## Ultima sessione -- due pin rossi chiusi, piu una lettura del Mini
+## Ultima sessione -- sonda push su iPhone, cinque passi chiusi
 
-Due fix di promemoria, ciascuno con il proprio commit e il proprio collaudo per
-mutazione; nessun canale nuovo, nessuna decisione di dominio, nessun deploy.
+Nessuna riga di codice dell app toccata. Sessione di sola sonda sul telefono
+vero, che era il primo passo su cui i tre progettisti concordavano.
 
-- **`ccce837` -- dose oltre la mezzanotte persa al rollover (M2).** La finestra
-  di `rescheduleAllNotifications` era `selectEntriesForDay(oggi)`, un filtro su
-  `entry.dateStr`: la dose di ieri ricalcolata a oggi conserva il `dateStr` di
-  ieri, quindi il rollover cancellava il timer armato la sera prima e non lo
-  riarmava. Sede: nuovo selettore puro `selectEntriesForEffectiveDay`
-  (`src/state/selectors.js`), composto SOPRA `selectEntriesForDay` -- unione,
-  cosi la proprieta "aggiunge e non toglie mai" e strutturale. Consumatore
-  unico, una riga in `src/services/notifications.js`. Il piano non e toccato.
-  L'altra via nominata dallo STATO, il filtro sulla sola data effettiva, e
-  clinicamente NON sicura (sopprime la dose di oggi ricalcolata a domani) e
-  vive solo come mutazione e come rationale scartato.
-- **`3d098a6` -- `new Notification()` che lancia su Chrome Android.** Il
-  costruttore in pagina lancia sempre `TypeError`: misurato con la suite, la
-  eccezione usciva dallo scatto e portava via `onFire` e i timer successivi
-  dello stesso avanzamento. Guardia `try/catch` sulla sola costruzione piu
-  `onclick`, con `onFire` FUORI. Su Android il promemoria continua a non
-  suonare: e un limite noto, non piu una catena morta. **La sonda sul moto g06
-  resta dovuta**: qui e esercitata la conseguenza nel nostro codice, non il
-  comportamento del telefono, che resta dedotto da MDN BCD.
+**Origine di prova in piedi sul Mini**, fuori dal repo e usa e getta:
+`servi.py` su `127.0.0.1:8788`, LaunchAgent `local.sondapush`,
+`tailscale serve --https=8443`. La grant e stata allargata a `tcp:8443` in
+console. Guardia di contenimento **vista rossa** per mutazione, LaunchAgent
+pinnato nei due versi, sonda dell attaccante 0 esposizioni su entrambi i
+perimetri. Lo Studio non poteva servire: `tailscale debug netmap` gli misura
+**zero** regole in entrata, non e destinazione di alcuna grant.
 
-- **`8a37e64` -- la voce 17 dello inventario misurava un token nel commento.**
-  Guasto introdotto da me con la guardia sopra e visto al gate di chiusura: il
-  commento cita il messaggio di errore vero di Chrome, che contiene il
-  letterale `showNotification`, e la sonda cercava quella sottostringa nel file
-  intero. Lo inventario ha dichiarato per due commit "presente un meccanismo
-  indipendente dalla pagina", che e falso. Corretta la SONDA, non il commento:
-  i commenti si spogliano prima di sondare. Vista nei due versi (commento -> no,
-  chiamata vera in codice -> SI); prima non li distingueva, quindi non era una
-  misura.
+**Esiti: S0, S1, S2, S3 e S5 tutti A**, con S2 e S3 A pieno. I numeri, gli
+apns-id e i confini di ogni misura stanno in
+`docs/analisi/promemoria-app-chiusa/sonda-iphone-esiti.md`, che esiste apposta
+perche il materiale della sonda va distrutto dopo S11 e le misure non devono
+morire con esso.
 
-Collaudo dei due fix: pin visti rossi PRIMA del fix (isolati: uno su quattro
-per il primo, tre su quattro per il secondo, col verso opposto gia verde),
-poi cinque mutazioni una variabile per volta, ognuna con il proprio rosso
-atteso, tutte ripristinate.
+I due fatti che pesano sul design:
 
-**Lettura del Mini in sola lettura (utente 2, comandi lanciati da Roberto dal
-Terminale, sessione MySQL `READ ONLY`).** RICONFERMA del rapporto: 7 farmaci
-attivi, 12 righe `orari_base`, 5 farmaci su 7 in ramo esteso o `fisso_date`,
-una sola riga `ricalcolata`. Dettaglio e conseguenze nella coda qui sotto.
+- **Il nostro service worker viene svegliato ad app chiusa in meno di 3
+  secondi**, dopo cinquanta minuti di telefono fermo, e nel suo scope
+  `typeof indexedDB` vale `object`. Confine dichiarato: l API e esposta, non
+  e misurato che una lettura riesca dentro la vita del worker.
+- **Il ramo dichiarativo non esegue una riga del nostro codice**, ne alla
+  consegna ne al tocco -- misurato, con perimetro nel file degli esiti. Puo
+  dire solo cio che era vero all invio, quindi una dose presa fra invio e
+  consegna rende falso l avviso e nessuno se ne accorge: e M3 applicato al
+  promemoria. La decisione 10 non e una scelta fra canali equivalenti.
 
+**Restano sei passi**: S4, S6, S7, S8, S9, S10 e S11. L infrastruttura resta
+viva fino al ritiro, che e dopo S11 e mai prima. La lista di ritiro per esteso
+vive in `USA-E-GETTA.txt`, nelle due sedi della sonda.
+
+---
 
 ### Accesso alla PWA: come funziona, misurato il 3 settembre 2026
 
@@ -188,6 +179,13 @@ toccano:
    le sue dieci decisioni sono le voci 8-17 qui sotto. Il primo passo
    proposto da tutti e tre i progettisti e una sessione di sola sonda sul
    telefono vero, senza codice nel repo.
+   - **Suono proprio o suono di sistema.** Domanda aperta, non misurata: se
+     il canale consenta un suono distinguibile da quello di sistema. Ricade
+     qui perche la risposta puo differire fra ramo dichiarativo e ramo
+     classico, e se differisce **discrimina fra i due rami** invece di essere
+     un dettaglio di realizzazione. Non e cosmetica: per una sveglia notturna
+     un avviso che suona come ogni altra notifica non sveglia, e M1 non si
+     difende con un avviso che non si riconosce. Nata a margine di S2.
 3. **CS-5.7, il blocco Centro invii, resta SOSPESA e non abbandonata.** Il suo
    mandato integrale vive nel Changelog archiviato e in `git log`.
 4. **"sonno + 60 = 00:30 dello stesso giorno."** Spec 3.6 :258: `ora_prevista`
