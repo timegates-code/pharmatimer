@@ -140,6 +140,44 @@ unico o due sorgenti* -- non e una scelta fra canali equivalenti.
 
 ---
 
+## Come si riprende, da una sessione nuova
+
+Tutto il materiale sta FUORI dal repo, in `~/Sviluppo/sonda-push-iphone` sullo
+Studio e in `~/sonda-push-iphone` sul Mini. Le due sedi portano
+`USA-E-GETTA.txt`, identico, con lo stato e la lista di ritiro per esteso.
+
+Verificare che l origine sia viva, dallo Studio:
+
+    ssh mini 'launchctl print gui/501/local.sondapush | grep state'
+    curl -sS -o /dev/null -w "%{http_code}\n" \
+      https://marketreader-server.taila127de.ts.net:8443/
+
+Inviare un passo (dallo Studio, `invia.py` appende una riga a `out/invii.tsv`):
+
+    cd ~/Sviluppo/sonda-push-iphone
+    venv/bin/python invia.py \
+      --sub out/sub-iphone.json \
+      --passo S6 --modo classico --ttl 3600 --urgency high \
+      --topic dose-s6 --titolo "Sonda S6" \
+      --navigate "https://marketreader-server.taila127de.ts.net:8443/?passo=S6"
+
+`--navigate` e obbligatorio e non ha default: lo strumento rifiuta di
+indovinare l origine. `--modo` vale `classico` o `dichiarativo`. Un invio che
+non risponde **201 non e esito B di alcun passo**: e un terzo caso e il passo
+si ripete -- lo dichiara `invia.py` stesso sullo stdout.
+
+La subscription e in `out/sub-iphone.json`, modo 600, endpoint
+`web.push.apple.com`. E la stessa dal 2026-09-04: se S10 la trova cambiata,
+quello E il suo esito.
+
+Sul telefono, la liturgia dei passi ad app chiusa: **app switcher, chiudere con
+la strisciata, bloccare, attendere**. Chiudere davvero, non tornare alla Home:
+un app sospesa fa misurare un altra cosa. Il diario del worker si legge
+riaprendo la web app e premendo *Aggiorna diario*; il diario locale della
+pagina vive in memoria e si azzera a ogni apertura, quindi si legge subito.
+
+---
+
 ## Cosa resta aperto
 
 Passi non ancora eseguiti: **S4** (Low Power Mode, poi Tailscale spento e sola
