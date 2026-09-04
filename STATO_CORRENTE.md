@@ -10,40 +10,43 @@ poi `bash deploy/deploy-mini.sh` dal Terminale.
 
 ---
 
-## Ultima sessione -- sonda push su iPhone, cinque passi chiusi
+## Ultima sessione -- S4 chiuso con esito A, piu un controllo non previsto
 
-Nessuna riga di codice dell app toccata. Sessione di sola sonda sul telefono
-vero, che era il primo passo su cui i tre progettisti concordavano.
+Nessuna riga di codice dell app toccata. Seconda sessione di sola sonda sul
+telefono vero, ripresa dal verbale della prima senza colmare buchi a voce.
 
-**Origine di prova in piedi sul Mini**, fuori dal repo e usa e getta:
-`servi.py` su `127.0.0.1:8788`, LaunchAgent `local.sondapush`,
-`tailscale serve --https=8443`. La grant e stata allargata a `tcp:8443` in
-console. Guardia di contenimento **vista rossa** per mutazione, LaunchAgent
-pinnato nei due versi, sonda dell attaccante 0 esposizioni su entrambi i
-perimetri. Lo Studio non poteva servire: `tailscale debug netmap` gli misura
-**zero** regole in entrata, non e destinazione di alcuna grant.
+**S4 = A**, su quattro finestre distinte, ciascuna con dieci minuti di telefono
+chiuso e fermo. La norma prescriveva il solo ramo dichiarativo; la ratifica lo
+ha esteso a **entrambi i rami**, perche il dichiarativo non esegue una riga del
+nostro codice e non e il ramo che portera il promemoria. Il risultato che serve
+al design e proprio quello che la norma non chiedeva: **il service worker viene
+svegliato in Low Power Mode e su sola rete cellulare fuori dalla tailnet**, con
+`indexedDB` esposto in tutti e due i casi. Latenze 1,1 s e 2,3 s contro un
+criterio di 60. La deduzione del rapporto :289-293 -- la consegna non passa dal
+tunnel -- e ora esercitata sul telefono.
 
-**Esiti: S0, S1, S2, S3 e S5 tutti A**, con S2 e S3 A pieno. I numeri, gli
-apns-id e i confini di ogni misura stanno in
-`docs/analisi/promemoria-app-chiusa/sonda-iphone-esiti.md`, che esiste apposta
-perche il materiale della sonda va distrutto dopo S11 e le misure non devono
-morire con esso.
+**S2-bis**, controllo non previsto dal rapporto, nato da un fatto emerso in
+corsa: **l Apple Watch al polso si prende notifica e suono al posto dell
+iPhone**. Il pin e nei due versi e isolato -- al polso suona il Watch, in carica
+suona l iPhone -- e in piu il Low Power Mode non toglie il suono al telefono.
+**Il suono e quello standard delle notifiche, su entrambi i rami**: risponde in
+parte alla domanda aperta della decisione 2, e risponde male.
 
-I due fatti che pesano sul design:
+**S10 e stato ordinato per ratifica**, perche le sue due meta si ostacolavano:
+digiuno il 5, 6 e 7 settembre con un push alle 14:32 e nessuna apertura,
+riaperture giornaliere dall 8 al 12. Il cancello di S10 si chiude il **12** e
+non il 9: e il prezzo di misurare un digiuno vero invece di uno di ventiquattro
+ore. I tre comandi stanno nel file degli esiti, verificati a vuoto, e li lancia
+Roberto dal Terminale nei giorni senza sessione.
 
-- **Il nostro service worker viene svegliato ad app chiusa in meno di 3
-  secondi**, dopo cinquanta minuti di telefono fermo, e nel suo scope
-  `typeof indexedDB` vale `object`. Confine dichiarato: l API e esposta, non
-  e misurato che una lettura riesca dentro la vita del worker.
-- **Il ramo dichiarativo non esegue una riga del nostro codice**, ne alla
-  consegna ne al tocco -- misurato, con perimetro nel file degli esiti. Puo
-  dire solo cio che era vero all invio, quindi una dose presa fra invio e
-  consegna rende falso l avviso e nessuno se ne accorge: e M3 applicato al
-  promemoria. La decisione 10 non e una scelta fra canali equivalenti.
+Del criterio di passaggio al codice (`rapporto.md` :860-864) resta scoperto il
+solo **S10**. Restano da eseguire S6 e S7 (modalita aereo, sessione propria),
+S8, S9, S10 e S11. L infrastruttura resta viva fino al ritiro, che e dopo S11 e
+mai prima; la lista di ritiro per esteso ora vive **anche** nel file degli
+esiti, e non solo in `USA-E-GETTA.txt`, che il ritiro stesso cancella.
 
-**Restano sei passi**: S4, S6, S7, S8, S9, S10 e S11. L infrastruttura resta
-viva fino al ritiro, che e dopo S11 e mai prima. La lista di ritiro per esteso
-vive in `USA-E-GETTA.txt`, nelle due sedi della sonda.
+Tutto in `docs/analisi/promemoria-app-chiusa/sonda-iphone-esiti.md`, che porta
+anche i quattro rilievi mossi al verbale precedente e i confini di ogni misura.
 
 ---
 
@@ -179,13 +182,16 @@ toccano:
    le sue dieci decisioni sono le voci 8-17 qui sotto. Il primo passo
    proposto da tutti e tre i progettisti e una sessione di sola sonda sul
    telefono vero, senza codice nel repo.
-   - **Suono proprio o suono di sistema.** Domanda aperta, non misurata: se
-     il canale consenta un suono distinguibile da quello di sistema. Ricade
-     qui perche la risposta puo differire fra ramo dichiarativo e ramo
-     classico, e se differisce **discrimina fra i due rami** invece di essere
-     un dettaglio di realizzazione. Non e cosmetica: per una sveglia notturna
-     un avviso che suona come ogni altra notifica non sveglia, e M1 non si
-     difende con un avviso che non si riconosce. Nata a margine di S2.
+   - **Suono e superficie.** Misurato il 4 settembre: il suono di default e
+     quello **standard** delle notifiche su ENTRAMBI i rami, quindi non
+     discrimina fra dichiarativo e classico come si temeva. Non e stata
+     tentata alcuna opzione di suono, quindi resta non misurato se una via per
+     cambiarlo esista. Per una sveglia notturna M1 resta scoperto: un avviso
+     che suona come ogni altro non sveglia. Si aggiunge una dimensione nuova,
+     la **superficie**: con l Apple Watch al polso suonano il Watch e non il
+     telefono, e il Watch di notte puo essere al polso come in carica. Un
+     promemoria notturno deve reggere in **entrambe** le configurazioni. Non
+     sondato: se un tocco sul Watch svegli il service worker.
 3. **CS-5.7, il blocco Centro invii, resta SOSPESA e non abbandonata.** Il suo
    mandato integrale vive nel Changelog archiviato e in `git log`.
 4. **"sonno + 60 = 00:30 dello stesso giorno."** Spec 3.6 :258: `ora_prevista`
