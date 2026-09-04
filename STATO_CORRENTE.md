@@ -146,6 +146,11 @@ toccano:
 - I due typedef `LogAssunzione` concordano su nomi e tipi ma non sulle
   parentesi di opzionalita (`IRepository.js` marca opzionali i campi nullable,
   `types.js` no): non e sul filo, dichiarato nel test S3.
+- Validatore data_specifica contro tipo_frequenza: OrariBulkPayload._validate_bulk
+  (backend/pharmatimer_api/models/orario.py:106) impone che data_specifica sia
+  tutta valorizzata o tutta nulla, ma NON verifica che tipo_frequenza sia
+  'fisso_date' quando e valorizzata. La coerenza fra i due campi non e misurata
+  da alcun validatore backend.
 - `UP042` in ignore in `backend/pyproject.toml`: il Mini gira python 3.13.12,
   misurato; si puo togliere e passare a `StrEnum`, wire-neutro.
 - `src/main.jsx`: il commento di bootstrap promette un passo di seed che il CP4
@@ -263,3 +268,31 @@ notifiche ad app chiusa non si fanno.
     loro token sono validi. Allineare la riga, o dichiarare che quelle tre
     righe sono di prova e restano senza dati clinici. E documento normativo:
     la modifica spetta a te.
+
+20. **Posologia variabile nel tempo per uno stesso farmaco -- vitamina D.**
+    La Spec 10.4 prescrive la modifica manuale di orari_base/dosi "nel tempo".
+    La prescrizione e ATEMPORALE: orari_base non ha colonne di validita (DDL
+    v01_init.sql piu v05_fisso_date.sql: solo data_specifica, data singola).
+    Il piano pero copre [ieri, oggi, domani] (constants.js:9-11) e si ricostruisce
+    per intero dallo stato corrente. Misurato con sonda sulle sedi vere:
+    D1 -- cambiare l'ora riscrive l'ora di una presa gia avvenuta: l'entry di ieri
+          espone la nuova. Spec 3.6 dichiara log_assunzioni.ora_prevista congelato
+          ("orario che ERA programmato"), ma mergeLogIntoEntry (planBuilder.js:80)
+          non lo rilegge. Il DB conserva il vero, la vista no.
+    D2 -- cancellare una riga smaterializza le occorrenze passate: la presa di ieri
+          esce dal piano; planBuilder.js:111 dichiara i log senza entry "silently
+          ignored". Record in DB, presa invisibile.
+    D3 -- sul ramo esteso, cambiare intervallo_ore ri-fasa da data_inizio
+          (extendedFrequency.js:123-130): si spostano anche le occorrenze di ieri.
+    D1, D2 e D3 toccano il record a valle del tocco: sono M3.
+    D4 -- il workaround pulito esiste ed e misurato verde (due record disgiunti,
+          data_fine sul vecchio e data_inizio sul nuovo: copre senza overlap ne
+          buco), ma NON e normato da alcuna sezione di Spec ed e UNIDIREZIONALE:
+          FarmaciTab.jsx:1327 impone data_inizio >= oggi in creazione, quindi un
+          periodo gia trascorso non e ricostruibile a posteriori.
+    Ne fisso_date (max 30 date, nessuna ricorrenza, farmaco mono-tipo per
+    models/orario.py:106) ne la cadenza estesa (un solo intervallo_ore ancorato a
+    data_inizio) coprono il caso. La dose in mg non e un campo: vive in farmaci.nome.
+    DOMANDA A ROBERTO: la via prescritta da 10.4 va tenuta cosi, accettando che
+    D1-D3 riscrivano il passato, o il perimetro della modifica va ridefinito?
+    E il workaround D4 va normato, o resta fuori dalla Spec? Non decisa in sessione.
