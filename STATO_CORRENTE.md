@@ -10,43 +10,43 @@ poi `bash deploy/deploy-mini.sh` dal Terminale.
 
 ---
 
-## Ultima sessione -- S4 chiuso con esito A, piu un controllo non previsto
+## Ultima sessione -- S10 chiuso, criterio soddisfatto, S6-S9 eseguiti
 
-Nessuna riga di codice dell app toccata. Seconda sessione di sola sonda sul
-telefono vero, ripresa dal verbale della prima senza colmare buchi a voce.
+Nessuna riga di codice dell app toccata. Terza sessione di sola sonda sul
+telefono vero, 2026-09-15. Tutto in
+`docs/analisi/promemoria-app-chiusa/sonda-iphone-esiti.md`.
 
-**S4 = A**, su quattro finestre distinte, ciascuna con dieci minuti di telefono
-chiuso e fermo. La norma prescriveva il solo ramo dichiarativo; la ratifica lo
-ha esteso a **entrambi i rami**, perche il dichiarativo non esegue una riga del
-nostro codice e non e il ramo che portera il promemoria. Il risultato che serve
-al design e proprio quello che la norma non chiedeva: **il service worker viene
-svegliato in Low Power Mode e su sola rete cellulare fuori dalla tailnet**, con
-`indexedDB` esposto in tutti e due i casi. Latenze 1,1 s e 2,3 s contro un
-criterio di 60. La deduzione del rapporto :289-293 -- la consegna non passa dal
-tunnel -- e ora esercitata sul telefono.
+**S10 = A.** Digiuno del 5-7 settembre: tre consegne su tre, con il worker
+svegliato ogni volta; il push del 7 e partito alle 14:31:03, a verbale con l
+orario vero. Endpoint identico dal 4 al 12. Il digiuno ha un **testimone
+macchina**: zero `GET /` nel log dell origine sul Mini fra il 4 e l 8, con i
+confini dichiarati (il 5 e il 7 la raggiungibilita non e esercitata).
 
-**S2-bis**, controllo non previsto dal rapporto, nato da un fatto emerso in
-corsa: **l Apple Watch al polso si prende notifica e suono al posto dell
-iPhone**. Il pin e nei due versi e isolato -- al polso suona il Watch, in carica
-suona l iPhone -- e in piu il Low Power Mode non toglie il suono al telefono.
-**Il suono e quello standard delle notifiche, su entrambi i rami**: risponde in
-parte alla domanda aperta della decisione 2, e risponde male.
+**Il criterio di passaggio al codice (`rapporto.md` :860-864) e soddisfatto
+alla lettera**: S2, S4, S10 = A, S5 = A sul dichiarativo, e la clausola *senza
+inspector* come **dichiarazione di Roberto**, che fino a oggi non era a verbale.
+Autorizza la **ratifica** dell opzione A per l iPhone, non il codice: le
+decisioni 2 e 8 restano aperte, e il g06 ha il suo criterio, A3, non eseguito.
 
-**S10 e stato ordinato per ratifica**, perche le sue due meta si ostacolavano:
-digiuno il 5, 6 e 7 settembre con un push alle 14:32 e nessuna apertura,
-riaperture giornaliere dall 8 al 12. Il cancello di S10 si chiude il **12** e
-non il 9: e il prezzo di misurare un digiuno vero invece di uno di ventiquattro
-ore. I tre comandi stanno nel file degli esiti, verificati a vuoto, e li lancia
-Roberto dal Terminale nei giorni senza sessione.
+**S6-S9 sul solo ramo classico**, per ratifica (il dichiarativo e escluso da M3;
+che Topic e TTL valgano uguali li e dedotto, non misurato).
 
-Del criterio di passaggio al codice (`rapporto.md` :860-864) resta scoperto il
-solo **S10**. Restano da eseguire S6 e S7 (modalita aereo, sessione propria),
-S8, S9, S10 e S11. L infrastruttura resta viva fino al ritiro, che e dopo S11 e
-mai prima; la lista di ritiro per esteso ora vive **anche** nel file degli
-esiti, e non solo in `USA-E-GETTA.txt`, che il ritiro stesso cancella.
+- **S6 = A non isolata.** Una voce sola, la piu recente, con lo stesso Topic e,
+  al controllo ratificato, **anche con due Topic diversi**. Il Topic non si puo
+  dire; si e misurato invece che **a telefono offline il primo messaggio in coda
+  si perde**, anche se e di un altra dose. Perimetro: due invii a 6 secondi.
+- **S7 = A.** TTL 60 non consegnato, TTL 0 risponde 201. Il vincolo sul Topic e
+  **rettificato: da 6 a 8 caratteri, gli unici misurati come accettati**; anche
+  5 e rifiutato. L ipotesi 4n+1 base64url e dedotta, non sondata.
+- **S8 = A**, sotto il Focus **Sonno**. Nessun banner ne suono, avviso presente
+  dopo, Suoni e Badge presenti. Il worker e svegliato **durante** il Focus. La
+  sonda non ha una voce *Notifiche urgenti*: **sotto Sonno l avviso e muto**.
+- **S9 = A.** Ad app in primo piano il banner del worker compare **e suona**.
 
-Tutto in `docs/analisi/promemoria-app-chiusa/sonda-iphone-esiti.md`, che porta
-anche i quattro rilievi mossi al verbale precedente e i confini di ogni misura.
+Resta **S11**, in sessione propria con il ritiro. Fatto non sondato che pesa
+su di esso: nell elenco *Aggiungi* di Sonno compaiono **due** voci *Sonda push*,
+sulla Home una sola icona. Un incongruenza di orario in S6 resta non risolta e
+non ne tocca l esito.
 
 ---
 
@@ -197,6 +197,20 @@ toccano:
      telefono, e il Watch di notte puo essere al polso come in carica. Un
      promemoria notturno deve reggere in **entrambe** le configurazioni. Non
      sondato: se un tocco sul Watch svegli il service worker.
+   - **Sotto Focus l avviso e muto.** Misurato il 15 settembre (S8, Sonno):
+     l avviso non e perso, ma non suona ne mostra banner, e la sonda non ha una
+     voce *Notifiche urgenti* per scavalcare il Focus. Con il suono standard di
+     S2-bis e la stessa materia: di notte un avviso muto non difende M1. La
+     conseguenza che il rapporto lega alla B di S8 -- aggiungere PharmaTimer ai
+     Focus in uso -- tocca anche la A.
+   - **In coda si perde il primo messaggio.** Misurato il 15 settembre
+     (controllo di S6): a telefono offline, di due messaggi con Topic diversi
+     arriva il solo piu recente. Tocca l assunto del rapporto (:282, :346) che
+     il Topic come chiave di dose tenga distinti in coda messaggi diversi.
+     Perimetro: due invii a 6 secondi; non misurato a minuti o ore.
+   - **Criterio di passaggio soddisfatto** (`rapporto.md` :860-864), con la
+     clausola *senza inspector* come dichiarazione di Roberto: autorizza la
+     ratifica di A per l iPhone, non il codice.
 3. **CS-5.7, il blocco Centro invii, resta SOSPESA e non abbandonata.** Il suo
    mandato integrale vive nel Changelog archiviato e in `git log`.
 4. **"sonno + 60 = 00:30 dello stesso giorno."** Spec 3.6 :258: `ora_prevista`
@@ -228,7 +242,9 @@ la decisione 2 e "realizzarle".
 10. **Emettitore unico o due sorgenti.** Tenere i timer di pagina accanto al
     push accettando su iPhone un doppio simultaneo ad app aperta; tacerli con
     subscription attiva; o decidere dopo la sonda con un gate sull'ultima
-    pubblicazione riuscita. I tre progettisti divergono.
+    pubblicazione riuscita. I tre progettisti divergono. **S9, misurato il 15
+    settembre:** ad app in primo piano l avviso del worker compare e suona,
+    quindi il doppio simultaneo della prima via e possibile, non ipotetico.
 11. **Ricalcolo D+1 rifiutato dal server:** il push segue il valore del
     server (passato dalla guardia del minimo) o l'ora pubblicata dal telefono
     finche la rilettura non riallinea.
