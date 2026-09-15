@@ -10,43 +10,43 @@ poi `bash deploy/deploy-mini.sh` dal Terminale.
 
 ---
 
-## Ultima sessione -- S10 chiuso, criterio soddisfatto, S6-S9 eseguiti
+## Ultima sessione -- S11, ritiro, campagna chiusa
 
-Nessuna riga di codice dell app toccata. Terza sessione di sola sonda sul
-telefono vero, 2026-09-15. Tutto in
+Nessuna riga di codice dell app toccata. Quarta e ultima sessione di sonda sul
+telefono vero, 2026-09-16. Tutto in
 `docs/analisi/promemoria-app-chiusa/sonda-iphone-esiti.md`.
 
-**S10 = A.** Digiuno del 5-7 settembre: tre consegne su tre, con il worker
-svegliato ogni volta; il push del 7 e partito alle 14:31:03, a verbale con l
-orario vero. Endpoint identico dal 4 al 12. Il digiuno ha un **testimone
-macchina**: zero `GET /` nel log dell origine sul Mini fra il 4 e l 8, con i
-confini dichiarati (il 5 e il 7 la raggiungibilita non e esercitata).
+**Le due voci *Sonda push*: esito U**, misurato PRIMA di S11 perche una seconda
+web clip con registrazione propria sarebbe sopravvissuta al ritiro. Una sola
+clip raggiungibile -- Home, Libreria app e Spotlight concordano -- e la sua
+subscription identica alla base del 4 settembre su endpoint, `p256dh` e `auth`.
+Alla fine, **rimossa la web clip sono sparite entrambe le voci** dall elenco di
+Sonno: dipendevano da essa.
 
-**Il criterio di passaggio al codice (`rapporto.md` :860-864) e soddisfatto
-alla lettera**: S2, S4, S10 = A, S5 = A sul dichiarativo, e la clausola *senza
-inspector* come **dichiarazione di Roberto**, che fino a oggi non era a verbale.
-Autorizza la **ratifica** dell opzione A per l iPhone, non il codice: le
-decisioni 2 e 8 restano aperte, e il g06 ha il suo criterio, A3, non eseguito.
+**S11 = terzo caso, ne A ne B.** Tre invii classici silenziosi (201) svegliano
+il worker tutte e tre le volte senza mostrare nulla; due minuti e mezzo dopo
+`getSubscription()` torna **`null`**, con due testimoni. Il quarto invio,
+visibile per ratifica, risponde pero **201** e non viene consegnato: nessun
+avviso e nessuna voce nel diario. Due cose ne restano misurate:
+**lato telefono la penalita e confermata** -- *mostra sempre* e vincolante -- e
+**un 201 non prova una consegna**, il che e M2 sul canale e pesa sulla
+decisione 2. Quando Apple arrivi a rispondere 410 non e misurato e non lo sara:
+la chiave VAPID non esiste piu.
 
-**S6-S9 sul solo ramo classico**, per ratifica (il dichiarativo e escluso da M3;
-che Topic e TTL valgano uguali li e dedotto, non misurato).
+**Ritiro eseguito**, nell ordine, con fotografia prima e dopo a ogni passo:
+LaunchAgent `local.sondapush` scaricato e plist rimosso, `serve --https=8443
+off`, `tcp:8443` tolto dalla prima grant in console da Roberto, le due sedi dei
+file cancellate. Verifica finale nei due versi: la 8443 va in timeout dove a
+inizio sessione rispondeva 200, la 443 di produzione risponde 200 con `db
+reachable`, `serve` porta il solo `/ proxy http://localhost:8000`, e il filtro
+compilato sul Mini torna a 443 e 8000 senza 8443. Nessun processo, nessun
+ascolto sulla 8788, nessun file nelle due sedi.
 
-- **S6 = A non isolata.** Una voce sola, la piu recente, con lo stesso Topic e,
-  al controllo ratificato, **anche con due Topic diversi**. Il Topic non si puo
-  dire; si e misurato invece che **a telefono offline il primo messaggio in coda
-  si perde**, anche se e di un altra dose. Perimetro: due invii a 6 secondi.
-- **S7 = A.** TTL 60 non consegnato, TTL 0 risponde 201. Il vincolo sul Topic e
-  **rettificato: da 6 a 8 caratteri, gli unici misurati come accettati**; anche
-  5 e rifiutato. L ipotesi 4n+1 base64url e dedotta, non sondata.
-- **S8 = A**, sotto il Focus **Sonno**. Nessun banner ne suono, avviso presente
-  dopo, Suoni e Badge presenti. Il worker e svegliato **durante** il Focus. La
-  sonda non ha una voce *Notifiche urgenti*: **sotto Sonno l avviso e muto**.
-- **S9 = A.** Ad app in primo piano il banner del worker compare **e suona**.
-
-Resta **S11**, in sessione propria con il ritiro. Fatto non sondato che pesa
-su di esso: nell elenco *Aggiungi* di Sonno compaiono **due** voci *Sonda push*,
-sulla Home una sola icona. Un incongruenza di orario in S6 resta non risolta e
-non ne tocca l esito.
+**La campagna del ramo iPhone e chiusa**: undici passi, dieci A e un terzo caso,
+e nulla di essa e piu ripetibile. Il criterio di passaggio al codice resta
+soddisfatto alla lettera e autorizza la **ratifica** di A per l iPhone, non il
+codice: le decisioni 2 e 8 restano aperte, e il g06 ha il suo criterio, A3, non
+eseguito.
 
 ---
 

@@ -10,6 +10,13 @@ Telefono: iPhone 15 Pro Max, iOS 26.6.1, nodo di tailnet `100.95.100.6`,
 Il rapporto e la fonte che norma i passi e i loro esiti; qui si registra solo
 cio che e stato misurato. Il rapporto non si riscrive con i propri esiti.
 
+**Il materiale e stato ritirato il 2026-09-16**, dopo S11: vedi *Ritiro --
+eseguito*. Le sezioni *Come si riprende, da una sessione nuova* e *Ritiro --
+dopo S11 e mai prima* nominano origine, strumenti, chiave e comandi che non
+esistono piu. Restano come furono scritte, perche sono il verbale di allora e
+riscriverle sarebbe M3 applicato al record: si leggono come storia, non come
+istruzioni eseguibili.
+
 ---
 
 ## Infrastruttura della sonda
@@ -51,6 +58,7 @@ rossa** rimuovendola: senza, la chiave privata VAPID esce con 200 e 241 byte.
 | **S8** | **A** | Sotto Sonno nessun banner ne suono, avviso presente dopo la fine, Suoni e Badge presenti. Il worker e svegliato durante il Focus. Vedi *S8 -- esito*. |
 | **S9** | **A** | Ad app in primo piano il banner del worker compare sopra la web app, con suono. Vedi *S9 -- esito*. |
 | **S10** | **A** | Endpoint identico dal 4 al 12 settembre; tre consegne su tre nel digiuno del 5-7, ad app mai aperta. Vedi *S10 -- verdetto*. |
+| **S11** | **terzo caso** | Tre invii silenziosi consegnati al worker, poi `getSubscription()` null; il quarto invio, visibile, risponde **201** e non e consegnato. Ne A ne B. Vedi *S11 -- esito*. |
 
 ### S1 -- il vincolo standalone regge ancora su iOS 26
 
@@ -1255,28 +1263,258 @@ Impostazioni > Notifiche > Sonda push, screenshot; web app aperta dall icona,
 
 ---
 
+## Le due voci *Sonda push* -- sonda prima di S11, 2026-09-16: **U**
+
+Posta prima di S11 per un motivo di ordine: se una seconda web clip tenesse una
+registrazione propria, S11 non la distruggerebbe e il ritiro la lascerebbe viva.
+Sola lettura sul telefono, eseguita da Roberto. Stato del telefono, tenuto
+identico fino alla fine di S11: Tailscale acceso, Wi-Fi acceso, aereo spento,
+nessun Focus, Watch in carica.
+
+Esiti, dichiarati prima:
+
+- **U** -- Home, Libreria app e Spotlight concordano su **una** web clip, e la
+  sua `getSubscription()` torna endpoint, `p256dh` e `auth` identici a
+  `out/sub-iphone.json`. S11 procede.
+- **F** -- piu di una web clip raggiungibile; `getSubscription()` da ciascuna.
+  Stesso endpoint: registrazione condivisa. `null`: nessuna subscription
+  propria. Endpoint diverso: ci si ferma e si ratifica prima di S11.
+- **Terzo caso** -- la clip unica torna `null` o un endpoint diverso: ci si
+  ferma.
+
+Confini dichiarati prima: U **non esclude** una clip fantasma irraggiungibile,
+distingue solo una seconda apribile; aprire una clip mai aperta **registra** il
+service worker (`index.html`, in coda), ma non crea una subscription, che nasce
+solo dai pulsanti S1.
+
+Misurato, 2026-09-16:
+
+    Home, tutte le pagine            una icona Sonda push
+    Libreria app, ricerca Sonda      una voce
+    Spotlight, Sonda push            una voce
+    Sonno > App consentite > Aggiungi  due voci, stessa icona blu e stesso nome,
+                                     consecutive (screenshot)
+    pagina aperta dall icona         00:17:06.106  standalone=true  permesso=granted
+    getSubscription                  00:17:27.515  presente
+
+Confronto sullo Studio del JSON copiato con `out/sub-iphone.json`: endpoint,
+`p256dh` e `auth` **tutti e tre identici**. Le chiavi non sono trascritte.
+
+**Esito U.** La seconda voce di Sonno resta **non spiegata**: identica alla
+prima nell elenco, e senza un oggetto raggiungibile che le corrisponda.
+
+**Deduzione, non misura.** Una subscription creata con questa
+`applicationServerKey` accetta invii solo firmati con la privata VAPID (RFC
+8292), e il suo endpoint non e noto a nessuno. Distrutte le due sedi della
+chiave, una subscription fantasma, se esistesse, resterebbe viva presso Apple
+ma non indirizzabile da alcuno.
+
+**Diario prima di S11**, letto nella stessa apertura: **13 `PUSH`**, l ultima
+`S9` (arrivo 2026-09-15 23:34:42.764), **4 `TOCCO`**, **zero voci silenziose**.
+Coincide con l atteso dichiarato prima della lettura: 16 invii classici a 201
+in `out/invii.tsv`, meno i tre persi a verbale (`S6-1`, `S6c-1`, `S7-t60`).
+
+---
+
+## S11 -- scheda, scritta prima dell atto
+
+FONTE, `rapporto.md` :804-807: *"S11 Per ultimo, distrugge la subscription:
+tre invii classici con SW che non mostra nulla; poi `getSubscription()`. A:
+null e 410 al quarto invio: penalita confermata, "mostra sempre" e vincolante.
+B: sopravvive. Poi rimozione della web clip: 410 subito o dopo riavvio."*
+
+Il silenzio e gia nello strumento: `invia.py --silenzioso` mette
+`"silenzioso": true` nel payload, e `sw.js` scrive la voce nel diario con
+`(silenzioso: nessuna notifica)` senza chiamare `showNotification`.
+
+### Ratifica 1 del 2026-09-16 -- il quarto invio e visibile
+
+La norma non dice se il quarto invio sia silenzioso. **Ratificato: classico
+visibile**, Topic `s11-vis4`. Un quarto silenzioso sarebbe una quarta
+penalita: una revoca nata da lui non la vedrebbe la `getSubscription()` letta
+prima, e le due meta della A misurerebbero due stati diversi. Sotto B il
+visibile lascia avviso e voce nel diario, testimoni della consegna oltre il
+201. Scartato a verbale: il quarto silenzioso.
+
+### Ratifica 2 del 2026-09-16 -- la coda della norma, sotto B
+
+*Poi rimozione della web clip: 410 subito o dopo riavvio* chiede `invia.py` e
+la chiave VAPID, che il ritiro distrugge. **Ratificato: sotto B la coda si
+esegue PRIMA del ritiro** -- rimozione della web clip, quinto invio, riavvio e
+sesto solo se serve. Sotto A e nel terzo caso l ordine del ritiro resta quello
+di Roberto. Scartato a verbale: la coda dichiarata non eseguita.
+
+### Liturgia ed esiti
+
+Tre invii silenziosi `S11-s1`, `S11-s2`, `S11-s3`, Topic `s11-sil1`,
+`s11-sil2`, `s11-sil3` (8 caratteri), TTL 3600, Urgency high, a web app chiusa
+dall app switcher e telefono bloccato; lettura del lock screen; web app aperta
+dall icona, *Aggiorna diario*, `getSubscription()`; web app richiusa e telefono
+bloccato; quarto invio `S11-v4`.
+
+- **A** -- `getSubscription -> null` **e** quarto invio **410**.
+- **B** -- subscription presente con endpoint identico **e** quarto invio
+  **201**.
+- **Terzo caso** -- `null` con 201; presente con 410; endpoint diverso. Si
+  riporta e non si assegna esito.
+- **Meno di tre voci silenziose** nel diario: penalita non esercitata per
+  intero, ne A ne B attribuibili ai tre invii.
+- **410 al secondo o al terzo invio silenzioso**: ci si ferma e si riporta.
+- Altro non-201: si ripete quell invio.
+- **Dato in piu** -- un avviso generato dal sistema dopo un invio silenzioso.
+
+---
+
+## S11 -- esito: **terzo caso**
+
+Trascritto da `out/invii.tsv` prima del ritiro, che lo distrugge:
+
+    telefono bloccato, web app chiusa        00:32          riferito da Roberto
+    S11-s1  topic s11-sil1  silenzioso       00:32:06       201  apns-id D8C5B658-92E7-3E1B-A151-C5360CCECC31
+    S11-s2  topic s11-sil2  silenzioso       00:32:13       201  apns-id 0D06ADEA-C868-F272-68E6-DF1A20A689CE
+    S11-s3  topic s11-sil3  silenzioso       00:32:19       201  apns-id FCF299D4-BEC9-52C2-D462-9EE9F965FE0E
+    arrivo S11-s1, scritto dal worker        00:32:07.489   (silenzioso: nessuna notifica)
+    arrivo S11-s2, scritto dal worker        00:32:13.942   (silenzioso: nessuna notifica)
+    arrivo S11-s3, scritto dal worker        00:32:20.078   (silenzioso: nessuna notifica)
+    lock screen                              00:34          nulla, riferito
+    pagina aperta dall icona                 00:34:36.285
+    getSubscription                          00:34:48.729   null   -- JSON "(nessuna)"
+    web app richiusa, telefono bloccato      00:42          riferito da Roberto
+    S11-v4  topic s11-vis4  visibile         00:42:23       201  apns-id 4B9AAB12-3FDA-F8E0-498D-3AF3CD284AF8
+    Centro Notifiche, telefono sbloccato     dopo le 00:42  nessun avviso nuovo; il solo Sonda S9 delle 23:34
+    pagina aperta dall icona, diario         00:51:41.676   16 PUSH, 4 TOCCO, nessuna voce S11-v4
+
+Tutte le date sono 2026-09-16.
+
+**Tre voci silenziose su tre**: la penalita e esercitata per intero, con il
+worker svegliato ogni volta, latenze ~0,9-1,5 s come limite superiore.
+
+**`null` ha due testimoni.** La riga `getSubscription -> null` del diario
+locale, e `(nessuna)` nel riquadro JSON, che `index.html` scrive in una sola
+via: `mostraSubscription(null)` dopo `getSubscription()`. Le altre uscite del
+pulsante lasciano il riquadro vuoto, e i pulsanti S1 non passano mai `null`.
+Nessuna riga della pagina chiama `unsubscribe`.
+
+**Il quarto invio risponde 201 ed e il terzo caso dichiarato.** A e B
+pretendono entrambe una coerenza fra telefono e push service che qui manca: il
+telefono dice subscription morta, `web.push.apple.com` dieci minuti dopo
+accetta.
+
+**Lettura del diario dopo il terzo caso, ratificata (A).** Esiti dichiarati
+prima: voce `S11-v4` senza `(silenzioso)` -- worker svegliato, avviso non
+mostrato; **nessuna voce** -- accettato e non consegnato. `sw.js` scrive la voce
+PRIMA di `showNotification`, quindi i due esiti si distinguono per costruzione.
+**Misurato: nessuna voce.** Apple ha accettato il quarto invio e non lo ha
+consegnato al telefono.
+
+**Nessun avviso di sistema dopo gli invii silenziosi.** Il lock screen delle
+00:34 non e un testimone: Roberto riferisce che a telefono bloccato non mostra
+avvisi. Lo e invece il Centro Notifiche guardato dopo le 00:42 a telefono
+sbloccato, che porta il solo *Sonda S9*.
+
+### Cosa misura, fuori da A e B
+
+- **Lato telefono la penalita e confermata**: tre push classici senza
+  notifica, e la subscription e `null` due minuti e mezzo dopo il terzo. La
+  conseguenza che la norma lega alla A -- *mostra sempre e vincolante* -- regge
+  su questa meta sola, perche e la meta che estingue il canale.
+- **Un 201 non prova una consegna.** Dieci minuti dopo la revoca il push service
+  accetta e scarta, senza un 410. Un emettitore che conti sul 410 per
+  accorgersi di una subscription morta, almeno in quella finestra, crede di
+  consegnare e non consegna: e **M2** sul canale, e pesa sulla decisione 2.
+
+### Confini
+
+- **Quando Apple risponda 410, se mai**, non e misurato. Per ratifica 2 il
+  terzo caso non prevede altri invii, e il ritiro distrugge la chiave: dopo di
+  esso non e piu misurabile.
+- **Quale dei tre invii abbia fatto scattare la revoca non e isolato.** `S11-s2`
+  e `S11-s3` sono stati consegnati, quindi la subscription recapitava ancora
+  alle 00:32:20; alle 00:34:48 era `null`. Compatibile con una soglia di tre;
+  una soglia di due con il terzo gia in volo **non e esclusa**. Dedotto.
+- **Invii a 6-7 secondi l uno dall altro**: una penalita che dipenda dalla
+  cadenza non e esercitata.
+- La **coda della norma** -- rimozione della web clip, 410 subito o dopo
+  riavvio -- valeva sotto B e non si esegue. La riga *NON MISURATO* del ritiro
+  sul telefono resta tale.
+
+---
+
+## Ritiro -- eseguito il 2026-09-16
+
+Eseguito dopo il verbale di S11 e mai prima, nell ordine della lista qui sopra.
+Ogni passo misurato PRIMA e DOPO. Mai `tailscale serve reset`.
+
+**Fotografia prima.** `serve`: TCP 443 verso `http://localhost:8000` e TCP 8443
+verso `http://127.0.0.1:8788`. Filtro compilato (`tailscale debug netmap` sul
+Mini): **una** regola, sei sorgenti fra IPv4 e IPv6, destinazioni sulle porte
+**443, 8000 e 8443**. `local.sondapush` `state = running`, pid 45707, in
+ascolto su `127.0.0.1:8788`.
+
+    launchctl bootout gui/501/local.sondapush        exit 0
+    rm -f ~/Library/LaunchAgents/local.sondapush.plist  exit 0
+    launchctl print gui/501/local.sondapush          exit 113, non piu caricato
+    Tailscale serve --https=8443 off                 exit 0
+    ssh mini rm -rf ~/sonda-push-iphone              exit 0
+    rm -rf ~/Sviluppo/sonda-push-iphone              exit 0
+
+**In console**, eseguito da Roberto: `tcp:8443` tolto dalla prima grant, che
+torna a `ip ["tcp:443", "tcp:8000"]`. La seconda grant non e stata toccata.
+
+**Fotografia dopo.** `serve`: il **solo** TCP 443 verso `http://localhost:8000`,
+voce identica a prima. Filtro: una regola, le stesse sei sorgenti, porte **443 e
+8000**, senza 8443 su nessuna delle due famiglie di indirizzi.
+
+**Verifica finale, nei due versi.**
+
+    8443 dallo Studio        timeout dopo 15 s      (rispondeva 200 a inizio sessione)
+    443 /api/health          200  status ok, db reachable
+    serve status             / proxy http://localhost:8000, e nient altro
+    pgrep servi.py           nessun processo
+    lsof TCP:8788            nessun ascolto
+    plist e le due sedi      inesistenti
+    launchctl list | sonda   nessuna voce
+
+**Sul telefono**, eseguito da Roberto: web clip rimossa dalla Home. **Misura in
+piu, con i due esiti dichiarati prima:** dopo la rimozione, in Sonno > App
+consentite > Aggiungi **sono sparite entrambe** le voci *Sonda push*. Le due
+voci dipendevano dunque dalla web clip. La riga *NON MISURATO* della lista di
+ritiro resta invece aperta per la sua parte vera, il lato Apple: se la rimozione
+estingua la subscription presso il push service non e misurato, e S11 lo ha gia
+resa non misurabile -- alle 00:34 la subscription era gia `null` sul telefono, e
+la chiave VAPID non esiste piu.
+
+**Cosa NON e stato toccato:** la 443 di produzione, la seconda grant, il venv e
+il servizio di PharmaTimer sul Mini, e ogni altra cosa fuori dalla sonda.
+
+---
+
 ## Cosa resta aperto
 
-**S10 e chiuso con esito A** il 2026-09-12, verbalizzato il 2026-09-15. Il
-criterio di passaggio al codice (`rapporto.md` :860-864) e **soddisfatto alla
-lettera**, con la clausola *senza inspector* come dichiarazione di Roberto:
-vedi *Criterio di passaggio*.
+**La campagna del ramo iPhone e CHIUSA**, e il materiale e ritirato. Undici
+passi eseguiti: S0-S5 e S2-bis il 2026-09-04, S10 dal 5 al 12, S6-S9 il 15,
+S11 il 16. Dieci con esito A, **S11 terzo caso**. Nulla di questa sonda e piu
+ripetibile: origine, strumenti e chiave VAPID non esistono piu, e la
+subscription e morta.
 
-**S6, S7, S8 e S9 eseguiti il 2026-09-15**, sul solo ramo classico per
-ratifica: S6 **A non isolata**, S7 **A**, S8 **A**, S9 **A**. Resta **S11**,
-per ultimo perche distrugge la subscription, in sessione propria con il ritiro.
-Prima di S11 va tenuto conto delle **due voci *Sonda push*** nell elenco di
-Sonno: la rimozione della web clip, al singolare nella norma e nella lista di
-ritiro, potrebbe non estinguerle entrambe.
+**Il criterio di passaggio al codice** (`rapporto.md` :860-864) resta
+**soddisfatto alla lettera** -- S2, S4, S10 = A, S5 = A sul dichiarativo, la
+clausola *senza inspector* come dichiarazione di Roberto. S11 non e nel
+criterio e non lo riapre: autorizza la **ratifica** di A per l iPhone, non il
+codice. Restano di Roberto le decisioni 2 e 8 dello STATO, e il g06 ha il suo
+criterio, A3, non eseguito.
 
-Tre fatti di oggi che pesano sul design, e non sono decisioni:
+Quattro fatti misurati che pesano sul design, e non sono decisioni:
 
 - **a telefono offline, di due messaggi in coda con Topic diversi arriva il
   solo piu recente** (controllo di S6), nel perimetro di due invii a 6 secondi;
   non misurato a minuti o ore di distanza;
 - **sotto Sonno l avviso non e perso ma e muto**, e la sonda non ha una voce
   *Notifiche urgenti* (S8);
-- **ad app aperta l avviso del worker compare e suona** (S9).
+- **ad app aperta l avviso del worker compare e suona** (S9);
+- **tre push classici senza notifica estinguono la subscription sul telefono, e
+  un 201 non prova una consegna** (S11): dieci minuti dopo la revoca il push
+  service accetta ancora e scarta, senza 410.
 
 Fatto non sondato: il log dell origine sul Mini porta una riga di avvio di
 `servi.py` dopo il `14/Sep/2026 16:32:09`, cioe un riavvio del processo senza
