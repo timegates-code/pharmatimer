@@ -10,43 +10,32 @@ poi `bash deploy/deploy-mini.sh` dal Terminale.
 
 ---
 
-## Ultima sessione -- S11, ritiro, campagna chiusa
+## Ultima sessione -- ratifica delle decisioni 2 e 8, 2026-09-17
 
-Nessuna riga di codice dell app toccata. Quarta e ultima sessione di sonda sul
-telefono vero, 2026-09-16. Tutto in
-`docs/analisi/promemoria-app-chiusa/sonda-iphone-esiti.md`.
+Nessuna riga di codice toccata: il prodotto resta invariato per costruzione
+e il commit porta il solo registro. Fonti lette per intero: `rapporto.md`,
+`sonda-iphone-esiti.md` e questo STATO.
 
-**Le due voci *Sonda push*: esito U**, misurato PRIMA di S11 perche una seconda
-web clip con registrazione propria sarebbe sopravvissuta al ritiro. Una sola
-clip raggiungibile -- Home, Libreria app e Spotlight concordano -- e la sua
-subscription identica alla base del 4 settembre su endpoint, `p256dh` e `auth`.
-Alla fine, **rimossa la web clip sono sparite entrambe le voci** dall elenco di
-Sonno: dipendevano da essa.
+**Decisione 2, DECISA W.** Le notifiche ad app chiusa si realizzano via Web
+Push, come PROMEMORIA DIURNO dichiarato in README e Spec 6 nel commit che
+introduce il canale. La domanda clinica e a verbale nella voce: con le
+evidenze che ci sono nessuna via Web Push di iOS sveglia un paziente di
+notte, e le dosi nella finestra di sonno non sono un requisito oggi; la 19
+puo portarle, e allora D si apre come decisione nuova con la sua sonda.
+Misurato sul rapporto: il lavoro di A non avvicina D, il riuso del
+calendario e dichiarato per la sola C (:571).
 
-**S11 = terzo caso, ne A ne B.** Tre invii classici silenziosi (201) svegliano
-il worker tutte e tre le volte senza mostrare nulla; due minuti e mezzo dopo
-`getSubscription()` torna **`null`**, con due testimoni. Il quarto invio,
-visibile per ratifica, risponde pero **201** e non viene consegnato: nessun
-avviso e nessuna voce nel diario. Due cose ne restano misurate:
-**lato telefono la penalita e confermata** -- *mostra sempre* e vincolante -- e
-**un 201 non prova una consegna**, il che e M2 sul canale e pesa sulla
-decisione 2. Quando Apple arrivi a rispondere 410 non e misurato e non lo sara:
-la chiave VAPID non esiste piu.
+**Decisione 8, DECISA A.** Calendario pubblicato dal telefono, una sola
+verita del piano. "Giorni senza aprire l app" non e un requisito oggi; se la
+19 lo porta si riapre prima la 12 e B solo dopo. Due vincoli di design a
+verbale, ereditati da 9-17: rilettura del log al fuoco, e calendario per
+istante effettivo e mai per `dateStr`.
 
-**Ritiro eseguito**, nell ordine, con fotografia prima e dopo a ogni passo:
-LaunchAgent `local.sondapush` scaricato e plist rimosso, `serve --https=8443
-off`, `tcp:8443` tolto dalla prima grant in console da Roberto, le due sedi dei
-file cancellate. Verifica finale nei due versi: la 8443 va in timeout dove a
-inizio sessione rispondeva 200, la 443 di produzione risponde 200 con `db
-reachable`, `serve` porta il solo `/ proxy http://localhost:8000`, e il filtro
-compilato sul Mini torna a 443 e 8000 senza 8443. Nessun processo, nessun
-ascolto sulla 8788, nessun file nelle due sedi.
-
-**La campagna del ramo iPhone e chiusa**: undici passi, dieci A e un terzo caso,
-e nulla di essa e piu ripetibile. Il criterio di passaggio al codice resta
-soddisfatto alla lettera e autorizza la **ratifica** di A per l iPhone, non il
-codice: le decisioni 2 e 8 restano aperte, e il g06 ha il suo criterio, A3, non
-eseguito.
+**Cosa resta.** Le decisioni 9-17 sono vive e vanno in sessione propria,
+nell ordine della 17. La 18 e fissata in forma (b) o (c) dalla lettera W:
+la forma resta da scegliere. Il g06 ha il suo criterio, A3, non eseguito.
+La coda di rimedio non cambia. Il verbale della campagna iPhone, S11
+compreso, sta in `sonda-iphone-esiti.md` e in git (`c4a6c1d`).
 
 ---
 
@@ -181,36 +170,68 @@ toccano:
    reinstallato il pacchetto; il **venv** e stato aggiornato, non ricostruito.
    Se per FATTO basta il codice, e chiusa; se serve anche il venv da zero,
    resta aperta con quel solo perimetro.
-2. **Le notifiche ad app chiusa: realizzarle o no, e per quale via.** Il
-   README non le promette piu; la funzione non esiste. Il rapporto in
-   `docs/analisi/promemoria-app-chiusa/` porta quattro opzioni e le scartate;
-   le sue dieci decisioni sono le voci 8-17 qui sotto. Il primo passo
-   proposto da tutti e tre i progettisti e una sessione di sola sonda sul
-   telefono vero, senza codice nel repo.
-   - **Suono e superficie.** Misurato il 4 settembre: il suono di default e
-     quello **standard** delle notifiche su ENTRAMBI i rami, quindi non
-     discrimina fra dichiarativo e classico come si temeva. Non e stata
-     tentata alcuna opzione di suono, quindi resta non misurato se una via per
-     cambiarlo esista. Per una sveglia notturna M1 resta scoperto: un avviso
-     che suona come ogni altro non sveglia. Si aggiunge una dimensione nuova,
-     la **superficie**: con l Apple Watch al polso suonano il Watch e non il
-     telefono, e il Watch di notte puo essere al polso come in carica. Un
-     promemoria notturno deve reggere in **entrambe** le configurazioni. Non
-     sondato: se un tocco sul Watch svegli il service worker.
-   - **Sotto Focus l avviso e muto.** Misurato il 15 settembre (S8, Sonno):
-     l avviso non e perso, ma non suona ne mostra banner, e la sonda non ha una
-     voce *Notifiche urgenti* per scavalcare il Focus. Con il suono standard di
-     S2-bis e la stessa materia: di notte un avviso muto non difende M1. La
-     conseguenza che il rapporto lega alla B di S8 -- aggiungere PharmaTimer ai
-     Focus in uso -- tocca anche la A.
-   - **In coda si perde il primo messaggio.** Misurato il 15 settembre
-     (controllo di S6): a telefono offline, di due messaggi con Topic diversi
-     arriva il solo piu recente. Tocca l assunto del rapporto (:282, :346) che
-     il Topic come chiave di dose tenga distinti in coda messaggi diversi.
-     Perimetro: due invii a 6 secondi; non misurato a minuti o ore.
-   - **Criterio di passaggio soddisfatto** (`rapporto.md` :860-864), con la
-     clausola *senza inspector* come dichiarazione di Roberto: autorizza la
-     ratifica di A per l iPhone, non il codice.
+2. **Le notifiche ad app chiusa: DECISA il 2026-09-17, lettera W.** Si
+   realizzano via Web Push, ramo A o B secondo la decisione 8. Il canale
+   nasce come **PROMEMORIA DIURNO** e lo dichiara in README e in Spec 6 nel
+   commit che lo introduce (regola critica 3). Fonti della ratifica:
+   `rapporto.md` :380-733, `sonda-iphone-esiti.md` per intero (sotto,
+   esiti), e la campagna in git da `ca2f581` a `c4a6c1d`.
+   - **La notte.** Le dosi nella finestra di sonno NON sono un requisito
+     oggi. Non e escluso che lo diventino con la terapia vera (decisione
+     19). Se la 19 le porta, D si apre come decisione nuova con la sua
+     sonda (D1-D3, `rapporto.md` :848-858). Il lavoro di A non la avvicina
+     e lo si sa: il rapporto dichiara il riuso del calendario di A per la
+     sola C (:571) e descrive D come un adapter in `notifications.js` sugli
+     stessi otto punti di oggi (:616-633), con il server e il Web Push di A
+     dichiarati inutili a D (:623, :660-661).
+   - **La domanda clinica, a verbale.** Perche un paziente si svegli, un
+     promemoria deve suonare sulla superficie in uso quella notte, suonare
+     da sveglia e non da notifica, passare il Focus Sonno e arrivare
+     davvero. Con le evidenze che ci sono nessuna via Web Push di iOS lo fa,
+     per proprieta di iOS e del push service e non del nostro codice: il
+     suono e quello standard e non lo scegliamo noi (S2-bis, esiti
+     :450-460; `rapporto.md` :189; Spec 6.1 :550 prescrive proprio il beep
+     standard); sotto Sonno l avviso arriva ma e muto, senza voce Notifiche
+     urgenti (S8, esiti :1153-1195); a telefono offline il primo messaggio
+     in coda si perde anche con Topic diversi (controllo di S6, esiti
+     :973-1007, perimetro due invii a 6 s); un 201 non prova una consegna
+     (S11, esiti :1398-1424). Solo D le regge, per costruzione e non per
+     misura.
+   - **Le quattro evidenze sotto W.** Suono: limite, di giorno. Focus:
+     limite; il solo rimedio e lato telefono, la web app fra le app
+     consentite dei Focus in uso, e che il suono torni non e misurato.
+     Coda: limite con contenimento, TTL pari alla tolleranza (decisione
+     16); una perdita e un invito mancato, mai un record, e il server non
+     la vede. 201: limite con contenimento, mai un push senza notifica
+     visibile (da pinnare nei due versi), `getSubscription()` a ogni
+     apertura; il server non distingue consegnato da scartato.
+   - **Vincoli che la lettera porta.** Il ramo dichiarativo e escluso per
+     M3 (esiti :125-154). Il registro del canale chiama "accettato" un 201
+     e "consegnato" solo un arrivo scritto dal worker. README dichiara che
+     una subscription morta si scopre all apertura successiva. Le tre
+     condizioni del rapporto :502-505: rollover chiuso (`ccce837`), la 18
+     in forma (b) o (c), la riga in `vite.config.js` (decisione 14).
+   - **Sicura sotto M1 e M3** come promemoria diurno, con i limiti sopra:
+     nessuna via di scrittura nuova, record non toccato, testo che non
+     asserisce lo stato (I1-I3, `rapporto.md` :34-50). Il g06 resta fuori:
+     A3 non eseguita.
+   - **Scartate, a verbale.** N, proposta per prima e non scelta: con la
+     notte fuori dal requisito il suo movente cade, e il bisogno ad app
+     chiusa del pilota e reale (`rapporto.md` :151-153). C e D: senza
+     misura (C1-C2 e D1-D3 mai eseguite), restano riserve con sonda
+     propria. Il dichiarativo come portatore (M3, misurato). Re-push,
+     escalation, sveglia a ripetizione via push (M1; e sotto Sonno resta
+     muto, in coda sopravvive solo l ultimo). Testo che asserisce lo stato
+     (M1). Materializzare le previste (M3). Bottone Presa nella notifica
+     (M2, M3). Push silenziosi (M2 sul canale: tre estinguono la
+     subscription, S11). Contare sul 410, o scrivere "consegnato" su un 201
+     (M2 sul canale, M3 sul registro del canale). Affidare al Topic la
+     distinzione in coda di dosi diverse (S6). Sopprimere per dato mancante
+     (fail-safe rovesciato). Motore server sulla sola etichetta di
+     `orari_base` (M1). Pushover emergency o in parallelo (M1, M3).
+     Calendario webcal con VALARM (M1). App terze in parallelo (M1).
+     Spegnere i timer di pagina senza esclusione e materia della 10; B come
+     emettitore prima di A e materia della 8.
 3. **CS-5.7, il blocco Centro invii, resta SOSPESA e non abbandonata.** Il suo
    mandato integrale vive nel Changelog archiviato e in `git log`.
 4. **"sonno + 60 = 00:30 dello stesso giorno."** Spec 3.6 :258: `ora_prevista`
@@ -228,13 +249,53 @@ toccano:
    dichiarato, non da risolvere ora. Entra nell'opzione B del rapporto, non
    nelle altre.
 
-Le dieci che seguono vengono dalla sezione 10 del rapporto e valgono solo se
-la decisione 2 e "realizzarle".
+Le dieci che seguono vengono dalla sezione 10 del rapporto. La decisione 2 e
+decisa W, quindi valgono.
 
-8. **Il bivio DESIGN-B.** Calendario pubblicato dal telefono (A) contro
-   motore sul Mini (B). I tre progettisti concordano su A per la verita unica
-   del piano; B solo se "avvisi anche dopo giorni senza aprire l'app" viene
-   ratificato come requisito clinico, non misurato per il pilota.
+8. **Il bivio DESIGN-B: DECISO il 2026-09-17, lettera A.** Calendario
+   pubblicato dal telefono. Il Mini non calcola mai un orario: glielo dice il
+   telefono, che gia costruisce il piano e pubblica il calendario risolto
+   (chiave dose, istante, titolo, corpo), e all istante del fuoco il
+   pianificatore rilegge il log. Fonti: `rapporto.md` :386-565, :707-711 e
+   :929-932; Spec :468, :1068 e :1070; esiti :671-775 (S10).
+   - **Movente.** Una sola verita del piano: Spec 14.1(a) :1068 e 14.1(b)
+     :1070 la vogliono alla lettera, e l opzione G di 4.8 :468 e rispettata
+     per costruzione. Senza un secondo motore il server non puo anticipare
+     un orario, e il rischio M1 proprio di B non esiste; resta il
+     promemoria stantio, contenuto da TTL, testo I1 e rilettura del log al
+     fuoco. Fuso e DST sono quelli del telefono, la 7 non entra. Cinque
+     farmaci su sette del pilota stanno nei rami esteso e `fisso_date`
+     (`rapporto.md` :119-121), i piu delicati di un port. I tre progettisti
+     concordano (:929-932). Costo 6-10 sessioni contro 10-15 piu la
+     manutenzione doppia perpetua. Le quattro evidenze della 2 sono
+     identiche in A e in B: B non ne migliorava nessuna. Nessuna deviazione
+     da Spec: il commit del canale chiude il bivio sul ramo che 14.1(b) gia
+     preferisce, senza numero s.6.NN.
+   - **Giorni senza aprire l app.** Non un requisito oggi: il pilota apre
+     l app a ogni presa (`rapporto.md` :560) e S10 misura il canale su un
+     digiuno di tre giorni. La 19 puo portarlo; allora si riapre prima la
+     12, orizzonte piu lungo sotto A, e B solo dopo. Fino all orizzonte il
+     digiuno e coperto; oltre, il server lo dice e non tace (:499-500).
+   - **Vincoli del design, che le decisioni 9-17 ereditano.** Il
+     pianificatore rilegge il log all istante del fuoco e non invia su
+     presa, saltata o sospesa; nessuna riga = invia (fail-safe); il pin va
+     visto rosso nei due versi (`rapporto.md` :916-919). Il calendario si
+     costruisce per istante effettivo su tutto l orizzonte, mai per
+     `dateStr === oggi`, cosi la dose di ieri ricalcolata a oggi entra
+     (:428-431). Le tre condizioni della lettera W valgono anche qui.
+   - **Scartate, a verbale.** B: sicura solo alle tre condizioni di
+     :562-565 (profilo al server, purge delle orfane, vettori d oro rossi
+     in entrambe le suite) e con un rischio M1 suo, l avviso anticipato dal
+     motore divergente (:543-548); il suo unico movente, l orizzonte
+     illimitato, oggi non e un requisito. Motore server sulla sola
+     etichetta `orari_base.ora_prevista`, o B a profilo assente (M1,
+     :707-711, :527-528). B senza purge delle orfane (M1, decisione 18),
+     esclusa per costruzione dalla W. B senza vettori d oro (M1). Motore
+     server che scrive le occorrenze in `log_assunzioni` (M3, Spec :1070,
+     :682-685). A e B insieme come due emettitori, o B prima di A (M1: due
+     orari per la stessa dose, :564-565). A senza rilettura del log al
+     fuoco (M1) e A per `dateStr` invece che per istante effettivo (M2 sul
+     canale): non scartate secche, restano come vincoli qui sopra.
 9. **Q9=A da riaprire per lettera.** APScheduler dentro FastAPI (ratifica di
    maggio 2026, mai eseguita) contro un LaunchAgent separato; i tre
    concordano sul LaunchAgent, divergono fra passata a intervallo e processo
