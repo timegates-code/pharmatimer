@@ -10,147 +10,142 @@ poi `bash deploy/deploy-mini.sh` dal Terminale.
 
 ---
 
-## Ultima sessione -- ratifica della decisione 19, 2026-09-18
+## Ultima sessione -- esecuzione della decisione 19, 2026-09-18
 
-Nessuna riga di codice toccata: il commit porta il solo registro. `make check`
-verde in apertura, HEAD `71ee14b`, TREE 0, AHEAD 0. Fonti dumpate per
-contenuto: `rapporto.md` :496-505, `models/farmaco.py`, `models/orario.py`,
-`orarioResolver.js`, `extendedStride.js`, `recalc.js`, `selectors.js`,
-`notifications.js`, `OrarioRow.jsx`, `FarmaciTab.jsx`, `log_assunzioni.py` e
-`v01_init.sql` :108.
+`make check` verde in apertura, HEAD `34f0e94`, TREE 0, AHEAD 0. Nessuna riga
+di codice toccata: il commit porta `CLAUDE.md` (riga 5, decisione 21) e questo
+file. Fonti dumpate per contenuto: `v01_init.sql` (FK), `models/farmaco.py`,
+`models/orario.py`, `routers/farmaci.py`, `routers/orari.py`,
+`db/dependencies.py`, `FarmaciTab.jsx` (`makeAssolutoOrario`,
+`normalizeFissoDate`, `tomorrowIso`), `startBoundary.js`, `planBuilder.js`,
+`AppContext.jsx`, `SyncRepository.js`, `LocalRepository.js` (`mirrorFarmaci`,
+`mirrorOrari`, `mirrorLogWindow`), `ImpostazioniTab.jsx` (SezioneDati),
+`deploy/launchd/backup.sh`, LESSONS #43-#55 e #65, piu il censimento del DB di
+produzione (`uuid 75170e5c-`, MySQL 9.6.0).
 
-**Decisione 19, DECISA A.** La terapia vera entra al posto dei dati di prova:
-sette farmaci quotidiani a dieci dosi, tutti `fisso` con orari `assoluto`, piu
-Dbase mensile in `fisso_date`. Il legame col pasto vive in `relazione_pasto` e
-`dettaglio_pasto`, non nell ancora. Il Medrol e completato ed esce per
-`data_fine` (`FarmaciTab.jsx` :1226 la ammette nel passato dietro
-ConfirmModal). Il Movicol e AL BISOGNO e **non entra**: `TipoFrequenza`
-conosce solo `intervallo`, `fisso` e `fisso_date`, e nessuna delle tre esprime
-"al bisogno"; inserirlo come `fisso` farebbe asserire una dose programmata che
-la prescrizione non programma, e ogni giorno non assunto produrrebbe una
-`saltata` per una dose mai dovuta -- M3. Resta fuori modello, nominato.
-FATTO dato da Roberto e non misura di sessione: i dati oggi in produzione sono
-di prova, suoi, quindi M3 non si applica alla loro ripulitura.
+**Decisione 19, ESEGUITA.** Da questa sessione i dati dell'utente 2 in
+produzione sono clinici: M3 si applica loro per intero. Cinque atti nell'ordine
+vincolante, ciascuno con i due esiti dichiarati prima e misurato E1.
 
-- **Movente di `assoluto` contro le ancore-pasto.** La D1 della 20 dice che
-  ri-risolvere un orario riscrive l ora di una presa gia avvenuta, perche
-  `mergeLogIntoEntry` non rilegge il congelato. Con le ancore un solo cambio
-  di `ora_colazione` ri-risolve INSIEME tutte le dosi ancorate: l esposizione
-  a D1 e l intero piano. Con `assoluto` resta confinata al farmaco che si
-  tocca, e nessuna informazione clinica si perde. Effetto misurato: con tutti
-  gli orari assoluti nessuna riga di `orari_base` legge il profilo, quindi
-  `ora_sveglia` 09:50 e `ora_sonno` 02:00 non entrano nel piano.
-- **Dbase, forma `fisso_date`.** Prima dose 15 ottobre 2026, poi il 15 di ogni
-  mese, ai pasti. `extendedStride.js` :12-26 dichiara che la cadenza estesa
-  conosce due soli regimi, giorni civili (multipli di 24 ore) e stride in
-  millisecondi: **non esiste uno stride a mesi**. 720 ore derivano di un
-  giorno al mese (15 ott, 14 nov, 14 dic), 744 ore derivano in avanti (15 ott,
-  15 nov, 16 dic). `fisso_date` esprime la cadenza esattamente, con ancora
-  forzata `assoluto` e fino a 30 date distinte. **Limite dichiarato:**
-  `data_fine` e l ultima data inserita, e quando le date si esauriscono il
-  farmaco esce dal piano senza che alcuna sede lo annunci. Va rinnovato.
-- **Guadagno misurato sulla coda di rimedio.** La voce 1 -- `/recupero` senza
-  guardia sul minimo, M1 -- **non ha presa sulla terapia vera**. Servono
-  insieme due condizioni: `tipo_frequenza='intervallo'`, perche la catena
-  `ricalcolata` scatta solo li (`recalc.js` :269 e :437) e `/recupero` rifiuta
-  una dose non ricalcolata (:481); e `intervallo_minimo_ore` valorizzata,
-  perche con NULL sono NO-OP sia il client (`recalc.js` :192-205) sia il
-  server (`log_assunzioni.py` :115, :131-142). Con `fisso` e `fisso_date` il
-  validator di `models/farmaco.py` impone la colonna a NULL e la catena non
-  scatta: la voce 1 morde oggi solo perche cinque dei sette farmaci di prova
-  stanno nei rami `intervallo` e `fisso_date`.
-- **La Lyrica delle 01:00, sonda sul `planBuilder` vero.** Esiti dichiarati
-  prima: E1 la dose si materializza sul giorno di calendario in cui l orologio
-  segna 01:00; E2 si attacca al giorno precedente, o wrappa, o sparisce.
-  **Misurato E1:** entry `(dateStr, '01:00')`, prima dose del giorno, ordinata
-  prima delle 23:30. `computeOraPrevista` fa `minutesToTime(0 + 60)`: nessuna
-  aritmetica attraversa la mezzanotte. **La decisione 4 NON e toccata** e non
-  va presa prima dell inserimento: AMB-9.D riguarda l ancora che wrappa, e con
-  `assoluto` non c e wrap. Controllo nella stessa sonda: ancora `sonno` 02:00
-  con offset -60 e +60 da 01:00 e 03:00, nessun wrap.
-- **Due conseguenze dell 01:00, dichiarate.** (i) Le due dosi della stessa
-  notte cadono su due giorni di calendario, 23:30 di un giorno e 01:00 del
-  successivo; alle 01:00 la scheda Oggi e gia quella del giorno nuovo, quindi
-  il TAP trova la dose dove deve. (ii) Il promemoria dell 01:00 dipende dal
-  rollover di mezzanotte: `selectors.js` :110-116 aggiunge alla finestra le
-  sole ricalcolate dentro il giorno, e una `fisso` di domani resta fuori;
-  `notifications.js` :190-201 arma la sola finestra di `selectToday`. Il timer
-  non e armato la sera prima, si arma al rollover, cioe solo se l app e aperta
-  fra le 00:00 e l 01:00. Non e un difetto nuovo -- e la VOCE 17 dell
-  inventario, "SOLO TIMER DI PAGINA: ad app chiusa la notifica NON parte" --
-  ma e la prima dose della terapia vera che ci cade dentro. **Misurato sul
-  percorso di codice, NON esercitato con un timer in esecuzione.**
-- **La notte.** Nessuna dose cade nella finestra di sonno: l 01:00 precede
-  `ora_sonno` 02:00. D non si apre nella 2. Regola scritta per il futuro: un
-  notturno che arrivi **ENTRA** nel DB come ogni altro farmaco, e cio che
-  aspetta la verifica del Focus Sonno e la sua NOTIFICA sul canale nuovo,
-  passo nominato della settimana di accettazione della 17. Tenerlo fuori dal
-  DB sarebbe M2 -- una presa notturna avvenuta non sarebbe registrabile --
-  senza sopprimere alcun avviso, perche il canale non esiste ancora. Se la
-  verifica esce no, D si apre come decisione nuova con la sua sonda.
-- **Giorni senza aprire l app: NO, non requisito.** Roberto apre l app a ogni
-  presa, S10 misura tre giorni coperti, la 12 fissa l orizzonte. Non riapre la
-  8 ne la 12.
-- **Nessuno dei sette quotidiani cambia nel tempo**, e Dbase e a cadenza fissa
-  mensile: **la 20 non tocca la ripartenza**.
-- **Scartate, a verbale.** Ripulire senza dump verificato prima, anche su dati
-  di prova: costa zero e il ripristino altrimenti non esiste. Inserire un
-  farmaco che cambia nel tempo prima di aver scelto la forma. Ancore-pasto per
-  gli orari: tecnicamente pronta -- offset negativo digitabile
-  (`OrarioRow.jsx` :125-160) su colonna `offset_minuti INT` signed
-  (`v01_init.sql` :108), `minutesToTime` normalizza modulo 1440 -- scartata
-  per il movente sopra. Misto ancore e assoluto: due regole di lettura in una
-  terapia sola. Dbase come `intervallo`: M3 sulla data, per il drift misurato.
-  Dbase come `fisso` giornaliero: M1 e M3. Dbase fuori dal record. Movicol
-  come `fisso`: M3, sopra. Tenere fuori dal DB un farmaco notturno: M2.
+1. **Fotografia.** `mysqldump --no-tablespaces --single-transaction
+   --set-gtid-purged=OFF` sul Mini (lezioni #50, #53, #55), rc 0/0, stderr
+   vuoto, `gzip -t` 0, 8 `CREATE TABLE`. File
+   `pharmatimer-pre-19-20260918-010223.sql.gz`, SHA-256 `3d4472...a73c`, copia
+   in `backups_dev/` sullo Studio con impronta identica. Restore nello schema
+   di servizio `pharmatimer_restore_20260918` sullo Studio (Q1=A: root
+   disponibile, `pharmatimer_app` non ha `CREATE DATABASE`): conteggi delle 8
+   tabelle uguali su Mini prima, Mini dopo e restore (4, 7, 0, 0, 7, 12, 11,
+   0), e a titolo di INFO uguali anche i `CHECKSUM TABLE`.
+2. **Ripulitura dell'utente 2.** Una transazione via mysql-connector nel venv
+   del Mini: guardia `LEFT(@@server_uuid,9)='75170e5c-'` sulla stessa
+   connessione (lezione #51), pre-conteggio 11/12/7, `DELETE` in ordine FK
+   (`log_assunzioni`, `orari_base`, `farmaci`, `WHERE utente_id=2`), rowcount
+   11/12/7, post 0/0/0, COMMIT alle 16:35:24. Le orfane `id=6` e `id=11` sono
+   cadute qui (la 18 chiude sul record). `utenti id=2` e le sue due righe di
+   `permessi` restano: senza, il token muore. Le altre tre tabelle scoped
+   erano gia a zero.
+3. **Inserimento via API**, dallo Studio via tailnet, con il token dell'utente
+   2 (impronta `e93e6178dd6e` verificata prima di ogni chiamata): per ogni
+   farmaco `POST /api/farmaci` poi `PUT /api/farmaci/{id}/orari`, gli stessi
+   due passi di `actions.addFarmaco`, payload validati prima nei pydantic veri
+   del backend. Otto 201 e otto 200, `created_at` 2026-09-18 16:36:03.
+   Verifica: read-back API con 8 farmaci e 34 orari, `intervallo_minimo_ore`
+   e `intervallo_ore` NULL su 8 su 8 (anche in SQL sul Mini); piano di oggi
+   calcolato dal `planBuilder` vero su quel read-back; lettura di Roberto
+   dalla PWA sull'iPhone coincidente.
+4. **`CLAUDE.md` riga 5** riscritta con lettera A sulla fonte della 21.
+5. **Schema di servizio** lasciato cadere sullo Studio (DROP dopo verifica di
+   8 tabelle, assente dopo). Il dump resta su entrambe le macchine.
 
-**Decisione 18, DECISA A, per la SOLA parte record.** Fotografia verificata
-prima -- restore in uno schema di servizio e conteggio righe per tabella, non
-il solo peso del file -- poi ripulitura totale dei dati di prova dell utente 2.
-Le due righe orfane `id=6` e `id=11` spariscono con la sorgente: essendo dati
-di prova non sono M3, e la scelta fra (a), (b) e (c) non si pone piu sul
-record. **La parte MECCANISMO non chiude e diventa la 22.** Scartate: chiudere
-la 18 per intero sul wipe -- la causa resta, e dopo la ripartenza una orfana
-nuova sarebbe M3 vero; realizzare (b) o (c) prima della ripartenza -- fuori
-perimetro.
+**La terapia nel record** (`id` 15-22, tutti `attivo`, `demo` 0):
 
-**Collisione di numero, sciolta.** Il numero 19 era usato in due sensi: le
-decisioni 2 e 8, ratificate il 2026-09-17, citavano "la 19" come la terapia
-vera, che non aveva voce; la voce 19 portava invece la riga di `CLAUDE.md`.
-Sciolta cosi: 19 = la terapia vera, la riga di `CLAUDE.md:5` prende il 21, il
-meccanismo della 18 prende il 22. Nessun rinvio si rompe: sonda sullo STATO,
-la vecchia voce 19 non era citata per numero da alcuna riga. Seconda
-occorrenza della numerazione che collide, dopo `dc00f61`, `f5b7e88` e
-`012e34a`: la numerazione delle decisioni non ha un portatore, segnato per la
-sessione 8.3 del documento sul gate.
+| id | nome | tipo | dosi | orari `assoluto` | relazione_pasto | dettaglio_pasto | note |
+|---|---|---|---|---|---|---|---|
+| 15 | Jalorest | fisso | 1 | 10:00 | prima | stomaco vuoto, prima della colazione | Dosaggio non registrato |
+| 16 | Duoresp Spiromax 320/9 mcg | fisso | 1 | 10:30 | durante | 1 puff, sciacquare la bocca | |
+| 17 | Giant 20/5 mg | fisso | 1 | 10:30 | durante | durante la colazione | |
+| 18 | Olevia 1000 mg | fisso | 2 | 10:30, 20:30 | durante | ai pasti | |
+| 19 | Assonal | fisso | 2 | 12:30, 19:00 | lontano | lontano dai pasti | Dosaggio non registrato |
+| 20 | Ezevast 10/20 mg | fisso | 1 | 20:30 | durante | durante la cena | |
+| 21 | Lyrica 75 mg | fisso | 1 | 01:00 | indifferente | | |
+| 22 | Dibase 25.000 UI | fisso_date | 1 | il 15 del mese, 20:30 | durante | ai pasti | 1 fiala |
 
-**Rilievo di misura, mio.** La voce 2 riporta la condizione del ramo A come
-"la 18 in forma (b) o (c)", mentre la fonte `rapporto.md` :503 dice "rimedio
-alle ricalcolate orfane" e la voce 18 attribuiva (b) e (c) all opzione B, che
-e scartata: la stretta non e nella fonte. La fonte dice inoltre "ricalcolate",
-e delle due righe solo `id=6` lo e, mentre `id=11` e `prevista`. Le voci
-passate restano come sono, perche sono il verbale di ratifiche gia emesse, e
-la 22 eredita la formulazione della fonte e non la stretta.
+`data_inizio` 2026-09-18 e `data_fine` vuota per i sette quotidiani; per Dibase
+`data_inizio` 2026-10-15 e `data_fine` 2028-10-15, come li deriva la UI dalla
+prima e dall'ultima data (`normalizeFissoDate`): e l'unica eccezione dichiarata
+alla regola "data_inizio = oggi".
 
-**Esecuzione della 19: sessione propria, non questa.**
-- Ordine vincolante: fotografia verificata, POI ripulitura, POI inserimento.
-- `FarmaciTab.jsx` :202 e :697: il default di `data_inizio` in creazione e
-  `tomorrowIso()`, DOMANI. Va forzato a oggi, o le dosi di oggi non si
-  materializzano. Il cancello :1327 ammette oggi, non il passato in creazione.
-- Ingressi ancora mancanti: i dosaggi di Jalorest, Assonal, Ezevast e Duoresp
-  Spiromax -- la dose vive in `farmaci.nome` -- e se anche la seconda Lyrica
-  sia da 75 mg.
-- La terapia, orari assoluti: 10:00 Jalorest (stomaco vuoto, `prima`); 10:30
-  Duoresp Spiromax 1 puff, Giant 20/5, Olevia 1000 dose 1 (`durante`); 12:30
-  Assonal dose 1 (`lontano`); 19:00 Assonal dose 2; 20:30 Ezevast e Olevia
-  1000 dose 2 (`durante`); 23:30 Lyrica dose 1 e 01:00 Lyrica dose 2. Pasti
-  del profilo: colazione 10:30, pranzo 14:30, cena 20:30. Dbase: il 15 di ogni
-  mese, ai pasti, `fisso_date`.
+**Dati assenti, dichiarati.** I dosaggi di Jalorest e Assonal non sono
+registrati nella prescrizione: entrano senza numero e con `note` "Dosaggio non
+registrato" nel record stesso. Movicol al bisogno: fuori modello e fuori dal
+DB. Medrol completato: non inserito.
+
+**Dibase, forma.** `fisso_date`, 25 date distinte, il 15 di ogni mese dal
+2026-10-15 al 2028-10-15, alle 20:30 con la cena, ancora `assoluto` forzata,
+tetto di 30 date. **Limite dichiarato:** dopo il 2028-10-15 il farmaco esce dal
+piano senza che alcuna sede lo annunci. Va rinnovato prima.
+
+**Rettifiche, a verbale.** (i) La Lyrica e UNA dose, alle 01:00: la voce
+precedente diceva 23:30 e 01:00. La sonda E1 sull'01:00 resta valida. (ii) I
+quotidiani fanno NOVE dosi al giorno, non dieci: il dieci contava due Lyrica.
+(iii) Le righe ricorrenti di `orari_base` sono 9, non 10, per la stessa
+ragione; il testimone le ha contate prima di me.
+
+**Conseguenze misurate.**
+- Confine di inizio terapia (P20, `startBoundary.js`): con `data_inizio` =
+  oggi il confine e `created_at` 16:36:03, quindi il piano di oggi porta le
+  sole tre dosi serali (Assonal 19:00, Ezevast 20:30, Olevia 20:30) e le dosi
+  di stamattina non sono nel record. Da domani nove dosi al giorno, con la
+  Lyrica delle 01:00 in testa. Il 15 ottobre compare la fiala.
+- Il ritorno in primo piano non rilegge i farmaci (`AppContext.jsx`: rifa il
+  piano solo al cambio di giorno e svuota la coda); i farmaci si leggono
+  all'avvio e dopo una modifica da Config. Una PWA rimasta viva in memoria
+  mostra lo stato vecchio finche non viene chiusa e riaperta: misurato sul
+  telefono di Roberto, che vedeva ancora le dosi di prova.
+- Lo specchio locale non cancella mai: `mirrorFarmaci` marca inattivi i
+  farmaci assenti dal server e `mirrorLogWindow` conserva i log degli
+  inattivi. I sette farmaci di prova restavano sull'iPhone in Cronologia.
+  Roberto ha eseguito "Ricomincia da capo" (Config, Impostazioni, Dati,
+  visibile in produzione): copia locale azzerata, token conservato,
+  rilettura dal server, onboarding rifatto sul ramo vuoto (la carta demo e
+  disabilitata online). Il server non e stato toccato.
+- Il token dell'utente 2 nel Keychain dello Studio e STANTIO: la voce
+  `pharmatimer-token-2` porta data 2026-06-30 e impronta `f33faf3ed991`, il DB
+  dice `e93e6178dd6e`. La rotazione del 3 settembre non l'ha aggiornata. Il
+  token corrente e stato letto dal `localStorage` della PWA via Safari Web
+  Inspector e sta in `~/pt-token-utente2.txt` (600) sullo Studio. Decisione 23.
+- Il profilo (sveglia, pasti, sonno) vive solo sul telefono: `ApiRepository`
+  delega profili e impostazioni a `LocalRepository`, `profilo_utente` sul
+  server ha 0 righe e nessun router la legge. Lo imposta Roberto in Config e il
+  server non lo misura. Con tutti gli orari `assoluto` non entra nel piano:
+  l'unico lettore delle ore dei pasti fuori dai moduli e `orarioResolver`.
+
+**Deviazione ratificata dal mandato, a verbale.** La ripulitura e in SQL
+diretto sulle tre tabelle cliniche, perche l'API cancella solo in soft
+(lezione #45) e il divieto di SQL del mandato copre l'inserimento; ratificata
+da Roberto con la guardia sul `server_uuid` nella stessa transazione. Nessuna
+deviazione dalla Spec.
+
+**Scartate, a verbale.** SQL diretto per l'inserimento (aggira i validatori,
+M3). Ripulire prima che il restore fosse contato. Ripulire prima di avere un
+token che risponde 200: la produzione sarebbe rimasta vuota senza via di
+inserimento. Inserire Dibase senza forma decisa. Inserire con `data_inizio` a
+domani senza dichiararlo, o a ieri per far comparire le dosi di stamattina
+(asserirebbe dosi mai dovute nel record: M3, ed e la via che la UI vieta in
+creazione). Ricavare il token dal Keychain (stantio, misurato per impronta).
+Ruotare il token con un UPDATE (invalida l'iPhone, e non serviva). Cancellare
+`utenti id=2` o i suoi permessi (il token muore). Restore sul Mini da root.
+
+**Residui.** Mini: `pharmatimer-pre-19-20260918-010223.sql.gz` in
+`~/PharmaTimer/backups/`, fuori dal pattern che il notturno pota. Studio: la
+copia in `backups_dev/` e `~/pt-token-utente2.txt`. Nessuno schema di servizio.
 
 **Cosa resta.** Le decisioni 9-17 sono vive e vanno in sessione propria, nell
 ordine della 17. Il g06 ha il suo criterio, A3, non eseguito. La coda di
-rimedio non cambia. Il verbale della campagna iPhone, S11 compreso, sta in
-`sonda-iphone-esiti.md` e in git (`c4a6c1d`).
+rimedio non cambia: la voce 1 non ha presa sulla terapia vera, misurato. La 22
+e ora clinica: ridurre `dosi_giornaliere` su un farmaco vero rigenera un orfana.
+Il verbale della campagna iPhone, S11 compreso, sta in `sonda-iphone-esiti.md`
+e in git (`c4a6c1d`).
 
 ---
 
@@ -193,6 +188,11 @@ del Mini, piu una scrittura sul DB di produzione il cui esito non e a verbale.
 - **Rilievo di metodo, mio.** La guardia dava per misurato che `id=2` fosse
   owner -- lo suggerisce `CLAUDE.md`, ma non era stato sondato, e la sonda che
   avevo dato filtrava su `id=2` senza mostrare gli altri: non poteva smentirmi.
+- **Misurato il 2026-09-18:** il token che apre la PWA e quello del
+  `localStorage` del telefono, leggibile da Safari sul Mac (Develop, l'iPhone,
+  Home Screen Web Apps, scheda Storage, Local Storage, chiave
+  `pharmatimer.userToken`); la voce Keychain `pharmatimer-token-2` non era
+  stata aggiornata dalla rotazione del 3 settembre. Vedi decisione 23.
 
 ---
 
@@ -231,7 +231,8 @@ toccano:
   chiudera. Nessun effetto sul piano di oggi; si vedono solo in Cronologia.
   **CHIUSO dalla decisione 18 il 2026-09-18:** sono dati di prova, quindi
   cancellarle non e M3, e spariscono con la ripulitura dell utente 2. Resta la
-  causa, che e la 22.
+  causa, che e la 22. **ESEGUITA il 2026-09-18:** le due righe sono cadute con
+  la ripulitura dell'utente 2 (atto 2 della 19), zero residui misurati.
 
 ### Impegni ereditati ancora vivi
 
@@ -270,10 +271,11 @@ toccano:
 - Sette endpoint backend non sono mai chiamati dal frontend.
 - npm: due dipendenze non usate e venti non fissate.
 - Il pip del venv del Mini e `26.1.1`, disponibile `26.2.1`: avviso, non errore.
-- Sul Mini restano le fotografie del 2 settembre in `~/PharmaTimer/backups/`
-  (`web.bak.20260902_112714`, `web.bak.20260902_191529` e i due
-  `backend.predeploy.*.tgz`): la prima e rimovibile, la seconda e il
-  rollback di `0.7.7`.
+- Sul Mini, in `~/PharmaTimer/backups/`, misurato il 2026-09-18: restano
+  `web.bak.20260902_191529` e `backend.predeploy.20260902_191529.tgz`, il
+  rollback di `0.7.7` (la fotografia delle 11:27 non c'e piu); i dump notturni
+  degli ultimi 7 giorni; i pre-B, pre-bbis e predeploy-v05 di giugno; e
+  `pharmatimer-pre-19-20260918-010223.sql.gz`, la fotografia pre-ripulitura.
 - Fuori dal repo, da rifare su una macchina nuova: `.claude/settings.local.json`
   con `sandbox.network`, e `git config core.hooksPath scripts/githooks`.
 
@@ -453,14 +455,16 @@ notifiche ad app chiusa non si fanno.
     utente 2: `id=6` e `id=11` spariscono con la sorgente. Sono dati di prova,
     quindi cancellarle non e M3, e la scelta fra (a), (b) e (c) non si pone
     piu sul record. **La parte MECCANISMO non chiude ed e la 22.**
+    **ESEGUITA sul record il 2026-09-18**, atti 1 e 2 della 19.
 
 19. **La terapia vera al posto dei dati di prova: DECISA il 2026-09-18,
-    lettera A.** Sette farmaci quotidiani a dieci dosi, tutti `fisso` con
-    orari `assoluto`, piu Dbase mensile in `fisso_date`. Movicol al bisogno:
-    fuori modello e fuori dal DB. Medrol completato: esce per `data_fine`.
-    Rationale, sonde, limiti dichiarati e scartate stanno nella voce di
-    sessione in testa a questo file. Non riapre la 8 ne la 12, non tocca la 4,
-    non apre D nella 2. L esecuzione e sessione propria.
+    lettera A, ed ESEGUITA lo stesso giorno.** Sette farmaci quotidiani a nove
+    dosi al giorno, tutti `fisso` con orari `assoluto`, piu Dibase mensile in
+    `fisso_date` a 25 date. Movicol al bisogno: fuori modello e fuori dal DB.
+    Medrol completato: non inserito. Rationale, sonde, limiti dichiarati e
+    scartate della ratifica stanno in git, commit `34f0e94`; il verbale
+    dell'esecuzione sta in testa a questo file. Non riapre la 8 ne la 12,
+    non tocca la 4, non apre D nella 2.
 
 20. **Posologia variabile nel tempo per uno stesso farmaco -- vitamina D.**
     La Spec 10.4 prescrive la modifica manuale di orari_base/dosi "nel tempo".
@@ -502,6 +506,8 @@ notifiche ad app chiusa non si fanno.
     commit che esegue la 19**, dove cambia anche il presupposto: finita la
     ripulitura i dati dell utente 2 non sono piu di prova e M3 si applica loro
     per intero. E documento normativo: la modifica spetta a te.
+    **ESEGUITA il 2026-09-18, lettera A:** la riga 5 e riscritta nel commit
+    che esegue la 19.
 
 22. **Rimedio alle orfane -- condizione viva del ramo A.** Dalla parte
     meccanismo della 18. La fonte `rapporto.md` :503 chiede "rimedio alle
@@ -512,4 +518,12 @@ notifiche ad app chiusa non si fanno.
     perche la giunzione `(farmaco_id, dose_numero)` fra `log_assunzioni` e
     `orari_base` non e una FK: ridurre `dosi_giornaliere` su un farmaco vero
     rigenera un orfana identica, ed e la D2 della 20. Dopo la ripartenza quel
-    record e clinico.
+    record e clinico. **La ripartenza e avvenuta il 2026-09-18.**
+
+23. **Keychain e file del token dell'utente 2.** La voce `pharmatimer-token-2`
+    del Keychain dello Studio e stantia dal 3 settembre (impronta
+    `f33faf3ed991` contro `e93e6178dd6e` nel DB); il token corrente sta in
+    `~/pt-token-utente2.txt` (600) sullo Studio. Aggiornare la voce con
+    `security add-generic-password -U` e cancellare il file, oppure tenere il
+    file: spetta a te. Finche non si decide, il runbook della lezione #65
+    punta a un token morto.

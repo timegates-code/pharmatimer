@@ -2,7 +2,9 @@
 
 PWA clinica per la gestione della terapia farmacologica quotidiana.
 React + Vite, FastAPI + MySQL, Dexie/IndexedDB. Fase 3, percorso rc verso v3.2.0.
-Pilota unico: Roberto (id=2). **Non esiste produzione con utenti terzi.**
+Pilota: Roberto, paziente `id=2`; l'owner e `id=1`. **In produzione esistono altri
+due pazienti (`id=3`, `id=4`) con token validi e zero farmaci.** Dal 2026-09-18 i
+dati dell'utente 2 sono clinici, non di prova: M3 si applica loro per intero.
 
 **Convenzione tipografica**, misurata da `make lint` e nient'altro:
 - identificatori, path e comandi **solo ASCII**; la prosa e UTF-8 (lettere
