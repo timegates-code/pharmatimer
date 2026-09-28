@@ -10,61 +10,45 @@ poi `bash deploy/deploy-mini.sh` dal Terminale.
 
 ---
 
-## Ultima sessione -- contatore dello STATO e fine dei `fisso_date`, 2026-09-28
+## Ultima sessione -- venv dello Studio allineato al Mini, 2026-09-28
 
-`make check` verde in apertura, HEAD `e615916`, TREE 0, AHEAD 0. Nessuna riga
-di prodotto toccata. Il verbale dell'esecuzione della 19 (terapia nel record,
-tabella dei farmaci `id` 15-22, conseguenze misurate) e ora in git, commit
-`e615916`: questa testata lo sostituisce.
+`make check` verde in apertura, HEAD `bc18304`, TREE 0, AHEAD 0. Nessuna riga
+di prodotto, niente pywebpush, nessuna scrittura sul Mini (freeze letto via ssh).
 
-**Il blocco nuovo, intervento 8.2 del documento sul gate.** `make check` porta
-il **contatore dello STATO** fra inventario e albero:
-`scripts/audit/contatore_stato.py`, stdlib e senza rete, conta le voci
-aperte e chiuse per sezione e appende una riga datata a
-`docs/serie-stato.tsv`, tracciato. Non giudica: registra. Ratificato in tre
-domande:
-- **Q1=A, la forma diventa la norma.** Misurato prima: lo STATO non portava lo
-  stato di una voce in forma riconoscibile (in prosa, in otto forme diverse, o
-  nel solo titolo di sezione; gli elenchi del verbale hanno la forma delle
-  voci). Ora ogni voce porta un tag binario in testa; la norma sta in
-  `CLAUDE.md` sezione 4, e il blocco e il suo portatore. Classificazione
-  ratificata: 41 aperte, 4 chiuse (la sonda g06 aperta, le righe orfane
-  chiuse; decisioni chiuse la 18, la 19 e la 21).
-- **Q2, scrittura senza sporcare il gate.** Si appende solo a conteggio
-  cambiato, data esclusa dal confronto; il blocco sta prima di `albero`; in
-  `check-prepush` e `check-ci` non scrive e stampa INFO. **A verbale:** la
-  serie registra i CAMBIAMENTI dello STATO, non le esecuzioni del gate.
-- **Q3:** conta cio che il file porta, ed e dichiarato in testa alla serie.
-- **Collaudo.** Autoprova dentro il blocco su un campione fisso. Vista rossa
-  per quattro mutazioni del riconoscitore, una sostituzione ciascuna (forma a
-  tabella, forma numerata, aperta e chiusa invertite, recinto di codice),
-  rc 2 su `make contatore-stato` e verde al ripristino. **Difetto dello
-  strumento trovato dalla mutazione:** il primo campione era simmetrico e lo
-  scambio aperta/chiusa passava verde; reso asimmetrico, ora arrossa. Tag della
-  voce 23 mosso sullo STATO vero: INFO senza scrittura con `SERIE_SCRIVI=no`
-  (serie identica per md5), riga 40/5 appesa con scrittura; STATO e serie
-  ripristinati, serie allineata. Seconda esecuzione senza cambi: nulla
-  scritto.
-- **Prima riga della serie:** 2026-09-28, aperte 41, chiuse 4.
-- `CLAUDE.md` sezioni 4 e 11 riscritte con lettera A: il blocco nell'elenco,
-  la norma della voce, e in 11 anche il controllo DST che la riga ometteva.
+**Ratifica, lettera A.** La premessa del mandato non reggeva per intero:
+pytest, ruff e openapi giravano gia su `backend/venv`, Python 3.13.12, stessa
+patch del `.venv` del Mini; sul Python di sistema giravano solo gli script di
+audit, stdlib. Un `.venv` in radice avrebbe portato con se `gate.yml`,
+`CLAUDE.md` 9 e 11 e il filtro `SKIP_DIRS` di `inventario.py` (logica di un
+blocco): scartato. `backend/venv` resta l unico venv del gate.
 
-**La decisione 24, registro.** Il fatto dato da Roberto e misurato sulle sedi
-vere con una sonda sui moduli veri (`planBuilder`, `selectors`): un
-`fisso_date` finisce in silenzio dopo l'ultima data. Riconferma del limite
-dichiarato alla 19, elevato a decisione aperta e generalizzato; forma e sede
-del rimedio non decise. Il testo sta in coda alle decisioni.
+- **Allineamento.** Via del ritorno in `~/pt-freeze-studio-prima.txt`, fuori
+  dal repo. Installati col freeze del Mini come vincolo, da Roberto dal
+  Terminale perche il sandbox nega PyPI: click 8.4.1, fastapi 0.136.3,
+  httptools 0.8.0, idna 3.16, starlette 1.1.0, uvicorn 0.48.0. Confronto: 25
+  pacchetti di esercizio comuni, tutti coincidenti. Solo sul Mini `setuptools`
+  82.0.1 e `wheel` 0.47.0: misura per la decisione 1. Solo sullo Studio gli
+  strumenti del gate (pytest, pytest-asyncio, pluggy, iniconfig, Pygments,
+  ruff), nessuno di esercizio. Il freeze non entra nel repo.
+- **Makefile.** `PY := backend/venv/bin/python` e un target `venv` da cui
+  dipendono lint, controllo-dst, test-backend, inventario, contatore e g21:
+  nessun ripiego sul Python di sistema, e senza venv un ROSSO che dice come
+  ricostruirlo. La CI crea gia `backend/venv` prima di `make check-ci`:
+  `gate.yml` non cambia.
+- **Collaudo.** Output dei blocchi di audit registrati prima: identici dopo,
+  a parita di albero (vecchio e nuovo Makefile sullo stesso TREE). Pytest 143
+  raccolti, 143 passati, 0 saltati, 0 xfail, prima e dopo. Con `backend/venv`
+  spostato arrossano lint, openapi, controllo-dst, test-backend, inventario e
+  contatore, ciascuno col proprio messaggio; ripristinato torna verde.
 
-**Non fatto.** Il commento di `.github/workflows/gate.yml` che elenca i blocchi
-non e toccato: gia prima ometteva il controllo DST, non e un elenco esaustivo.
-Nessuna sonda sul Mini: che Dibase sia l'unico `fisso_date` in produzione
-viene dal record del 2026-09-18, non risondato.
+**Non fatto.** Il suggerimento di dettaglio del lint nomina ancora `python3`:
+lasciato per tenere l output identico. Gli shebang degli script di audit
+restano `python3`, il gate non li usa. `pip` 26.1.1 anche sullo Studio.
 
 **Deviazioni.** Nessuna dalla Spec.
 
 **Cosa resta.** Le decisioni 9-17 sono vive e vanno in sessione propria, nell
-ordine della 17. La coda di rimedio non cambia. Alla chiusura di ogni sessione
-che cambia lo STATO, la riga nuova della serie entra nello stesso commit.
+ordine della 17. La coda di rimedio non cambia.
 
 ---
 
@@ -207,7 +191,9 @@ toccano:
    rifatto per intero `backend/`, `deploy/` e `web/` con `rsync --delete` e
    reinstallato il pacchetto; il **venv** e stato aggiornato, non ricostruito.
    Se per FATTO basta il codice, e chiusa; se serve anche il venv da zero,
-   resta aperta con quel solo perimetro.
+   resta aperta con quel solo perimetro. Misurato il 2026-09-28: il `.venv`
+   del Mini porta `setuptools` 82.0.1 e `wheel` 0.47.0, che `02-setup`
+   installa e che il pacchetto non richiede a esercizio.
 2. [aperta] **Le notifiche ad app chiusa: DECISA il 2026-09-17, lettera W.** Si
    realizzano via Web Push, ramo A o B secondo la decisione 8. Il canale
    nasce come **PROMEMORIA DIURNO** e lo dichiara in README e in Spec 6 nel

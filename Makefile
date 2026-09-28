@@ -29,14 +29,30 @@ LINT_BASELINE := scripts/audit/lint-baseline.txt
 BASE := https://marketreader-server.taila127de.ts.net
 MINI_MYSQL := /opt/homebrew/bin/mysql --defaults-file=/Users/marketreader/.my-pharmatimer.cnf
 
+# L interprete del gate e UNO, backend/venv, allineato al .venv del Mini: stessa
+# versione minore di Python e, per le dipendenze di esercizio, le versioni del
+# suo freeze. Nessun ripiego sul Python di sistema: i blocchi che lo usano
+# dipendono da `venv`, che senza interprete arrossa e dice come ricostruirlo.
+PY := backend/venv/bin/python
+
 .PHONY: check check-prepush check-ci _gate prod-check lint lint-backend lint-frontend \
         test test-frontend test-frontend-compatto controllo-dst test-backend inventario \
-        inventario-compatto contatore-stato albero g21 openapi help
+        inventario-compatto contatore-stato albero g21 openapi venv help
 
 help:
 	@echo "gate di sessione : make check"
 	@echo "prima di deployare: make prod-check"
 	@echo "singoli          : lint | test-frontend | controllo-dst | test-backend | inventario | contatore-stato | albero | openapi"
+
+# ----------------------------------------------------------------- VENV
+venv:
+	@if [ ! -x $(PY) ]; then \
+	  echo "ROSSO  $(PY) assente: il gate non ripiega sul Python di sistema."; \
+	  echo "       Ricostruirlo con la versione minore del .venv del Mini e il suo"; \
+	  echo "       freeze come vincolo: python3.13 -m venv backend/venv;"; \
+	  echo "       backend/venv/bin/pip install -c <freeze del Mini> -e 'backend[dev]'"; \
+	  exit 1; \
+	fi
 
 # ----------------------------------------------------------------- LINT
 lint-backend:
@@ -57,7 +73,7 @@ lint-frontend:
 
 # I conteggi: unica fonte per i due modi. --format json perche il formato unix
 # non esiste in eslint 10 e rendeva 0, che e un falso verde.
-lint:
+lint: venv
 	@rc=0; \
 	if [ ! -x backend/venv/bin/ruff ]; then \
 	  echo "ROSSO  ruff non installato: backend/venv/bin/pip install ruff"; exit 1; \
@@ -66,8 +82,8 @@ lint:
 	  echo "ROSSO  eslint non installato: npm i -D eslint"; exit 1; \
 	fi; \
 	nb=$$(cd backend && venv/bin/ruff check --quiet --output-format=concise . 2>/dev/null | grep -c . || true); \
-	nf=$$(npx eslint . --format json 2>/dev/null | python3 -c 'import json,sys; print(sum(len(f["messages"]) for f in json.load(sys.stdin)))' 2>/dev/null || echo ERR); \
-	nt=$$(python3 scripts/audit/tipografia.py --conteggio 2>/dev/null || true); \
+	nf=$$(npx eslint . --format json 2>/dev/null | $(PY) -c 'import json,sys; print(sum(len(f["messages"]) for f in json.load(sys.stdin)))' 2>/dev/null || echo ERR); \
+	nt=$$($(PY) scripts/audit/tipografia.py --conteggio 2>/dev/null || true); \
 	case "$$nt" in ''|*[!0-9]*) echo "ROSSO  tipografia: scripts/audit/tipografia.py non ha reso un conteggio"; exit 1;; esac; \
 	if [ "$$nf" = "ERR" ]; then \
 	  echo "ROSSO  eslint non ha prodotto un rapporto leggibile: e la HARNESS a essere"; \
@@ -144,10 +160,10 @@ test-frontend-compatto: openapi
 # senza pin, e pretende che OGNI loro test arrossi. E lo unico blocco del gate
 # che e verde quando la suite che lancia e rossa, ed e voluto: il rosso e la
 # misura. Dettaglio degli esiti in testa a scripts/audit/controllo_dst.py.
-controllo-dst:
-	@python3 scripts/audit/controllo_dst.py
+controllo-dst: venv
+	@$(PY) scripts/audit/controllo_dst.py
 
-test-backend:
+test-backend: venv
 	@echo "== TEST BACKEND (pytest) =="
 	@echo "-- precondizione: MySQL di dev raggiungibile (ex sonda DEV_UUID) --"
 	@if uuid=$$(mysql -N -B -e 'SELECT LEFT(@@server_uuid,9)' 2>/dev/null) && [ -n "$$uuid" ]; then \
@@ -166,12 +182,12 @@ test-backend:
 test: test-frontend test-backend
 
 # ----------------------------------------------------------------- INVENTARIO
-inventario:
-	@python3 scripts/audit/inventario.py
+inventario: venv
+	@$(PY) scripts/audit/inventario.py
 
 # Forma usata da make check: il solo esito per voce, calcolato dalla voce stessa.
-inventario-compatto:
-	@python3 scripts/audit/inventario.py --compatto
+inventario-compatto: venv
+	@$(PY) scripts/audit/inventario.py --compatto
 	@echo "   dettaglio: make inventario"
 
 # ----------------------------------------------------------------- CONTATORE
@@ -186,9 +202,9 @@ inventario-compatto:
 # commit, e il conteggio diverso si stampa come INFO.
 SERIE_SCRIVI ?= si
 
-contatore-stato:
+contatore-stato: venv
 	@echo "== CONTATORE STATO: voci [aperta] e [chiusa] per sezione (registra, non giudica) =="
-	@python3 scripts/audit/contatore_stato.py --scrivi $(SERIE_SCRIVI)
+	@$(PY) scripts/audit/contatore_stato.py --scrivi $(SERIE_SCRIVI)
 
 # ----------------------------------------------------------------- ALBERO
 # ALBERO_AHEAD=no asserisce il solo TREE. Serve allo hook di pre-push, dove
@@ -253,9 +269,9 @@ check-ci:
 	  TITOLO="make check-ci -- gate di GitHub Actions: TREE asserito, AHEAD no"
 
 # ----------------------------------------------------------------- G-21
-g21:
+g21: venv
 	@echo "== G-21: livello di migrazione RICHIESTO dal codice contro APPLICATO sul Mini =="
-	@req=$$(python3 scripts/audit/inventario.py --voce 19 | grep 'LIVELLO MINIMO RICHIESTO' | sed 's/.*: //'); \
+	@req=$$($(PY) scripts/audit/inventario.py --voce 19 | grep 'LIVELLO MINIMO RICHIESTO' | sed 's/.*: //'); \
 	echo "   richiesto dal codice : $$req"; \
 	app=$$(ssh mini '$(MINI_MYSQL) pharmatimer -N -B -e "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='"'"'log_assunzioni'"'"' AND COLUMN_NAME='"'"'client_op_id'"'"'"' 2>/dev/null); \
 	if [ "$$app" = "1" ]; then \
