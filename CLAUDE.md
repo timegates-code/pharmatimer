@@ -85,8 +85,20 @@ leggere: erano l'apparato, e l'apparato non c'e piu.
 baseline), **test frontend** (vitest), **controllo DST** (i file
 `*.dst.test.js` lanciati senza ora legale devono arrossare tutti: e un pin
 visto rosso a ogni gate), **test backend** (pytest, con il MySQL di dev come
-precondizione dichiarata), **inventario** (le diciannove voci), e **albero**
-(`TREE` e `AHEAD` letti da git vivo).
+precondizione dichiarata), **inventario** (le diciannove voci),
+**contatore dello STATO** (voci aperte e chiuse per sezione, appese a
+`docs/serie-stato.tsv` solo a conteggio cambiato: registra, non giudica), e
+**albero** (`TREE` e `AHEAD` letti da git vivo).
+
+**Norma della voce nello STATO.** Una voce di `STATO_CORRENTE.md` e SOLO una
+riga che porta `[aperta]` o `[chiusa]` subito dopo il marcatore di lista
+(`- `, `12. `) o dopo la prima cella di una riga di tabella; la sua sezione e
+l'ultima intestazione `##` o `###` sopra. Il tag e binario: cio che non e
+chiuso per intero e `[aperta]`, la sfumatura resta in prosa, il verbale non
+porta tag. Il portatore della norma e `scripts/audit/contatore_stato.py`, che
+arrossa solo sulla propria autoprova. La serie registra i cambiamenti dello
+STATO, non le esecuzioni del gate: la riga nuova entra nel commit che cambia
+lo STATO, e in prepush e ci non si scrive.
 
 **Se e verde si lavora. Se e rosso si legge quale blocco lo ha fatto arrossare
 e si decide, prima di qualunque lavoro di scopo.**
@@ -272,9 +284,9 @@ vitest riporta N unhandled errors con 0 test eseguiti e pytest da
 `PermissionError` dentro `$TMPDIR`: il guasto e di ambiente, non di codice.
 
 **Il gate e `make check`**, e vale in apertura e in chiusura (sezioni 4 e 8).
-Esegue lint, test frontend, test backend, inventario e albero, e stampa un
-verdetto unico. **Prima di un deploy, e solo allora, `make prod-check`**, che
-tocca il Mini e include `make g21`.
+Esegue lint, test frontend, controllo DST, test backend, inventario, contatore
+dello STATO e albero, e stampa un verdetto unico. **Prima di un deploy, e solo
+allora, `make prod-check`**, che tocca il Mini e include `make g21`.
 
 Sotto Claude Code il gate gira per intero: la precondizione MySQL di
 `test-backend` passa perche il sandbox ammette il loopback. Cio che resta fuori

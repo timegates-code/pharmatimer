@@ -10,142 +10,61 @@ poi `bash deploy/deploy-mini.sh` dal Terminale.
 
 ---
 
-## Ultima sessione -- esecuzione della decisione 19, 2026-09-18
+## Ultima sessione -- contatore dello STATO e fine dei `fisso_date`, 2026-09-28
 
-`make check` verde in apertura, HEAD `34f0e94`, TREE 0, AHEAD 0. Nessuna riga
-di codice toccata: il commit porta `CLAUDE.md` (riga 5, decisione 21) e questo
-file. Fonti dumpate per contenuto: `v01_init.sql` (FK), `models/farmaco.py`,
-`models/orario.py`, `routers/farmaci.py`, `routers/orari.py`,
-`db/dependencies.py`, `FarmaciTab.jsx` (`makeAssolutoOrario`,
-`normalizeFissoDate`, `tomorrowIso`), `startBoundary.js`, `planBuilder.js`,
-`AppContext.jsx`, `SyncRepository.js`, `LocalRepository.js` (`mirrorFarmaci`,
-`mirrorOrari`, `mirrorLogWindow`), `ImpostazioniTab.jsx` (SezioneDati),
-`deploy/launchd/backup.sh`, LESSONS #43-#55 e #65, piu il censimento del DB di
-produzione (`uuid 75170e5c-`, MySQL 9.6.0).
+`make check` verde in apertura, HEAD `e615916`, TREE 0, AHEAD 0. Nessuna riga
+di prodotto toccata. Il verbale dell'esecuzione della 19 (terapia nel record,
+tabella dei farmaci `id` 15-22, conseguenze misurate) e ora in git, commit
+`e615916`: questa testata lo sostituisce.
 
-**Decisione 19, ESEGUITA.** Da questa sessione i dati dell'utente 2 in
-produzione sono clinici: M3 si applica loro per intero. Cinque atti nell'ordine
-vincolante, ciascuno con i due esiti dichiarati prima e misurato E1.
+**Il blocco nuovo, intervento 8.2 del documento sul gate.** `make check` porta
+il **contatore dello STATO** fra inventario e albero:
+`scripts/audit/contatore_stato.py`, stdlib e senza rete, conta le voci
+aperte e chiuse per sezione e appende una riga datata a
+`docs/serie-stato.tsv`, tracciato. Non giudica: registra. Ratificato in tre
+domande:
+- **Q1=A, la forma diventa la norma.** Misurato prima: lo STATO non portava lo
+  stato di una voce in forma riconoscibile (in prosa, in otto forme diverse, o
+  nel solo titolo di sezione; gli elenchi del verbale hanno la forma delle
+  voci). Ora ogni voce porta un tag binario in testa; la norma sta in
+  `CLAUDE.md` sezione 4, e il blocco e il suo portatore. Classificazione
+  ratificata: 41 aperte, 4 chiuse (la sonda g06 aperta, le righe orfane
+  chiuse; decisioni chiuse la 18, la 19 e la 21).
+- **Q2, scrittura senza sporcare il gate.** Si appende solo a conteggio
+  cambiato, data esclusa dal confronto; il blocco sta prima di `albero`; in
+  `check-prepush` e `check-ci` non scrive e stampa INFO. **A verbale:** la
+  serie registra i CAMBIAMENTI dello STATO, non le esecuzioni del gate.
+- **Q3:** conta cio che il file porta, ed e dichiarato in testa alla serie.
+- **Collaudo.** Autoprova dentro il blocco su un campione fisso. Vista rossa
+  per quattro mutazioni del riconoscitore, una sostituzione ciascuna (forma a
+  tabella, forma numerata, aperta e chiusa invertite, recinto di codice),
+  rc 2 su `make contatore-stato` e verde al ripristino. **Difetto dello
+  strumento trovato dalla mutazione:** il primo campione era simmetrico e lo
+  scambio aperta/chiusa passava verde; reso asimmetrico, ora arrossa. Tag della
+  voce 23 mosso sullo STATO vero: INFO senza scrittura con `SERIE_SCRIVI=no`
+  (serie identica per md5), riga 40/5 appesa con scrittura; STATO e serie
+  ripristinati, serie allineata. Seconda esecuzione senza cambi: nulla
+  scritto.
+- **Prima riga della serie:** 2026-09-28, aperte 41, chiuse 4.
+- `CLAUDE.md` sezioni 4 e 11 riscritte con lettera A: il blocco nell'elenco,
+  la norma della voce, e in 11 anche il controllo DST che la riga ometteva.
 
-1. **Fotografia.** `mysqldump --no-tablespaces --single-transaction
-   --set-gtid-purged=OFF` sul Mini (lezioni #50, #53, #55), rc 0/0, stderr
-   vuoto, `gzip -t` 0, 8 `CREATE TABLE`. File
-   `pharmatimer-pre-19-20260918-010223.sql.gz`, SHA-256 `3d4472...a73c`, copia
-   in `backups_dev/` sullo Studio con impronta identica. Restore nello schema
-   di servizio `pharmatimer_restore_20260918` sullo Studio (Q1=A: root
-   disponibile, `pharmatimer_app` non ha `CREATE DATABASE`): conteggi delle 8
-   tabelle uguali su Mini prima, Mini dopo e restore (4, 7, 0, 0, 7, 12, 11,
-   0), e a titolo di INFO uguali anche i `CHECKSUM TABLE`.
-2. **Ripulitura dell'utente 2.** Una transazione via mysql-connector nel venv
-   del Mini: guardia `LEFT(@@server_uuid,9)='75170e5c-'` sulla stessa
-   connessione (lezione #51), pre-conteggio 11/12/7, `DELETE` in ordine FK
-   (`log_assunzioni`, `orari_base`, `farmaci`, `WHERE utente_id=2`), rowcount
-   11/12/7, post 0/0/0, COMMIT alle 16:35:24. Le orfane `id=6` e `id=11` sono
-   cadute qui (la 18 chiude sul record). `utenti id=2` e le sue due righe di
-   `permessi` restano: senza, il token muore. Le altre tre tabelle scoped
-   erano gia a zero.
-3. **Inserimento via API**, dallo Studio via tailnet, con il token dell'utente
-   2 (impronta `e93e6178dd6e` verificata prima di ogni chiamata): per ogni
-   farmaco `POST /api/farmaci` poi `PUT /api/farmaci/{id}/orari`, gli stessi
-   due passi di `actions.addFarmaco`, payload validati prima nei pydantic veri
-   del backend. Otto 201 e otto 200, `created_at` 2026-09-18 16:36:03.
-   Verifica: read-back API con 8 farmaci e 34 orari, `intervallo_minimo_ore`
-   e `intervallo_ore` NULL su 8 su 8 (anche in SQL sul Mini); piano di oggi
-   calcolato dal `planBuilder` vero su quel read-back; lettura di Roberto
-   dalla PWA sull'iPhone coincidente.
-4. **`CLAUDE.md` riga 5** riscritta con lettera A sulla fonte della 21.
-5. **Schema di servizio** lasciato cadere sullo Studio (DROP dopo verifica di
-   8 tabelle, assente dopo). Il dump resta su entrambe le macchine.
+**La decisione 24, registro.** Il fatto dato da Roberto e misurato sulle sedi
+vere con una sonda sui moduli veri (`planBuilder`, `selectors`): un
+`fisso_date` finisce in silenzio dopo l'ultima data. Riconferma del limite
+dichiarato alla 19, elevato a decisione aperta e generalizzato; forma e sede
+del rimedio non decise. Il testo sta in coda alle decisioni.
 
-**La terapia nel record** (`id` 15-22, tutti `attivo`, `demo` 0):
+**Non fatto.** Il commento di `.github/workflows/gate.yml` che elenca i blocchi
+non e toccato: gia prima ometteva il controllo DST, non e un elenco esaustivo.
+Nessuna sonda sul Mini: che Dibase sia l'unico `fisso_date` in produzione
+viene dal record del 2026-09-18, non risondato.
 
-| id | nome | tipo | dosi | orari `assoluto` | relazione_pasto | dettaglio_pasto | note |
-|---|---|---|---|---|---|---|---|
-| 15 | Jalorest | fisso | 1 | 10:00 | prima | stomaco vuoto, prima della colazione | Dosaggio non registrato |
-| 16 | Duoresp Spiromax 320/9 mcg | fisso | 1 | 10:30 | durante | 1 puff, sciacquare la bocca | |
-| 17 | Giant 20/5 mg | fisso | 1 | 10:30 | durante | durante la colazione | |
-| 18 | Olevia 1000 mg | fisso | 2 | 10:30, 20:30 | durante | ai pasti | |
-| 19 | Assonal | fisso | 2 | 12:30, 19:00 | lontano | lontano dai pasti | Dosaggio non registrato |
-| 20 | Ezevast 10/20 mg | fisso | 1 | 20:30 | durante | durante la cena | |
-| 21 | Lyrica 75 mg | fisso | 1 | 01:00 | indifferente | | |
-| 22 | Dibase 25.000 UI | fisso_date | 1 | il 15 del mese, 20:30 | durante | ai pasti | 1 fiala |
-
-`data_inizio` 2026-09-18 e `data_fine` vuota per i sette quotidiani; per Dibase
-`data_inizio` 2026-10-15 e `data_fine` 2028-10-15, come li deriva la UI dalla
-prima e dall'ultima data (`normalizeFissoDate`): e l'unica eccezione dichiarata
-alla regola "data_inizio = oggi".
-
-**Dati assenti, dichiarati.** I dosaggi di Jalorest e Assonal non sono
-registrati nella prescrizione: entrano senza numero e con `note` "Dosaggio non
-registrato" nel record stesso. Movicol al bisogno: fuori modello e fuori dal
-DB. Medrol completato: non inserito.
-
-**Dibase, forma.** `fisso_date`, 25 date distinte, il 15 di ogni mese dal
-2026-10-15 al 2028-10-15, alle 20:30 con la cena, ancora `assoluto` forzata,
-tetto di 30 date. **Limite dichiarato:** dopo il 2028-10-15 il farmaco esce dal
-piano senza che alcuna sede lo annunci. Va rinnovato prima.
-
-**Rettifiche, a verbale.** (i) La Lyrica e UNA dose, alle 01:00: la voce
-precedente diceva 23:30 e 01:00. La sonda E1 sull'01:00 resta valida. (ii) I
-quotidiani fanno NOVE dosi al giorno, non dieci: il dieci contava due Lyrica.
-(iii) Le righe ricorrenti di `orari_base` sono 9, non 10, per la stessa
-ragione; il testimone le ha contate prima di me.
-
-**Conseguenze misurate.**
-- Confine di inizio terapia (P20, `startBoundary.js`): con `data_inizio` =
-  oggi il confine e `created_at` 16:36:03, quindi il piano di oggi porta le
-  sole tre dosi serali (Assonal 19:00, Ezevast 20:30, Olevia 20:30) e le dosi
-  di stamattina non sono nel record. Da domani nove dosi al giorno, con la
-  Lyrica delle 01:00 in testa. Il 15 ottobre compare la fiala.
-- Il ritorno in primo piano non rilegge i farmaci (`AppContext.jsx`: rifa il
-  piano solo al cambio di giorno e svuota la coda); i farmaci si leggono
-  all'avvio e dopo una modifica da Config. Una PWA rimasta viva in memoria
-  mostra lo stato vecchio finche non viene chiusa e riaperta: misurato sul
-  telefono di Roberto, che vedeva ancora le dosi di prova.
-- Lo specchio locale non cancella mai: `mirrorFarmaci` marca inattivi i
-  farmaci assenti dal server e `mirrorLogWindow` conserva i log degli
-  inattivi. I sette farmaci di prova restavano sull'iPhone in Cronologia.
-  Roberto ha eseguito "Ricomincia da capo" (Config, Impostazioni, Dati,
-  visibile in produzione): copia locale azzerata, token conservato,
-  rilettura dal server, onboarding rifatto sul ramo vuoto (la carta demo e
-  disabilitata online). Il server non e stato toccato.
-- Il token dell'utente 2 nel Keychain dello Studio e STANTIO: la voce
-  `pharmatimer-token-2` porta data 2026-06-30 e impronta `f33faf3ed991`, il DB
-  dice `e93e6178dd6e`. La rotazione del 3 settembre non l'ha aggiornata. Il
-  token corrente e stato letto dal `localStorage` della PWA via Safari Web
-  Inspector e sta in `~/pt-token-utente2.txt` (600) sullo Studio. Decisione 23.
-- Il profilo (sveglia, pasti, sonno) vive solo sul telefono: `ApiRepository`
-  delega profili e impostazioni a `LocalRepository`, `profilo_utente` sul
-  server ha 0 righe e nessun router la legge. Lo imposta Roberto in Config e il
-  server non lo misura. Con tutti gli orari `assoluto` non entra nel piano:
-  l'unico lettore delle ore dei pasti fuori dai moduli e `orarioResolver`.
-
-**Deviazione ratificata dal mandato, a verbale.** La ripulitura e in SQL
-diretto sulle tre tabelle cliniche, perche l'API cancella solo in soft
-(lezione #45) e il divieto di SQL del mandato copre l'inserimento; ratificata
-da Roberto con la guardia sul `server_uuid` nella stessa transazione. Nessuna
-deviazione dalla Spec.
-
-**Scartate, a verbale.** SQL diretto per l'inserimento (aggira i validatori,
-M3). Ripulire prima che il restore fosse contato. Ripulire prima di avere un
-token che risponde 200: la produzione sarebbe rimasta vuota senza via di
-inserimento. Inserire Dibase senza forma decisa. Inserire con `data_inizio` a
-domani senza dichiararlo, o a ieri per far comparire le dosi di stamattina
-(asserirebbe dosi mai dovute nel record: M3, ed e la via che la UI vieta in
-creazione). Ricavare il token dal Keychain (stantio, misurato per impronta).
-Ruotare il token con un UPDATE (invalida l'iPhone, e non serviva). Cancellare
-`utenti id=2` o i suoi permessi (il token muore). Restore sul Mini da root.
-
-**Residui.** Mini: `pharmatimer-pre-19-20260918-010223.sql.gz` in
-`~/PharmaTimer/backups/`, fuori dal pattern che il notturno pota. Studio: la
-copia in `backups_dev/` e `~/pt-token-utente2.txt`. Nessuno schema di servizio.
+**Deviazioni.** Nessuna dalla Spec.
 
 **Cosa resta.** Le decisioni 9-17 sono vive e vanno in sessione propria, nell
-ordine della 17. Il g06 ha il suo criterio, A3, non eseguito. La coda di
-rimedio non cambia: la voce 1 non ha presa sulla terapia vera, misurato. La 22
-e ora clinica: ridurre `dosi_giornaliere` su un farmaco vero rigenera un orfana.
-Il verbale della campagna iPhone, S11 compreso, sta in `sonda-iphone-esiti.md`
-e in git (`c4a6c1d`).
+ordine della 17. La coda di rimedio non cambia. Alla chiusura di ogni sessione
+che cambia lo STATO, la riga nuova della serie entra nello stesso commit.
 
 ---
 
@@ -202,10 +121,10 @@ Si esegue, non si rimisura. Ordinata per rischio clinico.
 
 | # | mancante | invariante | stato |
 |---|---|---|---|
-| 1 | **`/recupero` senza guardia sul minimo** | **M1** | Spec 4.7 :431 tiene il TODO su `intervallo_minimo_ore`; la decisione 2 ha guardato la sola presa. Il server accetta un recupero che anticipa sotto il minimo: oggi lo ferma solo lo slider del client (`calcolaRecuperoMax`). Stessa sede e stesso `tempo.minuti_reali`. Misurato il 2026-09-18: **non ha presa sulla terapia vera**, tutta `fisso` e `fisso_date` -- servono insieme `tipo_frequenza='intervallo'` e `intervallo_minimo_ore` valorizzata. |
-| 2 | **targa annidata nel batch, forma (a) decisa** | **M3** | Meccanico: il modello pydantic del ricalcolo dichiara `client_op_id` opzionale e ignorato, con il motivo nel docstring; R4 in `ApiRepository.contratto.test.js` arrossa e il marcatore `it.fails` si toglie nello stesso commit. Nessuna sede VIETATA, nessuna migrazione, wire-neutro. |
-| 3 | **estrarre il SQL dai router** in `repository/` | -- | Refactor, sessione propria, se ancora voluto. Norma dichiarata: SQL nel router (`CLAUDE.md` 13). |
-| 4 | **`deploy-mini.sh` non fotografa il bundle** prima del `rsync --delete` | -- | Fatto a mano per la seconda volta (`web.bak.*` e `backend.predeploy.*.tgz`). Lo script deve farlo da se, come passo fra le guardie e il rsync. |
+| 1 | [aperta] **`/recupero` senza guardia sul minimo** | **M1** | Spec 4.7 :431 tiene il TODO su `intervallo_minimo_ore`; la decisione 2 ha guardato la sola presa. Il server accetta un recupero che anticipa sotto il minimo: oggi lo ferma solo lo slider del client (`calcolaRecuperoMax`). Stessa sede e stesso `tempo.minuti_reali`. Misurato il 2026-09-18: **non ha presa sulla terapia vera**, tutta `fisso` e `fisso_date` -- servono insieme `tipo_frequenza='intervallo'` e `intervallo_minimo_ore` valorizzata. |
+| 2 | [aperta] **targa annidata nel batch, forma (a) decisa** | **M3** | Meccanico: il modello pydantic del ricalcolo dichiara `client_op_id` opzionale e ignorato, con il motivo nel docstring; R4 in `ApiRepository.contratto.test.js` arrossa e il marcatore `it.fails` si toglie nello stesso commit. Nessuna sede VIETATA, nessuna migrazione, wire-neutro. |
+| 3 | [aperta] **estrarre il SQL dai router** in `repository/` | -- | Refactor, sessione propria, se ancora voluto. Norma dichiarata: SQL nel router (`CLAUDE.md` 13). |
+| 4 | [aperta] **`deploy-mini.sh` non fotografa il bundle** prima del `rsync --delete` | -- | Fatto a mano per la seconda volta (`web.bak.*` e `backend.predeploy.*.tgz`). Lo script deve farlo da se, come passo fra le guardie e il rsync. |
 
 ### Rilievi chiusi, e cio che resta aperto sotto di loro
 
@@ -213,9 +132,9 @@ I due rilievi di misura della sessione precedente sono stati pinnati rossi e
 chiusi (`ccce837`, `3d098a6`). Restano aperte due cose che quei commit NON
 toccano:
 
-- **La sonda sul moto g06.** Il `TypeError` del costruttore resta dedotto da
+- [aperta] **La sonda sul moto g06.** Il `TypeError` del costruttore resta dedotto da
   MDN browser-compat-data. Da esercitare sul telefono, senza codice nel repo.
-- **Righe di log aperte e irraggiungibili sul Mini: sono DUE, non una.**
+- [chiusa] **Righe di log aperte e irraggiungibili sul Mini: sono DUE, non una.**
   Misurato oggi in sola lettura. La `ricalcolata` orfana e `id=6`: farmaco 10
   TEST-Intervallo8, 2026-07-04, dose 2, `ora_prevista` 13:00, `ora_ricalcolata`
   19:37, `gap_minuti` 247, nata nello stesso secondo della presa `id=5` come
@@ -236,60 +155,60 @@ toccano:
 
 ### Impegni ereditati ancora vivi
 
-- **`durabilita-outbox` -- M2.** `src/data/db.js` :245-250 dichiara che su
+- [aperta] **`durabilita-outbox` -- M2.** `src/data/db.js` :245-250 dichiara che su
   WebKit mobile il flag IndexedDB non sopravvive ai ricaricamenti. Rilievo di
   MISURA: serve accertare se la coda di uscita eredita quella fragilita.
-- **`guardia-demo-apimode` -- M1+M3.** La deviazione `s.6.251` nomina sedi
+- [aperta] **`guardia-demo-apimode` -- M1+M3.** La deviazione `s.6.251` nomina sedi
   diverse da quelle della propria sorgente. Rilievo di MISURA.
 
 ### Minori, aperti e non urgenti
 
-- `/api/health` risponde `"version":"0.1.0"` anche a `0.7.7`: il campo e
+- [aperta] `/api/health` risponde `"version":"0.1.0"` anche a `0.7.7`: il campo e
   cablato nel router e non legge la versione del pacchetto.
-- Le prime tre riaperture della PWA non hanno raggiunto il Mini, neanche da
+- [aperta] Le prime tre riaperture della PWA non hanno raggiunto il Mini, neanche da
   Safari, e la quarta si. Causa non misurata (tailnet del telefono, o PWA non
   davvero chiusa): se ricapita, il testimone e `api.out.log` e la sonda e un
   curl dallo Studio per distinguere log muto da rete assente.
-- I due typedef `LogAssunzione` concordano su nomi e tipi ma non sulle
+- [aperta] I due typedef `LogAssunzione` concordano su nomi e tipi ma non sulle
   parentesi di opzionalita (`IRepository.js` marca opzionali i campi nullable,
   `types.js` no): non e sul filo, dichiarato nel test S3.
-- Validatore data_specifica contro tipo_frequenza: OrariBulkPayload._validate_bulk
+- [aperta] Validatore data_specifica contro tipo_frequenza: OrariBulkPayload._validate_bulk
   (backend/pharmatimer_api/models/orario.py:106) impone che data_specifica sia
   tutta valorizzata o tutta nulla, ma NON verifica che tipo_frequenza sia
   'fisso_date' quando e valorizzata. La coerenza fra i due campi non e misurata
   da alcun validatore backend.
-- `UP042` in ignore in `backend/pyproject.toml`: il Mini gira python 3.13.12,
+- [aperta] `UP042` in ignore in `backend/pyproject.toml`: il Mini gira python 3.13.12,
   misurato; si puo togliere e passare a `StrEnum`, wire-neutro.
-- `src/main.jsx`: il commento di bootstrap promette un passo di seed che il CP4
+- [aperta] `src/main.jsx`: il commento di bootstrap promette un passo di seed che il CP4
   ha disabilitato, e il blocco `try` ha `result.seeded` sempre falso.
-- Il click della notifica naviga a `/oggi` assoluto ignorando `BASE_URL`
+- [aperta] Il click della notifica naviga a `/oggi` assoluto ignorando `BASE_URL`
   (corretto sulla build del Mini, rotto su GitHub Pages); la copy "Avviso poco
   prima di ogni dose" contro un fuoco all'istante; Spec 2.1 :140 e 8.1 :583
   promettono ancora push via PWA mentre 11.5.2 le rimanda. Da allineare nel
   commit che introduce il canale, mai nel Changelog congelato.
-- Otto documenti non sono referenziati ne da `CLAUDE.md` ne da `README`.
-- Sette endpoint backend non sono mai chiamati dal frontend.
-- npm: due dipendenze non usate e venti non fissate.
-- Il pip del venv del Mini e `26.1.1`, disponibile `26.2.1`: avviso, non errore.
-- Sul Mini, in `~/PharmaTimer/backups/`, misurato il 2026-09-18: restano
+- [aperta] Otto documenti non sono referenziati ne da `CLAUDE.md` ne da `README`.
+- [aperta] Sette endpoint backend non sono mai chiamati dal frontend.
+- [aperta] npm: due dipendenze non usate e venti non fissate.
+- [aperta] Il pip del venv del Mini e `26.1.1`, disponibile `26.2.1`: avviso, non errore.
+- [aperta] Sul Mini, in `~/PharmaTimer/backups/`, misurato il 2026-09-18: restano
   `web.bak.20260902_191529` e `backend.predeploy.20260902_191529.tgz`, il
   rollback di `0.7.7` (la fotografia delle 11:27 non c'e piu); i dump notturni
   degli ultimi 7 giorni; i pre-B, pre-bbis e predeploy-v05 di giugno; e
   `pharmatimer-pre-19-20260918-010223.sql.gz`, la fotografia pre-ripulitura.
-- Fuori dal repo, da rifare su una macchina nuova: `.claude/settings.local.json`
+- [aperta] Fuori dal repo, da rifare su una macchina nuova: `.claude/settings.local.json`
   con `sandbox.network`, e `git config core.hooksPath scripts/githooks`.
 
 ---
 
 ## Decisioni che spettano a Roberto
 
-1. **`ricostruzione-mini`: chiuderla o no.** Il mandato diceva installazione
+1. [aperta] **`ricostruzione-mini`: chiuderla o no.** Il mandato diceva installazione
    completa e non incrementale, verificata per misura. Due deploy hanno
    rifatto per intero `backend/`, `deploy/` e `web/` con `rsync --delete` e
    reinstallato il pacchetto; il **venv** e stato aggiornato, non ricostruito.
    Se per FATTO basta il codice, e chiusa; se serve anche il venv da zero,
    resta aperta con quel solo perimetro.
-2. **Le notifiche ad app chiusa: DECISA il 2026-09-17, lettera W.** Si
+2. [aperta] **Le notifiche ad app chiusa: DECISA il 2026-09-17, lettera W.** Si
    realizzano via Web Push, ramo A o B secondo la decisione 8. Il canale
    nasce come **PROMEMORIA DIURNO** e lo dichiara in README e in Spec 6 nel
    commit che lo introduce (regola critica 3). Fonti della ratifica:
@@ -351,19 +270,19 @@ toccano:
      Calendario webcal con VALARM (M1). App terze in parallelo (M1).
      Spegnere i timer di pagina senza esclusione e materia della 10; B come
      emettitore prima di A e materia della 8.
-3. **CS-5.7, il blocco Centro invii, resta SOSPESA e non abbandonata.** Il suo
+3. [aperta] **CS-5.7, il blocco Centro invii, resta SOSPESA e non abbandonata.** Il suo
    mandato integrale vive nel Changelog archiviato e in `git log`.
-4. **"sonno + 60 = 00:30 dello stesso giorno."** Spec 3.6 :258: `ora_prevista`
+4. [aperta] **"sonno + 60 = 00:30 dello stesso giorno."** Spec 3.6 :258: `ora_prevista`
    e HH:MM e "mai cross-midnight, AMB-9.D". Pinnato come DICHIARATO in
    `src/domain/orarioResolver.test.js`. Tenere il wrap, o portare la dose al
    giorno dopo (cambia Spec, `planBuilder`, e le chiavi delle voci). Qualunque
    canale di promemoria eredita la scelta.
-5. **Trascrivere la regola DST in Spec**, sezione 4: oggi vive nel commento in
+5. [aperta] **Trascrivere la regola DST in Spec**, sezione 4: oggi vive nel commento in
    testa alla sezione di `src/utils/time.js` e nei test `*.dst`.
-6. **Spec 3.1 :175, default 50% di `intervallo_minimo_ore`.** Nessuna sede lo
+6. [aperta] **Spec 3.1 :175, default 50% di `intervallo_minimo_ore`.** Nessuna sede lo
    realizza, ne il server ne `calcolaRecuperoMax`. Realizzarlo, nei due lati,
    o togliere la riga.
-7. **Fuso fisso del server** (`tempo.FUSO_PARETE = Europe/Rome`) contro fuso
+7. [aperta] **Fuso fisso del server** (`tempo.FUSO_PARETE = Europe/Rome`) contro fuso
    del telefono sul client: se il paziente viaggia i due divergono. Limite
    dichiarato, non da risolvere ora. Entra nell'opzione B del rapporto, non
    nelle altre.
@@ -371,7 +290,7 @@ toccano:
 Le dieci che seguono vengono dalla sezione 10 del rapporto. La decisione 2 e
 decisa W, quindi valgono.
 
-8. **Il bivio DESIGN-B: DECISO il 2026-09-17, lettera A.** Calendario
+8. [aperta] **Il bivio DESIGN-B: DECISO il 2026-09-17, lettera A.** Calendario
    pubblicato dal telefono. Il Mini non calcola mai un orario: glielo dice il
    telefono, che gia costruisce il piano e pubblica il calendario risolto
    (chiave dose, istante, titolo, corpo), e all istante del fuoco il
@@ -415,32 +334,32 @@ decisa W, quindi valgono.
      orari per la stessa dose, :564-565). A senza rilettura del log al
      fuoco (M1) e A per `dateStr` invece che per istante effettivo (M2 sul
      canale): non scartate secche, restano come vincoli qui sopra.
-9. **Q9=A da riaprire per lettera.** APScheduler dentro FastAPI (ratifica di
+9. [aperta] **Q9=A da riaprire per lettera.** APScheduler dentro FastAPI (ratifica di
    maggio 2026, mai eseguita) contro un LaunchAgent separato; i tre
    concordano sul LaunchAgent, divergono fra passata a intervallo e processo
    residente (irrilevante finche il Mini non dorme).
-10. **Emettitore unico o due sorgenti.** Tenere i timer di pagina accanto al
+10. [aperta] **Emettitore unico o due sorgenti.** Tenere i timer di pagina accanto al
     push accettando su iPhone un doppio simultaneo ad app aperta; tacerli con
     subscription attiva; o decidere dopo la sonda con un gate sull'ultima
     pubblicazione riuscita. I tre progettisti divergono. **S9, misurato il 15
     settembre:** ad app in primo piano l avviso del worker compare e suona,
     quindi il doppio simultaneo della prima via e possibile, non ipotetico.
-11. **Ricalcolo D+1 rifiutato dal server:** il push segue il valore del
+11. [aperta] **Ricalcolo D+1 rifiutato dal server:** il push segue il valore del
     server (passato dalla guardia del minimo) o l'ora pubblicata dal telefono
     finche la rilettura non riallinea.
-12. **Orizzonte pubblicato** (tre giorni, ieri-domani, sette giorni) **e fine
+12. [aperta] **Orizzonte pubblicato** (tre giorni, ieri-domani, sette giorni) **e fine
     orizzonte** (avviso "apri PharmaTimer per aggiornare i promemoria" o solo
     dichiarazione).
-13. **Testo verso terzi**, solo per C: nome del farmaco sui server di Pushover
+13. [aperta] **Testo verso terzi**, solo per C: nome del farmaco sui server di Pushover
     o testo neutro.
-14. **Sblocco di `vite.config.js` per una riga** `workbox.importScripts`, e
+14. [aperta] **Sblocco di `vite.config.js` per una riga** `workbox.importScripts`, e
     sede del modulo di rete additivo che importa `apiClient` senza
     modificarlo.
-15. **Custodia VAPID:** PEM 0600 nella home del Mini con backup fuori
+15. [aperta] **Custodia VAPID:** PEM 0600 nella home del Mini con backup fuori
     macchina, o altra sede.
-16. **Tolleranza e TTL:** 20 o 30 minuti dopo l'ora; TTL fino a 30 minuti,
+16. [aperta] **Tolleranza e TTL:** 20 o 30 minuti dopo l'ora; TTL fino a 30 minuti,
     un'ora o sei ore.
-17. **Ordine dei lavori:** sonda sul telefono senza codice, poi ratifica con
+17. [aperta] **Ordine dei lavori:** sonda sul telefono senza codice, poi ratifica con
     la scheda a quattro campi, poi migrazione prima del codice, backend con
     passata vista rossa, client con SW, settimana di accettazione con C
     pronta come riserva.
@@ -448,7 +367,7 @@ decisa W, quindi valgono.
 L'ultima NON dipende dalla decisione 2: vale in qualunque caso, anche se le
 notifiche ad app chiusa non si fanno.
 
-18. **Le due righe di log aperte e irraggiungibili sul Mini: DECISA il
+18. [chiusa] **Le due righe di log aperte e irraggiungibili sul Mini: DECISA il
     2026-09-18, lettera A, per la sola parte RECORD.** Fotografia verificata
     prima -- restore in uno schema di servizio e conteggio righe per tabella,
     non il solo peso del file -- poi ripulitura totale dei dati di prova dell
@@ -457,16 +376,16 @@ notifiche ad app chiusa non si fanno.
     piu sul record. **La parte MECCANISMO non chiude ed e la 22.**
     **ESEGUITA sul record il 2026-09-18**, atti 1 e 2 della 19.
 
-19. **La terapia vera al posto dei dati di prova: DECISA il 2026-09-18,
+19. [chiusa] **La terapia vera al posto dei dati di prova: DECISA il 2026-09-18,
     lettera A, ed ESEGUITA lo stesso giorno.** Sette farmaci quotidiani a nove
     dosi al giorno, tutti `fisso` con orari `assoluto`, piu Dibase mensile in
     `fisso_date` a 25 date. Movicol al bisogno: fuori modello e fuori dal DB.
     Medrol completato: non inserito. Rationale, sonde, limiti dichiarati e
     scartate della ratifica stanno in git, commit `34f0e94`; il verbale
-    dell'esecuzione sta in testa a questo file. Non riapre la 8 ne la 12,
+    dell'esecuzione sta in git, commit `e615916`. Non riapre la 8 ne la 12,
     non tocca la 4, non apre D nella 2.
 
-20. **Posologia variabile nel tempo per uno stesso farmaco -- vitamina D.**
+20. [aperta] **Posologia variabile nel tempo per uno stesso farmaco -- vitamina D.**
     La Spec 10.4 prescrive la modifica manuale di orari_base/dosi "nel tempo".
     La prescrizione e ATEMPORALE: orari_base non ha colonne di validita (DDL
     v01_init.sql piu v05_fisso_date.sql: solo data_specifica, data singola).
@@ -499,7 +418,7 @@ notifiche ad app chiusa non si fanno.
     primo cambio e mai dopo: `FarmaciTab.jsx` :1327 chiude il passato in
     creazione ed e mode-gated, quindi la modifica lo accetta -- ed e D1/D3.
 
-21. **La riga di `CLAUDE.md:5` "Non esiste produzione con utenti terzi".**
+21. [chiusa] **La riga di `CLAUDE.md:5` "Non esiste produzione con utenti terzi".**
     Ereditata dalla vecchia voce 19. In produzione ci sono `id=3` e `id=4`,
     pazienti attivi con self-permesso e zero farmaci, piu l owner `id=1`
     distinto dal pilota; i loro token sono validi. **Segnata da correggere nel
@@ -509,7 +428,7 @@ notifiche ad app chiusa non si fanno.
     **ESEGUITA il 2026-09-18, lettera A:** la riga 5 e riscritta nel commit
     che esegue la 19.
 
-22. **Rimedio alle orfane -- condizione viva del ramo A.** Dalla parte
+22. [aperta] **Rimedio alle orfane -- condizione viva del ramo A.** Dalla parte
     meccanismo della 18. La fonte `rapporto.md` :503 chiede "rimedio alle
     ricalcolate orfane" come condizione della variante A, e non prescrive una
     forma: (b) portare al server la cancellazione che oggi il cambio profilo
@@ -520,10 +439,27 @@ notifiche ad app chiusa non si fanno.
     rigenera un orfana identica, ed e la D2 della 20. Dopo la ripartenza quel
     record e clinico. **La ripartenza e avvenuta il 2026-09-18.**
 
-23. **Keychain e file del token dell'utente 2.** La voce `pharmatimer-token-2`
+23. [aperta] **Keychain e file del token dell'utente 2.** La voce `pharmatimer-token-2`
     del Keychain dello Studio e stantia dal 3 settembre (impronta
     `f33faf3ed991` contro `e93e6178dd6e` nel DB); il token corrente sta in
     `~/pt-token-utente2.txt` (600) sullo Studio. Aggiornare la voce con
     `security add-generic-password -U` e cancellare il file, oppure tenere il
     file: spetta a te. Finche non si decide, il runbook della lezione #65
     punta a un token morto.
+
+24. [aperta] **Fine silenziosa di ogni `fisso_date`.** Misurato il 2026-09-28
+    sulle sedi vere: dopo l'ultima data della lista il farmaco esce dal piano
+    e nessuna sede lo dice. Dibase (`id` 22): la voce del 2028-10-15 c'e, dal
+    2028-11-15 zero voci. La fine e del modello, non di `data_fine`: il
+    predicato per data di `planBuilder` rende zero voci anche con `data_fine`
+    nullo. La lista e finita per Spec 3.1 :173 e il tetto e 30 date nei due
+    lati (`orario.py` :140, `FarmaciTab.jsx` :300), quindi una prescrizione
+    mensile senza termine non e rappresentabile oltre i due anni e mezzo.
+    Nessuna sede annuncia la fine: `selectProssimaDoseFuoriPlan` guarda solo
+    `data_inizio` futura, la scheda di Config dice "Temporaneo" senza data, il
+    farmaco resta attivo. Classificazione: non e M2 nella meccanica del piano,
+    che non scarta nulla del record; lo e nell'effetto se la prescrizione
+    continua, perche dopo l'ultima data l'assenza di data e ambigua fra
+    "finita" ed "esaurita" e il sistema la risolve sopprimendo, in silenzio.
+    Riconferma del limite dichiarato alla 19 (`34f0e94`). Forma e sede del
+    rimedio non decise.

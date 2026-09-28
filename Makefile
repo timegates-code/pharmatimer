@@ -3,7 +3,7 @@
 #
 #   make check       GATE DI SESSIONE. Apertura e chiusura si fanno su questo.
 #                    lint + test frontend + controllo DST + test backend +
-#                    inventario + albero.
+#                    inventario + contatore dello STATO + albero.
 #   make check-prepush  Lo stesso gate, lanciato dallo hook di pre-push:
 #                    asserisce TREE e non AHEAD, che prima del push non e zero.
 #   make check-ci    Lo stesso gate, lanciato da GitHub Actions su ogni push.
@@ -16,6 +16,9 @@
 #   make controllo-dst  i file *.dst.test.js lanciati SENZA ora legale devono
 #                    arrossare tutti: un pin mai visto rosso non e una guardia.
 #   make inventario  le diciannove voci, rigenerate dal disco.
+#   make contatore-stato  conta le voci [aperta] e [chiusa] di STATO_CORRENTE.md
+#                    per sezione e appende a docs/serie-stato.tsv SOLO a
+#                    conteggio cambiato. Non giudica: registra.
 #
 # PRINCIPIO: nessun atteso e pinnato in un file a parte. Cio che si puo derivare
 # dal vivo si deriva; cio che non si puo asserire si STAMPA come INFO e si dice
@@ -28,12 +31,12 @@ MINI_MYSQL := /opt/homebrew/bin/mysql --defaults-file=/Users/marketreader/.my-ph
 
 .PHONY: check check-prepush check-ci _gate prod-check lint lint-backend lint-frontend \
         test test-frontend test-frontend-compatto controllo-dst test-backend inventario \
-        inventario-compatto albero g21 openapi help
+        inventario-compatto contatore-stato albero g21 openapi help
 
 help:
 	@echo "gate di sessione : make check"
 	@echo "prima di deployare: make prod-check"
-	@echo "singoli          : lint | test-frontend | controllo-dst | test-backend | inventario | albero | openapi"
+	@echo "singoli          : lint | test-frontend | controllo-dst | test-backend | inventario | contatore-stato | albero | openapi"
 
 # ----------------------------------------------------------------- LINT
 lint-backend:
@@ -171,6 +174,22 @@ inventario-compatto:
 	@python3 scripts/audit/inventario.py --compatto
 	@echo "   dettaglio: make inventario"
 
+# ----------------------------------------------------------------- CONTATORE
+# Conta le voci dello STATO per sezione e le registra in docs/serie-stato.tsv,
+# tracciato. NON GIUDICA: nessun conteggio fa arrossare; arrossa solo lo
+# strumento (autoprova del riconoscitore) o uno STATO illeggibile.
+# Sta PRIMA di albero, e scrive SOLO a conteggio cambiato: cosi una riga nuova
+# e un TREE sporco atteso alla chiusura, che entra nel commit dello STATO, e
+# all apertura l albero resta pulito per costruzione. La serie registra i
+# CAMBIAMENTI dello STATO, non le esecuzioni del gate.
+# SERIE_SCRIVI=no in prepush e ci: li scrivere sporcherebbe TREE dopo il
+# commit, e il conteggio diverso si stampa come INFO.
+SERIE_SCRIVI ?= si
+
+contatore-stato:
+	@echo "== CONTATORE STATO: voci [aperta] e [chiusa] per sezione (registra, non giudica) =="
+	@python3 scripts/audit/contatore_stato.py --scrivi $(SERIE_SCRIVI)
+
 # ----------------------------------------------------------------- ALBERO
 # ALBERO_AHEAD=no asserisce il solo TREE. Serve allo hook di pre-push, dove
 # AHEAD NON e zero PER COSTRUZIONE -- il push esiste appunto per portarlo a
@@ -209,6 +228,7 @@ _gate:
 	echo; $(MAKE) --no-print-directory controllo-dst || rc=1; \
 	echo; $(MAKE) --no-print-directory test-backend || rc=1; \
 	echo; $(MAKE) --no-print-directory inventario-compatto || rc=1; \
+	echo; $(MAKE) --no-print-directory contatore-stato || rc=1; \
 	echo; $(MAKE) --no-print-directory albero || rc=1; \
 	echo; echo "###############################################"; \
 	if [ $$rc -eq 0 ]; then echo "# VERDETTO: VERDE"; else echo "# VERDETTO: ROSSO -- vedi i blocchi marcati sopra"; fi; \
@@ -220,15 +240,16 @@ check:
 	  TITOLO="make check -- gate di sessione PharmaTimer"
 
 # Lanciato dallo hook scripts/githooks/pre-push. Identico a check tranne che
-# AHEAD non e asserito (vedi ALBERO).
+# AHEAD non e asserito (vedi ALBERO) e la serie non si scrive (vedi CONTATORE).
 check-prepush:
-	@$(MAKE) --no-print-directory _gate ALBERO_AHEAD=no \
+	@$(MAKE) --no-print-directory _gate ALBERO_AHEAD=no SERIE_SCRIVI=no \
 	  TITOLO="make check-prepush -- gate di pre-push: TREE asserito, AHEAD no"
 
 # Lanciato da .github/workflows/gate.yml su ogni push. Stesso corpo; AHEAD non
-# e asserito perche un checkout di CI non ha upstream e il push e gia avvenuto.
+# e asserito perche un checkout di CI non ha upstream e il push e gia avvenuto,
+# e la serie non si scrive (vedi CONTATORE).
 check-ci:
-	@$(MAKE) --no-print-directory _gate ALBERO_AHEAD=no \
+	@$(MAKE) --no-print-directory _gate ALBERO_AHEAD=no SERIE_SCRIVI=no \
 	  TITOLO="make check-ci -- gate di GitHub Actions: TREE asserito, AHEAD no"
 
 # ----------------------------------------------------------------- G-21

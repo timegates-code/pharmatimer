@@ -1,0 +1,8 @@
+# PharmaTimer -- serie delle voci di STATO_CORRENTE.md, generata da make check.
+# Scritta da scripts/audit/contatore_stato.py: non si edita a mano.
+# Registra i CAMBIAMENTI dello STATO, non le esecuzioni del gate: una riga si
+# appende solo quando i conteggi differiscono dall'ultima, data esclusa.
+# Conta cio che il file porta: una voce chiusa e poi tolta esce dal conteggio.
+# Campi, separati da TAB: data, aperte, chiuse, poi sezione=aperte/chiuse
+# nell'ordine in cui le sezioni compaiono nello STATO.
+2026-09-28	aperte=41	chiuse=4	Coda di rimedio=4/0	Rilievi chiusi, e cio che resta aperto sotto di loro=1/1	Impegni ereditati ancora vivi=2/0	Minori, aperti e non urgenti=13/0	Decisioni che spettano a Roberto=21/3
