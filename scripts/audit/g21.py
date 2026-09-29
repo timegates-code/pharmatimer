@@ -18,8 +18,14 @@ Esiti, tutti nominati:
   VERDE  il codice non richiede alcuna migrazione oltre v01: nulla da confrontare;
   ROSSO  manca almeno un marcatore: schierare il codice senza migrare fallisce;
   ROSSO  il livello non ha marcatori misurabili (solo MODIFY COLUMN, per esempio);
+  ROSSO  il livello richiesto non e calcolabile: un file o una cartella del
+         calcolo non si legge. Si decide PRIMA di ogni ssh;
   ROSSO  il Mini non e misurabile da qui: senza la misura del bersaglio il
          confronto non esiste.
+
+Il calcolo del livello non ingoia errori di lettura (inventario.leggi_intero).
+Fino al 2026-09-29 li ingoiava: con la v06 illeggibile il livello scendeva a
+v05 in silenzio, e g21 avrebbe interrogato il Mini sui marcatori della v05.
 
 Prima generazione, fino alla v07: la ricetta del Makefile stampava il livello
 richiesto ma interrogava la sola colonna della v06, qualunque fosse il livello.
@@ -107,7 +113,12 @@ def main():
     args = ap.parse_args()
     os.chdir(RADICE)
     print("== G-21: livello di migrazione RICHIESTO dal codice contro APPLICATO sul Mini ==")
-    livello = inventario.livello_richiesto()
+    try:
+        livello = inventario.livello_richiesto()
+    except (inventario.LivelloNonCalcolabile, OSError) as exc:
+        print("   richiesto dal codice : NON CALCOLABILE (%s)" % exc)
+        print("   ROSSO senza il livello richiesto il confronto non esiste.")
+        return 1
     if livello is None:
         print("   richiesto dal codice : nessuna migrazione oltre v01")
         print("   OK    nulla da confrontare")

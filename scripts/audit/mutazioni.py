@@ -6,7 +6,8 @@ Uso:  backend/venv/bin/python scripts/audit/mutazioni.py [--compatto]
                   e la forma di make check.
 
 Un pin verde non e un pin efficace (CLAUDE.md sezione 6). Per ogni riga della
-tabella MUTAZIONI il blocco muta il codice di prodotto, lancia i file di test
+tabella MUTAZIONI il blocco muta il codice che la riga nomina -- di prodotto, o
+di un gate come il calcolo del livello di g21 --, lancia i file di test
 veri e pretende il rosso dei test che la riga nomina. Il collaudo che prima si
 faceva a mano e si dichiarava nei corpi di commit qui si misura a ogni gate.
 
@@ -81,6 +82,8 @@ T_AG = "src/state/applyHelper.opguard.test.js"
 T_AS = "src/utils/avvisoScheda.test.js"
 V7 = "backend/db/migrations/v07_push.sql"
 T_V7 = "tests/test_v07_schema.py"
+INV = "scripts/audit/inventario.py"
+T_G21 = "tests/test_g21_livello.py"
 
 GUARDIA_VERBO = (
     "  if (opGuardActive && !OUTBOX_OPS.includes(op)) {\n"
@@ -243,6 +246,22 @@ MUTAZIONI = [
     riga("v07-endpoint-su-endpoint", "v07, questa sessione", "M2",
          [(V7, "ADD UNIQUE INDEX uq_push_sub_endpoint_hash", "(endpoint_hash)", "(endpoint)")],
          "pytest", [T_V7], ["test_subscription_un_endpoint_una_riga"]),
+    # g21 interroga il Mini sui marcatori del livello che l inventario calcola.
+    # Un file o una cartella letti in silenzio come vuoti abbassano il livello:
+    # g21 verde su un Mini sotto il livello del codice, cioe il deploy che la
+    # migrazione PRIMA deve impedire (sulla v06, ogni insert di presa fallita:
+    # M2). Una riga per via, lettura e cammino: ciascuna lascia stretta l altra.
+    riga("g21-lettura-in-silenzio", "g21, sonda del 2026-09-29", "M2",
+         [(INV, "def leggi_intero(p):",
+           'raise LivelloNonCalcolabile("file non leggibile: %s (%s)" % (p, exc)) from exc',
+           'return ""')],
+         "pytest", [T_G21],
+         ["test_unreadable_migration_never_lowers_the_level",
+          "test_unreadable_product_file_never_lowers_the_level",
+          "test_non_utf8_product_file_never_lowers_the_level"]),
+    riga("g21-cartella-saltata", "g21, sonda del 2026-09-29", "M2",
+         [(INV, "def _codice_di_prodotto():", "onerror=_cartella_illeggibile", "onerror=None")],
+         "pytest", [T_G21], ["test_unlistable_product_dir_never_lowers_the_level"]),
 ]
 
 # L'autoprova: righe il cui esito e FISSATO, e che il banco pretende.

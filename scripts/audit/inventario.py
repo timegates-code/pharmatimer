@@ -20,9 +20,9 @@ SKIP_DIRS = {"node_modules", "venv", ".git", "dist", "dist-mini",
              "__pycache__", ".pytest_cache", "pharmatimer_api.egg-info"}
 
 
-def walk(base, exts):
+def walk(base, exts, onerror=None):
     out = []
-    for root, dirs, files in os.walk(base):
+    for root, dirs, files in os.walk(base, onerror=onerror):
         dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
         for fn in files:
             if fn.endswith(exts) and ".bak" not in fn:
@@ -738,14 +738,43 @@ def voce18():
 
 
 # ---------------------------------------------------------------- 19
+# Il livello si calcola da cio che si legge, e g21 lo confronta col Mini: un
+# file o una cartella saltati lo abbassano in silenzio, e g21 interroga i
+# marcatori di una migrazione piu vecchia. Misurato su una copia il 2026-09-29:
+# v06 illeggibile, livello v05, uscita 0 e nessun messaggio. Per questo le
+# letture del livello non passano da read() e dal walk tollerante delle altre
+# voci: o leggono tutto, o sollevano LivelloNonCalcolabile.
+class LivelloNonCalcolabile(Exception):
+    """Un file o una cartella del calcolo del livello non si legge per intero."""
+
+
+def _cartella_illeggibile(err):
+    raise LivelloNonCalcolabile("cartella non elencabile: %s (%s)" % (err.filename, err.strerror))
+
+
+def leggi_intero(p):
+    """Il testo di p per intero, in UTF-8 stretto, o LivelloNonCalcolabile."""
+    try:
+        with io.open(p, encoding="utf-8") as fh:
+            return fh.read()
+    except (OSError, UnicodeDecodeError) as exc:
+        raise LivelloNonCalcolabile("file non leggibile: %s (%s)" % (p, exc)) from exc
+
+
+def _codice_di_prodotto():
+    """Il testo di ogni .py di prodotto, o LivelloNonCalcolabile."""
+    return "".join(leggi_intero(p) for p in walk("backend/pharmatimer_api", (".py",),
+                                                  onerror=_cartella_illeggibile))
+
+
 def _colonne_per_migrazione():
     """[(migrazione, colonna, citata)] in ordine di catena: le colonne che ogni
     migrazione introduce (ADD o MODIFY COLUMN) e se il codice di prodotto le nomina."""
-    codice = "".join(read(p2) for p2 in walk("backend/pharmatimer_api", (".py",)))
+    codice = _codice_di_prodotto()
     righe_col = []
     for f in _migrazioni():
         nome = os.path.basename(f)
-        piatto = re.sub(r"\s+", " ", read(f))
+        piatto = re.sub(r"\s+", " ", leggi_intero(f))
         introdotte = re.findall(r"ALTER TABLE \w+\s+ADD COLUMN (\w+)", piatto, re.I)
         introdotte += re.findall(r"ALTER TABLE \w+\s+MODIFY COLUMN (\w+)", piatto, re.I)
         for col in sorted(set(introdotte)):
@@ -761,11 +790,11 @@ def _tabelle_per_migrazione():
     migrazione lascerebbe il livello sotto, e g21 risponderebbe verde a un Mini
     senza quelle tabelle (rilievo R1, 2026-09-29, prima della v07 in produzione).
     """
-    codice = "".join(read(p2) for p2 in walk("backend/pharmatimer_api", (".py",)))
+    codice = _codice_di_prodotto()
     righe_tab = []
     for f in _migrazioni()[1:]:
         nome = os.path.basename(f)
-        for tab in re.findall(r"CREATE TABLE IF NOT EXISTS (\w+)", read(f), re.I):
+        for tab in re.findall(r"CREATE TABLE IF NOT EXISTS (\w+)", leggi_intero(f), re.I):
             righe_tab.append((nome, tab, bool(re.search(r"\b%s\b" % re.escape(tab), codice))))
     return righe_tab
 
@@ -775,7 +804,9 @@ def livello_richiesto():
     introdotta o una tabella creata, o None.
 
     E il calcolo che la voce 19 stampa e che make g21 confronta col Mini
-    (scripts/audit/g21.py): inventario e gate non possono divergere.
+    (scripts/audit/g21.py): inventario e gate non possono divergere. Solleva
+    LivelloNonCalcolabile se un file o una cartella del calcolo non si legge:
+    mai un livello piu basso.
     """
     citate = {nome for nome, _col, usata in _colonne_per_migrazione() if usata}
     citate |= {nome for nome, _tab, usata in _tabelle_per_migrazione() if usata}
@@ -796,18 +827,31 @@ def voce19():
     print("  Movente MISURATO a par.22.198-unoctogies: il Mini di produzione girava")
     print("  0.7.5 senza v06, coerente; il codice del repo e 0.7.6 e nomina")
     print("  client_op_id in 27 sedi. Schierarlo senza migrare romperebbe ogni presa.")
+    # L inventario resta a uscita 0: un livello non calcolabile si stampa, e
+    # make g21 lo rende ROSSO.
+    try:
+        colonne = _colonne_per_migrazione()
+        tabelle = _tabelle_per_migrazione()
+        richiesto = livello_richiesto()
+        non_calcolabile = None
+    except LivelloNonCalcolabile as exc:
+        colonne, tabelle, richiesto, non_calcolabile = [], [], None, str(exc)
     print("\n  %-34s %-24s %-9s %s" % ("migrazione", "colonna introdotta", "nel DDL", "citata dal codice"))
-    for nome, col, usata in _colonne_per_migrazione():
+    for nome, col, usata in colonne:
         print("  %-34s %-24s %-9s %s" % (nome, col, "si", "SI" if usata else "no"))
     # Le tabelle create entrano nel livello sempre, nella stampa solo quando il
     # codice le nomina: finche nessuna e citata l uscita della voce non cambia.
-    tab_citate = [(n, t) for n, t, usata in _tabelle_per_migrazione() if usata]
+    tab_citate = [(n, t) for n, t, usata in tabelle if usata]
     if tab_citate:
         print("\n  %-34s %-24s %-9s %s" % ("migrazione", "tabella creata", "nel DDL", "citata dal codice"))
         for nome, tab in tab_citate:
             print("  %-34s %-24s %-9s %s" % (nome, tab, "si", "SI"))
-    richiesto = livello_richiesto()
-    print("\n  LIVELLO MINIMO RICHIESTO DAL CODICE: %s" % (richiesto or "nessuna migrazione oltre v01"))
+    if non_calcolabile:
+        print("\n  LIVELLO MINIMO RICHIESTO DAL CODICE: NON CALCOLABILE")
+        print("  %s" % non_calcolabile)
+        print("  make g21 e ROSSO finche il calcolo non legge ogni file e ogni cartella.")
+    else:
+        print("\n  LIVELLO MINIMO RICHIESTO DAL CODICE: %s" % (richiesto or "nessuna migrazione oltre v01"))
     print("  Ogni DB bersaglio sotto questo livello e INCOMPATIBILE col codice attuale.")
     print("  L ORDINE DI SCHIERAMENTO E VINCOLANTE: migrazione PRIMA, codice DOPO.")
     print("\n  applicatori di produzione presenti nel repo")
@@ -829,7 +873,7 @@ def voce19():
     print("     che sorvegliava la versione ma NON le migrazioni. Ora la coppia e chiusa.")
     esito("livello minimo richiesto dal codice: %s; applicatori di produzione %d; "
           "migrazioni del bersaglio %s",
-          richiesto or "nessuna oltre v01", len(appl),
+          "NON CALCOLABILE" if non_calcolabile else (richiesto or "nessuna oltre v01"), len(appl),
           "sorvegliate da make g21" if sorvegliato else "NON sorvegliate")
 
 
