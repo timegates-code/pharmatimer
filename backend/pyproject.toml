@@ -28,6 +28,9 @@ dependencies = [
     "pydantic>=2.13,<3",
     "pydantic-settings>=2.14,<3",
     "httpx>=0.28,<0.30",
+    # Canale Web Push, ramo A. Le versioni che si installano, transitive
+    # comprese, sono quelle di requirements.lock: deploy/installa-dal-lock.sh.
+    "pywebpush>=2.5,<2.6",
 ]
 
 [project.optional-dependencies]

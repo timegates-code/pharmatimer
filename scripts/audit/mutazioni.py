@@ -84,6 +84,8 @@ V7 = "backend/db/migrations/v07_push.sql"
 T_V7 = "tests/test_v07_schema.py"
 INV = "scripts/audit/inventario.py"
 T_G21 = "tests/test_g21_livello.py"
+DIP = "scripts/audit/dipendenze.py"
+T_DIP = "tests/test_dipendenze.py"
 
 GUARDIA_VERBO = (
     "  if (opGuardActive && !OUTBOX_OPS.includes(op)) {\n"
@@ -262,6 +264,18 @@ MUTAZIONI = [
     riga("g21-cartella-saltata", "g21, sonda del 2026-09-29", "M2",
          [(INV, "def _codice_di_prodotto():", "onerror=_cartella_illeggibile", "onerror=None")],
          "pytest", [T_G21], ["test_unlistable_product_dir_never_lowers_the_level"]),
+    # Il blocco dipendenze: il venv contro backend/requirements.lock. Un venv
+    # che diverge dal lock sul Mini e un servizio che non e quello provato
+    # sullo Studio; con il canale, il pianificatore che non parte e un canale
+    # che tace (M2 sul canale). Una riga per via, versione e presenza.
+    riga("dipendenze-versione-ignorata", "lock, 2026-09-29", "M2",
+         [(DIP, "def confronta(lock, presenti):",
+           "if n in presenti and presenti[n] != lock[n])", "if n in presenti and False)")],
+         "pytest", [T_DIP], ["test_version_other_than_the_lock_is_red"]),
+    riga("dipendenze-mancante-ignorata", "lock, 2026-09-29", "M2",
+         [(DIP, "def confronta(lock, presenti):",
+           "mancanti = sorted(n for n in lock if n not in presenti)", "mancanti = []")],
+         "pytest", [T_DIP], ["test_entry_missing_from_the_venv_is_red"]),
 ]
 
 # L'autoprova: righe il cui esito e FISSATO, e che il banco pretende.

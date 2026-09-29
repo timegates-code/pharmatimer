@@ -66,7 +66,15 @@ jobs:
         run: |
           python -m venv backend/venv
           backend/venv/bin/pip install --quiet --upgrade pip
-          backend/venv/bin/pip install --quiet -e "backend[dev]"
+          # Le versioni di backend/requirements.lock, SENZA hash: gli artefatti
+          # Linux non sono quelli del Mac, e un hash dentro un file di vincoli
+          # accende la modalita hash per tutta l installazione, che l editable
+          # fa fallire (misurato con pip 26.1.1). setuptools e wheel sono nel
+          # lock, e il blocco dipendenze del gate li pretende installati.
+          sed -E 's/[[:space:]]+--hash=.*$//' backend/requirements.lock \
+            | grep -E '^[A-Za-z0-9._-]+==' > "$RUNNER_TEMP/vincoli.txt"
+          backend/venv/bin/pip install --quiet -c "$RUNNER_TEMP/vincoli.txt" \
+            -e "backend[dev]" setuptools wheel
 
       - name: client mysql per la precondizione di make test-backend
         run: command -v mysql || (sudo apt-get update -q && sudo apt-get install -y -q mysql-client)

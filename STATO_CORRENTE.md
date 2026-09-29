@@ -10,47 +10,54 @@ poi `bash deploy/deploy-mini.sh` dal Terminale.
 
 ---
 
-## Ultima sessione -- ratifica del ramo A e migrazione v07, 2026-09-29
+## Ultima sessione -- backend del canale, ramo A: schede e dipendenze, 2026-09-29 e 30
 
-`make check` verde in apertura, HEAD `20b33db`, TREE 0, AHEAD 0.
+`make check` verde in apertura, lanciato da Roberto, HEAD `a7ae42a`.
 
-**Ratifiche, nell ordine della 17**, decisa A in apertura. Prima le schede da
-cui dipende la migrazione: 12 A, 11 A e 9 A, con le loro condizioni (voci
-sotto). Le schede 10, 14, 15, 16 e 22 restano per la sessione del backend.
+**Apertura, in sola lettura.** I tre except-pass nuovi della voce 8 stanno in
+`apply_v07_push.py` (close e rollback, dopo il verdetto): sono sul percorso di
+`apply_v07_prod.py`, ma nessuno nasconde un suo errore, e nessuno e sul
+percorso di g21. Sul percorso di g21 c era pero un ingoio a monte: il livello
+si calcolava con il `read()` tollerante dell inventario, e una migrazione
+illeggibile lo abbassava in silenzio (sonda su copia: v06 illeggibile,
+livello v05, uscita 0). Corretto in un commit suo, `e85d1a6`, con pin nei due
+versi e due righe nel banco; CI verde su Linux.
 
-**Migrazione v07** (`backend/db/migrations/v07_push.sql`), additiva: cinque
-tabelle (`push_pubblicazioni`, `push_calendario`, `push_dispatch`,
-`push_avvisi_fine`, `push_pianificatore`) e cinque colonne su
-`push_subscriptions`. Istanti in BIGINT millisecondi UTC; `ora_ricalcolata`
-resta DATETIME di parete, perche la 11 la confronta col log. Applicata a
-`pharmatimer_dev` e `pharmatimer_test` dello Studio, **non al Mini**.
-- `apply_v07_push.py` esegue il `.sql` stesso, sorgente unica con la CI:
-  identita in due fasi, idempotenza per istruzione (secondo giro tutto skip,
-  misurato), verifica finale. `apply_v07_prod.py` e scritto e non eseguito.
-- Pin: `backend/tests/test_v07_schema.py`, le quattro UNIQUE nei due versi, su
-  tabelle TEMPORARY: le tabelle condivise del DB di test non si toccano,
-  misurate identiche prima e dopo il banco. Otto righe nel banco, 28 su 28.
-- `g21` generico (`scripts/audit/g21.py`): livello calcolato dall inventario,
-  marcatori letti dal `.sql` del livello, Mini in sola lettura. Visto verde
-  (v06, 2 marcatori su 2), rosso non misurabile (dal sandbox), rosso su una
-  copia al livello v07 (17 su 17 mancanti).
-- Voce 19 dell inventario: conta anche le tabelle create e nominate dal
-  codice, uscita identica sull albero vero. Collaudo su copia: se il codice
-  nomina solo `push_calendario`, g21 arrossa; tolta la riga, torna il falso
-  verde.
-- `.gitignore`: eccezione per `backend/db/migrations/apply_*.py`. Entrano in
-  git i due applicatori della v06, mai versionati, letti per intero: nessun
-  segreto.
+**Ratifiche:** 16 A, 15 A e 22 A (voci sotto). La 10 e la 14 restano per la
+sessione del client.
 
-**Non fatto.** Niente deploy, nessuna scrittura sul Mini, niente router,
-pianificatore o client.
+**Dipendenze.** `backend/requirements.lock`: la chiusura di esercizio, 44 voci
+con lo sha256 del loro artefatto, generata da `scripts/genera-lock.py` dal
+report della sonda M4 (pip 26.1.1, darwin arm64, CPython 3.13.12). La installa
+`deploy/installa-dal-lock.sh`, sullo Studio e sul Mini (`02-setup` lo chiama),
+in modalita hash, senza cache, senza risoluzione e senza isolamento di build.
+Blocco `dipendenze` nel gate, prima di `test-backend`, e lo stesso confronto
+in `prod-check` sul freeze del Mini; la CI prende le stesse versioni senza
+hash.
+- Studio installato dal lock da Roberto: 44 voci su 44. Il freeze di prima e
+  in `~/pt-freeze-studio-prima.txt`: e la via del ritorno.
+- Misurato: un hash dentro un file di vincoli accende la modalita hash per
+  tutta l installazione (pip 26.1.1), e l editable la fa fallire.
+- Misurato: con la cache, http-ece arrivava da una wheel costruita altrove con
+  setuptools 84.0.0; senza cache lo Studio lo costruisce con il 82.0.1 del
+  lock, come fara il Mini (il suo WHEEL lo dice).
+- Misura, a verbale: pywebpush 2.5.0 porta aiohttp con sette dipendenze
+  (aiohappyeyeballs, aiosignal, attrs, frozenlist, multidict, propcache,
+  yarl) che il rapporto (:230-233) non elencava, e lo importa al proprio
+  import (`pywebpush/__init__.py` :15). pywebpush resta.
 
-**Deviazioni.** Spec 3.0 e 3.11 non descrivono ancora le tabelle e le colonne
-della v07: si allineano nel commit del canale, con la 6 (decisione 2).
+**Non fatto.** Nessun codice del canale: passata e LaunchAgent, endpoint di
+iscrizione e di pubblicazione, battito per la condizione della 9. Niente
+deploy, nessuna scrittura sul Mini.
 
-**Cosa resta.** Sessione del backend: prima le schede 10, 14, 15, 16 e 22. Prima
-di schierare codice che nomina la v07: `apply_v07_prod.py` sul Mini dal
-Terminale, poi `make g21` verde.
+**Deviazioni.** I pin di `scripts/audit/` stanno in `backend/tests/` e non
+accanto al file, perche il banco lancia solo pytest e vitest. Nessuna dalla
+Spec.
+
+**Cosa resta.** Sessione del backend: prima la proposta di struttura (regola
+critica 1), poi il codice. Prima del deploy, dal Terminale sul Mini:
+installazione dal lock, chiave VAPID (15 A), `apply_v07_prod.py`; poi `make
+prod-check` verde, g21 e dipendenze compresi.
 
 ---
 
@@ -112,6 +119,7 @@ Si esegue, non si rimisura. Ordinata per rischio clinico.
 | 3 | [aperta] **targa annidata nel batch, forma (a) decisa** | **M3** | Meccanico: il modello pydantic del ricalcolo dichiara `client_op_id` opzionale e ignorato, con il motivo nel docstring; R4 in `ApiRepository.contratto.test.js` arrossa e il marcatore `it.fails` si toglie nello stesso commit. Nessuna sede VIETATA, nessuna migrazione, wire-neutro. |
 | 4 | [aperta] **estrarre il SQL dai router** in `repository/` | -- | Refactor, sessione propria, se ancora voluto. Norma dichiarata: SQL nel router (`CLAUDE.md` 13). |
 | 5 | [aperta] **`deploy-mini.sh` non fotografa il bundle** prima del `rsync --delete` | -- | Fatto a mano per la seconda volta (`web.bak.*` e `backend.predeploy.*.tgz`). Lo script deve farlo da se, come passo fra le guardie e il rsync. |
+| 6 | [aperta] **Il meccanismo delle orfane** | M3 | Il cambio di profilo cancella le ricalcolate solo in locale (`ApiRepository.js` :66-69) e lo specchio le rimette alla lettura successiva; la giunzione `(farmaco_id, dose_numero)` non e una FK: e la D2 della 20. Materia di record, non condizione del canale (decisione 22 A). Forma del rimedio non decisa: portare la cancellazione al server tocca l invariante dello specchio (`mirrorLogWindow`) e la meccanica M1 della voce 2. |
 
 ### Rilievi chiusi, e cio che resta aperto sotto di loro
 
@@ -176,7 +184,8 @@ toccano:
 - [aperta] Otto documenti non sono referenziati ne da `CLAUDE.md` ne da `README`.
 - [aperta] Sette endpoint backend non sono mai chiamati dal frontend.
 - [aperta] npm: due dipendenze non usate e venti non fissate.
-- [aperta] Il pip del venv del Mini e `26.1.1`, disponibile `26.2.1`: avviso, non errore.
+- [aperta] Il pip dei venv di Studio e Mini e `26.1.1`, disponibile `26.2.1`: avviso, non
+  errore. pip non e nel lock: si aggiorna sui due venv insieme, o su nessuno.
 - [aperta] Sul Mini, in `~/PharmaTimer/backups/`, misurato il 2026-09-18: restano
   `web.bak.20260902_191529` e `backend.predeploy.20260902_191529.tgz`, il
   rollback di `0.7.7` (la fotografia delle 11:27 non c'e piu); i dump notturni
@@ -363,20 +372,36 @@ decisa W, quindi valgono.
 14. [aperta] **Sblocco di `vite.config.js` per una riga** `workbox.importScripts`, e
     sede del modulo di rete additivo che importa `apiClient` senza
     modificarlo.
-15. [aperta] **Custodia VAPID:** PEM 0600 nella home del Mini con backup fuori
-    macchina, o altra sede.
-16. [aperta] **Tolleranza e TTL:** 20 o 30 minuti dopo l'ora; TTL fino a 30 minuti,
-    un'ora o sei ore. Da mettere nella scheda: se il TTL e fisso o il tempo che
-    resta fino all istante piu la tolleranza (con TTL fisso un invio recuperato
-    puo arrivare fino al doppio della tolleranza); il client ha gia
-    `TOLLERANZA_MIN` = 15, la soglia del badge "in ritardo"
-    (`src/domain/constants.js`), un altra grandezza da non confondere.
+15. [chiusa] **Custodia VAPID: DECISA il 2026-09-29, lettera A.** PEM 0600 nella
+    home del Mini, fuori da `~/PharmaTimer`, accanto a `~/.my-pharmatimer.cnf`:
+    fuori dal `rsync --delete` e dall unica cartella servita. Il percorso nei
+    plist, come `DB_DEFAULTS_FILE`; il `sub` nel `.env.dev` del Mini, fuori dal
+    repo; la pubblica derivata dal PEM. Senza PEM il canale si spegne e lo dice
+    (503, battito con motivo) e l app parte comunque: impostazioni facoltative,
+    mai validate all avvio. Chiavi distinte per Studio e Mini. Backup nel
+    Portachiavi di login dello Studio, PEM in base64, mai accanto ai dump.
+    **Scartate:** il PEM con i dump (con endpoint e chiavi delle subscription
+    permette notifiche a nome di PharmaTimer: M1); dentro `~/PharmaTimer`; la
+    privata nei plist tracciati; il Portachiavi del Mini letto dal servizio;
+    nessun backup; una chiave sola per Studio e Mini.
+16. [chiusa] **Tolleranza e TTL: DECISA il 2026-09-29, lettera A.** Tolleranza 20
+    minuti dopo l ora, mai prima. TTL di ogni invio = il tempo che resta alla
+    fine della finestra, calcolato all invio: nessun promemoria arriva oltre l
+    ora piu 20 minuti; a zero o meno non si invia, `non_inviato` con motivo.
+    Tentativi solo dentro la finestra; stessa regola per l avviso di fine, con
+    il suo `entro`. Una costante nel backend, sede unica, che il telefono
+    riceve dal server (condizione della 12). `TOLLERANZA_MIN` = 15, la soglia
+    del badge, non si tocca. **Scartate:** TTL fisso pari alla tolleranza
+    (consegna fino all ora piu due tolleranze: finestra M1 piu larga); TTL di
+    un ora o sei ore (contro la W e `rapporto.md` :295-297).
 17. [chiusa] **Ordine dei lavori: DECISA il 2026-09-29, lettera A.** Sonda sul
     telefono senza codice, poi ratifica con la scheda a quattro campi, poi
     migrazione prima del codice, backend con passata vista rossa, client con
     SW, settimana di accettazione. C resta una riserva con la sua sonda, da
     preparare solo se l accettazione di A non regge. Sonda chiusa; migrazione
-    scritta il 2026-09-29; restano le schede 10, 14, 15, 16 e 22.
+    scritta il 2026-09-29; restano le schede 10, 14, 15, 16 e 22. Il
+    2026-09-29 decise la 16, la 15 e la 22, tutte A: restano la 10 e la 14,
+    per la sessione del client.
 
 L'ultima NON dipende dalla decisione 2: vale in qualunque caso, anche se le
 notifiche ad app chiusa non si fanno.
@@ -442,20 +467,17 @@ notifiche ad app chiusa non si fanno.
     **ESEGUITA il 2026-09-18, lettera A:** la riga 5 e riscritta nel commit
     che esegue la 19.
 
-22. [aperta] **Rimedio alle orfane -- condizione viva del ramo A.** Dalla parte
-    meccanismo della 18. La fonte `rapporto.md` :503 chiede "rimedio alle
-    ricalcolate orfane" come condizione della variante A, e non prescrive una
-    forma: (b) portare al server la cancellazione che oggi il cambio profilo
-    fa solo in locale, (c) trattare come stantia ogni riga aperta piu vecchia
-    della finestra del piano, o altra forma che regga la stessa misura. Serve
-    perche la giunzione `(farmaco_id, dose_numero)` fra `log_assunzioni` e
-    `orari_base` non e una FK: ridurre `dosi_giornaliere` su un farmaco vero
-    rigenera un orfana identica, ed e la D2 della 20. Dopo la ripartenza quel
-    record e clinico. **La ripartenza e avvenuta il 2026-09-18.**
-    Misurato il 2026-09-29, per la scheda: la forma (c) del rapporto (:373-374,
-    "piu vecchia dell ultima pubblicazione"), che il progettista sicurezza
-    scrive su `updated_at`, presuppone una colonna che `log_assunzioni` non ha.
-    Con la A della 11 un orfana non sposta il push: lo degrada ad avviso neutro.
+22. [chiusa] **Rimedio alle orfane: DECISA il 2026-09-29, lettera A.** La
+    condizione di `rapporto.md` :503 la regge la A della 11: un orfana non fa
+    partire un push di dose a un ora che l app non mostra, e non lo sopprime
+    in silenzio; il caso peggiore e un avviso neutro, registrato con cio che
+    la passata ha letto. Pin nel backend: una ricalcolata nel log che la
+    pubblicazione non porta da un avviso neutro; log uguale alla pubblicazione
+    da il push di dose; una riga aperta fuori dal calendario non da alcun
+    invio. Chiude come condizione del canale; il meccanismo e in coda, voce 6.
+    **Scartate:** chiudere o cancellare lato server le righe vecchie (I2, M3);
+    fidarsi del telefono quando la riga e piu vecchia della pubblicazione
+    (colonna assente, riapre la 11: M1); la (a) della 18 senza pin.
 
 23. [aperta] **Keychain e file del token dell'utente 2.** La voce `pharmatimer-token-2`
     del Keychain dello Studio e stantia dal 3 settembre (impronta

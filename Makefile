@@ -2,8 +2,9 @@
 # session_state.env, impegni.tsv e close_step.sh (sessione di smontaggio).
 #
 #   make check       GATE DI SESSIONE. Apertura e chiusura si fanno su questo.
-#                    lint + test frontend + controllo DST + test backend +
-#                    mutazioni + inventario + contatore dello STATO + albero.
+#                    lint + test frontend + controllo DST + dipendenze +
+#                    test backend + mutazioni + inventario + contatore dello
+#                    STATO + albero.
 #   make check-prepush  Lo stesso gate, lanciato dallo hook di pre-push:
 #                    asserisce TREE e non AHEAD, che prima del push non e zero.
 #   make check-ci    Lo stesso gate, lanciato da GitHub Actions su ogni push.
@@ -15,6 +16,8 @@
 #                    del contratto dei tipi, e test-frontend lo rigenera prima.
 #   make controllo-dst  i file *.dst.test.js lanciati SENZA ora legale devono
 #                    arrossare tutti: un pin mai visto rosso non e una guardia.
+#   make dipendenze  backend/venv contro backend/requirements.lock: ogni voce
+#                    installata alla sua versione. prod-check lo fa sul Mini.
 #   make mutazioni   la tabella di scripts/audit/mutazioni.py: ogni riga muta
 #                    il prodotto su una copia fuori dall albero e pretende il
 #                    rosso dei test che nomina.
@@ -33,28 +36,29 @@ BASE := https://marketreader-server.taila127de.ts.net
 MINI_MYSQL := /opt/homebrew/bin/mysql --defaults-file=/Users/marketreader/.my-pharmatimer.cnf
 
 # L interprete del gate e UNO, backend/venv, allineato al .venv del Mini: stessa
-# versione minore di Python e, per le dipendenze di esercizio, le versioni del
-# suo freeze. Nessun ripiego sul Python di sistema: i blocchi che lo usano
-# dipendono da `venv`, che senza interprete arrossa e dice come ricostruirlo.
+# versione minore di Python e, per le dipendenze di esercizio, le versioni di
+# backend/requirements.lock, che il blocco dipendenze misura. Nessun ripiego sul
+# Python di sistema: i blocchi che lo usano dipendono da `venv`, che senza
+# interprete arrossa e dice come ricostruirlo.
 PY := backend/venv/bin/python
 
 .PHONY: check check-prepush check-ci _gate prod-check lint lint-backend lint-frontend \
-        test test-frontend test-frontend-compatto controllo-dst test-backend mutazioni \
+        test test-frontend test-frontend-compatto controllo-dst dipendenze test-backend mutazioni \
         mutazioni-compatto inventario inventario-compatto contatore-stato albero g21 openapi \
         venv help
 
 help:
 	@echo "gate di sessione : make check"
 	@echo "prima di deployare: make prod-check"
-	@echo "singoli          : lint | test-frontend | controllo-dst | test-backend | mutazioni | inventario | contatore-stato | albero | openapi"
+	@echo "singoli          : lint | test-frontend | controllo-dst | dipendenze | test-backend | mutazioni | inventario | contatore-stato | albero | openapi"
 
 # ----------------------------------------------------------------- VENV
 venv:
 	@if [ ! -x $(PY) ]; then \
 	  echo "ROSSO  $(PY) assente: il gate non ripiega sul Python di sistema."; \
-	  echo "       Ricostruirlo con la versione minore del .venv del Mini e il suo"; \
-	  echo "       freeze come vincolo: python3.13 -m venv backend/venv;"; \
-	  echo "       backend/venv/bin/pip install -c <freeze del Mini> -e 'backend[dev]'"; \
+	  echo "       Ricostruirlo con la versione minore del .venv del Mini, dal lock:"; \
+	  echo "       python3.13 -m venv backend/venv"; \
+	  echo "       bash deploy/installa-dal-lock.sh backend/venv backend --dev"; \
 	  exit 1; \
 	fi
 
@@ -167,6 +171,13 @@ test-frontend-compatto: openapi
 controllo-dst: venv
 	@$(PY) scripts/audit/controllo_dst.py
 
+# backend/venv contro backend/requirements.lock, la sola fonte delle versioni
+# di esercizio, transitive comprese: ogni voce installata alla sua versione, gli
+# strumenti di sviluppo ammessi in piu. Prima di test-backend, di cui e la
+# precondizione. prod-check fa lo stesso confronto sul freeze del Mini.
+dipendenze: venv
+	@$(PY) scripts/audit/dipendenze.py
+
 test-backend: venv
 	@echo "== TEST BACKEND (pytest) =="
 	@echo "-- precondizione: MySQL di dev raggiungibile (ex sonda DEV_UUID) --"
@@ -263,6 +274,7 @@ _gate:
 	$(MAKE) --no-print-directory lint || rc=1; \
 	echo; $(MAKE) --no-print-directory test-frontend-compatto || rc=1; \
 	echo; $(MAKE) --no-print-directory controllo-dst || rc=1; \
+	echo; $(MAKE) --no-print-directory dipendenze || rc=1; \
 	echo; $(MAKE) --no-print-directory test-backend || rc=1; \
 	echo; $(MAKE) --no-print-directory mutazioni-compatto || rc=1; \
 	echo; $(MAKE) --no-print-directory inventario-compatto || rc=1; \
@@ -318,6 +330,11 @@ prod-check:
 	echo "   INFO  PERMESSI  = $$(sed -n '3p' $$tmp/prod.txt)"; \
 	echo "   INFO  FARMACI   = $$(sed -n '4p' $$tmp/prod.txt)"; \
 	echo "   INFO  LOG       = $$(sed -n '5p' $$tmp/prod.txt)"; \
+	echo; \
+	if ssh mini '~/PharmaTimer/.venv/bin/python -m pip freeze --exclude-editable' > $$tmp/freeze-mini.txt 2> $$tmp/freeze-mini.err; then \
+	  $(PY) scripts/audit/dipendenze.py --freeze $$tmp/freeze-mini.txt || rc=1; \
+	else echo "== DIPENDENZE DEL MINI =="; \
+	  echo "   ROSSO freeze del Mini non misurabile: $$(tail -1 $$tmp/freeze-mini.err)"; rc=1; fi; \
 	rm -rf $$tmp; \
 	echo; $(MAKE) --no-print-directory g21 || rc=1; \
 	echo; echo "###############################################"; \

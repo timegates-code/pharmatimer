@@ -84,10 +84,12 @@ leggere: erano l'apparato, e l'apparato non c'e piu.
 `make check` esegue, in questo ordine: **lint** (ruff piu eslint, in modo
 baseline), **test frontend** (vitest), **controllo DST** (i file
 `*.dst.test.js` lanciati senza ora legale devono arrossare tutti: e un pin
-visto rosso a ogni gate), **test backend** (pytest, con il MySQL di dev come
-precondizione dichiarata), **mutazioni** (ogni riga della tabella del banco
-muta il prodotto su una copia fuori dall'albero e deve far arrossare i test che
-nomina: sezione 6), **inventario** (le diciannove voci),
+visto rosso a ogni gate), **dipendenze** (`backend/venv` contro
+`backend/requirements.lock`: ogni voce installata alla sua versione, gli
+strumenti di sviluppo ammessi in piu), **test backend** (pytest, con il MySQL
+di dev come precondizione dichiarata), **mutazioni** (ogni riga della tabella
+del banco muta il prodotto su una copia fuori dall'albero e deve far arrossare
+i test che nomina: sezione 6), **inventario** (le diciannove voci),
 **contatore dello STATO** (voci aperte e chiuse per sezione, appese a
 `docs/serie-stato.tsv` solo a conteggio cambiato: registra, non giudica), e
 **albero** (`TREE` e `AHEAD` letti da git vivo).
@@ -232,9 +234,10 @@ sessione. **Niente ricarico in KB:** i file si leggono dal disco e sono correnti
 per costruzione.
 
 **Prima di un deploy, e solo allora: `make prod-check`.** Tocca il Mini via rete,
-asserisce che il servizio risponde e che **`make g21`** e verde -- cioe che il
+asserisce che il servizio risponde, che **`make g21`** e verde -- cioe che il
 livello di migrazione applicato in produzione non e sotto quello che il codice
-richiede. Il resto lo stampa come `INFO` e dice che e INFO.
+richiede -- e che il venv del Mini porta `backend/requirements.lock` voce per
+voce. Il resto lo stampa come `INFO` e dice che e INFO.
 
 **Ordine vincolante di schieramento: migrazione PRIMA, codice DOPO.**
 
@@ -301,10 +304,10 @@ vitest riporta N unhandled errors con 0 test eseguiti e pytest da
 `PermissionError` dentro `$TMPDIR`: il guasto e di ambiente, non di codice.
 
 **Il gate e `make check`**, e vale in apertura e in chiusura (sezioni 4 e 8).
-Esegue lint, test frontend, controllo DST, test backend, mutazioni, inventario,
-contatore dello STATO e albero, e stampa un verdetto unico. **Prima di un
-deploy, e solo allora, `make prod-check`**, che tocca il Mini e include
-`make g21`.
+Esegue lint, test frontend, controllo DST, dipendenze, test backend,
+mutazioni, inventario, contatore dello STATO e albero, e stampa un verdetto
+unico. **Prima di un deploy, e solo allora, `make prod-check`**, che tocca il
+Mini e include `make g21` e il confronto del venv del Mini con il lock.
 
 Sotto Claude Code il gate gira per intero: la precondizione MySQL di
 `test-backend` passa perche il sandbox ammette il loopback. Cio che resta fuori
@@ -333,6 +336,16 @@ Backend, da `backend/`:
 - Config da `backend/.env.dev` via pydantic-settings. `DB_NAME` e obbligatorio
   e senza default; le credenziali sono o `DB_DEFAULTS_FILE`, o `DB_USER` piu
   `DB_PASSWORD`, e un validator cross-field pretende una delle due vie.
+
+Dipendenze del backend, dalla radice:
+
+- `backend/requirements.lock` e la sola fonte delle versioni di esercizio,
+  transitive comprese, con lo sha256 di ogni artefatto. Non si scrive a mano:
+  `scripts/genera-lock.py` lo rigenera dal report di una risoluzione di pip.
+- `bash deploy/installa-dal-lock.sh backend/venv backend` installa il venv dal
+  lock: modalita hash, senza cache, senza risoluzione, senza isolamento di
+  build. Lo stesso script installa il Mini; `--dev` aggiunge gli strumenti di
+  sviluppo. L'installazione tocca PyPI, quindi si lancia dal Terminale.
 
 Config di test:
 
@@ -417,6 +430,10 @@ Dice dove mettere il PROSSIMO file; cio che non la rispetta si dichiara qui.
   usano davvero. Un componente usato da una sola vista sta nella sua vista.
 - Il test sta ACCANTO al file che prova, stesso nome piu `.test.js` o
   `.test.jsx`. `src/test/` porta solo setup, finti condivisi e i pin di suite.
+- Eccezione dichiarata: i pin degli script di gate stanno in `backend/tests/` e
+  non accanto allo script, perche il banco delle mutazioni lancia solo pytest e
+  vitest: `test_g21_livello.py` per `inventario.py`, `test_dipendenze.py` per
+  `dipendenze.py`.
 - `backend/pharmatimer_api/` ha un solo strato: **il SQL sta nel router**.
   Verificato con 67 `cur.execute` nei cinque router. Le due impalcature vuote
   `repository/` e `services/`, che portavano il solo `__init__.py` e che
