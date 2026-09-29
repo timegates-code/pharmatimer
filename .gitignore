@@ -29,6 +29,13 @@ PharmaTimer_Project_Spec_*.md
 .claude/
 backups_dev/
 apply_*.py
+# Eccezione: gli applicatori delle migrazioni sono toolchain, non patcher di
+# sessione. Il pattern qui sopra (par.22.167) mirava ai patcher della radice, e
+# la sessione seguente annotava le migrazioni come fuori bersaglio perche gia
+# tracciate. Il pattern ha poi tenuto fuori dal repo i due applicatori della
+# v06 (apply_v06_client_op_id.py e apply_v06_prod.py, commit 0de19bf), mai
+# entrati in git fino alla v07. Senza eccezione ogni nuovo applicatore resta fuori.
+!backend/db/migrations/apply_*.py
 introspect_*.py
 /patcher_*.py
 /cp0_*.sh

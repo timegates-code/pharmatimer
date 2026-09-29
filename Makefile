@@ -186,7 +186,7 @@ test-backend: venv
 test: test-frontend test-backend
 
 # ----------------------------------------------------------------- MUTAZIONI
-# Collaudo per mutazione dei pin M1 e M3 (CLAUDE.md sez. 6). Ogni riga della
+# Collaudo per mutazione dei pin M1, M2 e M3 (CLAUDE.md sez. 6). Ogni riga della
 # tabella in scripts/audit/mutazioni.py muta il prodotto su una COPIA
 # dell albero di lavoro in una cartella temporanea, mai sul posto, e pretende
 # il rosso dei test che nomina. Sede per contenuto: se non si trova piu, ROSSO.
@@ -291,23 +291,11 @@ check-ci:
 	  TITOLO="make check-ci -- gate di GitHub Actions: TREE asserito, AHEAD no"
 
 # ----------------------------------------------------------------- G-21
+# Generico: il livello e quello che la voce 19 dell inventario calcola, i
+# marcatori si leggono dal .sql di quel livello, il Mini si legge in sola
+# lettura. Prima generazione: interrogava la sola colonna della v06.
 g21: venv
-	@echo "== G-21: livello di migrazione RICHIESTO dal codice contro APPLICATO sul Mini =="
-	@req=$$($(PY) scripts/audit/inventario.py --voce 19 | grep 'LIVELLO MINIMO RICHIESTO' | sed 's/.*: //'); \
-	echo "   richiesto dal codice : $$req"; \
-	app=$$(ssh mini '$(MINI_MYSQL) pharmatimer -N -B -e "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='"'"'log_assunzioni'"'"' AND COLUMN_NAME='"'"'client_op_id'"'"'"' 2>/dev/null); \
-	if [ "$$app" = "1" ]; then \
-	  echo "   applicato sul Mini   : v06 PRESENTE"; echo "   OK    livelli compatibili"; \
-	elif [ "$$app" = "0" ]; then \
-	  echo "   applicato sul Mini   : v06 ASSENTE"; \
-	  echo "   ROSSO il Mini e SOTTO il livello richiesto dal codice."; \
-	  echo "         Schierare senza migrare fa fallire OGNI insert di presa (M2)."; \
-	  echo "         Ordine vincolante: backend/db/migrations/apply_v06_prod.py PRIMA, codice DOPO."; \
-	  exit 1; \
-	else \
-	  echo "   applicato sul Mini   : NON MISURABILE (Mini irraggiungibile da qui)"; \
-	  echo "   ROSSO senza la misura del bersaglio il confronto non esiste."; exit 1; \
-	fi
+	@$(PY) scripts/audit/g21.py --mysql '$(MINI_MYSQL)' --db pharmatimer
 
 # ----------------------------------------------------------------- PROD-CHECK
 prod-check:

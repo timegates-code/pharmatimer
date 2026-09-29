@@ -738,6 +738,54 @@ def voce18():
 
 
 # ---------------------------------------------------------------- 19
+def _colonne_per_migrazione():
+    """[(migrazione, colonna, citata)] in ordine di catena: le colonne che ogni
+    migrazione introduce (ADD o MODIFY COLUMN) e se il codice di prodotto le nomina."""
+    codice = "".join(read(p2) for p2 in walk("backend/pharmatimer_api", (".py",)))
+    righe_col = []
+    for f in _migrazioni():
+        nome = os.path.basename(f)
+        piatto = re.sub(r"\s+", " ", read(f))
+        introdotte = re.findall(r"ALTER TABLE \w+\s+ADD COLUMN (\w+)", piatto, re.I)
+        introdotte += re.findall(r"ALTER TABLE \w+\s+MODIFY COLUMN (\w+)", piatto, re.I)
+        for col in sorted(set(introdotte)):
+            righe_col.append((nome, col, bool(re.search(r"\b%s\b" % re.escape(col), codice))))
+    return righe_col
+
+
+def _tabelle_per_migrazione():
+    """[(migrazione, tabella, citata)]: le tabelle che una migrazione crea DOPO la
+    prima della catena, che e la base, e se il codice di prodotto le nomina.
+
+    Senza questa lista un codice che nominasse le sole tabelle nuove di una
+    migrazione lascerebbe il livello sotto, e g21 risponderebbe verde a un Mini
+    senza quelle tabelle (rilievo R1, 2026-09-29, prima della v07 in produzione).
+    """
+    codice = "".join(read(p2) for p2 in walk("backend/pharmatimer_api", (".py",)))
+    righe_tab = []
+    for f in _migrazioni()[1:]:
+        nome = os.path.basename(f)
+        for tab in re.findall(r"CREATE TABLE IF NOT EXISTS (\w+)", read(f), re.I):
+            righe_tab.append((nome, tab, bool(re.search(r"\b%s\b" % re.escape(tab), codice))))
+    return righe_tab
+
+
+def livello_richiesto():
+    """L ultima migrazione di cui il codice di prodotto nomina una colonna
+    introdotta o una tabella creata, o None.
+
+    E il calcolo che la voce 19 stampa e che make g21 confronta col Mini
+    (scripts/audit/g21.py): inventario e gate non possono divergere.
+    """
+    citate = {nome for nome, _col, usata in _colonne_per_migrazione() if usata}
+    citate |= {nome for nome, _tab, usata in _tabelle_per_migrazione() if usata}
+    richiesto = None
+    for f in _migrazioni():
+        if os.path.basename(f) in citate:
+            richiesto = os.path.basename(f)
+    return richiesto
+
+
 def voce19():
     head(19, "livello di migrazione RICHIESTO dal codice di prodotto")
     print("  Misura statica del rischio di schieramento: quali colonne introdotte")
@@ -748,19 +796,17 @@ def voce19():
     print("  Movente MISURATO a par.22.198-unoctogies: il Mini di produzione girava")
     print("  0.7.5 senza v06, coerente; il codice del repo e 0.7.6 e nomina")
     print("  client_op_id in 27 sedi. Schierarlo senza migrare romperebbe ogni presa.")
-    codice = "".join(read(p2) for p2 in walk("backend/pharmatimer_api", (".py",)))
-    richiesto = None
     print("\n  %-34s %-24s %-9s %s" % ("migrazione", "colonna introdotta", "nel DDL", "citata dal codice"))
-    for f in _migrazioni():
-        nome = os.path.basename(f)
-        piatto = re.sub(r"\s+", " ", read(f))
-        introdotte = re.findall(r"ALTER TABLE \w+\s+ADD COLUMN (\w+)", piatto, re.I)
-        introdotte += re.findall(r"ALTER TABLE \w+\s+MODIFY COLUMN (\w+)", piatto, re.I)
-        for col in sorted(set(introdotte)):
-            usata = bool(re.search(r"\b%s\b" % re.escape(col), codice))
-            if usata:
-                richiesto = nome
-            print("  %-34s %-24s %-9s %s" % (nome, col, "si", "SI" if usata else "no"))
+    for nome, col, usata in _colonne_per_migrazione():
+        print("  %-34s %-24s %-9s %s" % (nome, col, "si", "SI" if usata else "no"))
+    # Le tabelle create entrano nel livello sempre, nella stampa solo quando il
+    # codice le nomina: finche nessuna e citata l uscita della voce non cambia.
+    tab_citate = [(n, t) for n, t, usata in _tabelle_per_migrazione() if usata]
+    if tab_citate:
+        print("\n  %-34s %-24s %-9s %s" % ("migrazione", "tabella creata", "nel DDL", "citata dal codice"))
+        for nome, tab in tab_citate:
+            print("  %-34s %-24s %-9s %s" % (nome, tab, "si", "SI"))
+    richiesto = livello_richiesto()
     print("\n  LIVELLO MINIMO RICHIESTO DAL CODICE: %s" % (richiesto or "nessuna migrazione oltre v01"))
     print("  Ogni DB bersaglio sotto questo livello e INCOMPATIBILE col codice attuale.")
     print("  L ORDINE DI SCHIERAMENTO E VINCOLANTE: migrazione PRIMA, codice DOPO.")
@@ -770,17 +816,21 @@ def voce19():
     righe(appl, "nessuno")
     print("\n  COPERTURA DEL GATE, dichiarata e non dedotta")
     mk = read("Makefile")
+    # g21 e sorvegliante solo se la ricetta chiama lo script che confronta QUESTO
+    # livello col Mini. Fino a v07 si cercava client_op_id nel Makefile: la
+    # prima generazione di g21 interrogava la sola colonna della v06.
+    sorvegliato = "scripts/audit/g21.py" in mk and os.path.exists("scripts/audit/g21.py")
     print("     versione del backend in produzione : %s (make prod-check, INFO)"
           % ("letta" if "OPENAPI_VER" in mk else "non letta"))
     print("     stato delle migrazioni del bersaglio: %s"
           % ("SORVEGLIATO da make g21, che ARROSSA se il Mini e sotto il livello"
-             if "client_op_id" in mk else "NON SORVEGLIATO"))
+             if sorvegliato else "NON SORVEGLIATO"))
     print("     NOTA: fino allo smontaggio del gate questa riga leggeva scripts/cp0.sh,")
     print("     che sorvegliava la versione ma NON le migrazioni. Ora la coppia e chiusa.")
     esito("livello minimo richiesto dal codice: %s; applicatori di produzione %d; "
           "migrazioni del bersaglio %s",
           richiesto or "nessuna oltre v01", len(appl),
-          "sorvegliate da make g21" if "client_op_id" in mk else "NON sorvegliate")
+          "sorvegliate da make g21" if sorvegliato else "NON sorvegliate")
 
 
 VOCI = {1: voce1, 2: voce2, 3: voce3, 4: voce4, 5: voce5, 6: voce6,

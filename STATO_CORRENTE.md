@@ -10,47 +10,47 @@ poi `bash deploy/deploy-mini.sh` dal Terminale.
 
 ---
 
-## Ultima sessione -- collaudo per mutazione nel gate, 2026-09-29
+## Ultima sessione -- ratifica del ramo A e migrazione v07, 2026-09-29
 
-`make check` verde in apertura, HEAD `394bec1`, TREE 0, AHEAD 0. Intervento 8.1
-del documento sul gate. Nessuna riga di prodotto e nessun test toccati.
+`make check` verde in apertura, HEAD `20b33db`, TREE 0, AHEAD 0.
 
-**Misura, in sola lettura e su copie fuori dall albero.** Le mutazioni per M1 e
-M3 dichiarate nei corpi di commit, o nel Changelog archiviato dove il corpo le
-contava soltanto, sono venti riproducibili: tutte mordono ancora a HEAD, nessun
-pin inefficace. Non riproducibili le quindici di `37625e9` e le diciannove di
-`68e9235`, mai enumerate; ricostruite le cinque forme di `b6b4471`.
+**Ratifiche, nell ordine della 17**, decisa A in apertura. Prima le schede da
+cui dipende la migrazione: 12 A, 11 A e 9 A, con le loro condizioni (voci
+sotto). Le schede 10, 14, 15, 16 e 22 restano per la sessione del backend.
 
-**Ratifiche.** Forma A, con due condizioni. Prima: il pytest della copia usa il
-DB di test di test-backend e non raggiunge dati clinici. Dimostrato: stessa
-risoluzione di `.env.dev`, che entra nella copia per link (senza link pytest si
-ferma alla raccolta), stesso pool su `pharmatimer_test`; l utente di test ha
-privilegi sui soli `pharmatimer_dev` e `pharmatimer_test`, e dev non porta dati
-dal 2026-09-18. Seconda: la sezione 6 di CLAUDE.md riscritta, ratificata B con
-due tagli.
+**Migrazione v07** (`backend/db/migrations/v07_push.sql`), additiva: cinque
+tabelle (`push_pubblicazioni`, `push_calendario`, `push_dispatch`,
+`push_avvisi_fine`, `push_pianificatore`) e cinque colonne su
+`push_subscriptions`. Istanti in BIGINT millisecondi UTC; `ora_ricalcolata`
+resta DATETIME di parete, perche la 11 la confronta col log. Applicata a
+`pharmatimer_dev` e `pharmatimer_test` dello Studio, **non al Mini**.
+- `apply_v07_push.py` esegue il `.sql` stesso, sorgente unica con la CI:
+  identita in due fasi, idempotenza per istruzione (secondo giro tutto skip,
+  misurato), verifica finale. `apply_v07_prod.py` e scritto e non eseguito.
+- Pin: `backend/tests/test_v07_schema.py`, le quattro UNIQUE nei due versi, su
+  tabelle TEMPORARY: le tabelle condivise del DB di test non si toccano,
+  misurate identiche prima e dopo il banco. Otto righe nel banco, 28 su 28.
+- `g21` generico (`scripts/audit/g21.py`): livello calcolato dall inventario,
+  marcatori letti dal `.sql` del livello, Mini in sola lettura. Visto verde
+  (v06, 2 marcatori su 2), rosso non misurabile (dal sandbox), rosso su una
+  copia al livello v07 (17 su 17 mancanti).
+- Voce 19 dell inventario: conta anche le tabelle create e nominate dal
+  codice, uscita identica sull albero vero. Collaudo su copia: se il codice
+  nomina solo `push_calendario`, g21 arrossa; tolta la riga, torna il falso
+  verde.
+- `.gitignore`: eccezione per `backend/db/migrations/apply_*.py`. Entrano in
+  git i due applicatori della v06, mai versionati, letti per intero: nessun
+  segreto.
 
-- **Blocco `mutazioni`** in `make check`, dopo test-backend: tabella in
-  `scripts/audit/mutazioni.py`, copie dell albero di lavoro in `$TMPDIR`, sede
-  per contenuto, autoprova a ogni esecuzione, parita del DB con test-backend
-  prima di ogni pytest. Venti righe su venti mordono in circa 19 s: `make
-  check` passa da 18 a 37 s.
-- **Collaudo del blocco**, con varianti fuori dall albero: rosso nominato su
-  riga che non morde, sede sparita, test atteso inesistente, copia senza
-  `.env.dev`, DB diverso da test-backend, `DB_NAME_TEST` uguale a `DB_NAME`,
-  harness sempre rossa; scrittura fuori dalla copia rifiutata; nessun residuo
-  su interruzione.
-- **CLAUDE.md** sezioni 4, 6 e 11: il collaudo di un pin nuovo e una riga della
-  tabella, non piu una mutazione sul posto.
-- **Decisione 1** chiusa, lettera A.
+**Non fatto.** Niente deploy, nessuna scrittura sul Mini, niente router,
+pianificatore o client.
 
-**Non fatto.** Il costo in CI non e misurato: il primo push e la prova. Le
-mutazioni M2 restano fuori dalla forma. Le tre incongruenze della ratifica e le
-cartelle residue di controllo-dst non entrano nello STATO, per ratifica.
+**Deviazioni.** Spec 3.0 e 3.11 non descrivono ancora le tabelle e le colonne
+della v07: si allineano nel commit del canale, con la 6 (decisione 2).
 
-**Deviazioni.** Nessuna dalla Spec.
-
-**Cosa resta.** Le decisioni 9-17 sono vive e vanno in sessione propria, nell
-ordine della 17. La coda di rimedio non cambia.
+**Cosa resta.** Sessione del backend: prima le schede 10, 14, 15, 16 e 22. Prima
+di schierare codice che nomina la v07: `apply_v07_prod.py` sul Mini dal
+Terminale, poi `make g21` verde.
 
 ---
 
@@ -108,9 +108,10 @@ Si esegue, non si rimisura. Ordinata per rischio clinico.
 | # | mancante | invariante | stato |
 |---|---|---|---|
 | 1 | [aperta] **`/recupero` senza guardia sul minimo** | **M1** | Spec 4.7 :431 tiene il TODO su `intervallo_minimo_ore`; la decisione 2 ha guardato la sola presa. Il server accetta un recupero che anticipa sotto il minimo: oggi lo ferma solo lo slider del client (`calcolaRecuperoMax`). Stessa sede e stesso `tempo.minuti_reali`. Misurato il 2026-09-18: **non ha presa sulla terapia vera**, tutta `fisso` e `fisso_date` -- servono insieme `tipo_frequenza='intervallo'` e `intervallo_minimo_ore` valorizzata. |
-| 2 | [aperta] **targa annidata nel batch, forma (a) decisa** | **M3** | Meccanico: il modello pydantic del ricalcolo dichiara `client_op_id` opzionale e ignorato, con il motivo nel docstring; R4 in `ApiRepository.contratto.test.js` arrossa e il marcatore `it.fails` si toglie nello stesso commit. Nessuna sede VIETATA, nessuna migrazione, wire-neutro. |
-| 3 | [aperta] **estrarre il SQL dai router** in `repository/` | -- | Refactor, sessione propria, se ancora voluto. Norma dichiarata: SQL nel router (`CLAUDE.md` 13). |
-| 4 | [aperta] **`deploy-mini.sh` non fotografa il bundle** prima del `rsync --delete` | -- | Fatto a mano per la seconda volta (`web.bak.*` e `backend.predeploy.*.tgz`). Lo script deve farlo da se, come passo fra le guardie e il rsync. |
+| 2 | [aperta] **Ricalcolo D+1 rifiutato: il riallineamento riporta la D+1 all'ora prevista, sotto il minimo** | **M1** | Misurato il 2026-09-29 con una sonda sulle sedi vere (fuori dal repo): presa alle 23:30 nella notte del cambio d'ora di primavera, D+1 ricalcolata alle 07:30 rifiutata; lo specchio la cancella alla rilettura (`LocalRepository.js` :539), e il piano la riporta prevista alle 07:00, 390 minuti reali dopo la presa, contro un minimo di 450. Al tocco il server registra la presa con l'avviso "Due dosi molto vicine". **Con il canale acceso il rilievo arriva anche ad app chiusa:** per la A della 11, log e pubblicazione vuoti fanno partire un push di dose all'ora prevista. Oggi non è raggiungibile: la D+1 ricalcolata nasce solo per i farmaci a intervallo, e la terapia vera non ne ha. **Va chiuso prima che un farmaco a intervallo con un minimo entri in terapia.** La forma del rimedio non è decisa; la sonda va riscritta nel repo come pin, rosso prima del rimedio. |
+| 3 | [aperta] **targa annidata nel batch, forma (a) decisa** | **M3** | Meccanico: il modello pydantic del ricalcolo dichiara `client_op_id` opzionale e ignorato, con il motivo nel docstring; R4 in `ApiRepository.contratto.test.js` arrossa e il marcatore `it.fails` si toglie nello stesso commit. Nessuna sede VIETATA, nessuna migrazione, wire-neutro. |
+| 4 | [aperta] **estrarre il SQL dai router** in `repository/` | -- | Refactor, sessione propria, se ancora voluto. Norma dichiarata: SQL nel router (`CLAUDE.md` 13). |
+| 5 | [aperta] **`deploy-mini.sh` non fotografa il bundle** prima del `rsync --delete` | -- | Fatto a mano per la seconda volta (`web.bak.*` e `backend.predeploy.*.tgz`). Lo script deve farlo da se, come passo fra le guardie e il rsync. |
 
 ### Rilievi chiusi, e cio che resta aperto sotto di loro
 
@@ -325,22 +326,38 @@ decisa W, quindi valgono.
      orari per la stessa dose, :564-565). A senza rilettura del log al
      fuoco (M1) e A per `dateStr` invece che per istante effettivo (M2 sul
      canale): non scartate secche, restano come vincoli qui sopra.
-9. [aperta] **Q9=A da riaprire per lettera.** APScheduler dentro FastAPI (ratifica di
-   maggio 2026, mai eseguita) contro un LaunchAgent separato; i tre
-   concordano sul LaunchAgent, divergono fra passata a intervallo e processo
-   residente (irrilevante finche il Mini non dorme).
+9. [chiusa] **Q9=A da riaprire per lettera: DECISA il 2026-09-29, lettera A, con una
+   condizione.** Il pianificatore e un LaunchAgent separato: una passata
+   idempotente ogni 60 s, che riparte dal DB e scrive il suo battito in
+   `push_pianificatore`. Q9=A di maggio (APScheduler dentro FastAPI, ratificata
+   in blocco con Q8=A docker-compose, mai realizzato) e riaperta per lettera e
+   sostituita. **Condizione, per la sessione del client:** il battito vecchio
+   arriva al paziente nell app, non solo a `prod-check`.
 10. [aperta] **Emettitore unico o due sorgenti.** Tenere i timer di pagina accanto al
     push accettando su iPhone un doppio simultaneo ad app aperta; tacerli con
     subscription attiva; o decidere dopo la sonda con un gate sull'ultima
     pubblicazione riuscita. I tre progettisti divergono. **S9, misurato il 15
     settembre:** ad app in primo piano l avviso del worker compare e suona,
     quindi il doppio simultaneo della prima via e possibile, non ipotetico.
-11. [aperta] **Ricalcolo D+1 rifiutato dal server:** il push segue il valore del
-    server (passato dalla guardia del minimo) o l'ora pubblicata dal telefono
-    finche la rilettura non riallinea.
-12. [aperta] **Orizzonte pubblicato** (tre giorni, ieri-domani, sette giorni) **e fine
-    orizzonte** (avviso "apri PharmaTimer per aggiornare i promemoria" o solo
-    dichiarazione).
+11. [chiusa] **Ricalcolo D+1 rifiutato dal server: DECISA il 2026-09-29, lettera A.**
+    Il push di dose parte solo se la `ora_ricalcolata` del log coincide con
+    quella pubblicata dal telefono, vuote comprese; se no, all istante
+    pubblicato parte un avviso neutro, senza farmaco ne ora, con la riga di
+    motivo divergenza. Esclude il disaccordo nei due versi (Mini avanti per una
+    pubblicazione mancata, telefono avanti per un gesto in coda o un orfana)
+    senza conversioni: la 7 resta fuori. **Limite:** dopo un avviso neutro
+    quella dose non riceve piu il push di dose, nemmeno dopo la
+    ripubblicazione. Oggi irraggiungibile: nessun farmaco a intervallo. Il
+    riallineamento dopo un rifiuto sta nella coda di rimedio.
+12. [chiusa] **Orizzonte pubblicato e fine orizzonte: DECISA il 2026-09-29, lettera
+    A, con una condizione.** Il telefono pubblica la finestra del piano che l
+    app mostra (ieri, oggi, domani) per istante effettivo; a fine orizzonte un
+    avviso separato, senza dati di dose, che parte solo se non e arrivata una
+    pubblicazione piu recente. **Condizione, per il pubblicatore:** istante ed
+    "entro" dell avviso li calcola sempre il telefono, oltre il TTL dell ultima
+    dose e fuori dalla finestra di sonno; TTL e tolleranza gli arrivano dal
+    server, da una sede sola. Scartata la sola dichiarazione (rapporto
+    :697-701).
 13. [aperta] **Testo verso terzi**, solo per C: nome del farmaco sui server di Pushover
     o testo neutro.
 14. [aperta] **Sblocco di `vite.config.js` per una riga** `workbox.importScripts`, e
@@ -349,11 +366,17 @@ decisa W, quindi valgono.
 15. [aperta] **Custodia VAPID:** PEM 0600 nella home del Mini con backup fuori
     macchina, o altra sede.
 16. [aperta] **Tolleranza e TTL:** 20 o 30 minuti dopo l'ora; TTL fino a 30 minuti,
-    un'ora o sei ore.
-17. [aperta] **Ordine dei lavori:** sonda sul telefono senza codice, poi ratifica con
-    la scheda a quattro campi, poi migrazione prima del codice, backend con
-    passata vista rossa, client con SW, settimana di accettazione con C
-    pronta come riserva.
+    un'ora o sei ore. Da mettere nella scheda: se il TTL e fisso o il tempo che
+    resta fino all istante piu la tolleranza (con TTL fisso un invio recuperato
+    puo arrivare fino al doppio della tolleranza); il client ha gia
+    `TOLLERANZA_MIN` = 15, la soglia del badge "in ritardo"
+    (`src/domain/constants.js`), un altra grandezza da non confondere.
+17. [chiusa] **Ordine dei lavori: DECISA il 2026-09-29, lettera A.** Sonda sul
+    telefono senza codice, poi ratifica con la scheda a quattro campi, poi
+    migrazione prima del codice, backend con passata vista rossa, client con
+    SW, settimana di accettazione. C resta una riserva con la sua sonda, da
+    preparare solo se l accettazione di A non regge. Sonda chiusa; migrazione
+    scritta il 2026-09-29; restano le schede 10, 14, 15, 16 e 22.
 
 L'ultima NON dipende dalla decisione 2: vale in qualunque caso, anche se le
 notifiche ad app chiusa non si fanno.
@@ -429,6 +452,10 @@ notifiche ad app chiusa non si fanno.
     `orari_base` non e una FK: ridurre `dosi_giornaliere` su un farmaco vero
     rigenera un orfana identica, ed e la D2 della 20. Dopo la ripartenza quel
     record e clinico. **La ripartenza e avvenuta il 2026-09-18.**
+    Misurato il 2026-09-29, per la scheda: la forma (c) del rapporto (:373-374,
+    "piu vecchia dell ultima pubblicazione"), che il progettista sicurezza
+    scrive su `updated_at`, presuppone una colonna che `log_assunzioni` non ha.
+    Con la A della 11 un orfana non sposta il push: lo degrada ad avviso neutro.
 
 23. [aperta] **Keychain e file del token dell'utente 2.** La voce `pharmatimer-token-2`
     del Keychain dello Studio e stantia dal 3 settembre (impronta

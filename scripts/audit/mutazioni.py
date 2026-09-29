@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PharmaTimer -- collaudo per mutazione dei pin M1 e M3 (`make mutazioni`).
+"""PharmaTimer -- collaudo per mutazione dei pin M1, M2 e M3 (`make mutazioni`).
 
 Uso:  backend/venv/bin/python scripts/audit/mutazioni.py [--compatto]
       --compatto  il solo esito quando e verde, il dettaglio quando e rosso:
@@ -79,6 +79,8 @@ T_CT = "src/data/repository/ApiRepository.contratto.test.js"
 T_OS = "src/domain/outboxSplitter.test.js"
 T_AG = "src/state/applyHelper.opguard.test.js"
 T_AS = "src/utils/avvisoScheda.test.js"
+V7 = "backend/db/migrations/v07_push.sql"
+T_V7 = "tests/test_v07_schema.py"
 
 GUARDIA_VERBO = (
     "  if (opGuardActive && !OUTBOX_OPS.includes(op)) {\n"
@@ -209,6 +211,38 @@ MUTAZIONI = [
     riga("coppia-undo", "b6b4471, ricostruita", "M1+M3",
          [(LA, "# SENTINEL_S6268_COPPIA_UNDO", "rec_old,\n", "rec_new,\n")],
          "pytest", [T_CO], ["test_s546_undo_su_totale_vivo"]),
+    # v07, canale Web Push, decisioni 9, 11 e 12. I pin girano su oggetti usa
+    # e getta (tabelle TEMPORARY in test_v07_schema.py), mai sulle tabelle
+    # condivise del DB di test. Ogni chiave nei due versi: senza UNIQUE passa
+    # il doppio (M1, due invii); con la chiave piu larga cade il distinto (M2
+    # sul canale, un promemoria soppresso).
+    riga("v07-calendario-doppio", "v07, questa sessione", "M1",
+         [(V7, "UNIQUE INDEX uq_push_cal_slot", "UNIQUE INDEX", "INDEX")],
+         "pytest", [T_V7], ["test_calendario_una_voce_per_dose"]),
+    riga("v07-calendario-largo", "v07, questa sessione", "M2",
+         [(V7, "UNIQUE INDEX uq_push_cal_slot", "(utente_id, farmaco_id, data, dose_numero)",
+           "(utente_id, farmaco_id, data)")],
+         "pytest", [T_V7], ["test_calendario_una_voce_per_dose"]),
+    riga("v07-dispatch-doppio", "v07, questa sessione", "M1",
+         [(V7, "UNIQUE INDEX uq_push_dispatch_slot", "UNIQUE INDEX", "INDEX")],
+         "pytest", [T_V7], ["test_dispatch_una_decisione_per_dose_e_telefono"]),
+    riga("v07-dispatch-largo", "v07, questa sessione", "M2",
+         [(V7, "UNIQUE INDEX uq_push_dispatch_slot",
+           "(subscription_id, farmaco_id, data, dose_numero)", "(farmaco_id, data, dose_numero)")],
+         "pytest", [T_V7], ["test_dispatch_una_decisione_per_dose_e_telefono"]),
+    riga("v07-avviso-doppio", "v07, questa sessione", "M1",
+         [(V7, "UNIQUE INDEX uq_push_avviso_fine", "UNIQUE INDEX", "INDEX")],
+         "pytest", [T_V7], ["test_avviso_fine_uno_per_istante_e_telefono"]),
+    riga("v07-avviso-largo", "v07, questa sessione", "M2",
+         [(V7, "UNIQUE INDEX uq_push_avviso_fine", "(subscription_id, avviso_fine_ms)",
+           "(subscription_id)")],
+         "pytest", [T_V7], ["test_avviso_fine_uno_per_istante_e_telefono"]),
+    riga("v07-endpoint-doppio", "v07, questa sessione", "M1",
+         [(V7, "ADD UNIQUE INDEX uq_push_sub_endpoint_hash", "ADD UNIQUE INDEX", "ADD INDEX")],
+         "pytest", [T_V7], ["test_subscription_un_endpoint_una_riga"]),
+    riga("v07-endpoint-su-endpoint", "v07, questa sessione", "M2",
+         [(V7, "ADD UNIQUE INDEX uq_push_sub_endpoint_hash", "(endpoint_hash)", "(endpoint)")],
+         "pytest", [T_V7], ["test_subscription_un_endpoint_una_riga"]),
 ]
 
 # L'autoprova: righe il cui esito e FISSATO, e che il banco pretende.
@@ -437,7 +471,7 @@ def main():
 
     ids = [r["id"] for r in MUTAZIONI + CONTROLLI]
     doppi = sorted({i for i in ids if ids.count(i) > 1})
-    print("== MUTAZIONI: collaudo per mutazione dei pin M1 e M3, su copie fuori dall albero ==")
+    print("== MUTAZIONI: collaudo per mutazione dei pin M1, M2 e M3, su copie fuori dall albero ==")
     if doppi:
         print("ROSSO  identificativi ripetuti nella tabella: " + ", ".join(doppi))
         return 1

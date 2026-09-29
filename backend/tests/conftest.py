@@ -22,6 +22,12 @@ from pharmatimer_api.db import connection as conn_module
 from pharmatimer_api.db.dependencies import get_db
 
 _TRUNCATE_ORDER = [
+    # v07: children of push_subscriptions, farmaci and utenti come first.
+    "push_dispatch",
+    "push_avvisi_fine",
+    "push_calendario",
+    "push_pubblicazioni",
+    "push_pianificatore",
     "log_assunzioni",
     "orari_base",
     "farmaci",
