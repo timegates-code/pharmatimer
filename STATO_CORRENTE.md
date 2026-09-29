@@ -10,40 +10,42 @@ poi `bash deploy/deploy-mini.sh` dal Terminale.
 
 ---
 
-## Ultima sessione -- venv dello Studio allineato al Mini, 2026-09-28
+## Ultima sessione -- collaudo per mutazione nel gate, 2026-09-29
 
-`make check` verde in apertura, HEAD `bc18304`, TREE 0, AHEAD 0. Nessuna riga
-di prodotto, niente pywebpush, nessuna scrittura sul Mini (freeze letto via ssh).
+`make check` verde in apertura, HEAD `394bec1`, TREE 0, AHEAD 0. Intervento 8.1
+del documento sul gate. Nessuna riga di prodotto e nessun test toccati.
 
-**Ratifica, lettera A.** La premessa del mandato non reggeva per intero:
-pytest, ruff e openapi giravano gia su `backend/venv`, Python 3.13.12, stessa
-patch del `.venv` del Mini; sul Python di sistema giravano solo gli script di
-audit, stdlib. Un `.venv` in radice avrebbe portato con se `gate.yml`,
-`CLAUDE.md` 9 e 11 e il filtro `SKIP_DIRS` di `inventario.py` (logica di un
-blocco): scartato. `backend/venv` resta l unico venv del gate.
+**Misura, in sola lettura e su copie fuori dall albero.** Le mutazioni per M1 e
+M3 dichiarate nei corpi di commit, o nel Changelog archiviato dove il corpo le
+contava soltanto, sono venti riproducibili: tutte mordono ancora a HEAD, nessun
+pin inefficace. Non riproducibili le quindici di `37625e9` e le diciannove di
+`68e9235`, mai enumerate; ricostruite le cinque forme di `b6b4471`.
 
-- **Allineamento.** Via del ritorno in `~/pt-freeze-studio-prima.txt`, fuori
-  dal repo. Installati col freeze del Mini come vincolo, da Roberto dal
-  Terminale perche il sandbox nega PyPI: click 8.4.1, fastapi 0.136.3,
-  httptools 0.8.0, idna 3.16, starlette 1.1.0, uvicorn 0.48.0. Confronto: 25
-  pacchetti di esercizio comuni, tutti coincidenti. Solo sul Mini `setuptools`
-  82.0.1 e `wheel` 0.47.0: misura per la decisione 1. Solo sullo Studio gli
-  strumenti del gate (pytest, pytest-asyncio, pluggy, iniconfig, Pygments,
-  ruff), nessuno di esercizio. Il freeze non entra nel repo.
-- **Makefile.** `PY := backend/venv/bin/python` e un target `venv` da cui
-  dipendono lint, controllo-dst, test-backend, inventario, contatore e g21:
-  nessun ripiego sul Python di sistema, e senza venv un ROSSO che dice come
-  ricostruirlo. La CI crea gia `backend/venv` prima di `make check-ci`:
-  `gate.yml` non cambia.
-- **Collaudo.** Output dei blocchi di audit registrati prima: identici dopo,
-  a parita di albero (vecchio e nuovo Makefile sullo stesso TREE). Pytest 143
-  raccolti, 143 passati, 0 saltati, 0 xfail, prima e dopo. Con `backend/venv`
-  spostato arrossano lint, openapi, controllo-dst, test-backend, inventario e
-  contatore, ciascuno col proprio messaggio; ripristinato torna verde.
+**Ratifiche.** Forma A, con due condizioni. Prima: il pytest della copia usa il
+DB di test di test-backend e non raggiunge dati clinici. Dimostrato: stessa
+risoluzione di `.env.dev`, che entra nella copia per link (senza link pytest si
+ferma alla raccolta), stesso pool su `pharmatimer_test`; l utente di test ha
+privilegi sui soli `pharmatimer_dev` e `pharmatimer_test`, e dev non porta dati
+dal 2026-09-18. Seconda: la sezione 6 di CLAUDE.md riscritta, ratificata B con
+due tagli.
 
-**Non fatto.** Il suggerimento di dettaglio del lint nomina ancora `python3`:
-lasciato per tenere l output identico. Gli shebang degli script di audit
-restano `python3`, il gate non li usa. `pip` 26.1.1 anche sullo Studio.
+- **Blocco `mutazioni`** in `make check`, dopo test-backend: tabella in
+  `scripts/audit/mutazioni.py`, copie dell albero di lavoro in `$TMPDIR`, sede
+  per contenuto, autoprova a ogni esecuzione, parita del DB con test-backend
+  prima di ogni pytest. Venti righe su venti mordono in circa 19 s: `make
+  check` passa da 18 a 37 s.
+- **Collaudo del blocco**, con varianti fuori dall albero: rosso nominato su
+  riga che non morde, sede sparita, test atteso inesistente, copia senza
+  `.env.dev`, DB diverso da test-backend, `DB_NAME_TEST` uguale a `DB_NAME`,
+  harness sempre rossa; scrittura fuori dalla copia rifiutata; nessun residuo
+  su interruzione.
+- **CLAUDE.md** sezioni 4, 6 e 11: il collaudo di un pin nuovo e una riga della
+  tabella, non piu una mutazione sul posto.
+- **Decisione 1** chiusa, lettera A.
+
+**Non fatto.** Il costo in CI non e misurato: il primo push e la prova. Le
+mutazioni M2 restano fuori dalla forma. Le tre incongruenze della ratifica e le
+cartelle residue di controllo-dst non entrano nello STATO, per ratifica.
 
 **Deviazioni.** Nessuna dalla Spec.
 
@@ -186,7 +188,7 @@ toccano:
 
 ## Decisioni che spettano a Roberto
 
-1. [aperta] **`ricostruzione-mini`: chiuderla o no.** Il mandato diceva installazione
+1. [chiusa] **`ricostruzione-mini`: chiuderla o no.** Il mandato diceva installazione
    completa e non incrementale, verificata per misura. Due deploy hanno
    rifatto per intero `backend/`, `deploy/` e `web/` con `rsync --delete` e
    reinstallato il pacchetto; il **venv** e stato aggiornato, non ricostruito.
@@ -194,6 +196,9 @@ toccano:
    resta aperta con quel solo perimetro. Misurato il 2026-09-28: il `.venv`
    del Mini porta `setuptools` 82.0.1 e `wheel` 0.47.0, che `02-setup`
    installa e che il pacchetto non richiede a esercizio.
+   **CHIUSA il 2026-09-29, lettera A**, su questa misura: per FATTO basta il
+   codice, e il venv del Mini coincide con quello dello Studio sui 25 pacchetti
+   di esercizio comuni.
 2. [aperta] **Le notifiche ad app chiusa: DECISA il 2026-09-17, lettera W.** Si
    realizzano via Web Push, ramo A o B secondo la decisione 8. Il canale
    nasce come **PROMEMORIA DIURNO** e lo dichiara in README e in Spec 6 nel

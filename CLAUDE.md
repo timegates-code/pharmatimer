@@ -85,7 +85,9 @@ leggere: erano l'apparato, e l'apparato non c'e piu.
 baseline), **test frontend** (vitest), **controllo DST** (i file
 `*.dst.test.js` lanciati senza ora legale devono arrossare tutti: e un pin
 visto rosso a ogni gate), **test backend** (pytest, con il MySQL di dev come
-precondizione dichiarata), **inventario** (le diciannove voci),
+precondizione dichiarata), **mutazioni** (ogni riga della tabella del banco
+muta il prodotto su una copia fuori dall'albero e deve far arrossare i test che
+nomina: sezione 6), **inventario** (le diciannove voci),
 **contatore dello STATO** (voci aperte e chiuse per sezione, appese a
 `docs/serie-stato.tsv` solo a conteggio cambiato: registra, non giudica), e
 **albero** (`TREE` e `AHEAD` letti da git vivo).
@@ -115,9 +117,9 @@ eseguire dal Terminale.
 
 Resta vero che `make check` non puo essere verde PRIMA di un commit: il blocco
 `albero` misura `TREE` da git vivo e lo albero e sporco per costruzione finche
-il commit non esiste. Prima del commit si pretendono verdi lint, frontend,
-backend e inventario, e rosso il solo `albero` su `TREE`; dopo commit e push, il
-gate e verde per intero.
+il commit non esiste. Prima del commit si pretendono verdi tutti gli altri
+blocchi, e rosso il solo `albero` su `TREE`; dopo commit e push, il gate e verde
+per intero.
 
 ---
 
@@ -165,9 +167,24 @@ e una decorazione.
 - Lo strumento di collaudo va verificato prima di fidarsene: una harness rotta
   maschera i gate e li fa sembrare efficaci.
 
-**In Claude Code il collaudo si esegue sui file VERI con la suite VERA:** si muta
-la sede, si lancia la suite, si pretende il rosso, si ripristina. Niente sagome
-ricostruite. Questo e il guadagno principale rispetto alla chat.
+**Il collaudo per mutazione di un pin nuovo non si fa piu sul posto: si scrive
+come riga della tabella di `scripts/audit/mutazioni.py`, nel commit che
+introduce il pin.** Una mutazione fatta sul posto, se interrotta, lascia codice
+mutato nell'albero da cui il deploy sincronizza, e il ripristino puo cancellare
+modifiche non committate. La riga dichiara la sede per CONTENUTO -- un'ancora
+che compare una volta sola, poi il testo da mutare -- la sostituzione, i test
+che devono arrossare e l'invariante che il pin protegge.
+
+Il blocco `mutazioni` di `make check` esegue ogni riga a ogni gate, su una copia
+dell'albero di lavoro fuori dal repo: file veri e suite vera, niente sagome
+ricostruite. Pretende il rosso dei test nominati e arrossa se uno resta verde,
+se la sede non si trova piu o se un test atteso non esiste. A ogni esecuzione
+verifica anche se stesso: una mutazione dentro un commento non deve mordere, e
+un'ancora inesistente deve arrossare. Se un cambio di codice sposta una sede, la
+riga si aggiorna nello stesso commit.
+
+Il portatore e il blocco, e copre le sole righe scritte: che un pin nuovo abbia
+la sua riga non lo misura nessun gate.
 
 ---
 
@@ -284,9 +301,10 @@ vitest riporta N unhandled errors con 0 test eseguiti e pytest da
 `PermissionError` dentro `$TMPDIR`: il guasto e di ambiente, non di codice.
 
 **Il gate e `make check`**, e vale in apertura e in chiusura (sezioni 4 e 8).
-Esegue lint, test frontend, controllo DST, test backend, inventario, contatore
-dello STATO e albero, e stampa un verdetto unico. **Prima di un deploy, e solo
-allora, `make prod-check`**, che tocca il Mini e include `make g21`.
+Esegue lint, test frontend, controllo DST, test backend, mutazioni, inventario,
+contatore dello STATO e albero, e stampa un verdetto unico. **Prima di un
+deploy, e solo allora, `make prod-check`**, che tocca il Mini e include
+`make g21`.
 
 Sotto Claude Code il gate gira per intero: la precondizione MySQL di
 `test-backend` passa perche il sandbox ammette il loopback. Cio che resta fuori

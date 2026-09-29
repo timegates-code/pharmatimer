@@ -3,7 +3,7 @@
 #
 #   make check       GATE DI SESSIONE. Apertura e chiusura si fanno su questo.
 #                    lint + test frontend + controllo DST + test backend +
-#                    inventario + contatore dello STATO + albero.
+#                    mutazioni + inventario + contatore dello STATO + albero.
 #   make check-prepush  Lo stesso gate, lanciato dallo hook di pre-push:
 #                    asserisce TREE e non AHEAD, che prima del push non e zero.
 #   make check-ci    Lo stesso gate, lanciato da GitHub Actions su ogni push.
@@ -15,6 +15,9 @@
 #                    del contratto dei tipi, e test-frontend lo rigenera prima.
 #   make controllo-dst  i file *.dst.test.js lanciati SENZA ora legale devono
 #                    arrossare tutti: un pin mai visto rosso non e una guardia.
+#   make mutazioni   la tabella di scripts/audit/mutazioni.py: ogni riga muta
+#                    il prodotto su una copia fuori dall albero e pretende il
+#                    rosso dei test che nomina.
 #   make inventario  le diciannove voci, rigenerate dal disco.
 #   make contatore-stato  conta le voci [aperta] e [chiusa] di STATO_CORRENTE.md
 #                    per sezione e appende a docs/serie-stato.tsv SOLO a
@@ -36,13 +39,14 @@ MINI_MYSQL := /opt/homebrew/bin/mysql --defaults-file=/Users/marketreader/.my-ph
 PY := backend/venv/bin/python
 
 .PHONY: check check-prepush check-ci _gate prod-check lint lint-backend lint-frontend \
-        test test-frontend test-frontend-compatto controllo-dst test-backend inventario \
-        inventario-compatto contatore-stato albero g21 openapi venv help
+        test test-frontend test-frontend-compatto controllo-dst test-backend mutazioni \
+        mutazioni-compatto inventario inventario-compatto contatore-stato albero g21 openapi \
+        venv help
 
 help:
 	@echo "gate di sessione : make check"
 	@echo "prima di deployare: make prod-check"
-	@echo "singoli          : lint | test-frontend | controllo-dst | test-backend | inventario | contatore-stato | albero | openapi"
+	@echo "singoli          : lint | test-frontend | controllo-dst | test-backend | mutazioni | inventario | contatore-stato | albero | openapi"
 
 # ----------------------------------------------------------------- VENV
 venv:
@@ -181,6 +185,23 @@ test-backend: venv
 
 test: test-frontend test-backend
 
+# ----------------------------------------------------------------- MUTAZIONI
+# Collaudo per mutazione dei pin M1 e M3 (CLAUDE.md sez. 6). Ogni riga della
+# tabella in scripts/audit/mutazioni.py muta il prodotto su una COPIA
+# dell albero di lavoro in una cartella temporanea, mai sul posto, e pretende
+# il rosso dei test che nomina. Sede per contenuto: se non si trova piu, ROSSO.
+# Usa il DB di test di test-backend, e lo verifica prima di ogni pytest; per
+# questo sta dopo test-backend, di cui condivide la precondizione MySQL.
+# Esiti e autoprova in testa allo script.
+mutazioni: venv
+	@$(PY) scripts/audit/mutazioni.py
+
+# Forma usata da make check: il solo esito quando e verde, il dettaglio quando
+# e rosso.
+mutazioni-compatto: venv
+	@$(PY) scripts/audit/mutazioni.py --compatto
+	@echo "   dettaglio: make mutazioni"
+
 # ----------------------------------------------------------------- INVENTARIO
 inventario: venv
 	@$(PY) scripts/audit/inventario.py
@@ -243,6 +264,7 @@ _gate:
 	echo; $(MAKE) --no-print-directory test-frontend-compatto || rc=1; \
 	echo; $(MAKE) --no-print-directory controllo-dst || rc=1; \
 	echo; $(MAKE) --no-print-directory test-backend || rc=1; \
+	echo; $(MAKE) --no-print-directory mutazioni-compatto || rc=1; \
 	echo; $(MAKE) --no-print-directory inventario-compatto || rc=1; \
 	echo; $(MAKE) --no-print-directory contatore-stato || rc=1; \
 	echo; $(MAKE) --no-print-directory albero || rc=1; \
