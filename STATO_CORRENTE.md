@@ -10,54 +10,59 @@ poi `bash deploy/deploy-mini.sh` dal Terminale.
 
 ---
 
-## Ultima sessione -- backend del canale, ramo A: schede e dipendenze, 2026-09-29 e 30
+## Ultima sessione -- backend del canale, ramo A: passi 1 e 2, 2026-09-30 e 10-01
 
-`make check` verde in apertura, lanciato da Roberto, HEAD `a7ae42a`.
+`make check` verde in apertura, lanciato da Roberto, HEAD `3bd9cc3`. La
+struttura e approvata con due condizioni sui ritentativi (voce 29) e un
+confine per le righe `scaduto` (voce 30); ratifiche D1, D2 e D3, tutte A
+(voci 25, 26 e 27). D4 resta per il passo 3 (voce 28). Il 503 della chiave
+resta `DB_UNAVAILABLE`, per scelta di Roberto.
 
-**Apertura, in sola lettura.** I tre except-pass nuovi della voce 8 stanno in
-`apply_v07_push.py` (close e rollback, dopo il verdetto): sono sul percorso di
-`apply_v07_prod.py`, ma nessuno nasconde un suo errore, e nessuno e sul
-percorso di g21. Sul percorso di g21 c era pero un ingoio a monte: il livello
-si calcolava con il `read()` tollerante dell inventario, e una migrazione
-illeggibile lo abbassava in silenzio (sonda su copia: v06 illeggibile,
-livello v05, uscita 0). Corretto in un commit suo, `e85d1a6`, con pin nei due
-versi e due righe nel banco; CI verde su Linux.
+**Passo 1, `fb4a6a4`: la meta API.** `canale.py` e la sede unica della
+tolleranza di 20 minuti, dell orologio in epoch ms e della lettura del PEM,
+con la sola cryptography. `routers/push.py` e `models/promemoria.py`:
+- chiave, 503 senza PEM;
+- iscrizione per hash dell endpoint, una attiva per telefono;
+- revoca per `device_id`;
+- calendario sostituito intero;
+- stato sempre 200, col battito misurato sul solo orologio del server.
+Impostazioni VAPID facoltative, mai validate all avvio.
 
-**Ratifiche:** 16 A, 15 A e 22 A (voci sotto). La 10 e la 14 restano per la
-sessione del client.
+**Passo 2, il commit che porta questo STATO: la passata.**
+`pianificatore.py` e la seconda sede del SQL (CLAUDE.md 13); `invio.py` e
+l unico import di pywebpush; `db/connection.apri_connessione()` apre una
+connessione sola. A ogni tentativo la passata:
+- rilegge log, farmaco e utente;
+- decide PRIMA della POST, al piu una volta per dose e telefono;
+- da come TTL il resto della finestra, calcolato all invio;
+- manda l avviso neutro sulla divergenza della 11 e l avviso di fine della 12;
+- scrive il battito, col motivo.
+`created_at` di una subscription e ora l inizio dell attivazione corrente.
 
-**Dipendenze.** `backend/requirements.lock`: la chiusura di esercizio, 44 voci
-con lo sha256 del loro artefatto, generata da `scripts/genera-lock.py` dal
-report della sonda M4 (pip 26.1.1, darwin arm64, CPython 3.13.12). La installa
-`deploy/installa-dal-lock.sh`, sullo Studio e sul Mini (`02-setup` lo chiama),
-in modalita hash, senza cache, senza risoluzione e senza isolamento di build.
-Blocco `dipendenze` nel gate, prima di `test-backend`, e lo stesso confronto
-in `prod-check` sul freeze del Mini; la CI prende le stesse versioni senza
-hash.
-- Studio installato dal lock da Roberto: 44 voci su 44. Il freeze di prima e
-  in `~/pt-freeze-studio-prima.txt`: e la via del ritorno.
-- Misurato: un hash dentro un file di vincoli accende la modalita hash per
-  tutta l installazione (pip 26.1.1), e l editable la fa fallire.
-- Misurato: con la cache, http-ece arrivava da una wheel costruita altrove con
-  setuptools 84.0.0; senza cache lo Studio lo costruisce con il 82.0.1 del
-  lock, come fara il Mini (il suo WHEEL lo dice).
-- Misura, a verbale: pywebpush 2.5.0 porta aiohttp con sette dipendenze
-  (aiohappyeyeballs, aiosignal, attrs, frozenlist, multidict, propcache,
-  yarl) che il rapporto (:230-233) non elencava, e lo importa al proprio
-  import (`pywebpush/__init__.py` :15). pywebpush resta.
+**Misure.**
+- Nel venv: `import pywebpush` carica aiohttp, py_vapid no.
+- requests alza un `ConnectionError` generico per una richiesta gia partita:
+  server locale che legge il corpo intero e chiude.
+- Letto nel sorgente: `Vapid.from_file` di py_vapid, su file assente,
+  GENERA una chiave e la salva in quel percorso. Non si usa mai.
+- Da Roberto, sul Mini: l API e un LaunchAgent di gui/501; MySQL 9.6.0 e
+  StockFusion stanno nel dominio system; FileVault spento, login automatico
+  e riavvio automatico attivi; della v07 c e la sola `push_subscriptions`.
+- Banco: 104 righe, tutte mordono; il blocco dura 219 s, erano 64.
 
-**Non fatto.** Nessun codice del canale: passata e LaunchAgent, endpoint di
-iscrizione e di pubblicazione, battito per la condizione della 9. Niente
-deploy, nessuna scrittura sul Mini.
+**Non fatto.** Passo 3: il plist della passata, `VAPID_PEM_FILE` nel plist
+dell API, il bootstrap in `deploy-mini.sh` nel dominio gui, D4. Nessun
+deploy, niente in launchd, nessuna scrittura sul Mini.
 
-**Deviazioni.** I pin di `scripts/audit/` stanno in `backend/tests/` e non
-accanto al file, perche il banco lancia solo pytest e vitest. Nessuna dalla
-Spec.
+**Deviazioni.** Nessuna dalla Spec. Dalla convenzione di CLAUDE.md 13: la
+seconda sede del SQL, dichiarata (D1 A).
 
-**Cosa resta.** Sessione del backend: prima la proposta di struttura (regola
-critica 1), poi il codice. Prima del deploy, dal Terminale sul Mini:
-installazione dal lock, chiave VAPID (15 A), `apply_v07_prod.py`; poi `make
-prod-check` verde, g21 e dipendenze compresi.
+**Cosa resta.** Il passo 3 del backend, poi la sessione del client: le
+decisioni 10 e 14, e la soglia del battito vecchio (condizione della 9).
+**Da questo push g21 pretende la v07 sul Mini**: qualunque deploy passa
+prima da `apply_v07_prod.py`. Prima del deploy del canale, dal Terminale sul
+Mini: installazione dal lock, chiave VAPID (15), `VAPID_SUB` nel `.env.dev`,
+`apply_v07_prod.py`; poi `make prod-check` verde.
 
 ---
 
@@ -182,7 +187,11 @@ toccano:
   promettono ancora push via PWA mentre 11.5.2 le rimanda. Da allineare nel
   commit che introduce il canale, mai nel Changelog congelato.
 - [aperta] Otto documenti non sono referenziati ne da `CLAUDE.md` ne da `README`.
-- [aperta] Sette endpoint backend non sono mai chiamati dal frontend.
+- [aperta] Dodici endpoint backend non sono mai chiamati dal frontend: i sette
+  storici e i cinque del canale, fino alla sessione del client.
+- [aperta] CLAUDE.md 13 porta ancora "67 `cur.execute` nei cinque router": e
+  la misura del giorno, con una sonda che non ho rifatto, e `routers/push.py`
+  e il sesto router. Non toccato oltre la riga ratificata con D1.
 - [aperta] npm: due dipendenze non usate e venti non fissate.
 - [aperta] Il pip dei venv di Studio e Mini e `26.1.1`, disponibile `26.2.1`: avviso, non
   errore. pip non e nel lock: si aggiorna sui due venv insieme, o su nessuno.
@@ -503,3 +512,45 @@ notifiche ad app chiusa non si fanno.
     "finita" ed "esaurita" e il sistema la risolve sopprimendo, in silenzio.
     Riconferma del limite dichiarato alla 19 (`34f0e94`). Forma e sede del
     rimedio non decise.
+
+25. [chiusa] **Sede della passata e del suo SQL: DECISA il 2026-09-30, lettera
+    A.** `backend/pharmatimer_api/pianificatore.py`, con le sue query: seconda
+    e ultima sede del SQL, dichiarata in CLAUDE.md 13. Movente: il livello di
+    g21 vede le tabelle che la passata nomina, stessi parametri di
+    connessione, e la passata non carica FastAPI. **Scartata:** fuori da
+    `pharmatimer_api`, dove g21 non vedrebbe la passata (M2 sul canale).
+
+26. [chiusa] **Farmaco o utente disattivati dopo l'ultima pubblicazione:
+    DECISA il 2026-10-01, lettera A.** A ogni tentativo la passata rilegge
+    `farmaci.attivo` e `utenti.attivo`; se uno e falso, nessuna POST e una
+    riga `non_inviato` col motivo; per l'avviso di fine, il solo utente.
+    **Scartate:** nessuna rilettura (un farmaco sospeso che suona col suo
+    nome, Spec 14.4.3); rileggere `data_fine` o `orari_base`, logica di piano
+    sul server e seconda verita, esclusa dalla 8.
+
+27. [chiusa] **Testi dell'avviso neutro e di fine orizzonte: DECISA il
+    2026-10-01, lettera A.** Titolo "PharmaTimer"; neutro "Apri l'app per
+    controllare i promemoria."; fine "Apri l'app per aggiornare i
+    promemoria.". Sede unica `canale.py`. **Scartato:** nel neutro, dire
+    cosa e cambiato: il server vede che log e pubblicazione differiscono, non
+    perche (stato asserito, I1).
+
+28. [aperta] **D4: in quale commit Spec 6, 9 e 14.1(b) e README.** Proposta:
+    nel commit del passo 3 del backend, e la copy del client (Spec 2.1 e
+    8.1, "Avviso poco prima") nel commit del client. Da portare al passo 3.
+
+29. [chiusa] **Ritentativi, due condizioni di Roberto del 2026-09-30.** (1)
+    Ogni tentativo rifa i controlli al fuoco: log per chiave di slot, voce del
+    calendario ancora quella letta, controlli della 26. (2) Si ritenta solo
+    su cio che certifica il rifiuto, per lista bianca: 408, 429, 503,
+    `ConnectTimeout`, `NewConnectionError`. Accettati solo 201 e 202; ogni
+    altro 4xx, 501 e 505 respinti (404 e 410 spengono la subscription); tutto
+    il resto e `esito_ignoto`, mai ritentato. Pin M1 nei due versi, con le
+    loro righe nel banco.
+
+30. [chiusa] **Confine delle righe `scaduto`, di Roberto del 2026-09-30.** E
+    l'inizio dell'attivazione corrente per l'utente corrente: dopo una
+    riattivazione, o se la subscription passa a un altro utente, nessuno
+    `scaduto` per finestre chiuse prima. Lo porta `created_at`, riscritto
+    dall'upsert solo in quei due casi, dall'orologio di MySQL, e letto con
+    `UNIX_TIMESTAMP()`. Pin nei due versi, con le loro righe.

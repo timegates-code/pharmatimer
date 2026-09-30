@@ -16,14 +16,19 @@ Two import rules, both pinned by tests/test_canale.py:
   PEM is read here with cryptography, and a missing file stays missing.
 
 The channel compares instants as epoch milliseconds, UTC by definition
-(v07_push.sql, header). adesso_ms() is its only clock: never NOW(), never a
-naive local time.
+(v07_push.sql, header). adesso_ms() is its clock: never NOW(), never a naive
+local time. One value comes from MySQL's clock, on the same machine: the
+start of a subscription's current activation, push_subscriptions.created_at
+(routers/push.py, iscrivi), written with CURRENT_TIMESTAMP and read only as
+UNIX_TIMESTAMP(created_at), which returns the stored UTC value with no
+session conversion.
 
 Pure module: no SQL. The file read of the PEM is its only I/O.
 """
 from __future__ import annotations
 
 import base64
+import json
 import time
 from dataclasses import dataclass
 
@@ -111,3 +116,43 @@ def stato_chiave(pem_file: str | None, sub: str | None) -> StatoChiave:
     if not sub.startswith(("mailto:", "https://")):
         return StatoChiave(False, SUB_NON_VALIDO, pubblica)
     return StatoChiave(True, None, pubblica)
+
+
+def _json(oggetto: dict) -> str:
+    return json.dumps(oggetto, ensure_ascii=False, separators=(",", ":"))
+
+
+def payload_dose(titolo: str, corpo: str, istante_ms: int, farmaco_id: int, data, dose_numero: int) -> str:
+    """The dose push as the service worker reads it (classic branch: decision 2
+    excludes the declarative one). Title and body are the phone's own, composed
+    and self-dated by the phone (I1); the slot key is there for the tag."""
+    return _json(
+        {
+            "v": 1,
+            "tipo": "dose",
+            "titolo": titolo,
+            "corpo": corpo,
+            "istante_ms": istante_ms,
+            "farmaco_id": farmaco_id,
+            "data": data.isoformat(),
+            "dose_numero": dose_numero,
+        }
+    )
+
+
+# D3 A, 2026-10-01: the two texts the server composes. No farmaco, no time,
+# no state asserted (I1, decisions 11 and 12): they only invite to open the
+# app, which shows the true state. The dose push keeps the phone's own text.
+TITOLO_AVVISI = "PharmaTimer"
+CORPO_AVVISO_NEUTRO = "Apri l'app per controllare i promemoria."
+CORPO_AVVISO_FINE = "Apri l'app per aggiornare i promemoria."
+
+
+def payload_avviso_neutro() -> str:
+    """The neutral notice of decision 11: nothing of the dose, not even its key."""
+    return _json({"v": 1, "tipo": "avviso_neutro", "titolo": TITOLO_AVVISI, "corpo": CORPO_AVVISO_NEUTRO})
+
+
+def payload_avviso_fine() -> str:
+    """The end-of-horizon notice of decision 12: no dose data."""
+    return _json({"v": 1, "tipo": "avviso_fine", "titolo": TITOLO_AVVISI, "corpo": CORPO_AVVISO_FINE})

@@ -29,7 +29,7 @@ from pharmatimer_api import canale
 from pharmatimer_api.config import settings
 from pharmatimer_api.db.dependencies import CurrentUser, get_current_user, get_db
 from pharmatimer_api.exceptions import RepositoryError, RepositoryErrorCode
-from pharmatimer_api.models.push import (
+from pharmatimer_api.models.promemoria import (
     AvvisoFineResponse,
     BattitoResponse,
     CalendarioPayload,
@@ -88,7 +88,16 @@ def iscrivi(
     who confirms it last: one browser holds one token at a time. Any other
     active subscription of the same phone is turned off as 'sostituita', so a
     phone never holds two and a dose never reaches it twice (v07).
-    created_at keeps the row's first creation.
+
+    created_at is the start of the CURRENT activation for the CURRENT user
+    (Roberto, 2026-09-30): set on creation, reset when an inactive row comes
+    back or when the row passes to another user, left alone when an active
+    row of the same user is confirmed again. The planner writes no 'scaduto'
+    for a window that closed before it. It is assigned first in the UPDATE
+    list because MySQL evaluates those assignments left to right, and the
+    test needs the row as it was. MySQL's clock writes it, on the same
+    machine as adesso_ms(); it is read only through UNIX_TIMESTAMP(), which
+    returns the stored UTC value with no session conversion.
     """
     adesso = canale.adesso_ms()
     endpoint_hash = hashlib.sha256(payload.endpoint.encode("utf-8")).hexdigest()
@@ -101,6 +110,9 @@ def iscrivi(
             "endpoint_hash, device_id, confermata_ms"
             ") VALUES (%s, %s, %s, %s, %s, TRUE, %s, %s, %s) AS nuova "
             "ON DUPLICATE KEY UPDATE "
+            "created_at = IF(push_subscriptions.attiva "
+            "AND push_subscriptions.utente_id = nuova.utente_id, "
+            "push_subscriptions.created_at, CURRENT_TIMESTAMP), "
             "utente_id = nuova.utente_id, endpoint = nuova.endpoint, "
             "p256dh_key = nuova.p256dh_key, auth_key = nuova.auth_key, "
             "device_label = COALESCE(nuova.device_label, push_subscriptions.device_label), "

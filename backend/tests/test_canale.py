@@ -128,3 +128,19 @@ def test_tolleranza_e_venti_minuti() -> None:
     # Decision 16, one seat: the router serves it and the planner uses it.
     assert canale.TOLLERANZA_PUSH_MIN == 20
     assert canale.TOLLERANZA_PUSH_MS == 20 * 60 * 1000
+
+
+def test_testi_degli_avvisi_d3() -> None:
+    # D3 A (2026-10-01), against the decision and not against the constants.
+    assert json.loads(canale.payload_avviso_neutro()) == {
+        "v": 1,
+        "tipo": "avviso_neutro",
+        "titolo": "PharmaTimer",
+        "corpo": "Apri l'app per controllare i promemoria.",
+    }
+    assert json.loads(canale.payload_avviso_fine()) == {
+        "v": 1,
+        "tipo": "avviso_fine",
+        "titolo": "PharmaTimer",
+        "corpo": "Apri l'app per aggiornare i promemoria.",
+    }

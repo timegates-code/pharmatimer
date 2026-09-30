@@ -9,12 +9,27 @@ v07_push.sql (one phone keeps one active subscription).
   theirs (M2 on their channel).
 - The toggle off turns off that phone's subscription and nothing else, in
   both directions.
+- created_at is the start of the current activation for the current user:
+  a confirmation of an active row leaves it, a reactivation or a change of
+  user restarts it (Roberto, 2026-09-30). The planner writes no 'scaduto'
+  for a window closed before it. Both directions.
 
 The pins have their rows in scripts/audit/mutazioni.py.
 """
 import hashlib
 
-from .aiuti_push import ADESSO, fissa_orologio, iscrizione, nuovo_device, righe
+from .aiuti_push import (
+    ADESSO,
+    attivazione_s,
+    fissa_orologio,
+    imposta_attivazione,
+    iscrizione,
+    nuovo_device,
+    righe,
+)
+
+# 2026-01-01T00:00:00Z, in seconds: an activation far older than the test run.
+VECCHIA = 1_767_225_600
 
 E1 = "https://web.push.apple.com/QmUno"
 E2 = "https://web.push.apple.com/QmDue"
@@ -187,3 +202,35 @@ def test_revoca_ripetuta_resta_204(client, seed_owner_test, db_test_pool, monkey
     r = client.delete(f"/api/push/iscrizione/{nuovo_device()}", headers={"X-User-Token": token})
     assert r.status_code == 204
     assert _stato_endpoint(db_test_pool) == {E1: (False, ADESSO, "revocata")}
+
+
+def test_attivazione_resta_alla_conferma_di_una_riga_attiva(
+    client, seed_owner_test, db_test_pool, monkeypatch
+) -> None:
+    token, _ = seed_owner_test
+    d = nuovo_device()
+    fissa_orologio(monkeypatch, ADESSO)
+    _put(client, token, iscrizione(E1, d))
+    imposta_attivazione(db_test_pool, E1, VECCHIA)
+    fissa_orologio(monkeypatch, ADESSO + 60_000)
+    assert _put(client, token, iscrizione(E1, d)).status_code == 200
+    assert attivazione_s(db_test_pool, E1) == VECCHIA
+
+
+def test_attivazione_riparte_dopo_una_riattivazione_o_un_cambio_di_utente(
+    client, seed_owner_test, insert_test_user, db_test_pool, monkeypatch
+) -> None:
+    token_u, _ = seed_owner_test
+    token_v, _ = insert_test_user(nome="Altro")
+    d = nuovo_device()
+    fissa_orologio(monkeypatch, ADESSO)
+    _put(client, token_u, iscrizione(E1, d))
+    imposta_attivazione(db_test_pool, E1, VECCHIA)
+    # Off, then on again with the same endpoint: a new activation.
+    client.delete(f"/api/push/iscrizione/{d}", headers={"X-User-Token": token_u})
+    _put(client, token_u, iscrizione(E1, d))
+    assert attivazione_s(db_test_pool, E1) > VECCHIA
+    # Still active, confirmed by another user: a new activation for that user.
+    imposta_attivazione(db_test_pool, E1, VECCHIA)
+    _put(client, token_v, iscrizione(E1, d))
+    assert attivazione_s(db_test_pool, E1) > VECCHIA

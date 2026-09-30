@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import os
 import uuid
 
@@ -90,6 +91,31 @@ def righe(pool, sql: str, params: tuple = ()) -> list[dict]:
     return risultato
 
 
+def attivazione_s(pool, endpoint: str) -> int:
+    """Start of the current activation, epoch seconds, as the planner reads it."""
+    return righe(
+        pool,
+        "SELECT UNIX_TIMESTAMP(created_at) AS s FROM push_subscriptions WHERE endpoint = %s",
+        (endpoint,),
+    )[0]["s"]
+
+
+def imposta_attivazione(pool, endpoint: str, secondi: int) -> None:
+    """Move the start of the activation: FROM_UNIXTIME in a UTC session, no DST in between."""
+    conn = pool.get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("SET time_zone = '+00:00'")
+        cur.execute(
+            "UPDATE push_subscriptions SET created_at = FROM_UNIXTIME(%s) WHERE endpoint = %s",
+            (secondi, endpoint),
+        )
+        conn.commit()
+        cur.close()
+    finally:
+        conn.close()
+
+
 def esegui(pool, sql: str, params: tuple = ()) -> None:
     conn = pool.get_connection()
     try:
@@ -99,3 +125,80 @@ def esegui(pool, sql: str, params: tuple = ()) -> None:
         cur.close()
     finally:
         conn.close()
+
+
+def crea_iscrizione(pool, utente_id: int, endpoint: str, attivazione_ms: int, chiavi=None) -> int:
+    """An active subscription whose current activation began at attivazione_ms."""
+    chiavi = chiavi or iscrizione(endpoint, nuovo_device())["keys"]
+    conn = pool.get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("SET time_zone = '+00:00'")
+        cur.execute(
+            "INSERT INTO push_subscriptions (utente_id, endpoint, p256dh_key, auth_key, attiva, "
+            "endpoint_hash, device_id, confermata_ms, created_at) "
+            "VALUES (%s, %s, %s, %s, TRUE, %s, %s, %s, FROM_UNIXTIME(%s))",
+            (
+                utente_id,
+                endpoint,
+                chiavi["p256dh"],
+                chiavi["auth"],
+                hashlib.sha256(endpoint.encode("utf-8")).hexdigest(),
+                nuovo_device(),
+                attivazione_ms,
+                attivazione_ms // 1000,
+            ),
+        )
+        sub_id = cur.lastrowid
+        conn.commit()
+        cur.close()
+    finally:
+        conn.close()
+    return sub_id
+
+
+def metti_voce(
+    pool,
+    utente_id: int,
+    farmaco_id: int,
+    data: str,
+    dose_numero: int,
+    istante_ms: int,
+    ora_ricalcolata: str | None = None,
+    titolo: str = "Medrol",
+    corpo: str = "Dopo colazione",
+) -> None:
+    esegui(
+        pool,
+        "INSERT INTO push_calendario (utente_id, farmaco_id, data, dose_numero, istante_ms, "
+        "ora_ricalcolata, titolo, corpo) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+        (utente_id, farmaco_id, data, dose_numero, istante_ms, ora_ricalcolata, titolo, corpo),
+    )
+
+
+def metti_pubblicazione(pool, utente_id: int, avviso_fine_ms: int, entro_ms: int) -> None:
+    esegui(
+        pool,
+        "INSERT INTO push_pubblicazioni (utente_id, device_id, pubblicata_ms, orizzonte_fino_ms, "
+        "avviso_fine_ms, avviso_fine_entro_ms, voci) VALUES (%s, NULL, %s, %s, %s, %s, 0) AS nuova "
+        "ON DUPLICATE KEY UPDATE pubblicata_ms = nuova.pubblicata_ms, "
+        "avviso_fine_ms = nuova.avviso_fine_ms, avviso_fine_entro_ms = nuova.avviso_fine_entro_ms",
+        (utente_id, avviso_fine_ms - 60 * MINUTO, avviso_fine_ms, avviso_fine_ms, entro_ms),
+    )
+
+
+def metti_log(
+    pool,
+    utente_id: int,
+    farmaco_id: int,
+    data: str,
+    dose_numero: int,
+    stato: str,
+    ora_ricalcolata: str | None = None,
+) -> None:
+    esegui(
+        pool,
+        "INSERT INTO log_assunzioni (utente_id, farmaco_id, data, dose_numero, ora_prevista, "
+        "ora_ricalcolata, stato) VALUES (%s, %s, %s, %s, '08:00:00', %s, %s)",
+        (utente_id, farmaco_id, data, dose_numero, ora_ricalcolata, stato),
+    )

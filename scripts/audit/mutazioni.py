@@ -89,12 +89,27 @@ T_DIP = "tests/test_dipendenze.py"
 CAN = "backend/pharmatimer_api/canale.py"
 CFG = "backend/pharmatimer_api/config.py"
 PU = "backend/pharmatimer_api/routers/push.py"
-MPU = "backend/pharmatimer_api/models/push.py"
+MPU = "backend/pharmatimer_api/models/promemoria.py"
 T_CAN = "tests/test_canale.py"
 T_CFG = "tests/test_config_validator.py"
 T_PST = "tests/test_push_stato.py"
 T_PIS = "tests/test_push_iscrizione.py"
 T_PCA = "tests/test_push_calendario.py"
+TRA = "backend/pharmatimer_api/invio.py"
+T_TRA = "tests/test_invio.py"
+PIAN = "backend/pharmatimer_api/pianificatore.py"
+T_PIAN = "tests/test_pianificatore.py"
+
+# Il ramo scartato "materializzare le previste" (M3), scritto dentro la
+# rilettura del log: una riga 'prevista' quando il log non ne ha.
+MATERIALIZZA_PREVISTA = (
+    "    riga = cur.fetchone()\n"
+    "    if riga is None:\n"
+    "        cur.execute(\"INSERT INTO log_assunzioni (utente_id, farmaco_id, data, \"\n"
+    "                    \"dose_numero, ora_prevista, stato) VALUES (%s, %s, %s, %s, \"\n"
+    "                    \"'08:00:00', 'prevista')\", (voce[\"utente_id\"], voce[\"farmaco_id\"],\n"
+    "                    voce[\"data\"], voce[\"dose_numero\"]))\n"
+)
 
 GUARDIA_VERBO = (
     "  if (opGuardActive && !OUTBOX_OPS.includes(op)) {\n"
@@ -404,6 +419,249 @@ MUTAZIONI = [
     riga("push-stato-eta-nascosta", "router push, passo 1", "M2",
          [(PU, "def stato(", 'eta_ms=adesso - battito["ultima_passata_ms"],', "eta_ms=0,")],
          "pytest", [T_PST], ["test_stato_eta_sul_solo_orologio_del_server"]),
+    # Canale Web Push, passo 2. created_at e l inizio dell attivazione
+    # corrente per l utente corrente (Roberto, 2026-09-30): la passata non
+    # scrive 'scaduto' per una finestra chiusa prima. Nei due versi: se non
+    # ripartisse, il registro del canale direbbe non inviate dosi di un
+    # periodo in cui il canale era spento (M3 sul registro del canale); se
+    # ripartisse a ogni conferma, le scadute fra due aperture tacerebbero
+    # (M2, I3).
+    riga("push-attivazione-mai-riparte", "router push, passo 2", "M3",
+         [(PU, "created_at = IF(push_subscriptions.attiva ",
+           "push_subscriptions.created_at, CURRENT_TIMESTAMP)",
+           "push_subscriptions.created_at, push_subscriptions.created_at)")],
+         "pytest", [T_PIS], ["test_attivazione_riparte_dopo_una_riattivazione_o_un_cambio_di_utente"]),
+    riga("push-attivazione-utente-ignorato", "router push, passo 2", "M3",
+         [(PU, "created_at = IF(push_subscriptions.attiva ",
+           "AND push_subscriptions.utente_id = nuova.utente_id, ", ", ")],
+         "pytest", [T_PIS], ["test_attivazione_riparte_dopo_una_riattivazione_o_un_cambio_di_utente"]),
+    riga("push-attivazione-sempre-riparte", "router push, passo 2", "M2",
+         [(PU, "created_at = IF(push_subscriptions.attiva ",
+           "push_subscriptions.created_at, CURRENT_TIMESTAMP)",
+           "CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)")],
+         "pytest", [T_PIS], ["test_attivazione_resta_alla_conferma_di_una_riga_attiva"]),
+    # Condizione 2 di Roberto (2026-09-30): si ritenta solo su cio che
+    # certifica il rifiuto, per lista bianca; il resto non certificato e
+    # esito_ignoto e non riparte. Nei due versi: un ritentativo dopo una
+    # POST forse accettata e un secondo avviso per la stessa dose (M1); un
+    # rifiuto certificato non ritentato e un promemoria perso (M2).
+    riga("invio-generica-ritentata", "trasporto, passo 2", "M1",
+         [(TRA, "def esito_di_eccezione(", "if connessione_mai_stabilita(exc):", "if True:")],
+         "pytest", [T_TRA, T_PIAN],
+         ["test_connection_error_generica_e_esito_ignoto",
+          "test_connection_error_generica_da_esito_ignoto_e_nessun_secondo_tentativo"]),
+    riga("invio-mai-stabilita-ignota", "trasporto, passo 2", "M2",
+         [(TRA, "def esito_di_eccezione(", "if connessione_mai_stabilita(exc):", "if False:")],
+         "pytest", [T_TRA, T_PIAN],
+         ["test_connessione_mai_stabilita_si_ritenta",
+          "test_passata_ritenta_la_connessione_mai_stabilita"]),
+    riga("invio-gateway-ritentato", "trasporto, passo 2", "M1",
+         [(TRA, "RITENTABILI = frozenset(", "frozenset({408, 429, 503})",
+           "frozenset({408, 429, 500, 502, 503, 504, 507})")],
+         "pytest", [T_TRA], ["test_500_502_504_non_certificano_e_non_si_ritentano"]),
+    riga("invio-503-non-ritentato", "trasporto, passo 2", "M2",
+         [(TRA, "RITENTABILI = frozenset(", "frozenset({408, 429, 503})", "frozenset({408, 429})")],
+         "pytest", [T_TRA], ["test_408_429_503_certificano_il_rifiuto_e_si_ritentano"]),
+    # 'accettato' solo su 201 e 202 (RFC 8030): chiamare accettato cio che
+    # non lo certifica e M3 sul registro del canale (decisione 2).
+    riga("invio-200-accettato", "trasporto, passo 2", "M3",
+         [(TRA, "ACCETTATI = frozenset(", "frozenset({201, 202})", "frozenset({200, 201, 202})")],
+         "pytest", [T_TRA], ["test_200_204_e_3xx_non_certificano_nulla"]),
+    riga("invio-201-non-accettato", "trasporto, passo 2", "M2",
+         [(TRA, "ACCETTATI = frozenset(", "frozenset({201, 202})", "frozenset({202})")],
+         "pytest", [T_TRA], ["test_201_e_202_sono_accettati"]),
+    # Una POST senza timeout appesa ferma la passata, e launchd salta gli
+    # intervalli finche gira: canale muto (M2).
+    riga("invio-timeout-assente", "trasporto, passo 2", "M2",
+         [(TRA, "def post(self, url, **kwargs):",
+           'kwargs["timeout"] = (TIMEOUT_CONNESSIONE_S, TIMEOUT_LETTURA_S)', 'kwargs["timeout"] = None')],
+         "pytest", [T_TRA], ["test_la_post_porta_timeout_diviso_niente_redirect_ttl_urgency_e_niente_topic"]),
+    # 404 e 410: la subscription e morta e si spegne, cosi le Impostazioni
+    # non mostrano attivo un canale che non consegna (M2).
+    riga("invio-410-non-spegne", "trasporto, passo 2", "M2",
+         [(TRA, "SPENGONO = frozenset(", "frozenset({404, 410})", "frozenset()")],
+         "pytest", [T_TRA], ["test_4xx_sono_rifiuti_definitivi_e_404_410_spengono"]),
+    # Una richiesta mai partita e un rifiuto certificato: registrarla come
+    # esito ignoto direbbe forse consegnata una notifica mai spedita (M3 sul
+    # registro del canale).
+    riga("invio-non-partita-ignota", "trasporto, passo 2", "M3",
+         [(TRA, "def esito_di_eccezione(", "if not partita:", "if False:")],
+         "pytest", [T_TRA], ["test_richiesta_mai_partita_e_un_rifiuto_non_un_esito_ignoto"]),
+    # La firma di prova con la libreria: senza, un sub che py_vapid rifiuta
+    # darebbe un canale acceso a vuoto, ogni POST respinta (M2).
+    riga("firma-senza-prova", "trasporto, passo 2", "M2",
+         [(TRA, "def prepara_firma(", 'vapid.sign({"sub": sub, "aud": "https://pharmatimer.invalid"})',
+           "vapid")],
+         "pytest", [T_TRA], ["test_prepara_firma_usa_la_regola_del_sub_della_libreria"]),
+    # La passata (decisioni 8, 9, 11, 12, 15, 16 e 22; D2 A; condizione 1).
+    # La finestra della 16: mai prima dell ora (M1); una dose dovuta parte (M2).
+    riga("passata-prima-dell-ora", "passata, passo 2", "M1",
+         [(PIAN, "_DOSI_DOVUTE = (", "WHERE c.istante_ms <= %(adesso)s",
+           "WHERE c.istante_ms <= %(adesso)s + 60000")],
+         "pytest", [T_PIAN], ["test_voce_futura_non_parte"]),
+    riga("passata-sempre-muta", "passata, passo 2", "M2",
+         [(PIAN, "_DOSI_DOVUTE = (", "WHERE c.istante_ms <= %(adesso)s",
+           "WHERE c.istante_ms <= %(adesso)s - 86400000")],
+         "pytest", [T_PIAN], ["test_voce_dovuta_parte_con_ttl_del_resto_della_finestra"]),
+    # Il TTL e il resto della finestra, calcolato all invio: un TTL pieno, o
+    # misurato all inizio della passata, lascerebbe arrivare un promemoria
+    # oltre l ora piu venti minuti (M1).
+    riga("passata-ttl-fisso", "passata, passo 2", "M1",
+         [(PIAN, "def decidi_dose(", "ttl_s = (fine_ms - ora_ms) // 1000",
+           "ttl_s = canale.TOLLERANZA_PUSH_MS // 1000")],
+         "pytest", [T_PIAN], ["test_voce_dovuta_parte_con_ttl_del_resto_della_finestra"]),
+    riga("passata-ttl-dall-inizio", "passata, passo 2", "M1",
+         [(PIAN, "def passata(", "conteggi[_tenta_dose(conn, cur, voce, firma, invia, orologio)] += 1",
+           "conteggi[_tenta_dose(conn, cur, voce, firma, invia, lambda: adesso)] += 1")],
+         "pytest", [T_PIAN], ["test_ttl_calcolato_all_invio"]),
+    riga("passata-oltre-la-finestra", "passata, passo 2", "M1",
+         [(PIAN, "def decidi_dose(", "if ttl_s <= 0:", "if False:")],
+         "pytest", [T_PIAN], ["test_finestra_al_confine"]),
+    riga("passata-finestra-sempre-chiusa", "passata, passo 2", "M2",
+         [(PIAN, "def decidi_dose(", "if ttl_s <= 0:", "if True:")],
+         "pytest", [T_PIAN], ["test_voce_dovuta_parte_con_ttl_del_resto_della_finestra"]),
+    # La rilettura del log (8), nei due versi del rapporto :916-919.
+    riga("passata-log-ignorato", "passata, passo 2", "M1",
+         [(PIAN, "def decidi_dose(", "if letto_stato in STATI_CHIUSI:", "if False:")],
+         "pytest", [T_PIAN], ["test_log_chiuso_non_invia[presa]", "test_log_chiuso_non_invia[saltata]",
+                              "test_log_chiuso_non_invia[sospesa]"]),
+    riga("passata-log-sempre-chiuso", "passata, passo 2", "M2",
+         [(PIAN, "def decidi_dose(", "if letto_stato in STATI_CHIUSI:", "if True:")],
+         "pytest", [T_PIAN], ["test_senza_riga_o_prevista_invia[None]",
+                              "test_senza_riga_o_prevista_invia[prevista]"]),
+    # L uguaglianza della 11, vuote comprese: quella di SQL darebbe un avviso
+    # neutro dove spetta il push di dose (M2); ignorarla darebbe il push di
+    # dose dove il log smentisce la pubblicazione (M1); e il pin 1 della 22.
+    riga("passata-uguaglianza-sql", "passata, passo 2", "M2",
+         [(PIAN, "def decidi_dose(", "uguale = letto_ora == pubblicata_ora",
+           "uguale = letto_ora is not None and letto_ora == pubblicata_ora")],
+         "pytest", [T_PIAN], ["test_senza_riga_o_prevista_invia[None]",
+                              "test_senza_riga_o_prevista_invia[prevista]"]),
+    riga("passata-divergenza-ignorata", "passata, passo 2", "M1",
+         [(PIAN, "def decidi_dose(", "uguale = letto_ora == pubblicata_ora", "uguale = True")],
+         "pytest", [T_PIAN], ["test_ricalcolata_non_pubblicata_da_avviso_neutro",
+                              "test_ricalcolata_diversa_da_avviso_neutro"]),
+    riga("passata-sempre-neutro", "passata, passo 2", "M2",
+         [(PIAN, "def decidi_dose(", "uguale = letto_ora == pubblicata_ora", "uguale = False")],
+         "pytest", [T_PIAN], ["test_ricalcolata_uguale_da_push_di_dose"]),
+    # L avviso neutro della 11 non porta farmaco ne ora.
+    riga("passata-neutro-con-farmaco", "passata, passo 2", "M1",
+         [(PIAN, "def _tenta_dose(", "dati = canale.payload_avviso_neutro()",
+           'dati = canale.payload_dose(voce["titolo"], voce["corpo"], voce["istante_ms"], '
+           'voce["farmaco_id"], voce["data"], voce["dose_numero"])')],
+         "pytest", [T_PIAN], ["test_ricalcolata_non_pubblicata_da_avviso_neutro"]),
+    # D2 A: farmaco e utente riletti a ogni tentativo. Un farmaco sospeso che
+    # suona col suo nome e l errore clinico di Spec 14.4.3 (M1).
+    riga("passata-farmaco-non-attivo", "passata, passo 2", "M1",
+         [(PIAN, "def decidi_dose(", "if not farmaco_attivo:", "if False:")],
+         "pytest", [T_PIAN], ["test_farmaco_non_attivo_non_invia"]),
+    riga("passata-utente-non-attivo", "passata, passo 2", "M1",
+         [(PIAN, "def decidi_dose(", "if not utente_attivo:", "if False:")],
+         "pytest", [T_PIAN], ["test_utente_non_attivo_non_invia"]),
+    riga("passata-d2-sempre-spento", "passata, passo 2", "M2",
+         [(PIAN, "def decidi_dose(", "if not farmaco_attivo:", "if True:")],
+         "pytest", [T_PIAN], ["test_voce_dovuta_parte_con_ttl_del_resto_della_finestra"]),
+    # Al piu una volta per dose e telefono (v07). La scrittura condizionata del
+    # ritentativo si isola chiamando il tentativo su una riga letta da
+    # ritentare e poi accettata. La selezione dei soli non decisi e sorretta
+    # da quella scrittura: mutata da sola non morde, per costruzione, e la
+    # riga che segue muta le due insieme -- intercetta, non isola.
+    riga("passata-ritentativo-non-condizionato", "passata, passo 2", "M1",
+         [(PIAN, "def _scrivi_dose(", "WHERE d.id = %s AND d.stato = 'da_ritentare' ", "WHERE d.id = %s ")],
+         "pytest", [T_PIAN], ["test_riga_non_piu_da_ritentare_non_riparte"]),
+    riga("passata-doppio-invio", "passata, passo 2", "M1",
+         [(PIAN, "_DOSI_DOVUTE = (", "AND (d.id IS NULL OR d.stato = 'da_ritentare') ", "AND TRUE "),
+          (PIAN, "def _scrivi_dose(", "WHERE d.id = %s AND d.stato = 'da_ritentare' ", "WHERE d.id = %s ")],
+         "pytest", [T_PIAN], ["test_due_passate_un_solo_invio", "test_decisione_gia_presa_non_riparte"]),
+    # Condizione 1: ogni tentativo rifa i controlli al fuoco. Nei due versi:
+    # un ritentativo che non rilegge il log parte dopo una presa (M1); una
+    # riga da ritentare che non riparte mai perde il promemoria (M2).
+    riga("passata-ritentativo-senza-controlli", "passata, passo 2", "M1",
+         [(PIAN, "def _tenta_dose(", "letto_stato, letto_ora = _rileggi_log(cur, voce)",
+           'letto_stato, letto_ora = _rileggi_log(cur, voce) if voce["riga_id"] is None else (None, None)')],
+         "pytest", [T_PIAN], ["test_ritentativo_rifa_i_controlli_e_non_parte_dopo_una_presa"]),
+    riga("passata-mai-ritentato", "passata, passo 2", "M2",
+         [(PIAN, "_DOSI_DOVUTE = (", "AND (d.id IS NULL OR d.stato = 'da_ritentare') ",
+           "AND (d.id IS NULL OR FALSE) ")],
+         "pytest", [T_PIAN], ["test_ritentativo_senza_presa_parte",
+                              "test_passata_ritenta_la_connessione_mai_stabilita"]),
+    # La voce ancora quella letta: una ripubblicazione fra lettura e decisione
+    # non fa partire la voce vecchia (M1).
+    riga("passata-voce-cambiata", "passata, passo 2", "M1",
+         [(PIAN, "def _scrivi_dose(", "AND c.istante_ms = %s AND c.ora_ricalcolata <=> %s",
+           "AND (c.istante_ms = %s OR TRUE) AND (c.ora_ricalcolata <=> %s OR TRUE)")],
+         "pytest", [T_PIAN], ["test_voce_cambiata_fra_lettura_e_decisione_non_parte"]),
+    # Il confine dell attivazione corrente (Roberto, 2026-09-30), nei due
+    # versi: nessuno 'scaduto' prima (M3 sul registro del canale), e lo
+    # 'scaduto' dopo (M2, I3).
+    riga("passata-scaduto-prima-dell-attivazione", "passata, passo 2", "M3",
+         [(PIAN, "_DOSI_DOVUTE = (",
+           "AND c.istante_ms + %(tolleranza)s > UNIX_TIMESTAMP(s.created_at) * 1000 ", "AND TRUE ")],
+         "pytest", [T_PIAN], ["test_finestra_chiusa_prima_dell_attivazione_non_da_scaduto"]),
+    riga("passata-scaduto-taciuto", "passata, passo 2", "M2",
+         [(PIAN, "_DOSI_DOVUTE = (",
+           "AND c.istante_ms + %(tolleranza)s > UNIX_TIMESTAMP(s.created_at) * 1000 ",
+           "AND c.istante_ms + %(tolleranza)s > UNIX_TIMESTAMP(s.created_at) * 1000 + 86400000 ")],
+         "pytest", [T_PIAN], ["test_finestra_chiusa_dopo_l_attivazione_da_scaduto"]),
+    # Senza chiave (15): nessuna POST, e la riga resta da ritentare dentro la
+    # finestra; una riga definitiva perderebbe il promemoria alla chiave
+    # tornata (M2).
+    riga("passata-senza-chiave-invia", "passata, passo 2", "M2",
+         [(PIAN, "def decidi_dose(", "if not firma_pronta:", "if False:")],
+         "pytest", [T_PIAN], ["test_chiave_assente_ritenta_dentro_la_finestra"]),
+    riga("passata-chiave-assente-definitiva", "passata, passo 2", "M2",
+         [(PIAN, "def decidi_dose(", "return Decisione(invio.DA_RITENTARE, CHIAVE_ASSENTE, forma, None)",
+           "return Decisione(NON_INVIATO, CHIAVE_ASSENTE, forma, None)")],
+         "pytest", [T_PIAN], ["test_chiave_assente_ritenta_dentro_la_finestra"]),
+    riga("passata-morta-non-spenta", "passata, passo 2", "M2",
+         [(PIAN, "def _tenta_dose(", "if esito.iscrizione_morta:", "if False:")],
+         "pytest", [T_PIAN], ["test_iscrizione_morta_si_spegne"]),
+    # L avviso di fine orizzonte (12): la sua finestra e il suo TTL.
+    riga("passata-avviso-prima", "passata, passo 2", "--",
+         [(PIAN, "_AVVISI_DOVUTI = (", "WHERE p.avviso_fine_ms <= %(adesso)s",
+           "WHERE p.avviso_fine_ms <= %(adesso)s + 60000")],
+         "pytest", [T_PIAN], ["test_avviso_fine_non_parte_prima"]),
+    riga("passata-avviso-ttl-fisso", "passata, passo 2", "--",
+         [(PIAN, "def decidi_avviso(", "ttl_s = (entro_ms - ora_ms) // 1000", "ttl_s = 20 * 60")],
+         "pytest", [T_PIAN], ["test_avviso_fine_parte_nella_sua_finestra"]),
+    riga("passata-avviso-oltre-entro", "passata, passo 2", "--",
+         [(PIAN, "def decidi_avviso(", "if ttl_s <= 0:", "if False:")],
+         "pytest", [T_PIAN], ["test_avviso_fine_oltre_entro_scade"]),
+    riga("passata-avviso-utente-non-attivo", "passata, passo 2", "--",
+         [(PIAN, "def decidi_avviso(", "if not utente_attivo:", "if False:")],
+         "pytest", [T_PIAN], ["test_avviso_fine_utente_non_attivo"]),
+    # Nessun silenzio (I3): cio che non si puo piu tentare si chiude col suo
+    # motivo, e un in_invio orfano si dice esito_ignoto.
+    riga("passata-avviso-superato-sospeso", "passata, passo 2", "--",
+         [(PIAN, "def _chiudi_sospesi(", "WHERE a.stato = 'da_ritentare' AND p.utente_id IS NULL",
+           "WHERE a.stato = 'da_ritentare' AND p.utente_id IS NULL AND FALSE")],
+         "pytest", [T_PIAN], ["test_avviso_fine_superato_da_una_pubblicazione_piu_recente"]),
+    riga("passata-spenta-sospesa", "passata, passo 2", "--",
+         [(PIAN, "def _chiudi_sospesi(", "WHERE d.stato = 'da_ritentare' AND (s.attiva = FALSE OR",
+           "WHERE d.stato = 'da_ritentare' AND FALSE AND (s.attiva = FALSE OR")],
+         "pytest", [T_PIAN], ["test_ritentativo_su_iscrizione_spenta_si_chiude"]),
+    riga("passata-orfano-muto", "passata, passo 2", "--",
+         [(PIAN, "def _chiudi_sospesi(", "WHERE stato = 'in_invio' AND inviato_ms IS NULL AND deciso_ms < %s",
+           "WHERE stato = 'in_invio' AND inviato_ms IS NULL AND deciso_ms < %s AND FALSE")],
+         "pytest", [T_PIAN], ["test_in_invio_orfano_diventa_esito_ignoto_e_non_riparte"]),
+    # I2: la passata non scrive il log. Il ramo scartato "materializzare le
+    # previste" dentro la rilettura deve arrossare (M3).
+    riga("passata-scrive-il-log", "passata, passo 2", "M3",
+         [(PIAN, "def _rileggi_log(", "    riga = cur.fetchone()\n", MATERIALIZZA_PREVISTA)],
+         "pytest", [T_PIAN], ["test_la_passata_non_scrive_il_log"]),
+    # Il battito (9 e 15): scritto a ogni passata, col motivo della chiave, e
+    # con l errore quando la passata cade. Un battito muto o sempre "ok" e un
+    # canale fermo che non lo dice (M2).
+    riga("passata-battito-assente", "passata, passo 2", "M2",
+         [(PIAN, "def passata(", "_scrivi_battito(cur, orologio(), OK, _riassunto(conteggi))", "None")],
+         "pytest", [T_PIAN], ["test_battito_a_ogni_passata"]),
+    riga("passata-battito-sempre-ok", "passata, passo 2", "M2",
+         [(PIAN, "def passata(", "_scrivi_battito(cur, orologio(), CHIAVE_ASSENTE, firma.motivo)",
+           "_scrivi_battito(cur, orologio(), OK, None)")],
+         "pytest", [T_PIAN], ["test_battito_a_ogni_passata", "test_chiave_assente_ritenta_dentro_la_finestra"]),
+    riga("passata-errore-taciuto", "passata, passo 2", "M2",
+         [(PIAN, "def main(", 'ERRORE, f"{type(exc).__name__}: {exc}"[:255])', "OK, None)")],
+         "pytest", [T_PIAN], ["test_main_dice_l_errore_nel_battito"]),
 ]
 
 # L'autoprova: righe il cui esito e FISSATO, e che il banco pretende.

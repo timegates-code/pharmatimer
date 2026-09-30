@@ -439,5 +439,10 @@ Dice dove mettere il PROSSIMO file; cio che non la rispetta si dichiara qui.
   `repository/` e `services/`, che portavano il solo `__init__.py` e che
   nessuno importava, sono state rimosse alla sessione di rimedio: non si
   ricreano se non insieme al codice che le abita.
+- Eccezione dichiarata, D1 A del 2026-09-30: il SQL della passata del canale
+  Web Push sta in `backend/pharmatimer_api/pianificatore.py`, che non e HTTP
+  e gira come processo a se sotto il suo LaunchAgent. E la seconda e ultima
+  sede del SQL; sta dentro `pharmatimer_api` perche il livello che g21
+  confronta col Mini veda le tabelle che nomina.
 - `backend/db/migrations/` e append-only: un file per migrazione, mai riscritto.
 - Una cartella che resta senza file si rimuove nello stesso commit che la svuota.

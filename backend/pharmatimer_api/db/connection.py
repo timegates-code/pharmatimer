@@ -13,6 +13,7 @@ SENTINEL_N5M_PIVOT_EXEC_BETA1_BACKEND_REFACTOR_APPLIED
 import random
 import time
 
+import mysql.connector
 from mysql.connector import pooling
 from mysql.connector.errors import PoolError
 from mysql.connector.pooling import MySQLConnectionPool, PooledMySQLConnection
@@ -28,14 +29,9 @@ POOL_ACQUIRE_BASE_DELAY_S = 0.05
 POOL_ACQUIRE_JITTER_S = 0.025
 
 
-def init_pool() -> None:
-    """Initialize global connection pool. Called once at startup."""
-    global _pool
-    if _pool is not None:
-        return
-    pool_kwargs = {
-        "pool_name": "pharmatimer_pool",
-        "pool_size": settings.DB_POOL_SIZE,
+def _parametri_connessione() -> dict:
+    """The one seat of the connection parameters, for the pool and for the planner."""
+    kwargs = {
         "host": settings.DB_HOST,
         "port": settings.DB_PORT,
         "database": settings.DB_NAME,
@@ -44,11 +40,33 @@ def init_pool() -> None:
         "autocommit": False,
     }
     if settings.DB_DEFAULTS_FILE:
-        pool_kwargs["option_files"] = settings.DB_DEFAULTS_FILE
+        kwargs["option_files"] = settings.DB_DEFAULTS_FILE
     else:
-        pool_kwargs["user"] = settings.DB_USER
-        pool_kwargs["password"] = settings.DB_PASSWORD
-    _pool = pooling.MySQLConnectionPool(**pool_kwargs)
+        kwargs["user"] = settings.DB_USER
+        kwargs["password"] = settings.DB_PASSWORD
+    return kwargs
+
+
+def init_pool() -> None:
+    """Initialize global connection pool. Called once at startup."""
+    global _pool
+    if _pool is not None:
+        return
+    _pool = pooling.MySQLConnectionPool(
+        pool_name="pharmatimer_pool",
+        pool_size=settings.DB_POOL_SIZE,
+        **_parametri_connessione(),
+    )
+
+
+def apri_connessione():
+    """One plain connection with the pool's parameters, autocommit off.
+
+    For the planner (pianificatore.py): a process that lives a few seconds
+    every minute has no use for a pool, which opens all its connections at
+    creation. Caller MUST .close() it.
+    """
+    return mysql.connector.connect(**_parametri_connessione())
 
 
 def close_pool() -> None:
