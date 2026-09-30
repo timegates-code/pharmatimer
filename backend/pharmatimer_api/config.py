@@ -42,6 +42,14 @@ class Settings(BaseSettings):
     # CORS dev permissive (prod restrictive deferred F3-S6 beta-2)
     CORS_ORIGINS: str = "http://localhost:5173"
 
+    # Web Push reminder channel, decision 15 of STATO_CORRENTE.md. OPTIONAL and
+    # never validated at startup: without them the channel goes off and says
+    # so (GET /api/push/stato; 503 on /api/push/chiave), and the app starts
+    # anyway. The PEM path comes from the plists, like DB_DEFAULTS_FILE; the
+    # sub from the Mini's .env.dev, outside the repo. Read by pharmatimer_api.canale.
+    VAPID_PEM_FILE: str | None = None
+    VAPID_SUB: str | None = None
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]

@@ -6,12 +6,20 @@ con get_db override (no lifespan via TestClient senza context manager).
 """
 from __future__ import annotations
 
+import base64
 import hashlib
 import secrets
 from collections.abc import Callable, Generator
 from datetime import date
 
 import pytest
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.serialization import (
+    Encoding,
+    NoEncryption,
+    PrivateFormat,
+    PublicFormat,
+)
 from fastapi.testclient import TestClient
 from mysql.connector import pooling
 from mysql.connector.pooling import MySQLConnectionPool
@@ -204,3 +212,19 @@ def client(db_test_pool: MySQLConnectionPool) -> Generator[TestClient, None, Non
     app.dependency_overrides[get_db] = override_get_db
     yield TestClient(app)
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def pem_vapid(tmp_path) -> tuple[str, str]:
+    """A fresh P-256 VAPID key in a 0600 PEM under tmp_path: (path, public key).
+
+    The public key is derived here with cryptography, never with
+    pharmatimer_api.canale, so a test that compares the two is not a
+    tautology: it measures the file reading and the encoding canale picks.
+    """
+    chiave = ec.generate_private_key(ec.SECP256R1())
+    percorso = tmp_path / "vapid.pem"
+    percorso.write_bytes(chiave.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption()))
+    percorso.chmod(0o600)
+    punto = chiave.public_key().public_bytes(Encoding.X962, PublicFormat.UncompressedPoint)
+    return str(percorso), base64.urlsafe_b64encode(punto).rstrip(b"=").decode("ascii")

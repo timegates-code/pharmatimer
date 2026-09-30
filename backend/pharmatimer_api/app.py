@@ -29,6 +29,7 @@ from pharmatimer_api.routers import (  # CP1 F3-S4-alpha N+5.E-alpha applied SEN
     health,
     log_assunzioni,
     orari,
+    push,
     utenti,
 )
 
@@ -69,6 +70,8 @@ app.include_router(farmaci.router)
 app.include_router(orari.router)
 app.include_router(log_assunzioni.router)
 app.include_router(utenti.router)
+# Web Push reminder channel, branch A (decisions 8, 9, 15 of STATO_CORRENTE.md).
+app.include_router(push.router)
 
 # SENTINEL_N5E_BETA_CP1_APP_INCLUDE_PERMESSI
 # F3-S4-beta N+5.E-beta CP1 -- CRUD permessi caregiver

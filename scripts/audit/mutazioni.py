@@ -86,6 +86,15 @@ INV = "scripts/audit/inventario.py"
 T_G21 = "tests/test_g21_livello.py"
 DIP = "scripts/audit/dipendenze.py"
 T_DIP = "tests/test_dipendenze.py"
+CAN = "backend/pharmatimer_api/canale.py"
+CFG = "backend/pharmatimer_api/config.py"
+PU = "backend/pharmatimer_api/routers/push.py"
+MPU = "backend/pharmatimer_api/models/push.py"
+T_CAN = "tests/test_canale.py"
+T_CFG = "tests/test_config_validator.py"
+T_PST = "tests/test_push_stato.py"
+T_PIS = "tests/test_push_iscrizione.py"
+T_PCA = "tests/test_push_calendario.py"
 
 GUARDIA_VERBO = (
     "  if (opGuardActive && !OUTBOX_OPS.includes(op)) {\n"
@@ -276,6 +285,125 @@ MUTAZIONI = [
          [(DIP, "def confronta(lock, presenti):",
            "mancanti = sorted(n for n in lock if n not in presenti)", "mancanti = []")],
          "pytest", [T_DIP], ["test_entry_missing_from_the_venv_is_red"]),
+    # Canale Web Push, ramo A, passo 1: la meta API. Decisioni 2, 8, 11, 12,
+    # 15 e 16 dello STATO. "--" dove l invariante non e uno dei TRE MAI e la
+    # riga lo dice.
+    # L API non carica pywebpush ne aiohttp (indicazione di Roberto, misurata
+    # il 2026-09-30): la chiave pubblica si legge con la sola cryptography.
+    riga("push-api-carica-pywebpush", "canale, passo 1", "--",
+         [(CAN, "def leggi_chiave_privata(",
+           "from cryptography.hazmat.primitives import serialization",
+           "from pywebpush import serialization")],
+         "pytest", [T_CAN], ["test_api_non_carica_pywebpush_ne_aiohttp"]),
+    # Un PEM assente resta assente (decisione 15): un lettore che crea il file,
+    # come Vapid.from_file di py_vapid, darebbe al canale una chiave nuova senza
+    # custodia e ucciderebbe in silenzio le subscription legate alla vera.
+    riga("push-pem-creato", "canale, passo 1", "M2",
+         [(CAN, "def leggi_chiave_privata(", 'with open(pem_file, "rb") as fh:',
+           'with open(pem_file, "a+b") as fh:')],
+         "pytest", [T_CAN], ["test_pem_assente_resta_assente"]),
+    # Il sub: senza, il canale si dice spento; con un sub valido, acceso.
+    riga("push-sub-ignorato", "canale, passo 1", "M2",
+         [(CAN, "def stato_chiave(", "if not sub:", "if False:")],
+         "pytest", [T_CAN], ["test_sub_assente_o_non_valido_spegne_ma_la_chiave_si_legge"]),
+    riga("push-sub-sempre-assente", "canale, passo 1", "M2",
+         [(CAN, "def stato_chiave(", "if not sub:", "if True:")],
+         "pytest", [T_CAN], ["test_sub_assente_o_non_valido_spegne_ma_la_chiave_si_legge"]),
+    # Impostazioni VAPID mai validate all avvio (decisione 15): un sub validato
+    # dal modello fermerebbe l API, e con essa la consegna della coda.
+    riga("push-config-validata", "canale, passo 1", "M2",
+         [(CFG, "Web Push reminder channel, decision 15", "VAPID_SUB: str | None = None",
+           'VAPID_SUB: str | None = __import__("pydantic").Field('
+           'default=None, pattern="^(mailto:|https://)")')],
+         "pytest", [T_CFG], ["test_settings_vapid_facoltative_mai_validate"]),
+    # GET /api/push/chiave nei due versi: 503 senza PEM, 200 con.
+    riga("push-chiave-sempre-spenta", "router push, passo 1", "M2",
+         [(PU, "def chiave(", "if stato.chiave_pubblica is None:", "if True:")],
+         "pytest", [T_PST], ["test_chiave_con_pem_valido"]),
+    riga("push-chiave-mai-spenta", "router push, passo 1", "M2",
+         [(PU, "def chiave(", "if stato.chiave_pubblica is None:", "if False:")],
+         "pytest", [T_PST], ["test_chiave_senza_pem_503_e_nessun_file_creato"]),
+    # Un telefono, una subscription attiva (v07): due sullo stesso telefono
+    # porterebbero ogni dose due volte (M1). Nell altro verso, gli altri
+    # telefoni e gli altri utenti tengono la loro (M2 sul loro canale).
+    riga("push-iscrizione-doppia", "router push, passo 1", "M1",
+         [(PU, "motivo_disattivazione = 'sostituita'",
+           "AND attiva = TRUE AND endpoint_hash <> %s",
+           "AND attiva = TRUE AND FALSE AND endpoint_hash <> %s")],
+         "pytest", [T_PIS], ["test_iscrizione_nuova_sostituisce_la_vecchia_dello_stesso_telefono",
+                             "test_iscrizione_non_tocca_altri_telefoni_ne_altri_utenti"]),
+    riga("push-iscrizione-altri-telefoni", "router push, passo 1", "M2",
+         [(PU, "motivo_disattivazione = 'sostituita'",
+           "AND device_id = %s AND attiva = TRUE AND endpoint_hash <> %s",
+           "AND (device_id = %s OR TRUE) AND attiva = TRUE AND endpoint_hash <> %s")],
+         "pytest", [T_PIS], ["test_iscrizione_non_tocca_altri_telefoni_ne_altri_utenti"]),
+    riga("push-iscrizione-altri-utenti", "router push, passo 1", "M2",
+         [(PU, "motivo_disattivazione = 'sostituita'",
+           "WHERE utente_id = %s AND device_id = %s AND attiva = TRUE AND endpoint_hash",
+           "WHERE (utente_id = %s OR TRUE) AND device_id = %s AND attiva = TRUE AND endpoint_hash")],
+         "pytest", [T_PIS], ["test_iscrizione_non_tocca_altri_telefoni_ne_altri_utenti"]),
+    # La revoca (il toggle spento) nei due versi: spegne quel telefono, e solo
+    # quello. Continuare a spingere dopo la revoca e consenso, non un MAI.
+    riga("push-revoca-muta", "router push, passo 1", "--",
+         [(PU, "motivo_disattivazione = 'revocata'",
+           "WHERE utente_id = %s AND device_id = %s AND attiva = TRUE",
+           "WHERE utente_id = %s AND device_id = %s AND attiva = TRUE AND FALSE")],
+         "pytest", [T_PIS], ["test_revoca_spegne_solo_quel_telefono_dell_utente"]),
+    riga("push-revoca-larga", "router push, passo 1", "M2",
+         [(PU, "motivo_disattivazione = 'revocata'",
+           "AND device_id = %s AND attiva = TRUE", "AND (device_id = %s OR TRUE) AND attiva = TRUE")],
+         "pytest", [T_PIS], ["test_revoca_spegne_solo_quel_telefono_dell_utente"]),
+    # La pubblicazione sostituisce il calendario intero (decisioni 8 e 12): una
+    # voce che il telefono ha ritirato resterebbe al pianificatore (M1); le voci
+    # nuove devono esserci tutte (M2); il calendario degli altri non si tocca.
+    riga("push-calendario-resti", "router push, passo 1", "M1",
+         [(PU, "def pubblica(", '"DELETE FROM push_calendario WHERE utente_id = %s"',
+           '"DELETE FROM push_calendario WHERE utente_id = %s AND FALSE"')],
+         "pytest", [T_PCA], ["test_pubblicazione_sostituisce_il_calendario_intero"]),
+    riga("push-calendario-vuoto", "router push, passo 1", "M2",
+         [(PU, "def pubblica(", "        if payload.voci:\n", "        if False:\n")],
+         "pytest", [T_PCA], ["test_pubblicazione_sostituisce_il_calendario_intero"]),
+    riga("push-calendario-altri-utenti", "router push, passo 1", "M2",
+         [(PU, "def pubblica(", '"DELETE FROM push_calendario WHERE utente_id = %s"',
+           '"DELETE FROM push_calendario WHERE (utente_id = %s OR TRUE)"')],
+         "pytest", [T_PCA], ["test_pubblicazione_non_tocca_il_calendario_di_un_altro_utente"]),
+    # Il farmaco di un altro utente rifiuta la pubblicazione intera; i propri
+    # passano. L isolamento fra utenti non e uno dei TRE MAI.
+    riga("push-calendario-estraneo", "router push, passo 1", "--",
+         [(PU, "def pubblica(", "            if estranei:\n", "            if False:\n")],
+         "pytest", [T_PCA],
+         ["test_pubblicazione_di_un_farmaco_altrui_e_rifiutata_e_non_tocca_il_calendario"]),
+    riga("push-calendario-proprio-rifiutato", "router push, passo 1", "M2",
+         [(PU, "def pubblica(", "estranei = [f for f in farmaci if f not in propri]",
+           "estranei = [f for f in farmaci if f in propri]")],
+         "pytest", [T_PCA], ["test_pubblicazione_sostituisce_il_calendario_intero"]),
+    # ora_ricalcolata di parete, senza fuso e al secondo intero: il
+    # pianificatore la confronta col log per uguaglianza (decisione 11), e un
+    # valore convertito o arrotondato sposterebbe l esito. Nei due versi.
+    riga("push-ricalcolata-con-fuso", "modelli push, passo 1", "M1",
+         [(MPU, "def _parete_al_secondo(", "if v.tzinfo is not None:", "if False:")],
+         "pytest", [T_PCA], ["test_ora_ricalcolata_con_fuso_e_rifiutata"]),
+    riga("push-ricalcolata-sempre-rifiutata", "modelli push, passo 1", "M2",
+         [(MPU, "def _parete_al_secondo(", "if v.tzinfo is not None:", "if True:")],
+         "pytest", [T_PCA], ["test_pubblicazione_sostituisce_il_calendario_intero"]),
+    riga("push-ricalcolata-frazioni", "modelli push, passo 1", "M1",
+         [(MPU, "def _parete_al_secondo(", "if v.microsecond != 0:", "if False:")],
+         "pytest", [T_PCA], ["test_ora_ricalcolata_con_frazioni_di_secondo_e_rifiutata"]),
+    # L avviso di fine orizzonte dopo la finestra dell ultima dose (condizione
+    # della 12), al confine esatto nei due versi.
+    riga("push-avviso-fine-presto", "modelli push, passo 1", "--",
+         [(MPU, "def _coerenza(", "if self.avviso_fine_ms < ultimo + canale.TOLLERANZA_PUSH_MS:",
+           "if self.avviso_fine_ms < ultimo:")],
+         "pytest", [T_PCA], ["test_avviso_fine_dopo_la_finestra_dell_ultima_dose"]),
+    riga("push-avviso-fine-al-limite", "modelli push, passo 1", "--",
+         [(MPU, "def _coerenza(", "if self.avviso_fine_ms < ultimo + canale.TOLLERANZA_PUSH_MS:",
+           "if self.avviso_fine_ms <= ultimo + canale.TOLLERANZA_PUSH_MS:")],
+         "pytest", [T_PCA], ["test_avviso_fine_dopo_la_finestra_dell_ultima_dose"]),
+    # L eta del battito sul solo orologio del server (condizione della 9): un
+    # pianificatore fermo che sembrasse vivo e un canale muto che non lo dice.
+    riga("push-stato-eta-nascosta", "router push, passo 1", "M2",
+         [(PU, "def stato(", 'eta_ms=adesso - battito["ultima_passata_ms"],', "eta_ms=0,")],
+         "pytest", [T_PST], ["test_stato_eta_sul_solo_orologio_del_server"]),
 ]
 
 # L'autoprova: righe il cui esito e FISSATO, e che il banco pretende.

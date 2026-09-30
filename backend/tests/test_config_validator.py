@@ -69,3 +69,27 @@ def test_settings_db_name_missing_raises(monkeypatch):
             DB_PASSWORD="devsecret",
         )
     assert "DB_NAME is required" in str(exc_info.value)
+
+
+def test_settings_vapid_facoltative_mai_validate(monkeypatch):
+    """Decision 15: the VAPID settings are optional and never validated at startup.
+
+    Without them, or with values that cannot work, Settings still builds: the
+    channel goes off and says so, the app starts anyway. Pinned in
+    scripts/audit/mutazioni.py.
+    """
+    monkeypatch.delenv("VAPID_PEM_FILE", raising=False)
+    monkeypatch.delenv("VAPID_SUB", raising=False)
+    s = _fresh_settings(monkeypatch, DB_NAME="anydb", DB_USER="u", DB_PASSWORD="p")
+    assert s.VAPID_PEM_FILE is None
+    assert s.VAPID_SUB is None
+    s = _fresh_settings(
+        monkeypatch,
+        DB_NAME="anydb",
+        DB_USER="u",
+        DB_PASSWORD="p",
+        VAPID_PEM_FILE="/percorso/che/non/esiste.pem",
+        VAPID_SUB="non-un-sub",
+    )
+    assert s.VAPID_PEM_FILE == "/percorso/che/non/esiste.pem"
+    assert s.VAPID_SUB == "non-un-sub"
