@@ -3,6 +3,7 @@
 
 **Versione:** 1.18
 **Data:** 27 luglio 2026
+**In git dal 2 settembre 2026** (`a78be66`): la Spec si modifica in posto, nome e numero restano 1.18, e le modifiche successive stanno in `git log`.
 **Autore:** Roberto Paolucci
 **Contesto:** Progetto Claude dedicato allo sviluppo di una PWA per la gestione della terapia farmacologica quotidiana. La specifica originale prevedeva un backend persistente FastAPI + MariaDB; nel rilascio v3.1.0 l'app è chiusa come PWA standalone con persistenza locale IndexedDB. Il backend è formalmente fuori scope v3.1.0 ma resta architetturalmente riapribile (vedi par.11.5 + par.11.D Changelog Fase 2). Il backend è in sviluppo attivo Fase 3 a partire da v3.2.0-alpha.1 (branch `fase-3-backend` LOCALE, non merged in main, vedi Changelog Fase 3). A v3.2.0-alpha.7 LOCALE è chiuso cluster auth-layer drift-N44+N53 backend-side simmetricamente (N+5.K par.22.93): `get_current_user` raise `RepositoryError(UNAUTHORIZED)` con vocabolario errori uniforme cross-PWA/backend; 76 test pytest backend verde (575/575 vitest invariato).
 
@@ -153,13 +154,13 @@ L'utente tipo è un paziente politrattato (10-15 farmaci/die) con terapie a inte
 
 ### 3.0 Schema canonico -- riconciliazione drift-N86 (NUOVO in v1.9)
 <!-- SENTINEL_N5QBIS_SEC30 -->
-Fonte-di-verita: DDL `backend/db/migrations/v01_init.sql` + `v03_utenti_enum_caregiver.sql` + `v02_unique_log.sql`. Lo schema reale Fase 3 e composto da **8 tabelle**: `utenti`, `permessi`, `push_subscriptions`, `profilo_utente`, `farmaci`, `orari_base`, `log_assunzioni`, `impostazioni_app`. Note canoniche:
+Fonte-di-verita: la catena dei DDL in `backend/db/migrations/`, applicata in ordine. E lei l'inventario delle tabelle: questa nota non ne tiene un elenco. Note canoniche:
 - Nome canonico **`orari_base`** (sottosezioni 3.2/3.5 corrette).
 - `utenti.ruolo` ENUM('owner','paziente','caregiver') (v03; chiude drift-doc-N46 lato DDL).
 - `log_assunzioni.stato` ENUM 5 valori ('prevista','presa','saltata','sospesa','ricalcolata').
 - UNIQUE `idx_log_slot_unique (utente_id, farmaco_id, data, dose_numero)` (v02).
 - `profilo_utente` include `attivo` + `demo`; `impostazioni_app` ha PK composita `(utente_id, chiave)` senza `id`.
-Le sottosezioni 3.1-3.11 restano la descrizione di dettaglio; questa nota ne fissa l'inventario autoritativo. Modalita alpha-lite: inventario e correzioni elencate verificate sul DDL, NON e stata rivalidata ogni colonna delle sottosezioni esistenti (audit colonnare integrale -> sessione DB dedicata).
+Le sottosezioni che seguono restano la descrizione di dettaglio; l'inventario autoritativo e la catena. Modalita alpha-lite: le correzioni elencate sono verificate sul DDL, NON e stata rivalidata ogni colonna delle sottosezioni esistenti (audit colonnare integrale -> sessione DB dedicata).
 
 
 ### 3.1 Tabella `farmaci`
@@ -323,8 +324,13 @@ Vedi `PharmaTimer_Changelog_Fase2.md` §6.147 (chiusura by-design Sessione 9-C) 
 | p256dh_key | VARCHAR(200) | Chiave pubblica subscription |
 | auth_key | VARCHAR(100) | Auth secret subscription |
 | device_label | VARCHAR(100) NULL | Etichetta device per UI gestione (es. "iPhone Mario", impostato dall'utente) |
-| attiva | BOOLEAN DEFAULT TRUE | Disattiva su unsubscribe, hard delete deferred cron |
-| created_at | TIMESTAMP | |
+| attiva | BOOLEAN DEFAULT TRUE | Disattiva su unsubscribe, hard delete deferred cron. Dalla v07 un telefono ne tiene una sola attiva: si spegne alla revoca (`revocata`), quando se ne attiva un'altra dello stesso telefono (`sostituita`), su 404 o 410 del servizio push (`iscrizione_morta`) |
+| created_at | TIMESTAMP | Inizio dell'attivazione corrente per l'utente corrente (dal 2026-09-30): scritto alla creazione, riscritto dall'upsert solo quando una riga spenta torna attiva o passa a un altro utente, dall'orologio di MySQL. La passata lo legge con `UNIX_TIMESTAMP()` e non scrive `scaduto` per finestre chiuse prima (sez. 6.4) |
+| endpoint_hash | CHAR(64) NOT NULL, UNIQUE | (v07) SHA-256 esadecimale di `endpoint`: la collazione di `endpoint` non distingue maiuscole e minuscole, un endpoint push si, quindi l'unicita sta sullo hash |
+| device_id | CHAR(36) NULL | (v07) Identificativo del telefono; indice `(utente_id, device_id)` |
+| disattivata_ms | BIGINT NULL | (v07) Quando la subscription si e spenta, in millisecondi dall'epoch |
+| motivo_disattivazione | VARCHAR(40) NULL | (v07) Perche si e spenta (vedi `attiva`) |
+| confermata_ms | BIGINT NULL | (v07) Ultima conferma del telefono, a ogni `PUT /api/push/iscrizione`, in millisecondi dall'epoch |
 
 **Nota**: device-bound, NON included in workflow Import/Export (Q-IMPORT.4 ratificato par.11.D-rev v3.1).
 
@@ -341,6 +347,20 @@ Key-value scoped multi-tenant (Changelog Fase 2 sez. 6.1; scoped F3-S1.I=a, s.6.
 | valore | TEXT NULL | |
 
 FK `fk_impost_utente` -> `utenti(id)` ON DELETE RESTRICT ON UPDATE CASCADE.
+
+### 3.13 Tabelle del canale Web Push, ramo A (v07)
+
+Additive, da `backend/db/migrations/v07_push.sql`, che porta il commento di ogni tabella ed e la descrizione di dettaglio; qui il ruolo e la chiave. Gli istanti che il canale confronta con un orologio sono BIGINT in millisecondi dall'epoch Unix, UTC (suffisso `_ms`), mentre il resto dello schema tiene orari di parete. Il solo DATETIME di parete del canale e `ora_ricalcolata`, copia di `log_assunzioni.ora_ricalcolata`: si confronta col log per uguaglianza e non si converte mai (sez. 6.4).
+
+| Tabella | Ruolo | Chiave |
+|---|---|---|
+| `push_pubblicazioni` | L'ultima pubblicazione del calendario ricevuta dal server, riscritta a ogni pubblicazione: il telefono che l'ha mandata, l'istante di ricezione, la fine dell'orizzonte, istante ed `entro` dell'avviso di fine orizzonte calcolati dal telefono, il numero di voci | PK `utente_id` |
+| `push_calendario` | Il calendario corrente dell'utente, sostituito intero a ogni pubblicazione: per ogni dose l'istante, la `ora_ricalcolata` da cui il telefono l'ha calcolato (NULL per una dose solo prevista), titolo e corpo del promemoria | UNIQUE `(utente_id, farmaco_id, data, dose_numero)`, la chiave di `idx_log_slot_unique` |
+| `push_dispatch` | Una decisione per dose e per telefono, scritta PRIMA della POST: una dose arriva a un telefono al piu una volta. Porta cio che la rilettura del log ha visto al fuoco, la forma partita (push di dose o avviso neutro), lo stato col motivo, lo stato HTTP e il TTL | UNIQUE `(subscription_id, farmaco_id, data, dose_numero)` |
+| `push_avvisi_fine` | Gli avvisi di fine orizzonte, una decisione per istante dell'avviso e per telefono, con gli stessi stati | UNIQUE `(subscription_id, avviso_fine_ms)` |
+| `push_pianificatore` | Il battito della passata: ultima passata, esito, dettaglio. Nessuna riga seminata: tabella vuota vuol dire passata mai partita | PK `nome` |
+
+Gli stati di un invio sono `in_invio`, `accettato`, `da_ritentare`, `respinto` e `non_inviato`. Un 201 del servizio push e `accettato`, mai consegnato: il registro del canale non chiama "consegnato" un 201.
 
 ## 4. Logica di Ricalcolo e Recupero Gap
 
@@ -558,6 +578,35 @@ Le card sono raggruppate per fascia oraria con etichetta (es. "ORE 10:00 — COL
 - Supporto notifiche PWA nativo su Chrome/Edge con service worker attivo
 - Installazione da home screen consigliata per promemoria affidabili
 
+### 6.4 Promemoria ad app chiusa: il canale Web Push, ramo A (lato server)
+
+Le decisioni citate sono quelle di `STATO_CORRENTE.md`. Le sedi sono `canale.py`, `invio.py`, `pianificatore.py` e `routers/push.py` in `backend/pharmatimer_api/`, piu le tabelle della sez. 3.13.
+
+**Un promemoria diurno, non una sveglia** (decisione 2, lettera W). Le dosi nella finestra di sonno non sono un requisito. I limiti vengono dal telefono e dal servizio push, non dal nostro codice, e sono misurati sul telefono:
+- **suono**: quello standard del sistema, che l'app non sceglie;
+- **Focus**: sotto Sonno l'avviso arriva muto; il solo rimedio e lato telefono, la web app fra le app consentite del Focus, e che il suono torni non e misurato;
+- **coda**: a telefono spento o offline un avviso in coda si puo perdere; lo contiene il TTL, e una perdita e un invito mancato, mai un record, che il server non vede;
+- **201**: un 201 del servizio push non prova una consegna; il registro del canale lo chiama `accettato`, mai consegnato.
+
+**Il telefono pubblica, il server non calcola mai un orario** (decisione 8, ramo A). Il telefono pubblica il calendario risolto della finestra che l'app mostra (ieri, oggi, domani), per istante effettivo: per ogni dose l'istante, la `ora_ricalcolata`, titolo e corpo (`PUT /api/push/calendario`, sez. 9). Fuso e ora legale sono quelli del telefono.
+
+**La passata** (decisione 9, `pianificatore.py`) e un LaunchAgent a se sul Mini, avviato ogni 60 secondi: idempotente, riparte dal DB e scrive il battito in `push_pianificatore`, col motivo quando il canale e spento o la passata cade. A ogni tentativo, il primo e ogni ritentativo:
+1. rilegge il log per chiave della dose: `presa`, `saltata` o `sospesa`, nessun invio; nessuna riga, invio (fail-safe);
+2. rilegge `farmaci.attivo` e `utenti.attivo`: se uno e falso, nessun invio (decisione 26);
+3. la finestra e [istante, istante + 20 minuti): nulla parte prima; il TTL e cio che resta della finestra al momento della POST, e a zero o meno non c'e POST ma una riga `scaduto` (decisione 16);
+4. se la `ora_ricalcolata` del log e uguale a quella pubblicata, vuote comprese, parte il push di dose; altrimenti un avviso neutro, senza farmaco ne ora, motivo `divergenza` (decisione 11);
+5. scrive la decisione solo se la voce del calendario e ancora quella letta, e la conferma PRIMA della POST: al piu un invio per dose e telefono.
+
+Si ritenta solo cio che certifica il rifiuto del servizio push, per lista bianca; cio che non certifica ne un'accettazione ne un rifiuto definitivo e esito ignoto e non si ritenta mai, e le risposte che dicono morta la subscription la spengono (decisione 29). La lista ha una sede unica, `invio.py`, e la tengono i suoi test. Nessuna riga `scaduto` per una finestra chiusa prima dell'attivazione corrente della subscription (decisione 30). La passata legge `log_assunzioni` e non lo scrive mai.
+
+**L'avviso di fine orizzonte** (decisione 12): istante ed `entro` li calcola il telefono, oltre il TTL dell'ultima dose e fuori dalla finestra di sonno. Parte solo se non e arrivata una pubblicazione piu recente, con gli stessi passi tranne quelli di dose.
+
+**I testi.** Il push di dose porta titolo e corpo pubblicati dal telefono. L'avviso neutro e quello di fine portano testi fissi, senza dati di dose, che invitano ad aprire l'app: la loro sede unica e `canale.py`, e li tengono i suoi test (decisione 27).
+
+**La chiave VAPID** (decisione 15): PEM 0600 nella home del Mini, fuori da `~/PharmaTimer`; il percorso sta nei plist dell'API e della passata come `VAPID_PEM_FILE`, il `sub` nel `.env.dev` del Mini. Senza chiave il canale si spegne e lo dice, con un 503 su `/api/push/chiave` e col motivo nel battito, e l'app parte comunque.
+
+**Stato.** Il lato server c'e. Iscrizione, pubblicazione e service worker arrivano col client: fino ad allora nessun telefono e iscritto e la passata non spedisce nulla. 6.1-6.3 restano i requisiti delle notifiche dell'app; il loro allineamento col canale arriva col client.
+
 ---
 
 ## 7. Export
@@ -635,6 +684,11 @@ Le card sono raggruppate per fascia oraria con etichetta (es. "ORE 10:00 — COL
 | POST | /api/export/snapshot | Export JSON snapshot completo per `utente_id` (Q-IMPORT.4, NUOVO in v1.4) |
 | POST | /api/import/preview | Dry-run preview import diff (Q-SAFETY.1 obbligatoria, NUOVO in v1.4) |
 | POST | /api/import/snapshot | Apply import Merge/Replace post-preview (Q-IMPORT.2, NUOVO in v1.4) |
+| GET | /api/push/chiave | (canale Web Push, sez. 6.4) Chiave pubblica VAPID derivata dal PEM, per `subscribe()`. Senza PEM leggibile il canale e spento e lo dice: 503 col motivo |
+| PUT | /api/push/iscrizione | (canale) Upsert della subscription di questo telefono per hash dell'endpoint, confermata a ogni chiamata; le altre attive dello stesso telefono si spengono come `sostituita` |
+| DELETE | /api/push/iscrizione/{device_id} | (canale) Spegne la subscription attiva di questo telefono, il toggle spento, motivo `revocata`. 204 anche se nessuna era attiva |
+| PUT | /api/push/calendario | (canale) Il calendario risolto del telefono, sostituito intero in una transazione. Un farmaco che non e dell'utente rifiuta l'intera pubblicazione con 404, e il calendario precedente resta |
+| GET | /api/push/stato | (canale) Sempre 200: chiave, battito della passata con eta misurata sul solo orologio del server, tolleranza, iscrizioni, pubblicazione, ultimi esiti |
 
 ---
 
@@ -1067,7 +1121,7 @@ Trascrizione normativa del design conclusivo ratificato (Changelog F3 par.22.198
 
 **(a) Specchio a ingredienti + coda dei tocchi etichettati.** Lo specchio conserva gli INGREDIENTI (farmaci, orari_base, log_assunzioni), NON dosi precotte firmate dal server: il piano si ricostruisce sempre e solo col motore esistente (`buildMultiDayPlan`), unico e gia collaudato. Nessuna doppia verita che possa divergere; blackout illimitati e passaggio di mezzanotte retti per costruzione. La coda contiene tocchi etichettati (sez. 14.3), non stato.
 
-**(b) Buffer occorrenze server-side.** Idea registrata come input forte per il bivio push di DESIGN-B (motore occorrenze server vs calendario pubblicato dal client); NON fa parte dello scenario 3: anticiparla richiederebbe lo scheduler (gia preventivato in W-full) e introdurrebbe una doppia verita senza migliorare la consegna.
+**(b) Buffer occorrenze server-side.** Idea registrata come input forte per il bivio push di DESIGN-B (motore occorrenze server vs calendario pubblicato dal client); NON fa parte dello scenario 3: anticiparla richiederebbe lo scheduler (gia preventivato in W-full) e introdurrebbe una doppia verita senza migliorare la consegna. **Bivio chiuso il 2026-09-17 sul ramo che questa ratifica gia preferiva** (decisione 8 di `STATO_CORRENTE.md`, lettera A): il telefono pubblica il calendario risolto e il server non calcola mai un orario, quindi il buffer di occorrenze server-side non si realizza (sez. 6.4).
 
 **(c) Creazione/modifica terapie offline.** FUORI dallo scenario 3 (gli id farmaco sono assegnati dal server: servirebbero identita provvisorie + rimappatura), a backlog. Offline le scritture di terapia ricevono un rifiuto esplicito e chiaro (sez. 14.4 punto 6), MAI un ripiego solo-specchio.
 

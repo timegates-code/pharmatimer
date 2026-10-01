@@ -10,59 +10,56 @@ poi `bash deploy/deploy-mini.sh` dal Terminale.
 
 ---
 
-## Ultima sessione -- backend del canale, ramo A: passi 1 e 2, 2026-09-30 e 10-01
+## Ultima sessione -- backend del canale, ramo A: passo 3, 2026-10-01
 
-`make check` verde in apertura, lanciato da Roberto, HEAD `3bd9cc3`. La
-struttura e approvata con due condizioni sui ritentativi (voce 29) e un
-confine per le righe `scaduto` (voce 30); ratifiche D1, D2 e D3, tutte A
-(voci 25, 26 e 27). D4 resta per il passo 3 (voce 28). Il 503 della chiave
-resta `DB_UNAVAILABLE`, per scelta di Roberto.
+`make check` verde in apertura, lanciato da Roberto e rilanciato qui, HEAD
+`b3fe028`; CI verde su `b3fe028`. Le righe del banco dei due pin chiesti da
+Roberto c erano e mordono: `passata-ritentativo-senza-controlli` (M1) e
+`passata-scaduto-prima-dell-attivazione` (M3).
 
-**Passo 1, `fb4a6a4`: la meta API.** `canale.py` e la sede unica della
-tolleranza di 20 minuti, dell orologio in epoch ms e della lettura del PEM,
-con la sola cryptography. `routers/push.py` e `models/promemoria.py`:
-- chiave, 503 senza PEM;
-- iscrizione per hash dell endpoint, una attiva per telefono;
-- revoca per `device_id`;
-- calendario sostituito intero;
-- stato sempre 200, col battito misurato sul solo orologio del server.
-Impostazioni VAPID facoltative, mai validate all avvio.
-
-**Passo 2, il commit che porta questo STATO: la passata.**
-`pianificatore.py` e la seconda sede del SQL (CLAUDE.md 13); `invio.py` e
-l unico import di pywebpush; `db/connection.apri_connessione()` apre una
-connessione sola. A ogni tentativo la passata:
-- rilegge log, farmaco e utente;
-- decide PRIMA della POST, al piu una volta per dose e telefono;
-- da come TTL il resto della finestra, calcolato all invio;
-- manda l avviso neutro sulla divergenza della 11 e l avviso di fine della 12;
-- scrive il battito, col motivo.
-`created_at` di una subscription e ora l inizio dell attivazione corrente.
+**Passo 3, il commit che porta questo STATO.**
+- `deploy/launchd/com.pharmatimer.pianificatore.plist`: la passata ogni 60 s
+  e al caricamento, `WorkingDirectory` in `backend/`, `DB_DEFAULTS_FILE`,
+  `DB_NAME` e `VAPID_PEM_FILE`, log in `~/PharmaTimer/logs`. `VAPID_PEM_FILE`
+  anche nel plist dell API, stesso percorso.
+- `deploy-mini.sh` installa i plist da git in `~/Library/LaunchAgents` a ogni
+  deploy (ratifica A del 2026-10-01): li legge tutti, copia i sostituiti in
+  `backups/` col diff, li installa in 644, poi bootout e bootstrap nel
+  dominio gui, prima l API e poi la passata.
+- `rosso()` diceva "nessun atto" anche dopo lo schieramento: rilievo nuovo,
+  corretto qui su richiesta di Roberto. Dal passo 5 un rosso dice cio che e
+  stato compiuto sul Mini e cio che era in corso.
+- D4 A (voce 28): Spec 3.0, 3.11, 3.13, 6.4, 9 e 14.1(b), e il README.
+- CLAUDE.md 13 senza il conteggio dei `cur.execute`; la CI su `ubuntu-24.04`.
 
 **Misure.**
-- Nel venv: `import pywebpush` carica aiohttp, py_vapid no.
-- requests alza un `ConnectionError` generico per una richiesta gia partita:
-  server locale che legge il corpo intero e chiude.
-- Letto nel sorgente: `Vapid.from_file` di py_vapid, su file assente,
-  GENERA una chiave e la salva in quel percorso. Non si usa mai.
-- Da Roberto, sul Mini: l API e un LaunchAgent di gui/501; MySQL 9.6.0 e
-  StockFusion stanno nel dominio system; FileVault spento, login automatico
-  e riavvio automatico attivi; della v07 c e la sola `push_subscriptions`.
-- Banco: 104 righe, tutte mordono; il blocco dura 219 s, erano 64.
+- Da Roberto, sul Mini, in sola lettura: i plist installati di API e backup
+  hanno lo sha256 di git, cioe del `851f3fc` del 27 maggio.
+- `config.py` legge `.env.dev` dalla cartella corrente: senza
+  `WorkingDirectory` in `backend/` la passata non vedrebbe `VAPID_SUB`.
+- Sotto l etichetta `ubuntu-24.04` la build dell immagine cambia: misurato su
+  tre run di settembre.
+- Sullo Studio `bash` e `/bin/bash` 3.2, e `deploy-mini.sh` gira li.
+- Il passo 6 provato su cartelle finte dello Studio, sotto zsh e bash: la
+  stringa estratta dal file, `launchctl` una funzione finta verificata in ogni
+  shell e mai quello vero. Plist installati uguali, diversi, o senza quello
+  della passata: arriva al bootstrap e il trap non scatta. Un plist che non si
+  legge: si ferma prima di ogni bootout, e il rosso dice cio che e compiuto.
 
-**Non fatto.** Passo 3: il plist della passata, `VAPID_PEM_FILE` nel plist
-dell API, il bootstrap in `deploy-mini.sh` nel dominio gui, D4. Nessun
-deploy, niente in launchd, nessuna scrittura sul Mini.
+**Non fatto.** Nessun deploy, niente in launchd, nessuna scrittura sul Mini:
+lo script non si e eseguito, il passo 6 solo sulle cartelle finte. Il resto
+della Spec, fermo a luglio, non si allinea in questa sessione.
 
-**Deviazioni.** Nessuna dalla Spec. Dalla convenzione di CLAUDE.md 13: la
-seconda sede del SQL, dichiarata (D1 A).
+**Deviazioni.** Nessuna dalla Spec: nel perimetro della D4 la Spec ora
+descrive il codice.
 
-**Cosa resta.** Il passo 3 del backend, poi la sessione del client: le
-decisioni 10 e 14, e la soglia del battito vecchio (condizione della 9).
-**Da questo push g21 pretende la v07 sul Mini**: qualunque deploy passa
-prima da `apply_v07_prod.py`. Prima del deploy del canale, dal Terminale sul
-Mini: installazione dal lock, chiave VAPID (15), `VAPID_SUB` nel `.env.dev`,
-`apply_v07_prod.py`; poi `make prod-check` verde.
+**Cosa resta.** Prima del deploy del canale, dal Terminale sul Mini:
+installazione dal lock, chiave VAPID (15), `VAPID_SUB` nel `.env.dev`,
+`apply_v07_prod.py`, perche g21 pretende la v07 e sul Mini c e la sola
+`push_subscriptions`; poi `make prod-check` verde e `bash
+deploy/deploy-mini.sh`, che da ora installa i due plist e avvia la passata.
+Poi la sessione del client: le decisioni 10 e 14, la soglia del battito
+vecchio (condizione della 9), e la parte client della D4.
 
 ---
 
@@ -189,9 +186,9 @@ toccano:
 - [aperta] Otto documenti non sono referenziati ne da `CLAUDE.md` ne da `README`.
 - [aperta] Dodici endpoint backend non sono mai chiamati dal frontend: i sette
   storici e i cinque del canale, fino alla sessione del client.
-- [aperta] CLAUDE.md 13 porta ancora "67 `cur.execute` nei cinque router": e
-  la misura del giorno, con una sonda che non ho rifatto, e `routers/push.py`
-  e il sesto router. Non toccato oltre la riga ratificata con D1.
+- [chiusa] CLAUDE.md 13 portava "67 `cur.execute` nei cinque router": tolto il
+  2026-10-01 invece di aggiornarlo, perche nessun controllo lo leggeva (sonda
+  su `git grep` e sui file che leggono CLAUDE.md).
 - [aperta] npm: due dipendenze non usate e venti non fissate.
 - [aperta] Il pip dei venv di Studio e Mini e `26.1.1`, disponibile `26.2.1`: avviso, non
   errore. pip non e nel lock: si aggiorna sui due venv insieme, o su nessuno.
@@ -535,9 +532,17 @@ notifiche ad app chiusa non si fanno.
     cosa e cambiato: il server vede che log e pubblicazione differiscono, non
     perche (stato asserito, I1).
 
-28. [aperta] **D4: in quale commit Spec 6, 9 e 14.1(b) e README.** Proposta:
-    nel commit del passo 3 del backend, e la copy del client (Spec 2.1 e
-    8.1, "Avviso poco prima") nel commit del client. Da portare al passo 3.
+28. [chiusa] **D4: DECISA il 2026-10-01, lettera A, nel perimetro della
+    scheda.** Nel commit del passo 3: Spec 3.0 senza gli elenchi che
+    invecchiano, 3.11 con le colonne della v07, 3.13 nuova per le sue tabelle,
+    6.4 nuova (il canale lato server, dichiarato promemoria diurno come vuole
+    la 2), 9 con i cinque endpoint, 14.1(b) col bivio chiuso sul ramo A; il
+    README col limite di nuovo vero. La Spec si modifica in posto, nome e
+    numero 1.18. Nel commit del client: Spec 2.1, 6.1, 8.1, la copy "Avviso
+    poco prima" e nel README le dichiarazioni del lato client. Il resto della
+    Spec, fermo a luglio, non si allinea in questa sessione. **Scartata:**
+    dichiarare il canale dopo il commit che lo rende usabile (contro la 2 e
+    la regola critica 3).
 
 29. [chiusa] **Ritentativi, due condizioni di Roberto del 2026-09-30.** (1)
     Ogni tentativo rifa i controlli al fuoco: log per chiave di slot, voce del

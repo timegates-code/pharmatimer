@@ -1,15 +1,15 @@
 # PharmaTimer -- il gate di sessione, su ogni push.
 #
 # E lo STESSO gate del Makefile: make check-ci ha lo stesso corpo di make check
-# (lint, test frontend, test backend, inventario, albero) e non asserisce AHEAD,
-# perche un checkout di CI non ha upstream e il push e gia avvenuto.
+# e non asserisce AHEAD, perche un checkout di CI non ha upstream e il push e
+# gia avvenuto.
 #
 # Il backend pretende MySQL: qui e un servizio, e lo schema si ricostruisce DA
-# ZERO applicando la catena delle migrazioni in ordine, v01..v06. Misurato in
-# locale prima di scrivere questo file: la catena da zero rende 76 colonne e 25
-# indici identici a pharmatimer_test, e la suite passa 130 su 130 sul DB cosi
-# ricostruito. Se un giorno qui arrossa in quel passo, e un reperto sulla
-# catena, non un ostacolo da aggirare.
+# ZERO applicando in ordine la catena delle migrazioni. Misurato in locale prima
+# di scrivere questo file: la catena da zero rende colonne e indici identici a
+# pharmatimer_test, e la suite passa per intero sul DB cosi ricostruito. Se un
+# giorno qui arrossa in quel passo, e un reperto sulla catena, non un ostacolo
+# da aggirare.
 name: gate
 
 on:
@@ -18,7 +18,8 @@ on:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    # L etichetta fissa la release, non la build.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     services:

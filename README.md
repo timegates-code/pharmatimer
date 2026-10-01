@@ -50,9 +50,21 @@ Da questo momento l'app funziona offline come un'app nativa.
 > gli avvisi vengono riprogrammati, quindi cio che era in arretrato non torna:
 > arriva quando riapri.
 >
-> Oggi non c e nessun meccanismo indipendente dalla pagina: ne notifiche dal
-> service worker, ne schedulazione affidata al sistema operativo, ne Web Push.
-> La tabella `push_subscriptions` esiste nello schema ma il codice non la usa.
+> L app non usa ancora alcun meccanismo indipendente dalla pagina: ne notifiche
+> dal service worker, ne schedulazione affidata al sistema operativo. Il lato
+> server dei promemoria ad app chiusa invece c e (Web Push, Spec 6.4): riceve
+> dal telefono il calendario delle dosi, e una passata ogni 60 secondi rilegge
+> il registro e spedisce. Ma l app non sa ancora ne iscriversi ne pubblicare il
+> calendario: finche non lo sa nessun telefono e iscritto, il server non
+> spedisce nulla e il limite qui sopra resta intero.
+>
+> **Quando l app sapra iscriversi, il canale sara un promemoria diurno, non una
+> sveglia.** Le dosi nella finestra di sonno non sono coperte. Il suono e quello
+> standard del sistema. Sotto un Focus come Sonno l avviso arriva muto. A
+> telefono spento o offline un avviso in coda si puo perdere. E il server sa
+> quando il servizio push ha accettato un avviso, non se il telefono lo ha
+> mostrato.
+>
 > Questo e cio che il codice fa: la riga precedente prometteva le notifiche a
 > app chiusa e non era vera.
 

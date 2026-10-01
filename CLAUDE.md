@@ -435,10 +435,9 @@ Dice dove mettere il PROSSIMO file; cio che non la rispetta si dichiara qui.
   vitest: `test_g21_livello.py` per `inventario.py`, `test_dipendenze.py` per
   `dipendenze.py`.
 - `backend/pharmatimer_api/` ha un solo strato: **il SQL sta nel router**.
-  Verificato con 67 `cur.execute` nei cinque router. Le due impalcature vuote
-  `repository/` e `services/`, che portavano il solo `__init__.py` e che
-  nessuno importava, sono state rimosse alla sessione di rimedio: non si
-  ricreano se non insieme al codice che le abita.
+  Le due impalcature vuote `repository/` e `services/`, che portavano il solo
+  `__init__.py` e che nessuno importava, sono state rimosse alla sessione di
+  rimedio: non si ricreano se non insieme al codice che le abita.
 - Eccezione dichiarata, D1 A del 2026-09-30: il SQL della passata del canale
   Web Push sta in `backend/pharmatimer_api/pianificatore.py`, che non e HTTP
   e gira come processo a se sotto il suo LaunchAgent. E la seconda e ultima
