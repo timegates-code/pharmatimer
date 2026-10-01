@@ -10,56 +10,44 @@ poi `bash deploy/deploy-mini.sh` dal Terminale.
 
 ---
 
-## Ultima sessione -- backend del canale, ramo A: passo 3, 2026-10-01
+## Ultima sessione -- client del canale, ramo A: passo 1, 2026-10-01
 
-`make check` verde in apertura, lanciato da Roberto e rilanciato qui, HEAD
-`b3fe028`; CI verde su `b3fe028`. Le righe del banco dei due pin chiesti da
-Roberto c erano e mordono: `passata-ritentativo-senza-controlli` (M1) e
-`passata-scaduto-prima-dell-attivazione` (M3).
+`make check` verde in apertura su `45691bc`, lanciato da Roberto e rilanciato
+qui. Struttura del client approvata da Roberto, con un aggiunta al battito: la
+riga in Oggi si accende anche quando l ultima pubblicazione non e andata a buon
+fine, test nei due versi (passo 4). Decise la 14 e la 31, entrambe A.
 
-**Passo 3, il commit che porta questo STATO.**
-- `deploy/launchd/com.pharmatimer.pianificatore.plist`: la passata ogni 60 s
-  e al caricamento, `WorkingDirectory` in `backend/`, `DB_DEFAULTS_FILE`,
-  `DB_NAME` e `VAPID_PEM_FILE`, log in `~/PharmaTimer/logs`. `VAPID_PEM_FILE`
-  anche nel plist dell API, stesso percorso.
-- `deploy-mini.sh` installa i plist da git in `~/Library/LaunchAgents` a ogni
-  deploy (ratifica A del 2026-10-01): li legge tutti, copia i sostituiti in
-  `backups/` col diff, li installa in 644, poi bootout e bootstrap nel
-  dominio gui, prima l API e poi la passata.
-- `rosso()` diceva "nessun atto" anche dopo lo schieramento: rilievo nuovo,
-  corretto qui su richiesta di Roberto. Dal passo 5 un rosso dice cio che e
-  stato compiuto sul Mini e cio che era in corso.
-- D4 A (voce 28): Spec 3.0, 3.11, 3.13, 6.4, 9 e 14.1(b), e il README.
-- CLAUDE.md 13 senza il conteggio dei `cur.execute`; la CI su `ubuntu-24.04`.
+**Passo 1, il commit che porta questo STATO.**
+- `public/sw-push.js`, il gestore del push del service worker: ogni push mostra
+  una notifica, quella pubblicata o la neutra; un push di dose legge il
+  taccuino e, se la dose e chiusa, lo dice (31); nessuna azione, nessuna
+  scrittura; il tocco porta avanti la finestra aperta o apre `oggi` sotto lo
+  scope; risponde alla domanda che la pagina fara prima di iscriversi.
+- La riga di `vite.config.js` (14 A), inserita da Roberto dal Terminale: il
+  permesso che nega la modifica del file resta com e.
+- `src/pwa/sw-push.test.js`: il file vero in un contesto `vm`, contro lo schema
+  vero di `db.js`. Tiene allineati il testo neutro con `canale.py`, il tag con
+  i timer di pagina, la riga con `vite.config.js`. Le sue righe nel banco
+  mordono tutte.
+- ESLint copre il worker; CLAUDE.md 7 e 13 dichiarano la riga sbloccata e le
+  due eccezioni del worker.
 
-**Misure.**
-- Da Roberto, sul Mini, in sola lettura: i plist installati di API e backup
-  hanno lo sha256 di git, cioe del `851f3fc` del 27 maggio.
-- `config.py` legge `.env.dev` dalla cartella corrente: senza
-  `WorkingDirectory` in `backend/` la passata non vedrebbe `VAPID_SUB`.
-- Sotto l etichetta `ubuntu-24.04` la build dell immagine cambia: misurato su
-  tre run di settembre.
-- Sullo Studio `bash` e `/bin/bash` 3.2, e `deploy-mini.sh` gira li.
-- Il passo 6 provato su cartelle finte dello Studio, sotto zsh e bash: la
-  stringa estratta dal file, `launchctl` una funzione finta verificata in ogni
-  shell e mai quello vero. Plist installati uguali, diversi, o senza quello
-  della passata: arriva al bootstrap e il trap non scatta. Un plist che non si
-  legge: si ferma prima di ogni bootout, e il rosso dice cio che e compiuto.
+**Non fatto.** Nessun telefono si iscrive ancora: il gestore e inerte fino al
+commit B. Il click dei timer di pagina va ancora a `/oggi` assoluto: si
+corregge al passo 2.
 
-**Non fatto.** Nessun deploy, niente in launchd, nessuna scrittura sul Mini:
-lo script non si e eseguito, il passo 6 solo sulle cartelle finte. Il resto
-della Spec, fermo a luglio, non si allinea in questa sessione.
+**Deviazioni.** Nessuna dalla Spec.
 
-**Deviazioni.** Nessuna dalla Spec: nel perimetro della D4 la Spec ora
-descrive il codice.
-
-**Cosa resta.** Prima del deploy del canale, dal Terminale sul Mini:
+**Cosa resta.** Il commit B: passo 2 (scheda della 10, modulo di rete,
+iscrizione e rinnovo), passo 3 (pubblicatore, col testo del push di dose da
+ratificare), passo 4 (battito, con la soglia da ratificare), passo 5 (parte
+client della D4). Prima del deploy del canale, dal Terminale sul Mini:
 installazione dal lock, chiave VAPID (15), `VAPID_SUB` nel `.env.dev`,
 `apply_v07_prod.py`, perche g21 pretende la v07 e sul Mini c e la sola
 `push_subscriptions`; poi `make prod-check` verde e `bash
-deploy/deploy-mini.sh`, che da ora installa i due plist e avvia la passata.
-Poi la sessione del client: le decisioni 10 e 14, la soglia del battito
-vecchio (condizione della 9), e la parte client della D4.
+deploy/deploy-mini.sh`. Alla sessione del deploy, la prova sull iPhone, col
+caso "presa registrata offline, poi arriva il push": misura la lettura del
+taccuino su iOS (31).
 
 ---
 
@@ -375,9 +363,20 @@ decisa W, quindi valgono.
     :697-701).
 13. [aperta] **Testo verso terzi**, solo per C: nome del farmaco sui server di Pushover
     o testo neutro.
-14. [aperta] **Sblocco di `vite.config.js` per una riga** `workbox.importScripts`, e
-    sede del modulo di rete additivo che importa `apiClient` senza
-    modificarlo.
+14. [chiusa] **Sblocco di `vite.config.js` per una riga e sede del modulo di
+    rete: DECISA il 2026-10-01, lettera A.** Una riga `importScripts:
+    ["sw-push.js"]` nel blocco `workbox`, per le due build: il percorso
+    relativo si risolve accanto a `sw.js` in tutte e due le basi, e su GitHub
+    Pages il gestore e inerte (nessuna API, nessuna iscrizione). Misurato su
+    una copia fuori dall albero: con la sola riga il `sw.js` generato carica
+    `sw-push.js`, che entra nel precache con la sua revisione. Il modulo di
+    rete sta in `src/data/repository/canale.js`, accanto ad `apiClient` come
+    `avvisiStore.js`, fuori dalla catena. **Scartate:** la riga per la sola
+    build Mini (cambia la forma del file oltre una riga); il modulo in
+    `src/data/` fuori dalla cartella della catena; `injectManifest`; correggere
+    `sw.js` dopo la build (il gestore ci sarebbe solo dove gira lo script:
+    push muti, S11); metodi su `ApiRepository` o `IRepository` (VIETATO); le
+    chiamate dentro `SyncRepository`; un `fetch` diretto.
 15. [chiusa] **Custodia VAPID: DECISA il 2026-09-29, lettera A.** PEM 0600 nella
     home del Mini, fuori da `~/PharmaTimer`, accanto a `~/.my-pharmatimer.cnf`:
     fuori dal `rsync --delete` e dall unica cartella servita. Il percorso nei
@@ -559,3 +558,18 @@ notifiche ad app chiusa non si fanno.
     `scaduto` per finestre chiuse prima. Lo porta `created_at`, riscritto
     dall'upsert solo in quei due casi, dall'orologio di MySQL, e letto con
     `UNIX_TIMESTAMP()`. Pin nei due versi, con le loro righe.
+
+31. [chiusa] **Il worker legge il taccuino all arrivo: DECISA il 2026-10-01,
+    lettera A.** A un push di dose il worker legge in sola lettura la riga del
+    taccuino per la chiave del payload, con un tempo massimo. Se la dose e
+    presa, saltata o sospesa il corpo lo dice ("Dose delle 08:00: già
+    registrata come presa alle 07:55."); altrimenti resta il testo pubblicato.
+    La notifica parte sempre; il worker non crea, non aggiorna e non scrive il
+    database. Movente: e la ragione del ramo classico (esiti :149-153), e S4,
+    finestra 3, ha misurato push consegnati a Tailscale spento, quando una
+    presa resta in coda. **Limite:** su iOS la lettura non e misurata (esiti
+    :98-103). La misura e il caso "presa registrata offline, poi arriva il
+    push" della prova sull iPhone, alla sessione del deploy. **Scartate:**
+    sopprimere la notifica di una dose chiusa (S11, mai sopprimere); chiedere
+    lo stato al server dal worker (servono token e tailnet, cioe cio che
+    manca nel caso che conta); una copia del taccuino nella Cache.

@@ -13,6 +13,7 @@ export default defineConfig({
       includeAssets: ["icons/*.png", "favicon.svg"],
       manifest: buildPwaManifest("/pharmatimer/"),
       workbox: {
+        importScripts: ["sw-push.js"], // push handler in public/, decision 14 A of STATO_CORRENTE.md
         skipWaiting: false,
         clientsClaim: false,
         globPatterns: ["**/*.{js,css,html,png,svg,woff2}"],

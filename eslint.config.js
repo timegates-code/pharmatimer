@@ -4,6 +4,31 @@
 // import morti, riferimenti non definiti -- e non uno stile imposto.
 // I test non sono esclusi: usano `globals: false` in vitest.config.js, quindi
 // importano cio che usano e no-undef li esercita davvero.
+const REGOLE = {
+  "no-undef": "error",
+  // Identificatori solo ASCII, proprieta comprese: e la parte della
+  // convenzione tipografica (CLAUDE.md, in testa) che un linter puo
+  // misurare. Il resto lo misura scripts/audit/tipografia.py.
+  "id-match": ["error", "^[A-Za-z_$][A-Za-z0-9_$]*$", { "properties": true }],
+  "no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+  "no-unreachable": "error",
+  "no-constant-condition": ["error", { checkLoops: false }],
+  "no-dupe-keys": "error",
+  "no-dupe-args": "error",
+  "no-duplicate-case": "error",
+  "no-empty": ["warn", { allowEmptyCatch: false }],
+  "no-fallthrough": "error",
+  "no-self-compare": "error",
+  "require-atomic-updates": "warn",
+  "eqeqeq": ["warn", "smart"],
+};
+
+// SPENTO deliberatamente: il codice porta eslint-disable che citano regole
+// di plugin non installati (react-hooks, react/prop-types) e regole non
+// attivate qui (no-console, no-alert). Segnalarle misura la configurazione,
+// non il codice: 20 reperti su 75 alla prima passata erano questo.
+const OPZIONI_LINTER = { reportUnusedDisableDirectives: false };
+
 export default [
   {
     ignores: [
@@ -41,28 +66,24 @@ export default [
         getComputedStyle: "readonly",
       },
     },
-    // SPENTO deliberatamente: il codice porta eslint-disable che citano regole
-    // di plugin non installati (react-hooks, react/prop-types) e regole non
-    // attivate qui (no-console, no-alert). Segnalarle misura la configurazione,
-    // non il codice: 20 reperti su 75 alla prima passata erano questo.
-    linterOptions: { reportUnusedDisableDirectives: false },
-    rules: {
-      "no-undef": "error",
-      // Identificatori solo ASCII, proprieta comprese: e la parte della
-      // convenzione tipografica (CLAUDE.md, in testa) che un linter puo
-      // misurare. Il resto lo misura scripts/audit/tipografia.py.
-      "id-match": ["error", "^[A-Za-z_$][A-Za-z0-9_$]*$", { "properties": true }],
-      "no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
-      "no-unreachable": "error",
-      "no-constant-condition": ["error", { checkLoops: false }],
-      "no-dupe-keys": "error",
-      "no-dupe-args": "error",
-      "no-duplicate-case": "error",
-      "no-empty": ["warn", { allowEmptyCatch: false }],
-      "no-fallthrough": "error",
-      "no-self-compare": "error",
-      "require-atomic-updates": "warn",
-      "eqeqeq": ["warn", "smart"],
+    linterOptions: OPZIONI_LINTER,
+    rules: REGOLE,
+  },
+  {
+    // Il gestore del push del service worker (decisione 14 A dello STATO): uno
+    // script classico caricato da importScripts, non un modulo, con i globali
+    // del worker e nessuno del DOM. Stesse regole del resto: il perimetro del
+    // lint si allarga, non si allenta.
+    files: ["public/sw-push.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "script",
+      globals: {
+        self: "readonly", setTimeout: "readonly", clearTimeout: "readonly",
+        URL: "readonly",
+      },
     },
+    linterOptions: OPZIONI_LINTER,
+    rules: REGOLE,
   },
 ];

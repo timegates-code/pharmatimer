@@ -99,6 +99,8 @@ TRA = "backend/pharmatimer_api/invio.py"
 T_TRA = "tests/test_invio.py"
 PIAN = "backend/pharmatimer_api/pianificatore.py"
 T_PIAN = "tests/test_pianificatore.py"
+SW = "public/sw-push.js"
+T_SW = "src/pwa/sw-push.test.js"
 
 # Il ramo scartato "materializzare le previste" (M3), scritto dentro la
 # rilettura del log: una riga 'prevista' quando il log non ne ha.
@@ -662,6 +664,99 @@ MUTAZIONI = [
     riga("passata-errore-taciuto", "passata, passo 2", "M2",
          [(PIAN, "def main(", 'ERRORE, f"{type(exc).__name__}: {exc}"[:255])', "OK, None)")],
          "pytest", [T_PIAN], ["test_main_dice_l_errore_nel_battito"]),
+    # Il worker del push (client, passo 1; decisioni 2, 14 e 31). Ogni push
+    # mostra una notifica, nei due versi: la sua se leggibile, la neutra se no.
+    riga("worker-illeggibile-muto", "client, passo 1", "M2",
+         [(SW, "async function mostra(", "      notifica = notificaNeutra();\n", "      return;\n")],
+         "vitest", [T_SW], ["un push illeggibile (senza dati) mostra il testo neutro, mai zero"]),
+    riga("worker-sempre-neutro", "client, passo 1", "--",
+         [(SW, "async function mostra(", "notifica = await componi(dati);", "notifica = null;")],
+         "vitest", [T_SW],
+         ["un push di dose leggibile mostra titolo e corpo pubblicati, col tag della dose"]),
+    # Il taccuino all arrivo (31), nei due versi: una dose chiusa sul telefono
+    # lo dice e la notifica parte (M1 se non si legge, M2 se si sopprime); una
+    # dose aperta, di un altra dose o ambigua non si dice chiusa (M3 sul
+    # promemoria).
+    riga("worker-taccuino-mai-letto", "client, passo 1", "M1",
+         [(SW, "async function componi(", "riga = await rigaNelTaccuino(messaggio.dose);", "riga = null;")],
+         "vitest", [T_SW], ["dose presa nel taccuino: il corpo lo dice, e la notifica parte"]),
+    riga("worker-chiusa-soppressa", "client, passo 1", "M2",
+         [(SW, "async function mostra(",
+           "    return self.registration.showNotification(notifica.titolo, notifica.opzioni);\n",
+           "    if (/ come (presa|saltata|sospesa)/.test(notifica.opzioni.body)) return;\n"
+           "    return self.registration.showNotification(notifica.titolo, notifica.opzioni);\n")],
+         "vitest", [T_SW], ["dose presa nel taccuino: il corpo lo dice, e la notifica parte"]),
+    riga("worker-sempre-riscritto", "client, passo 1", "M3",
+         [(SW, "function statoChiuso(",
+           "return Object.prototype.hasOwnProperty.call(CHIUSE, riga.stato) ? riga.stato : null;",
+           'return "presa";')],
+         "vitest", [T_SW], ["dose prevista nel taccuino: resta il testo pubblicato"]),
+    riga("worker-altra-dose", "client, passo 1", "M3",
+         [(SW, "function rigaNelTaccuino(", "r.dose_numero === dose.dose_numero", "true")],
+         "vitest", [T_SW], ["la riga di un'altra dose non conta: resta il testo pubblicato"]),
+    riga("worker-righe-ambigue", "client, passo 1", "M3",
+         [(SW, "function rigaNelTaccuino(", "fine(righe.length === 1 ? righe[0] : null);",
+           "fine(righe.length >= 1 ? righe[0] : null);")],
+         "vitest", [T_SW], ["due righe per la stessa dose: nulla si afferma, resta il testo pubblicato"]),
+    riga("worker-frase-minuscola", "client, passo 1", "--",
+         [(SW, "function corpoRiscritto(", "return frase.charAt(0).toUpperCase() + frase.slice(1);",
+           "return frase;")],
+         "vitest", [T_SW], ["senza istante nel payload il corpo riscritto comincia dalla frase"]),
+    # Il taccuino si legge e non si scrive (I2); non si crea e non resta aperto,
+    # perche l app possa sempre aprirlo e aggiornarlo (M2); la lettura ha un
+    # tempo massimo, perche un push che aspetta non mostri nulla (M2). La riga
+    # che scrive muta due cose insieme: intercetta, non isola.
+    riga("worker-scrive-il-taccuino", "client, passo 1", "M3",
+         [(SW, "function rigaNelTaccuino(", '.transaction(TABELLA, "readonly")',
+           '.transaction(TABELLA, "readwrite")'),
+          (SW, "function rigaNelTaccuino(", "const lettura = archivio.index(INDICE).getAll(",
+           "archivio.clear();\n          const lettura = archivio.index(INDICE).getAll(")],
+         "vitest", [T_SW], ["il worker non scrive nel taccuino"]),
+    riga("worker-crea-il-db", "client, passo 1", "M2",
+         [(SW, "richiesta.onupgradeneeded = function () {", "richiesta.transaction.abort();", "void 0;")],
+         "vitest", [T_SW], ["database assente: resta il testo pubblicato, e il worker non lo crea"]),
+    riga("worker-blocca-schema", "client, passo 1", "M2",
+         [(SW, "function chiudiConnessione() {", "connessione.close();", "void connessione;")],
+         "vitest", [T_SW],
+         ["il worker chiude il database: un aggiornamento dello schema non resta bloccato"]),
+    riga("worker-senza-tempo-massimo", "client, passo 1", "M2",
+         [(SW, "function rigaNelTaccuino(",
+           "timer = setTimeout(function () { fine(null); }, ATTESA_TACCUINO_MS);", "timer = null;")],
+         "vitest", [T_SW], ["una lettura che non risponde: allo scadere resta il testo pubblicato"]),
+    # Il tocco (14): Oggi sotto lo scope, mai /oggi assoluto; una finestra
+    # aperta viene avanti e basta.
+    riga("worker-click-assoluto", "client, passo 1", "--",
+         [(SW, "function urlOggi(", 'new URL("oggi", self.registration.scope)',
+           'new URL("/oggi", self.registration.scope)')],
+         "vitest", [T_SW],
+         ["senza finestre aperte apre Oggi sotto lo scope del worker, non /oggi assoluto"]),
+    riga("worker-tocco-doppio", "client, passo 1", "--",
+         [(SW, "async function portaInPrimoPiano(", "        await finestra.focus();\n        return;\n",
+           "        await finestra.focus();\n")],
+         "vitest", [T_SW],
+         ["con una finestra aperta la porta in primo piano, senza navigarla ne aprirne un'altra"]),
+    # La domanda della pagina prima dell iscrizione, nei due versi.
+    riga("worker-risposta-muta", "client, passo 1", "--",
+         [(SW, 'self.addEventListener("message",',
+           "porta.postMessage({ tipo: DOMANDA_PRONTO, versione: VERSIONE_PROTOCOLLO });", "void porta;")],
+         "vitest", [T_SW], ["risponde sulla porta che riceve, con la versione del protocollo"]),
+    riga("worker-risponde-a-tutto", "client, passo 1", "--",
+         [(SW, 'self.addEventListener("message",', " || dati.tipo !== DOMANDA_PRONTO) return;", ") return;")],
+         "vitest", [T_SW], ["non risponde ad altri messaggi"]),
+    # Le copie che il test tiene: il testo neutro (27), il tag dei timer di
+    # pagina, e la riga di vite.config.js che carica il worker (14). Senza la
+    # riga il worker non c e, e un push non mostra nulla (M2).
+    riga("worker-testo-neutro-divergente", "client, passo 1", "--",
+         [(SW, "const TITOLO_NEUTRO", "Apri l'app per controllare i promemoria.", "Apri l'app.")],
+         "vitest", [T_SW],
+         ["il testo di un push illeggibile e quello dell'avviso neutro del server (decisione 27)"]),
+    riga("worker-tag-divergente", "client, passo 1", "--",
+         [(SW, "function tagDose(", '"dose-" + dose.farmaco_id + "-" + dose.dose_numero + "-" + dose.data',
+           '"dose-" + dose.farmaco_id + "-" + dose.data + "-" + dose.dose_numero')],
+         "vitest", [T_SW], ["il tag di una dose e quello dei timer di pagina (services/notifications.js)"]),
+    riga("worker-non-incluso", "client, passo 1", "M2",
+         [("vite.config.js", "workbox: {", 'importScripts: ["sw-push.js"],', "")],
+         "vitest", [T_SW], ["vite.config.js carica il worker con una riga (decisione 14)"]),
 ]
 
 # L'autoprova: righe il cui esito e FISSATO, e che il banco pretende.

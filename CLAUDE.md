@@ -197,7 +197,8 @@ vincolo:
 
 - `src/data/repository/apiClient.js` -- LETTURA libera.
 - `src/data/repository/ApiRepository.js` -- LETTURA libera.
-- `vite.config.js` -- LOCKED.
+- `vite.config.js` -- LOCKED. La decisione 14 A ne ha sbloccata una riga sola,
+  `workbox.importScripts`.
 - `backend/tests/test_invariante_coppia.py`: i marcatori `xfail` NON si tolgono
   se non **insieme** al fix della sede corrispondente. `SC-8` non diventa mai
   `xfail`. Il nome `test_n3_stato_destinazione_non_controllato` e STORICO e non
@@ -443,5 +444,14 @@ Dice dove mettere il PROSSIMO file; cio che non la rispetta si dichiara qui.
   e gira come processo a se sotto il suo LaunchAgent. E la seconda e ultima
   sede del SQL; sta dentro `pharmatimer_api` perche il livello che g21
   confronta col Mini veda le tabelle che nomina.
+- Eccezione dichiarata, decisione 14 A del 2026-10-01: il gestore del push del
+  service worker sta in `public/sw-push.js`, perche il `sw.js` generato lo
+  carica con `importScripts` da accanto a se. Il suo test sta in
+  `src/pwa/sw-push.test.js` e non accanto, perche `public/` si copia in `dist/`
+  e vitest legge solo `src/`.
+- Eccezione dichiarata, decisione 31 A del 2026-10-01: lo stesso worker legge
+  IndexedDB fuori da `src/data/`, in sola lettura: la riga del taccuino della
+  dose che sta per mostrare. Non crea, non aggiorna e non scrive il database;
+  lo schema che legge lo tiene il suo test contro `db.js`.
 - `backend/db/migrations/` e append-only: un file per migrazione, mai riscritto.
 - Una cartella che resta senza file si rimuove nello stesso commit che la svuota.
