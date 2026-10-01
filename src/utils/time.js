@@ -140,7 +140,7 @@ export function formatGapLabel(min) {
 const MS_PER_MINUTE = 60_000;
 
 /** 'YYYY-MM-DD' of a Date, local components. */
-function localDateStr(d) {
+export function localDateStr(d) {
   const y = d.getFullYear();
   const mo = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');

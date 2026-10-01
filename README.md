@@ -14,7 +14,7 @@ PharmaTimer è una Progressive Web App (PWA) per la gestione di terapie con più
 - Calcola automaticamente quando prendere ogni dose, con avvisi per anticipi e ritardi
 - Tiene traccia di cosa hai preso e quando, con possibilità di correzione (saltata, sospesa, ricalcolata)
 - Gestisce sia farmaci cronici sia farmaci temporanei con data di fine
-- Notifiche locali mentre l app e aperta -- vedi il limite dichiarato piu sotto
+- Avvisi all ora di ogni dose con l app aperta; con il server, anche promemoria ad app chiusa (Web Push) -- vedi i limiti dichiarati piu sotto
 - Profili giornalieri multipli (es. settimana lavorativa vs weekend)
 - Vista **Log** con storico assunzioni filtrabile per data e farmaco
 - **Export CSV** scaricabile dei dati di assunzione (Excel-friendly, separatore `;`)
@@ -43,30 +43,30 @@ URL: <https://timegates-code.github.io/pharmatimer/>
 
 Da questo momento l'app funziona offline come un'app nativa.
 
-> **Limite delle notifiche, misurato sul codice.** Gli avvisi sono programmati
-> con un timer dentro la pagina: `setTimeout` piu `new Notification`. Vivono
-> quanto vive la pagina. Se chiudi l app, o il sistema sospende il dispositivo,
-> quel timer non esiste piu e l avviso **non parte**. Al rientro in primo piano
-> gli avvisi vengono riprogrammati, quindi cio che era in arretrato non torna:
-> arriva quando riapri.
+> **Due canali di avviso, con limiti diversi, misurati sul codice.**
 >
-> L app non usa ancora alcun meccanismo indipendente dalla pagina: ne notifiche
-> dal service worker, ne schedulazione affidata al sistema operativo. Il lato
-> server dei promemoria ad app chiusa invece c e (Web Push, Spec 6.4): riceve
-> dal telefono il calendario delle dosi, e una passata ogni 60 secondi rilegge
-> il registro e spedisce. Ma l app non sa ancora ne iscriversi ne pubblicare il
-> calendario: finche non lo sa nessun telefono e iscritto, il server non
-> spedisce nulla e il limite qui sopra resta intero.
+> **Con l app aperta: i timer di pagina.** Gli avvisi sono programmati con un
+> timer dentro la pagina, `setTimeout` piu `new Notification`, all ora di ogni
+> dose. Vivono quanto vive la pagina: se chiudi l app, o il sistema sospende il
+> dispositivo, il timer non esiste piu e l avviso di pagina **non parte**. E il
+> solo canale della versione su GitHub Pages, che non ha un server.
 >
-> **Quando l app sapra iscriversi, il canale sara un promemoria diurno, non una
-> sveglia.** Le dosi nella finestra di sonno non sono coperte. Il suono e quello
-> standard del sistema. Sotto un Focus come Sonno l avviso arriva muto. A
-> telefono spento o offline un avviso in coda si puo perdere. E il server sa
-> quando il servizio push ha accettato un avviso, non se il telefono lo ha
-> mostrato.
+> **Con l app chiusa: il promemoria del server (Web Push, Spec 6.4), solo con
+> il server.** Il telefono si iscrive dal toggle delle notifiche e pubblica al
+> server il calendario delle dosi; una passata periodica rilegge il registro e
+> spedisce. E un **promemoria diurno, non una sveglia**: le dosi nella finestra
+> di sonno non sono coperte, il suono e quello standard del sistema, sotto un
+> Focus come Sonno l avviso arriva muto, a telefono spento o offline un avviso
+> in coda si puo perdere, e il server sa quando il servizio push ha accettato
+> un avviso, non se il telefono lo ha mostrato. Un iscrizione che il telefono
+> ha perso si scopre alla prossima apertura dell app.
 >
-> Questo e cio che il codice fa: la riga precedente prometteva le notifiche a
-> app chiusa e non era vera.
+> L app dice lo stato del canale: per intero in Impostazioni, con una riga sola
+> in Oggi quando qualcosa non va. "Non attivi" quando i promemoria non
+> arriveranno, "non verificati" quando non si sa, "non aggiornati" quando il
+> server tiene il calendario di prima. Su iPhone, con l app aperta, timer di
+> pagina e promemoria del server possono dare due avvisi per la stessa dose,
+> con lo stesso testo.
 
 ---
 
@@ -92,7 +92,7 @@ Da quel momento l'app è personalizzata per te.
 - **Gestione ritardi e anticipi** — se prendi una dose in ritardo o in anticipo, l'app può ricalcolare automaticamente le dosi successive del giorno per rispettare gli intervalli minimi
 - **Stati dose** — ogni dose può essere `prevista` / `presa` / `saltata` / `sospesa` / `ricalcolata`, con modifica retroattiva
 - **Recupero gap** — se accumuli ritardo significativo, l'app suggerisce strategie di recupero (anticipa di N minuti, ripristina, salta)
-- **Notifiche locali** -- avvisi con tono d attenzione e testo contestualizzato per dose, programmati mentre l app e aperta (vedi il limite qui sopra)
+- **Avvisi delle dosi** -- all ora di ogni dose con l app aperta, e con il server anche ad app chiusa via Web Push, come promemoria diurno; lo stesso testo sui due canali, con l ora e la relazione col pasto (vedi i limiti qui sopra)
 - **Profili giornalieri multipli** — passa da un profilo all'altro e tutti gli orari si ricalcolano automaticamente
 - **Vista Log** — storico assunzioni read-only con filtri per intervallo di date e farmaco singolo/tutti
 - **Export CSV** — scarica i dati di assunzione in formato CSV apribile direttamente in Excel italiano (separatore `;`, BOM UTF-8). Riusa i filtri della vista Log.

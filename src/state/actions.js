@@ -133,6 +133,17 @@ function defaultNoopServices() {
       showDoseNotification: () => {},
       getPendingCount: () => 0,
     },
+    // Client of the reminder channel, step 2: the shape of
+    // services/canalePush.js, inert.
+    canale: {
+      prepara: () => Promise.resolve(null),
+      iscriviNelGesto: () => null,
+      accendi: () => Promise.resolve(null),
+      rinnova: () => Promise.resolve(null),
+      spegni: () => Promise.resolve(null),
+      pubblica: () => Promise.resolve(null),
+      leggiStato: () => Promise.resolve(null),
+    },
   };
 }
 
@@ -159,6 +170,110 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     if (!state || state.status !== 'ready') return;
     if (state.impostazioni?.notifiche_attive !== 1) return;
     rescheduleAllNotifications(state, services.notifications);
+  }
+
+  // ----------------------------------------------------------
+  // Reminder channel ad app chiusa (client of branch A, step 2)
+  // ----------------------------------------------------------
+  // The I/O lives in services/canalePush.js, which serializes it and never
+  // throws; these thunks only carry its record into the state. They never
+  // throw either: the channel is a reminder, and the app opens whatever it
+  // does (decision 15). Outside API mode the service answers null and the
+  // state is left as it is.
+  async function registraCanale(operazione, tipo = 'CANALE_ISCRIZIONE') {
+    try {
+      const esito = await operazione();
+      if (esito) dispatch({ type: tipo, payload: esito });
+      return esito ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * The renewal: at the opening (end of init) and at every return to the
+   * foreground (AppContext). `voluto` is the toggle; when absent it is read
+   * from the state.
+   */
+  function rinnovaCanale({ voluto } = {}) {
+    const canale = services.canale;
+    if (!canale) return Promise.resolve(null);
+    return registraCanale(() => {
+      const vuole = typeof voluto === 'boolean'
+        ? voluto
+        : getState().impostazioni?.notifiche_attive === 1;
+      return canale.rinnova({ voluto: vuole });
+    });
+  }
+
+  /** After the toggle's tap: the outcome of the subscription the tap made, or null. */
+  function accendiCanale(esitoGesto) {
+    const canale = services.canale;
+    if (!canale) return Promise.resolve(null);
+    return registraCanale(() => canale.accendi(esitoGesto ?? null));
+  }
+
+  /** The toggle off, or the permission revoked. */
+  function spegniCanale() {
+    const canale = services.canale;
+    if (!canale) return Promise.resolve(null);
+    return registraCanale(() => canale.spegni());
+  }
+
+  /**
+   * Publish the plan of this state (step 3). The caller passes the state
+   * React has committed: the effect of AppContext, or stateRef at a return
+   * to the foreground, never a getState() right after a dispatch. Only with
+   * the app ready and the toggle on.
+   */
+  function pubblicaCanale(stato) {
+    const canale = services.canale;
+    if (!canale || typeof canale.pubblica !== 'function') return Promise.resolve(null);
+    if (!stato || stato.status !== 'ready' || stato.impostazioni?.notifiche_attive !== 1) {
+      return Promise.resolve(null);
+    }
+    return registraCanale(() => canale.pubblica(stato), 'CANALE_PUBBLICAZIONE').then((esito) => {
+      // Step 4: the state is read again after every publication that reached
+      // for the server, whatever its outcome. Unchanged content did not.
+      if (esito && (esito.esito === 'pubblicata' || esito.motivo === 'pubblicazione')) {
+        void leggiStatoCanale({ voluto: true });
+      }
+      return esito;
+    });
+  }
+
+  /**
+   * GET /api/push/stato (step 4): at the opening, at every return to the
+   * foreground, at the entry of Oggi and of Impostazioni, after every
+   * publication that reached for the server, and at the tap of the line of
+   * Oggi. Never at intervals (Q-SYNC). Only with the toggle on: `voluto`
+   * when given, else the state's.
+   */
+  async function leggiStatoCanale({ voluto } = {}) {
+    const canale = services.canale;
+    if (!canale || typeof canale.leggiStato !== 'function') return null;
+    const vuole = typeof voluto === 'boolean' ? voluto : getState().impostazioni?.notifiche_attive === 1;
+    if (!vuole) return null;
+    try {
+      const lettura = await canale.leggiStato();
+      if (!lettura) return null;
+      if (lettura.risposta) {
+        dispatch({
+          type: 'CANALE_STATO',
+          payload: {
+            risposta: lettura.risposta,
+            lettoMono: lettura.lettoMono,
+            lettoMs: lettura.lettoMs,
+            deviceId: lettura.deviceId ?? null,
+          },
+        });
+      } else {
+        dispatch({ type: 'CANALE_STATO_ERRORE', payload: lettura.errore ?? 'errore' });
+      }
+      return lettura;
+    } catch {
+      return null;
+    }
   }
 
 
@@ -403,6 +518,16 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
       // the three server-backed reads fall back to the mirror); there the
       // pass is suppressed inside the guardian by navigator.onLine.
       await drainOutbox();
+
+      // Client of the reminder channel, step 2: the renewal at the opening.
+      // Not awaited: it never rejects, and whoever awaits init() (the reset
+      // of SezioneDati) must not wait on the registration or the worker. The
+      // toggle is the value just loaded, because getState() may not show
+      // INIT_SUCCESS yet: stateRef follows a dispatch one render later.
+      void rinnovaCanale({ voluto: impostazioni.notifiche_attive === 1 });
+      // Step 4: the state of the channel, read after the renewal (the queue
+      // of the service keeps the order).
+      void leggiStatoCanale({ voluto: impostazioni.notifiche_attive === 1 });
     } catch (err) {
       // SENTINEL_N5QC_CP4BIS_INIT_PROPAGATE_CODE -- drift-N53: propaga err.code
       // (es. UNAUTHORIZED) cosi App puo auto-clear un token stale al reload.
@@ -1308,6 +1433,12 @@ export function createActions({ dispatch, getState, repo, services = defaultNoop
     rebuildPlan,
     // SENTINEL_QOCT_BAG
     drainOutbox,
+    // Client of the reminder channel, step 2.
+    rinnovaCanale,
+    accendiCanale,
+    spegniCanale,
+    pubblicaCanale,
+    leggiStatoCanale,
     addProfilo,
     updateProfilo,
     deleteProfilo,

@@ -391,3 +391,190 @@ export function testoIndicatoreCoda(arg = {}) {
   }
   return null;
 }
+
+/* ============================================================
+ * Stato del canale dei promemoria ad app chiusa -- passo 4 del client
+ * (STATO_CORRENTE.md, "Il commit B del client"). La decisione e di
+ * domain/statoCanale.js; qui solo come lo si dice.
+ * ------------------------------------------------------------
+ * THE WORD SAYS WHAT IS KNOWN (Roberto, 2026-10-01). "non attivi" when we
+ * know the reminders will not arrive, "non verificati" only when we do not
+ * know, "non aggiornati" when the server keeps the calendar it had. A word
+ * that hedges where the fact is known, or asserts where it is not, is read
+ * wrong by the person who relies on it.
+ *
+ * A 201 IS "accettato", NEVER "consegnato" (decision 2): the push service
+ * accepting a message proves nothing about the phone (S11).
+ *
+ * The times are the phone's local wall clock of the server's instants.
+ * ============================================================ */
+
+export const CANALE_TITOLO = 'Promemoria ad app chiusa';
+const CANALE_TOCCA = 'Tocca per verificare.';
+
+function oraLocale(ms) {
+  const d = new Date(ms);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function giornoOraLocale(ms) {
+  const d = new Date(ms);
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${oraLocale(ms)}`;
+}
+
+const conOra = (dalleMs) => Number.isFinite(dalleMs);
+
+/**
+ * The head line of the state, for Impostazioni and for the line of Oggi.
+ * @param {{esito: string, dalleMs: number|null}|null} valutazione
+ * @returns {string|null}
+ */
+export function testoStatoCanale(valutazione) {
+  if (valutazione == null) return null;
+  const { esito, dalleMs } = valutazione;
+  if (esito === 'attivi') {
+    return conOra(dalleMs)
+      ? `${CANALE_TITOLO} attivi, ultima verifica alle ${oraLocale(dalleMs)}.`
+      : `${CANALE_TITOLO} attivi.`;
+  }
+  if (esito === 'non_attivi') return `${CANALE_TITOLO} non attivi.`;
+  if (esito === 'non_verificati') {
+    return conOra(dalleMs)
+      ? `${CANALE_TITOLO} non verificati dalle ${oraLocale(dalleMs)}.`
+      : `${CANALE_TITOLO} non verificati.`;
+  }
+  if (esito === 'non_aggiornati') {
+    return conOra(dalleMs)
+      ? `${CANALE_TITOLO} non aggiornati dalle ${oraLocale(dalleMs)}.`
+      : `${CANALE_TITOLO} non aggiornati.`;
+  }
+  return null;
+}
+
+/**
+ * The single line of Oggi: shown only when the state is not OK.
+ * @returns {string|null}
+ */
+export function testoRigaCanale(valutazione) {
+  if (valutazione == null || valutazione.esito === 'attivi') return null;
+  const testa = testoStatoCanale(valutazione);
+  return testa === null ? null : `${testa} ${CANALE_TOCCA}`;
+}
+
+const PERCHE_CHIAVE_SERVER = Object.freeze({
+  pem_non_configurato: 'la chiave non è configurata',
+  pem_illeggibile: 'la chiave non si legge',
+  pem_non_valido: 'la chiave non è valida',
+  sub_assente: 'manca il contatto VAPID',
+  sub_non_valido: 'il contatto VAPID non è valido',
+});
+
+const PERCHE_ISCRIZIONE = Object.freeze({
+  worker_non_pronto: "il service worker non risponde: aggiorna l'app",
+  worker_assente: 'il service worker non è attivo',
+  non_supportato: 'questo browser non riceve promemoria ad app chiusa',
+  permesso: 'le notifiche non sono consentite',
+  chiave: 'il server non dà la chiave',
+  chiave_non_valida: 'la chiave del server non è valida',
+  preparazione: "l'iscrizione non era pronta",
+  iscrizione: "il telefono non ha fatto l'iscrizione",
+  conferma: "il server non ha confermato l'iscrizione",
+  device_id: "manca l'identificativo del telefono",
+  revoca: "l'iscrizione è stata spenta",
+});
+
+const PERCHE_PUBBLICAZIONE = Object.freeze({
+  stato: 'lo stato del server non si leggeva',
+  composizione: 'il calendario non si poteva comporre',
+  pubblicazione: "l'invio non è riuscito",
+  device_id: "mancava l'identificativo del telefono",
+});
+
+/**
+ * Why the state is what it is, for Impostazioni. Unknown codes are shown as
+ * they are, never hidden.
+ * @param {{perche: string|null, dalleMs: number|null}|null} valutazione
+ * @param {{risposta?: object, iscrizione?: object, pubblicazione?: object, errore?: string}} fatti
+ * @returns {string|null}
+ */
+export function testoPercheCanale(valutazione, fatti = {}) {
+  if (valutazione == null || valutazione.perche == null) return null;
+  const r = fatti.risposta ?? {};
+  switch (valutazione.perche) {
+    case 'canale_spento': {
+      const motivo = r.canale?.motivo;
+      return `Il server non può firmare i promemoria: ${PERCHE_CHIAVE_SERVER[motivo] ?? motivo ?? 'motivo non detto'}.`;
+    }
+    case 'passata_mai_partita':
+      return 'Il pianificatore del server non è mai partito.';
+    case 'esito_passata': {
+      const b = r.pianificatore ?? {};
+      return `L'ultima passata del pianificatore non è andata a buon fine: ${b.esito}${b.dettaglio ? `, ${b.dettaglio}` : ''}.`;
+    }
+    case 'non_iscritto': {
+      const motivo = fatti.iscrizione?.motivo;
+      const dettaglio = motivo ? `: ${PERCHE_ISCRIZIONE[motivo] ?? motivo}` : '';
+      return `Questo telefono non è iscritto${dettaglio}.`;
+    }
+    case 'battito_vecchio':
+      return conOra(valutazione.dalleMs)
+        ? `Nessuna passata del pianificatore verificata dalle ${oraLocale(valutazione.dalleMs)}.`
+        : 'Nessuna passata del pianificatore verificata di recente.';
+    case 'stato_non_letto':
+      return `Lo stato del server non si legge${fatti.errore ? `: ${fatti.errore}` : ''}.`;
+    case 'pubblicazione': {
+      const motivo = fatti.pubblicazione?.motivo;
+      const dettaglio = motivo ? `: ${PERCHE_PUBBLICAZIONE[motivo] ?? motivo}` : '';
+      return `L'ultimo piano non è arrivato al server, che tiene il calendario di prima${dettaglio}.`;
+    }
+    default:
+      return valutazione.perche;
+  }
+}
+
+const STATI_INVIO = Object.freeze({
+  in_invio: 'in invio',
+  accettato: 'accettato',
+  da_ritentare: 'da ritentare',
+  respinto: 'respinto',
+  non_inviato: 'non inviato',
+});
+
+const MOTIVI_INVIO = Object.freeze({
+  presa: 'dose già presa',
+  saltata: 'dose segnata come saltata',
+  sospesa: 'dose segnata come sospesa',
+  scaduto: 'finestra scaduta',
+  divergenza: 'orario diverso dal telefono',
+  chiave_assente: 'chiave del server assente',
+  farmaco_non_attivo: 'farmaco non attivo',
+  utente_non_attivo: 'utente non attivo',
+  voce_ritirata: 'dose tolta dal calendario',
+  iscrizione_spenta: 'iscrizione spenta',
+  superato: 'superato da uno più recente',
+  errore: 'errore',
+  esito_ignoto: 'esito ignoto',
+  connessione_mai_stabilita: 'connessione non stabilita',
+  richiesta_non_partita: 'richiesta non partita',
+  iscrizione_morta: 'iscrizione non più valida',
+  cambiata: 'dose cambiata',
+});
+
+/**
+ * One row of the outcomes in Impostazioni. "accettato" for a 201, never
+ * "consegnato".
+ * @param {{stato: string, motivo?: string|null, http_status?: number|null, forma?: string|null}} invio
+ * @returns {string}
+ */
+export function testoEsitoInvio(invio) {
+  const stato = STATI_INVIO[invio?.stato] ?? String(invio?.stato ?? '');
+  const parti = [invio?.forma === 'avviso_neutro' ? `avviso neutro, ${stato}` : stato];
+  if (invio?.motivo) parti.push(MOTIVI_INVIO[invio.motivo] ?? invio.motivo);
+  if (Number.isInteger(invio?.http_status) && invio.stato !== 'accettato') parti.push(`HTTP ${invio.http_status}`);
+  return parti.join(', ');
+}
+
+/** 'gg/mm HH:MM' of a server instant, on the phone's wall clock. */
+export function quandoCanale(ms) {
+  return Number.isFinite(ms) ? giornoOraLocale(ms) : '';
+}

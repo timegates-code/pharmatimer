@@ -58,11 +58,15 @@ const { repoMock } = vi.hoisted(() => {
   };
 });
 
-vi.mock('../data/repository/index.js', () => ({ repo: repoMock }));
+// Client del canale, passo 2: services/canalePush.js legge la modalita API
+// da questo modulo. Qui e locale: il canale resta inerte, e i pin che lo
+// riguardano spiano le chiamate al servizio.
+vi.mock('../data/repository/index.js', () => ({ repo: repoMock, shouldUseApiRepo: () => false }));
 
 // Import AFTER vi.mock so the mocked module is in the import graph.
 import { AppProvider, useAppContext, useApp } from './AppContext.jsx';
 import { notifications } from '../services/notifications.js';
+import { canalePush } from '../services/canalePush.js';
 
 /**
  * Minimal consumer that forwards state updates to a spy.
@@ -313,10 +317,18 @@ describe('AppProvider — CP4 wiring (Sessione 9-B parte 2/2 §6.126)', () => {
     // (§6.132). cancelAll è la prima istruzione nella reschedule;
     // showDoseNotification viene chiamato per l'unica entry 'prevista'
     // di today.
+    // Ratifica A del 2026-10-01 (client del canale, passo 3): anche
+    // l'effetto sullo stato applicato riarma, perche il toggle e cambiato.
+    // Il ROSSO del vecchio atteso, "called 1 times, but got 2 times", e
+    // stato VISTO e NOMINATO prima di toccarlo: la seconda chiamata annulla
+    // e riarma lo stesso timer, e un riarmo non fa ripartire un avviso gia
+    // mostrato (services/notifications.test.js). Qui si pinna che il toggle
+    // acceso armi la dose, e solo quella.
     expect(notifications.cancelAll).toHaveBeenCalled();
-    expect(notifications.showDoseNotification).toHaveBeenCalledTimes(1);
-    const farmacoArg = notifications.showDoseNotification.mock.calls[0][1];
-    expect(farmacoArg.id).toBe(7);
+    expect(notifications.showDoseNotification).toHaveBeenCalled();
+    for (const [, farmacoArg] of notifications.showDoseNotification.mock.calls) {
+      expect(farmacoArg.id).toBe(7);
+    }
   });
 });
 
@@ -423,5 +435,103 @@ describe('AppProvider -- trigger di drenaggio (CS-4.26)', () => {
     });
 
     expect(repoMock.drainOutbox).not.toHaveBeenCalled();
+  });
+});
+
+// ============================================================
+// Client del canale dei promemoria ad app chiusa, passo 2: il rinnovo a
+// ogni rientro in primo piano, e il servizio nella borsa dei services.
+// Le regole del rinnovo stanno in services/canalePush.test.js; qui si pinna
+// che il cablaggio le raggiunga.
+// ============================================================
+
+describe('AppProvider -- canale dei promemoria, il rinnovo al rientro', () => {
+  const SEED = {
+    status: 'ready',
+    profiloAttivo: { id: 7, nome_profilo: 'Test' },
+    impostazioni: { notifiche_attive: 1 },
+  };
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('il servizio del canale sta nella borsa dei services', async () => {
+    let captured = null;
+    function ServicesProbe() {
+      captured = useAppContext().services;
+      return null;
+    }
+    render(
+      <AppProvider initialStateProp={SEED}>
+        <ServicesProbe />
+      </AppProvider>
+    );
+    await waitFor(() => expect(captured).not.toBeNull());
+    expect(captured.canale).toBe(canalePush);
+  });
+
+  it('visibilitychange pubblica il calendario, sullo stato di adesso', async () => {
+    const pubblica = vi.spyOn(canalePush, 'pubblica').mockResolvedValue(null);
+    vi.spyOn(canalePush, 'rinnova').mockResolvedValue(null);
+    render(
+      <AppProvider initialStateProp={{ ...SEED, lastBuiltForDay: '2026-10-07', plan: [] }}>
+        <div data-testid="child">child</div>
+      </AppProvider>
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    pubblica.mockClear();
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(pubblica).toHaveBeenCalledTimes(1);
+    expect(pubblica.mock.calls[0][0]).toMatchObject({ status: 'ready', lastBuiltForDay: '2026-10-07' });
+  });
+
+  it('visibilitychange rilegge lo stato del canale', async () => {
+    const leggi = vi.spyOn(canalePush, 'leggiStato').mockResolvedValue(null);
+    vi.spyOn(canalePush, 'rinnova').mockResolvedValue(null);
+    vi.spyOn(canalePush, 'pubblica').mockResolvedValue(null);
+    render(
+      <AppProvider initialStateProp={SEED}>
+        <div data-testid="child">child</div>
+      </AppProvider>
+    );
+    leggi.mockClear();
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(leggi).toHaveBeenCalledTimes(1);
+  });
+
+  it('il tick non rilegge lo stato del canale: mai a intervalli (Q-SYNC)', async () => {
+    const leggi = vi.spyOn(canalePush, 'leggiStato').mockResolvedValue(null);
+    const spiaInterval = vi.spyOn(globalThis, 'setInterval');
+    render(
+      <AppProvider initialStateProp={SEED}>
+        <div data-testid="child">child</div>
+      </AppProvider>
+    );
+    const chiamata = spiaInterval.mock.calls.find(([, ms]) => ms === 60000);
+    leggi.mockClear();
+    await act(async () => {
+      chiamata[0]();
+    });
+    expect(leggi).not.toHaveBeenCalled();
+  });
+
+  it('visibilitychange chiede un rinnovo, col valore del toggle', async () => {
+    const rinnova = vi.spyOn(canalePush, 'rinnova').mockResolvedValue(null);
+    render(
+      <AppProvider initialStateProp={SEED}>
+        <div data-testid="child">child</div>
+      </AppProvider>
+    );
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(rinnova).toHaveBeenCalledWith({ voluto: true });
   });
 });

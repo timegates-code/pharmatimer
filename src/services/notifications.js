@@ -5,6 +5,11 @@
 //           (singleton di default + fresh instances nei test). DI in
 //           rescheduleAllNotifications(state, services) per swap mock.
 //  Q-CP2.2: click handler punta a '/oggi' (route principale dosi).
+//           Superseded by decision 10 A of STATO_CORRENTE.md (2026-10-01):
+//           the timers stay next to the Web Push channel, and the tap brings
+//           the window forward without navigating it, the rule of
+//           public/sw-push.js: a window may hold a form not yet saved, and an
+//           absolute '/oggi' ignored the base of the GitHub Pages build.
 //  Q-CP2.3: scheduleNotification con fireAt <= now → no-op silenzioso
 //           (caller rescheduleAllNotifications può passare entries marginalmente
 //           passate senza errore).
@@ -27,13 +32,15 @@
 // Tag-based replacement: schedulare stesso entryKey cancella il timer precedente
 // (Q-CP2.3 + AMB-9.H). entryKey convenzione: dose-{farmaco_id}-{dose_numero}-{dateStr}.
 
-import { formatRelazionePastoCopy } from '../utils/copy';
-import { parseIsoDateTime, wallToInstant } from '../utils/time.js';
+import { istanteDose, testoDose } from '../domain/promemoria.js';
 import {
   selectToday,
   selectEntriesForEffectiveDay,
   selectFarmacoById,
 } from '../state/selectors.js';
+
+// How long a fired timer is remembered: the plan's window, two days around today.
+const FIRED_RETENTION_MS = 2 * 24 * 60 * 60 * 1000;
 
 /**
  * Factory: builds a fresh notifications service instance.
@@ -43,6 +50,15 @@ import {
 export function createNotificationsService() {
   // Closure-private Map<entryKey, timeoutId>.
   const pending = new Map();
+  // The timers already fired, `${entryKey}|${fireAt}` -> fireAt. Decision 10
+  // A and Roberto's condition (2026-10-01): AppContext re-arms the timers at
+  // every committed change of the plan, so a re-arm must never start again
+  // the notification of a dose already shown. `delay <= 0` alone does not
+  // hold it: a timer can fire a few ms before its instant by the wall clock,
+  // and a re-arm in those ms would arm it again. One notification per dose
+  // and instant: a dose moved to a new instant is armed for the new one.
+  // cancelAll() leaves this memory alone, since every re-arm begins with it.
+  const fired = new Map();
 
   function isSupported() {
     return typeof globalThis.Notification !== 'undefined';
@@ -61,6 +77,8 @@ export function createNotificationsService() {
   function scheduleNotification({ entryKey, fireAt, title, body, onFire } = {}) {
     if (!isSupported()) return;
     if (!entryKey) return;
+    const firma = `${entryKey}|${fireAt}`;
+    if (fired.has(firma)) return; // already shown: a re-arm never starts it again
     const delay = fireAt - Date.now();
     if (delay <= 0) return; // Q-CP2.3=A: no-op silenzioso
     // Tag-based replacement: cancel previous timer for same entryKey.
@@ -69,6 +87,11 @@ export function createNotificationsService() {
     }
     const timeoutId = setTimeout(() => {
       pending.delete(entryKey);
+      fired.set(firma, fireAt);
+      // Forget what fell out of the plan's window (ieri, oggi, domani).
+      for (const [f, istante] of fired) {
+        if (istante < fireAt - FIRED_RETENTION_MS) fired.delete(f);
+      }
       // Q-CP2.4=A: defensive permission check al fire (cattura revoche post-schedule).
       if (globalThis.Notification.permission !== 'granted') return;
       // Chrome Android: `new Notification()` in page context always throws
@@ -83,10 +106,9 @@ export function createNotificationsService() {
       // an installed PWA): same construction, same onclick, same onFire.
       try {
         const notif = new globalThis.Notification(title, { body, tag: entryKey });
-        // Q-CP2.2=A: click handler porta su /oggi.
+        // Decision 10 A: the window comes forward as it is, never navigated.
         notif.onclick = () => {
           try { window.focus(); } catch { /* noop */ }
-          try { window.location.href = '/oggi'; } catch { /* noop */ }
         };
       } catch { /* costruttore non disponibile in pagina: si prosegue */ }
       if (typeof onFire === 'function') {
@@ -112,9 +134,8 @@ export function createNotificationsService() {
   /**
    * Convenience wrapper for scheduling a dose-tagged notification.
    * Derives entryKey, fireAt, title, body from entry+farmaco.
-   * - title = farmaco.nome
-   * - body = formatRelazionePastoCopy(farmaco) || 'Promemoria farmaco'
-   * - fireAt = entry.ora_ricalcolata (ISO) || compose(entry.dateStr, entry.ora_prevista)
+   * - title, body = testoDose(entry, farmaco): the text of the push (decision 32 A)
+   * - fireAt = istanteDose(entry): ora_ricalcolata (ISO) || ora_prevista on entry.dateStr
    * - entryKey = dose-{farmaco.id}-{entry.dose_numero}-{entry.dateStr}
    */
   function showDoseNotification(entry, farmaco) {
@@ -125,19 +146,15 @@ export function createNotificationsService() {
     const entryKey = `dose-${farmaco.id}-${entry.orario?.dose_numero}-${dateStr}`;
     // Decisione 1 (DST): wall time to instant through the single door, so a
     // dose planned in the skipped hour fires at the first existing instant
-    // and a time in the double hour fires at its first occurrence.
+    // and a time in the double hour fires at its first occurrence. The
+    // formula is istanteDose (domain/promemoria.js), the same the published
+    // calendar uses, so the push and the page timer share their instant.
     // A dose without a time (P3, ora_prevista null) is never scheduled.
-    let fireAt;
-    if (entry.ora_ricalcolata) {
-      fireAt = parseIsoDateTime(entry.ora_ricalcolata).dateObj.getTime();
-    } else if (entry.ora_prevista && dateStr) {
-      fireAt = wallToInstant(dateStr, entry.ora_prevista).getTime();
-    } else {
-      return; // Defensive: no schedulable timestamp.
-    }
-    const title = farmaco.nome;
-    const body = formatRelazionePastoCopy(farmaco) || 'Promemoria farmaco';
-    scheduleNotification({ entryKey, fireAt, title, body });
+    const fireAt = istanteDose(entry);
+    if (fireAt === null) return; // Defensive: no schedulable timestamp.
+    // Decision 32 A: the text of the push, so a double reads as one dose.
+    const { titolo, corpo } = testoDose(entry, farmaco);
+    scheduleNotification({ entryKey, fireAt, title: titolo, body: corpo });
   }
 
   function getPendingCount() {

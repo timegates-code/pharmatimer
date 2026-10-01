@@ -5,48 +5,65 @@ archiviato e congelato. Qui c e solo cio che serve per aprire la prossima
 sessione: cosa e appena successo, cosa resta in coda, cosa deve decidere
 Roberto.
 
-**Apertura e chiusura: `make check`.** Prima di un deploy: `make prod-check`,
-poi `bash deploy/deploy-mini.sh` dal Terminale.
+**Apertura: `make check`. Chiusura: `make check` prima del commit; dopo il
+push `TREE` e `AHEAD` letti con git e l esito della CI, senza rilanciare il
+gate (CLAUDE.md 4 e 8).** Prima di un deploy: `make prod-check`, poi `bash
+deploy/deploy-mini.sh` dal Terminale.
 
 ---
 
-## Ultima sessione -- client del canale, ramo A: passo 1, 2026-10-01
+## Ultima sessione -- client del canale, ramo A: commit B, 2026-10-01
 
-`make check` verde in apertura su `45691bc`, lanciato da Roberto e rilanciato
-qui. Struttura del client approvata da Roberto, con un aggiunta al battito: la
-riga in Oggi si accende anche quando l ultima pubblicazione non e andata a buon
-fine, test nei due versi (passo 4). Decise la 14 e la 31, entrambe A.
+`make check` verde in apertura su `541b74a`, misurato da Roberto e rilanciato
+qui. Il commit B rende il canale usabile: i passi 2-5 della struttura
+approvata, in un commit solo. Decise in sessione la 10, la 32, la 33 e due
+ratifiche nuove, la 34 e la 35 (sotto).
 
-**Passo 1, il commit che porta questo STATO.**
-- `public/sw-push.js`, il gestore del push del service worker: ogni push mostra
-  una notifica, quella pubblicata o la neutra; un push di dose legge il
-  taccuino e, se la dose e chiusa, lo dice (31); nessuna azione, nessuna
-  scrittura; il tocco porta avanti la finestra aperta o apre `oggi` sotto lo
-  scope; risponde alla domanda che la pagina fara prima di iscriversi.
-- La riga di `vite.config.js` (14 A), inserita da Roberto dal Terminale: il
-  permesso che nega la modifica del file resta com e.
-- `src/pwa/sw-push.test.js`: il file vero in un contesto `vm`, contro lo schema
-  vero di `db.js`. Tiene allineati il testo neutro con `canale.py`, il tag con
-  i timer di pagina, la riga con `vite.config.js`. Le sue righe nel banco
-  mordono tutte.
-- ESLint copre il worker; CLAUDE.md 7 e 13 dichiarano la riga sbloccata e le
-  due eccezioni del worker.
+**Fatto.**
+- Passo 2, iscrizione e rinnovo: `src/data/repository/canale.js` (le cinque
+  chiamate di `/api/push` e il `device_id`), `src/services/canalePush.js`
+  (preparazione, tocco, rinnovo, spegnimento, un operazione alla volta), la
+  sezione `canale` del reducer, i thunk, il toggle. Il tocco dei timer di
+  pagina non naviga piu (10 A).
+- Passo 3, pubblicatore: `src/domain/pubblicatore.js` e
+  `src/domain/promemoria.js`, istante e testo condivisi coi timer di pagina
+  (32 A); il ciclo di pubblicazione; un effetto di `AppContext` riarma i timer
+  e pubblica sullo stato applicato (35).
+- Passo 4, battito: `src/domain/statoCanale.js` con la soglia della 33, i
+  testi in `src/utils/testi.js`, la riga di Oggi
+  (`src/components/shared/RigaCanale.jsx`), lo stato intero in Impostazioni.
+- Passo 5, D4 lato client: Spec 2.1, 6.1, 8.1 e il lato client della 6.4; la
+  copy del toggle; README; la voce 17 dell inventario sulle sedi nuove.
+- CLAUDE.md 4 e 8, e lo hook di pre-push: dopo il push il gate non si rilancia.
 
-**Non fatto.** Nessun telefono si iscrive ancora: il gestore e inerte fino al
-commit B. Il click dei timer di pagina va ancora a `/oggi` assoluto: si
-corregge al passo 2.
+**Rilievo, misurato con due sonde, esiti dichiarati prima.** Le sedi di
+`maybeReschedule` leggono `stateRef` un render indietro: all apertura a
+freddo non armavano i timer di pagina, dopo `addFarmaco` riarmavano il piano
+senza il farmaco nuovo. RICONFERMA della classe di `06dc680` e `35fed4d`;
+elemento nuovo, il trigger 1 e le sedi dei thunk. Chiuso dall effetto della
+35. **In produzione il buco c e:** secondo git lo schierato e `820e1ed`, con
+le stesse sedi.
 
-**Deviazioni.** Nessuna dalla Spec.
+**Misure, gate prima del commit.** lint 0; frontend 125 file e 1361 test; DST
+28 su 28; dipendenze 44 su 44; backend 245; mutazioni 205 su 205, 82 righe
+nuove, 221,9 s; inventario verde; contatore con la serie scritta; albero rosso
+sul solo TREE, per costruzione.
 
-**Cosa resta.** Il commit B, con la struttura approvata nella sezione "Il
-commit B del client" qui sotto: la 10 al passo 2, la 32 al passo 3, la 33 al
-passo 4. Prima del deploy del canale, dal Terminale sul Mini:
-installazione dal lock, chiave VAPID (15), `VAPID_SUB` nel `.env.dev`,
-`apply_v07_prod.py`, perche g21 pretende la v07 e sul Mini c e la sola
-`push_subscriptions`; poi `make prod-check` verde e `bash
-deploy/deploy-mini.sh`. Alla sessione del deploy, la prova sull iPhone, col
-caso "presa registrata offline, poi arriva il push": misura la lettura del
-taccuino su iOS (31).
+**Non fatto.** Nessun deploy, niente sul Mini, niente in launchd, nessuna
+migrazione, nessuna dipendenza, schema Dexie invariato, backend non toccato.
+La prova a mano sullo Studio e di Roberto.
+
+**Deviazioni.** Nessuna dalla Spec: la Spec si allinea in posto (D4).
+
+**Cosa resta: la sessione del deploy.** Dal Terminale sul Mini: installazione
+dal lock, chiave VAPID (15), `VAPID_SUB` nel `.env.dev`, `apply_v07_prod.py`,
+perche g21 pretende la v07; poi `make prod-check` verde e `bash
+deploy/deploy-mini.sh`. **Con il canale vanno in produzione anche** `ccce837`
+(la dose oltre la mezzanotte non si perde al rollover) e `3d098a6` (il
+costruttore che lancia non porta giu la catena), oggi chiuse nel repo e non
+schierate, e il riarmo dei timer all apertura a freddo (35). **Sull iPhone:**
+il caso della 31, presa registrata offline e poi il push; e il rinnovo all
+apertura quando la subscription va ricreata senza gesto, oggi non misurato.
 
 ---
 
@@ -94,67 +111,6 @@ del Mini, piu una scrittura sul DB di produzione il cui esito non e a verbale.
   Home Screen Web Apps, scheda Storage, Local Storage, chiave
   `pharmatimer.userToken`); la voce Keychain `pharmatimer-token-2` non era
   stata aggiornata dalla rotazione del 3 settembre. Vedi decisione 23.
-
----
-
-## Il commit B del client: struttura approvata da Roberto il 2026-10-01
-
-Passi 2-5 in un solo commit: e quello che rende il canale usabile, quindi
-porta la parte client della D4 (28). Qui le regole; i valori nelle loro sedi.
-
-- **Passo 2, iscrizione e rinnovo** (2, 14 A), dopo la scheda della 10. Le
-  chiamate in `src/data/repository/canale.js`, che importa `apiClient`;
-  `device_id` generato una volta, in `localStorage`. Toggle acceso, solo in
-  modalita API: permesso, chiave da `/api/push/chiave`, `subscribe`, poi
-  `PUT /api/push/iscrizione`. A ogni apertura e rientro in primo piano:
-  `getSubscription()`, nuova iscrizione se manca o se e legata a un altra
-  chiave, poi il `PUT` che la conferma. Toggle spento o permesso revocato:
-  `unsubscribe()` e `DELETE`. Ci si iscrive solo se il worker attivo risponde
-  alla domanda di `public/sw-push.js`. Senza chiave nessuna iscrizione, lo
-  stato lo dice e l app parte (15). Il click dei timer di pagina smette di
-  andare a `/oggi` assoluto.
-- **Passo 3, pubblicatore** (8, 11, 12, 16). Funzione pura in `src/domain/`,
-  col suo `*.dst.test.js`. Pubblica le voci del piano dell app, scelte per
-  istante effettivo, in stato `prevista` o `ricalcolata` e con orario
-  risolto: una dose chiusa sul telefono esce dal calendario (rapporto, §4).
-  La chiave e la proiezione di `buildLogWrite` (`recalc.js`); l istante e la
-  formula di `showDoseNotification` (`notifications.js`); `ora_ricalcolata`
-  al secondo intero, o vuota. Avviso di fine: l ultima voce piu la
-  tolleranza; se la sua finestra tocca il sonno del profilo attivo
-  (`ora_sonno`, `ora_sveglia`), va alla sveglia; `entro` e l avviso piu la
-  tolleranza, letta da `/api/push/stato` nello stesso ciclo e mai copiata.
-  Pubblica dalle sedi di `maybeReschedule` (`AppContext.jsx` e i thunk di
-  `actions.js`) e dopo una consegna riuscita della coda: un invio alla
-  volta, vince l ultimo piano; il contenuto invariato non si ripubblica
-  (Q-SYNC), ma all apertura una volta si; un errore non riprova in ciclo. Un
-  test lega la chiave pubblicata alla riga che le transizioni vere di
-  `recalc.js` scrivono, nei due versi, su un piano del vero
-  `buildMultiDayPlan` con un farmaco standard, uno esteso, uno `fisso_date`
-  e una dose di ieri ricalcolata a oggi; lo stesso per `ora_ricalcolata`.
-  Righe nel banco: `calendario-data-dall-istante`, `calendario-dose-numero`,
-  `calendario-ricalcolata-vuota`.
-- **Passo 4, battito** (9). L eta e `eta_ms` del server alla lettura piu il
-  tempo trascorso sul telefono, su orologio monotono. Mai un OK vecchio:
-  "non verificati dalle HH:MM" oltre la soglia, con esito diverso da `ok`,
-  canale spento o questo telefono non iscritto. In Impostazioni lo stato
-  intero, dove un 201 si legge "accettato" e mai "consegnato" (2); in Oggi
-  una riga sola quando lo stato non e OK, che toccata rilegge.
-  **Aggiunta di Roberto:** la riga di Oggi si accende anche quando l ultima
-  pubblicazione non e andata a buon fine, perche il server tiene il
-  calendario vecchio e il telefono lo deve dire; test nei due versi.
-  `/api/push/stato` si rilegge all apertura, al rientro in primo piano,
-  all ingresso nella vista e dopo ogni pubblicazione, mai a intervalli
-  (Q-SYNC).
-- **Passo 5, parte client della D4** (28): Spec 2.1, 6.1, 8.1 e il paragrafo
-  "Stato" della 6.4, che col client diventa falso; la copy "Avviso poco
-  prima" di `ImpostazioniTab.jsx` col suo test; nel README le righe delle
-  notifiche locali e il blocco del limite. La 11.5.2 resta: e storica. La
-  voce 17 dell inventario allarga il perimetro alle sedi nuove. Il minore su
-  click, copy e Spec si chiude; quello degli endpoint mai chiamati perde
-  quelli del canale e resta aperto per gli altri.
-- **Prova a mano** in chiusura del commit B: sullo Studio, browser desktop su
-  localhost, passata lanciata a mano dal Terminale e chiave VAPID dello
-  Studio (15). Sull iPhone alla sessione del deploy, col caso della 31.
 
 ---
 
@@ -226,14 +182,18 @@ toccano:
   misurato; si puo togliere e passare a `StrEnum`, wire-neutro.
 - [aperta] `src/main.jsx`: il commento di bootstrap promette un passo di seed che il CP4
   ha disabilitato, e il blocco `try` ha `result.seeded` sempre falso.
-- [aperta] Il click della notifica naviga a `/oggi` assoluto ignorando `BASE_URL`
+- [chiusa] Il click della notifica naviga a `/oggi` assoluto ignorando `BASE_URL`
   (corretto sulla build del Mini, rotto su GitHub Pages); la copy "Avviso poco
   prima di ogni dose" contro un fuoco all'istante; Spec 2.1 :140 e 8.1 :583
   promettono ancora push via PWA mentre 11.5.2 le rimanda. Da allineare nel
-  commit che introduce il canale, mai nel Changelog congelato.
+  commit che introduce il canale, mai nel Changelog congelato. **Allineati nel
+  commit B del client:** il tocco porta avanti la finestra senza navigarla
+  (10 A), la copy dice l avviso all ora e ad app aperta, Spec 2.1, 6.1 e 8.1
+  descrivono il codice. La 11.5.2 resta: e storica.
 - [aperta] Otto documenti non sono referenziati ne da `CLAUDE.md` ne da `README`.
-- [aperta] Dodici endpoint backend non sono mai chiamati dal frontend: i sette
-  storici e i cinque del canale, fino alla sessione del client.
+- [aperta] Sette endpoint backend non sono mai chiamati dal frontend: i sette
+  storici. Quelli del canale li chiama `src/data/repository/canale.js` dal
+  commit B del client.
 - [chiusa] CLAUDE.md 13 portava "67 `cur.execute` nei cinque router": tolto il
   2026-10-01 invece di aggiornarlo, perche nessun controllo lo leggeva (sonda
   su `git grep` e sui file che leggono CLAUDE.md).
@@ -396,12 +356,14 @@ decisa W, quindi valgono.
    in blocco con Q8=A docker-compose, mai realizzato) e riaperta per lettera e
    sostituita. **Condizione, per la sessione del client:** il battito vecchio
    arriva al paziente nell app, non solo a `prod-check`.
-10. [aperta] **Emettitore unico o due sorgenti.** Tenere i timer di pagina accanto al
-    push accettando su iPhone un doppio simultaneo ad app aperta; tacerli con
-    subscription attiva; o decidere dopo la sonda con un gate sull'ultima
-    pubblicazione riuscita. I tre progettisti divergono. **S9, misurato il 15
-    settembre:** ad app in primo piano l avviso del worker compare e suona,
-    quindi il doppio simultaneo della prima via e possibile, non ipotetico.
+10. [chiusa] **Emettitore unico o due sorgenti: DECISA il 2026-10-01, lettera A.**
+    Due sorgenti: i timer di pagina restano accanto al push, e il loro tocco
+    porta avanti la finestra senza navigarla. Su iPhone ad app aperta resta il
+    doppio misurato da S9, ora con lo stesso testo (32); un riarmo non fa
+    ripartire un avviso gia mostrato (condizione della 35). **Scartate:**
+    tacerli con subscription attiva, o se l ultima pubblicazione e recente (un
+    indizio non prova una consegna: M2); fondere col tag (su iOS non ha
+    effetto).
 11. [chiusa] **Ricalcolo D+1 rifiutato dal server: DECISA il 2026-09-29, lettera A.**
     Il push di dose parte solo se la `ora_ricalcolata` del log coincide con
     quella pubblicata dal telefono, vuote comprese; se no, all istante
@@ -634,12 +596,38 @@ notifiche ad app chiusa non si fanno.
     lo stato al server dal worker (servono token e tailnet, cioe cio che
     manca nel caso che conta); una copia del taccuino nella Cache.
 
-32. [aperta] **Testo del push di dose, al passo 3.** Titolo e corpo li compone
-    il telefono (8). La Spec 6.1 vuole nome del farmaco, dosaggio e relazione
-    pasto; l I1 vuole l ora e nessuno stato (`rapporto.md` :41-43). Si
-    ratifica come i testi della 27.
+32. [chiusa] **Testo del push di dose: DECISA il 2026-10-01, lettera A.** Titolo
+    il nome del farmaco, che porta il dosaggio; corpo "Dose delle HH:MM", la
+    relazione col pasto se c e, "Apri l'app per controllare." Lo stesso testo
+    per i timer di pagina, da una funzione sola (`src/domain/promemoria.js`).
+    **Scartate:** testi che presumono la dose non presa (I1, M1), senza ora
+    (I1), senza nome (Spec 6.1), il titolo "PharmaTimer" (si confonde con l
+    avviso neutro della 27).
 
-33. [aperta] **Soglia del battito vecchio, al passo 4.** Oltre quale eta l app
-    smette di dire "attivi" e dice "non verificati dalle HH:MM" (condizione
-    della 9). La cadenza della passata sta nel suo plist, la tolleranza di
-    una dose in `canale.py`.
+33. [chiusa] **Soglia del battito vecchio: DECISA il 2026-10-01, lettera B, 5
+    minuti.** Due minuti guadagnati dentro una finestra di venti non valgono
+    una riga che compare a ogni passata lenta e che si impara a ignorare. Con
+    la regola di Roberto sulle parole: "non attivi" quando sappiamo che i
+    promemoria non arriveranno, "non verificati" solo quando non sappiamo,
+    "non aggiornati" per la pubblicazione fallita; pin nei due versi per
+    ciascun testo. **Scartate:** 20 minuti e nessuna soglia (un OK vecchio,
+    contro la 9); il solo orologio di parete; una rilettura periodica
+    (Q-SYNC).
+
+34. [chiusa] **Ordine dentro il tocco del toggle: DECISA il 2026-10-01, lettera
+    A.** In modalita API, a preparazione completa, `subscribe()` e il primo
+    atto del gesto e chiede lui il permesso: la via che S1 ha misurato. Senza
+    preparazione il tocco fa cio che faceva e lo stato dice perche; la riga di
+    Oggi e "Verifica ora" iscrivono dentro il gesto. **Scartata:** permesso,
+    chiave e poi subscribe, la variante di S1 mai eseguita. Non misurato in
+    nessuna delle due: il rinnovo che ricrea la subscription senza gesto, un
+    passo della prova sull iPhone.
+
+35. [chiusa] **Sede della pubblicazione: DECISA il 2026-10-01, lettera A, con
+    una condizione.** Un effetto di `AppContext` sullo stato che React ha
+    applicato riarma i timer di pagina e pubblica il calendario, all apertura
+    e a ogni cambio di piano, farmaci, profilo o toggle; le sedi di
+    `maybeReschedule` restano. **Condizione di Roberto:** un riarmo non fa
+    ripartire l avviso di una dose gia mostrata, pin nei due versi. **Scartata:**
+    pubblicare dalle sedi come sono (misurato: all apertura niente, dopo un
+    farmaco aggiunto il piano senza di lui, M2 sul canale).

@@ -101,6 +101,52 @@ PIAN = "backend/pharmatimer_api/pianificatore.py"
 T_PIAN = "tests/test_pianificatore.py"
 SW = "public/sw-push.js"
 T_SW = "src/pwa/sw-push.test.js"
+# Client del canale, passo 2: iscrizione e rinnovo.
+CPU = "src/services/canalePush.js"
+T_CPU = "src/services/canalePush.test.js"
+UNO = "src/hooks/useNotifications.js"
+T_UNO = "src/hooks/useNotifications.test.jsx"
+NOTI = "src/services/notifications.js"
+T_TOC = "src/services/notifications.tocco.test.js"
+ACX = "src/state/AppContext.jsx"
+T_ACX = "src/state/AppContext.test.jsx"
+ACT = "src/state/actions.js"
+T_ACAN = "src/state/actions.canale.test.js"
+RCAN = "src/data/repository/canale.js"
+T_RCAN = "src/data/repository/canale.test.js"
+T_NOTI = "src/services/notifications.test.js"
+T_ACR = "src/state/AppContext.riarmo.test.jsx"
+# Client del canale, passo 3: il pubblicatore e il testo della dose.
+PUB = "src/domain/pubblicatore.js"
+T_PUB = "src/domain/pubblicatore.test.js"
+PRO = "src/domain/promemoria.js"
+T_PRO = "src/domain/promemoria.test.js"
+# Client del canale, passo 4: lo stato del canale, la riga di Oggi, Impostazioni.
+STC = "src/domain/statoCanale.js"
+T_STC = "src/domain/statoCanale.test.js"
+TES = "src/utils/testi.js"
+T_TES = "src/utils/testi.canale.test.js"
+RIGA = "src/components/shared/RigaCanale.jsx"
+T_RIGA = "src/components/shared/RigaCanale.test.jsx"
+IMP = "src/components/config/ImpostazioniTab.jsx"
+T_IMP = "src/components/config/ImpostazioniTab.canale.test.jsx"
+OGGI = "src/components/oggi/OggiView.jsx"
+T_OGGI = "src/components/oggi/OggiView.canale.test.jsx"
+T_IMPT = "src/components/config/ImpostazioniTab.test.jsx"
+
+# Il tocco del toggle (ratifica A del 2026-10-01): subscribe() primo atto del gesto.
+SUBSCRIBE_NEL_GESTO = (
+    "      promessa = p.registrazione.pushManager.subscribe({\n"
+    "        userVisibleOnly: true,\n"
+    "        applicationServerKey: p.chiave,\n"
+    "      });"
+)
+SUBSCRIBE_DOPO_ATTESA = (
+    "      promessa = Promise.resolve().then(() => p.registrazione.pushManager.subscribe({\n"
+    "        userVisibleOnly: true,\n"
+    "        applicationServerKey: p.chiave,\n"
+    "      }));"
+)
 
 # Il ramo scartato "materializzare le previste" (M3), scritto dentro la
 # rilettura del log: una riga 'prevista' quando il log non ne ha.
@@ -757,6 +803,437 @@ MUTAZIONI = [
     riga("worker-non-incluso", "client, passo 1", "M2",
          [("vite.config.js", "workbox: {", 'importScripts: ["sw-push.js"],', "")],
          "vitest", [T_SW], ["vite.config.js carica il worker con una riga (decisione 14)"]),
+    # Client del canale, passo 2: iscrizione e rinnovo. Ci si iscrive, o si
+    # conferma, solo se il worker attivo risponde: un worker che non mostra i
+    # push fa estinguere la subscription a iOS (S11). Nei due versi: un
+    # canale che non si accende mai e anch esso M2.
+    riga("canale-iscrive-senza-worker", "client, passo 2", "M2",
+         [(CPU, "async function leggiPreparazione() {",
+           "if (!(await chiediAlWorker(registrazione, attesaWorkerMs))) {", "if (false) {")],
+         "vitest", [T_CPU],
+         ["worker muto: nessuna iscrizione nel tocco", "worker muto: nessuna iscrizione e nessun PUT",
+          "worker muto con una subscription gia presente: non la conferma"]),
+    riga("canale-worker-mai-pronto", "client, passo 2", "M2",
+         [(CPU, "export function chiediAlWorker(",
+           "&& dati.tipo === DOMANDA_PRONTO && dati.versione === VERSIONE_PROTOCOLLO", "&& false")],
+         "vitest", [T_CPU],
+         ["il worker vero risponde alla domanda: pronto",
+          "toggle acceso e nessuna subscription: nuova iscrizione, poi il PUT"]),
+    # Senza chiave nessuna iscrizione (15): una subscription su una chiave
+    # inventata sarebbe confermata e non riceverebbe nulla. Nei due versi.
+    riga("canale-senza-chiave-iscrive", "client, passo 2", "M2",
+         [(CPU, "async function leggiPreparazione() {",
+           "return { registrazione, motivo: M.CHIAVE, dettaglio: dettaglioDi(errore) };",
+           "testo = 'B' + 'A'.repeat(86);")],
+         "vitest", [T_CPU],
+         ["senza chiave nessuna iscrizione nel tocco", "senza chiave: nessuna iscrizione, e lo stato lo dice"]),
+    riga("canale-chiave-mai-letta", "client, passo 2", "M2",
+         [(CPU, "async function leggiPreparazione() {", "testo = await rete.leggiChiave();",
+           "testo = await Promise.reject(new Error('mutazione'));")],
+         "vitest", [T_CPU],
+         ["toggle acceso e nessuna subscription: nuova iscrizione, poi il PUT",
+          "dopo il tocco il PUT conferma la subscription, con il device_id"]),
+    # La chiave della subscription: un altra chiave si rifa (una subscription
+    # legata alla vecchia sarebbe confermata e muta), la stessa no.
+    riga("canale-chiave-diversa-tenuta", "client, passo 2", "M2",
+         [(CPU, "export function stessaChiave(", "if (legata[i] !== chiave[i]) return false;",
+           "if (legata[i] !== chiave[i]) return true;")],
+         "vitest", [T_CPU],
+         ["subscription legata a un altra chiave: si disfa e se ne fa una nuova, poi il PUT"]),
+    riga("canale-stessa-chiave-rifatta", "client, passo 2", "--",
+         [(CPU, "async function eseguiRinnovo(voluto) {",
+           "if (iscrizione && stessaChiave(iscrizione, p.chiave) === false) {", "if (iscrizione) {")],
+         "vitest", [T_CPU],
+         ["subscription legata alla stessa chiave: solo il PUT che la conferma",
+          "subscription che non dice la sua chiave: si tiene e si conferma"]),
+    # Toggle spento o permesso revocato: unsubscribe e DELETE. Nei due versi:
+    # un rinnovo a toggle acceso non disfa la subscription.
+    riga("canale-spento-resta-iscritto", "client, passo 2", "--",
+         [(CPU, "async function annulla(iscrizione) {", "await iscrizione.unsubscribe();", "void iscrizione;")],
+         "vitest", [T_CPU],
+         ["toggle spento con una subscription sul telefono: unsubscribe e DELETE", "unsubscribe e DELETE",
+          "permesso revocato con una subscription sul telefono: unsubscribe e DELETE, e il motivo"]),
+    riga("canale-spento-senza-delete", "client, passo 2", "--",
+         [(CPU, "async function annulla(iscrizione) {", "await rete.revocaIscrizione(id);", "void id;")],
+         "vitest", [T_CPU],
+         ["toggle spento con una subscription sul telefono: unsubscribe e DELETE", "unsubscribe e DELETE",
+          "il DELETE anche senza subscription sul telefono: il server puo averne una attiva"]),
+    riga("canale-permesso-ignorato", "client, passo 2", "--",
+         [(CPU, "async function eseguiRinnovo(voluto) {",
+           "if (!voluto || piattaforma.permesso() !== 'granted') {", "if (!voluto) {")],
+         "vitest", [T_CPU],
+         ["permesso revocato con una subscription sul telefono: unsubscribe e DELETE, e il motivo"]),
+    riga("canale-acceso-disfatto", "client, passo 2", "M2",
+         [(CPU, "async function eseguiRinnovo(voluto) {",
+           "if (!voluto || piattaforma.permesso() !== 'granted') {", "if (true) {")],
+         "vitest", [T_CPU],
+         ["subscription legata alla stessa chiave: solo il PUT che la conferma",
+          "toggle acceso e nessuna subscription: nuova iscrizione, poi il PUT"]),
+    # Modalita locale: il canale non esiste, nessuna chiamata a /api/push.
+    riga("canale-modalita-locale", "client, passo 2", "--",
+         [(CPU, "function rinnova({ voluto } = {}) {",
+           "if (!inModalitaApi()) return Promise.resolve(null);", "void inModalitaApi;")],
+         "vitest", [T_CPU], ["nessuna chiamata a /api/push e nessuna iscrizione"]),
+    # Un rinnovo alla volta: due richieste uguali in attesa sono una sola,
+    # una diversa gira dopo. Nei due versi.
+    riga("canale-rinnovo-doppio", "client, passo 2", "--",
+         [(CPU, "function rinnova({ voluto } = {}) {",
+           "if (rinnovoInAttesa !== null && rinnovoInAttesa.valore === valore) return rinnovoInAttesa.turno;",
+           "void rinnovoInAttesa;")],
+         "vitest", [T_CPU], ["due richieste uguali mentre una aspetta: un solo rinnovo"]),
+    riga("canale-rinnovo-fuso-sempre", "client, passo 2", "--",
+         [(CPU, "function rinnova({ voluto } = {}) {",
+           "if (rinnovoInAttesa !== null && rinnovoInAttesa.valore === valore) return rinnovoInAttesa.turno;",
+           "if (rinnovoInAttesa !== null) return rinnovoInAttesa.turno;")],
+         "vitest", [T_CPU], ["una richiesta diversa non si fonde: gira dopo, nell ordine"]),
+    # Ratifica A del 2026-10-01: subscribe() e il primo atto del tocco, la via
+    # che S1 ha misurato. Nel servizio e nell hook.
+    riga("canale-gesto-attende", "client, passo 2", "--",
+         [(CPU, "function iscriviNelGesto() {", SUBSCRIBE_NEL_GESTO, SUBSCRIBE_DOPO_ATTESA)],
+         "vitest", [T_CPU],
+         ["a preparazione completa subscribe() parte dentro la chiamata, prima di ogni attesa"]),
+    riga("toggle-gesto-attende", "client, passo 2", "--",
+         [(UNO, "const requestEnable = useCallback(async () => {",
+           "    const gesto = typeof canale?.iscriviNelGesto",
+           "    await Promise.resolve();\n    const gesto = typeof canale?.iscriviNelGesto")],
+         "vitest", [T_UNO],
+         ["subscribe e il primo atto del tocco: prima di ogni attesa, e senza requestPermission"]),
+    riga("toggle-senza-preparazione", "client, passo 2", "--",
+         [(UNO, "// The channel gets ready before any tap needs it.", "      canale?.prepara?.();",
+           "      void canale;")],
+         "vitest", [T_UNO], ["all ingresso nella sezione il canale si prepara"]),
+    riga("toggle-spento-resta-iscritto", "client, passo 2", "--",
+         [(UNO, "const disable = useCallback(async () => {", "    await actions.spegniCanale?.();",
+           "    void actions;")],
+         "vitest", [T_UNO], ["toggle spento: anche il canale si spegne"]),
+    riga("revoca-resta-iscritta", "client, passo 2", "--",
+         [(UNO, "function checkRevocation() {", "        actions.spegniCanale?.();", "        void actions;")],
+         "vitest", [T_UNO], ["permesso revocato: anche il canale si spegne"]),
+    # Il cablaggio: rinnovo a ogni rientro e all apertura; l apertura non
+    # aspetta il canale e il canale non la rompe mai (15): M2.
+    riga("canale-rinnovo-al-rientro", "client, passo 2", "--",
+         [(ACX, "const onForegroundEvent = () => {", "        actions.rinnovaCanale();", "        void actions;")],
+         "vitest", [T_ACX], ["visibilitychange chiede un rinnovo, col valore del toggle"]),
+    riga("canale-rinnovo-all-avvio", "client, passo 2", "--",
+         [(ACT, "// Client of the reminder channel, step 2: the renewal at the opening.",
+           "void rinnovaCanale({ voluto: impostazioni.notifiche_attive === 1 });", "void impostazioni;")],
+         "vitest", [T_ACAN], ["dopo INIT_SUCCESS, col valore del toggle appena caricato"]),
+    riga("canale-avvio-senza-guardia", "client, passo 2", "M2",
+         [(ACT, "// Client of the reminder channel, step 2: the renewal at the opening.",
+           "void rinnovaCanale({ voluto: impostazioni.notifiche_attive === 1 });",
+           "await services.canale.rinnova({ voluto: impostazioni.notifiche_attive === 1 });")],
+         "vitest", [T_ACAN], ["un canale che rifiuta o lancia non rompe l apertura: nessun INIT_ERROR"]),
+    # L id del telefono: uno che non resta scritto non si usa.
+    riga("canale-device-id-instabile", "client, passo 2", "--",
+         [(RCAN, "export function deviceId() {", "return leggiDeviceId() === nuovo ? nuovo : null;",
+           "return nuovo;")],
+         "vitest", [T_RCAN], ["uno storage che non tiene la scrittura non da alcun id"]),
+    # Decisione 10 A: il tocco di un timer di pagina porta avanti la finestra e
+    # non la naviga. Nei due versi.
+    riga("timer-tocco-naviga", "client, passo 2", "--",
+         [(NOTI, "notif.onclick = () => {", "try { window.focus(); } catch { /* noop */ }",
+           "try { window.focus(); } catch { /* noop */ }\n"
+           "          try { window.location.href = '/oggi'; } catch { /* noop */ }")],
+         "vitest", [T_TOC], ["non naviga la finestra: puo avere un modulo non salvato"]),
+    riga("timer-tocco-senza-focus", "client, passo 2", "--",
+         [(NOTI, "notif.onclick = () => {", "try { window.focus(); } catch { /* noop */ }", "void 0;")],
+         "vitest", [T_TOC], ["porta avanti la finestra"]),
+    # Ratifica A del 2026-10-01: i timer di pagina si riarmano sullo stato
+    # applicato (effetto di AppContext). Le sedi di maybeReschedule leggono
+    # stateRef un render indietro: misurato, all apertura a freddo non armano
+    # nulla e dopo addFarmaco riarmano il piano senza il farmaco nuovo (M2).
+    riga("effetto-apertura-non-arma", "client, passo 3", "M2",
+         [(ACX, "// Ratification A of 2026-10-01 (client of the reminder channel, step 3):",
+           "    rescheduleAllNotifications(state, services.notifications);", "    void state;")],
+         "vitest", [T_ACR],
+         ["all apertura a freddo la dose di oggi e armata, senza alcun evento",
+          "un farmaco aggiunto ha la sua dose armata, senza alcun evento"]),
+    # Condizione di Roberto alla ratifica A: un riarmo non fa ripartire
+    # l avviso di una dose gia mostrata (M1), nei due versi: i riarmi prima
+    # dello scatto non lo impediscono (M2), e una dose spostata a un istante
+    # nuovo si arma per il nuovo (M2).
+    riga("timer-riarmo-riparte", "client, passo 3", "M1",
+         [(NOTI, "function scheduleNotification(",
+           "    if (fired.has(firma)) return; // already shown: a re-arm never starts it again",
+           "    void firma;")],
+         "vitest", [T_NOTI],
+         ["dopo lo scatto un riarmo non lo fa ripartire, nemmeno con l orologio un poco indietro"]),
+    riga("timer-riarmo-bloccato", "client, passo 3", "M2",
+         [(NOTI, "function scheduleNotification(", "    if (fired.has(firma)) return;", "    if (firma) return;")],
+         "vitest", [T_NOTI], ["i riarmi prima dello scatto non lo impediscono: un solo avviso, all istante"]),
+    riga("timer-riarmo-per-dose", "client, passo 3", "M2",
+         [(NOTI, "function scheduleNotification(", "const firma = `${entryKey}|${fireAt}`;",
+           "const firma = entryKey;")],
+         "vitest", [T_NOTI], ["una dose spostata a un istante nuovo si arma per il nuovo"]),
+    # Un solo avviso per dose anche quando due riarmi si susseguono, come
+    # all accensione del toggle (il thunk e l effetto): lo tengono cancelAll,
+    # che svuota i timer pendenti, e la sostituzione per tag. Ciascuno basta
+    # da solo, quindi ciascuno ha la sua riga sul suo test, e il pin di
+    # percorso arrossa solo se cadono entrambi: quella riga muove due
+    # variabili, intercetta e non isola.
+    riga("timer-cancelall-non-svuota", "client, passo 3", "M1",
+         [(NOTI, "function cancelAll() {", "      clearTimeout(timeoutId);", "      void timeoutId;")],
+         "vitest", [T_NOTI], ["cancelAll clears all pending timers, no leak"]),
+    riga("timer-tag-non-sostituisce", "client, passo 3", "M1",
+         [(NOTI, "function scheduleNotification(", "      clearTimeout(pending.get(entryKey));",
+           "      void entryKey;")],
+         "vitest", [T_NOTI], ["tag-based replacement: rescheduling same entryKey cancels previous timer"]),
+    riga("timer-riarmo-doppio", "client, passo 3", "M1",
+         [(NOTI, "function cancelAll() {", "      clearTimeout(timeoutId);", "      void timeoutId;"),
+          (NOTI, "function scheduleNotification(", "      clearTimeout(pending.get(entryKey));",
+           "      void entryKey;")],
+         "vitest", [T_NOTI], ["i riarmi prima dello scatto non lo impediscono: un solo avviso, all istante"]),
+    # Il calendario pubblicato (passo 3). La chiave e quella che buildLogWrite
+    # proietta: la passata rilegge il log per quella chiave, e una chiave che
+    # scivola legge la riga di un altra dose (M1). Le tre righe nominate dalla
+    # struttura approvata.
+    riga("calendario-data-dall-istante", "client, passo 3", "M1",
+         [(PUB, "export function vociDelCalendario(", "data: entry.dateStr,",
+           "data: localDateStr(new Date(istante)),")],
+         "vitest", [T_PUB],
+         ["dal calendario al log: ogni voce ha la chiave della riga che la sua transizione scrive",
+          "la dose di ieri ricalcolata a oggi: la data e quella del log, l istante e oggi"]),
+    riga("calendario-dose-numero", "client, passo 3", "M1",
+         [(PUB, "export function vociDelCalendario(", "dose_numero: entry.orario.dose_numero,",
+           "dose_numero: entry.orario.id,")],
+         "vitest", [T_PUB],
+         ["dal calendario al log: ogni voce ha la chiave della riga che la sua transizione scrive",
+          "il numero della dose e quello del log, non dell orario"]),
+    riga("calendario-ricalcolata-vuota", "client, passo 3", "--",
+         [(PUB, "export function vociDelCalendario(",
+           "ora_ricalcolata: oraRicalcolataAlSecondo(entry.ora_ricalcolata),",
+           "ora_ricalcolata: oraRicalcolataAlSecondo(entry.ora_ricalcolata ?? `${entry.dateStr}T${entry.ora_prevista}`),")],
+         "vitest", [T_PUB],
+         ["una dose prevista pubblica ora_ricalcolata vuota",
+          "dal calendario al log: ogni voce ha la chiave della riga che la sua transizione scrive"]),
+    riga("calendario-chiusa-pubblicata", "client, passo 3", "M1",
+         [(PUB, "function pubblicabile(entry) {",
+           "if (!entry || (entry.stato !== 'prevista' && entry.stato !== 'ricalcolata')) return false;",
+           "if (!entry) return false;")],
+         "vitest", [T_PUB],
+         ["le dosi chiuse sul telefono non entrano: presa, saltata, sospesa",
+          "dal log al calendario: una dose chiusa esce, la ricalcolata resta con la sua riga"]),
+    # L avviso di fine (12): fuori dal sonno, con la tolleranza del server e
+    # mai una copia, e anche senza voci.
+    riga("calendario-avviso-nel-sonno", "client, passo 3", "--",
+         [(PUB, "export function fuoriDalSonno(",
+           "if (avvisoMs < fine && avvisoMs + finestraMs > inizio) return fine;", "void inizio;")],
+         "vitest", [T_PUB],
+         ["un avviso la cui finestra tocca il sonno va alla sveglia",
+          "senza voci l avviso parte dalla fine dell orizzonte, con la regola del sonno"]),
+    riga("calendario-tolleranza-copiata", "client, passo 3", "--",
+         [(PUB, "export function componiCalendario(", "const tolleranzaMs = tolleranzaMin * MINUTO_MS;",
+           "const tolleranzaMs = 20 * MINUTO_MS;")],
+         "vitest", [T_PUB],
+         ["l avviso e l ultima voce piu la tolleranza letta dal server, e l entro altrettanto dopo"]),
+    riga("calendario-senza-voci", "client, passo 3", "--",
+         [(PUB, "export function componiCalendario(", ": orizzonte;", ": 1;")],
+         "vitest", [T_PUB], ["senza voci l avviso parte dalla fine dell orizzonte, con la regola del sonno"]),
+    # Il testo della dose (32 A): mai uno stato (I1), sempre l ora, nei limiti
+    # del server, uguale sul timer di pagina.
+    riga("testo-asserisce-stato", "client, passo 3", "M1",
+         [(PRO, "const INVITO =", "\"Apri l'app per controllare.\"",
+           "\"Non ancora presa: apri l'app per registrarla.\"")],
+         "vitest", [T_PRO], ["non asserisce mai uno stato della dose (I1), qualunque esso sia"]),
+    riga("testo-senza-ora", "client, passo 3", "--",
+         [(PRO, "export function testoDose(",
+           "`Dose delle ${dueCifre(quando.getHours())}:${dueCifre(quando.getMinutes())}`", "'Dose'")],
+         "vitest", [T_PRO], ["titolo il nome, corpo l ora, la relazione col pasto e l invito"]),
+    riga("testo-fuori-misura", "client, passo 3", "M2",
+         [(PRO, "function tronca(", "return testo.length <= massimo ? testo : `${testo.slice(0, massimo - 3)}...`;",
+           "return testo;")],
+         "vitest", [T_PRO], ["i campi restano nei limiti del server, anche con dati fuori misura"]),
+    riga("testo-timer-diverso", "client, passo 3", "--",
+         [(NOTI, "function showDoseNotification(", "title: titolo, body: corpo",
+           "title: titolo, body: 'Promemoria farmaco'")],
+         "vitest", [T_NOTI], ["showDoseNotification builds dose-tag and uses the text of the push, with the meal relation"]),
+    # Il ciclo di pubblicazione: l invariato non si ripubblica (Q-SYNC) e il
+    # cambiato si; vince l ultimo stato; un errore non segna pubblicato; la
+    # tolleranza e del server; in modalita locale nulla.
+    riga("pubblica-invariato-ripubblicato", "client, passo 3", "--",
+         [(CPU, "async function eseguiPubblicazione(stato) {",
+           "if (giaPubblicata(firma)) return esitoPubblicazione(P.INVARIATA);", "void giaPubblicata;")],
+         "vitest", [T_CPU], ["il contenuto invariato non si ripubblica, e non legge nemmeno lo stato"]),
+    riga("pubblica-mai-ripubblicato", "client, passo 3", "M2",
+         [(CPU, "async function eseguiPubblicazione(stato) {", "if (giaPubblicata(firma)) return",
+           "if (ultimaFirma !== null) return")],
+         "vitest", [T_CPU], ["un contenuto cambiato si ripubblica"]),
+    riga("pubblica-vince-il-primo", "client, passo 3", "M2",
+         [(CPU, "function pubblica(stato) {", "pubblicazioneInAttesa.stato = stato;", "void stato;")],
+         "vitest", [T_CPU], ["mentre una aspetta vince l ultimo stato chiesto"]),
+    riga("pubblica-errore-segna-pubblicato", "client, passo 3", "M2",
+         [(CPU, "async function eseguiPubblicazione(stato) {",
+           "      await rete.pubblicaCalendario({ device_id: id, ...calendario });",
+           "      ricordaPubblicata(firma);\n      await rete.pubblicaCalendario({ device_id: id, ...calendario });")],
+         "vitest", [T_CPU], ["un errore non riprova da solo: il record lo dice, e la richiesta dopo riprova"]),
+    riga("pubblica-tolleranza-fissa", "client, passo 3", "--",
+         [(CPU, "async function eseguiPubblicazione(stato) {", "tolleranzaMin: statoServer?.tolleranza_min,",
+           "tolleranzaMin: 20,")],
+         "vitest", [T_CPU], ["la tolleranza e quella del server, letta nello stesso ciclo"]),
+    riga("pubblica-modalita-locale", "client, passo 3", "--",
+         [(CPU, "function pubblica(stato) {", "if (!inModalitaApi()) return Promise.resolve(null);",
+           "void inModalitaApi;")],
+         "vitest", [T_CPU], ["nessuna chiamata a /api/push e nessuna iscrizione"]),
+    # Le sedi della pubblicazione: l effetto sullo stato applicato (ratifica
+    # A) e il rientro in primo piano; a toggle spento nulla.
+    riga("effetto-non-pubblica", "client, passo 3", "M2",
+         [(ACX, "// Ratification A of 2026-10-01 (client of the reminder channel, step 3):",
+           "    actions.pubblicaCanale(state);", "    void state;")],
+         "vitest", [T_ACR],
+         ["all apertura a freddo il calendario si pubblica, senza alcun evento",
+          "un farmaco aggiunto ripubblica il calendario con la sua dose, senza alcun evento"]),
+    riga("rientro-non-pubblica", "client, passo 3", "--",
+         [(ACX, "const onForegroundEvent = () => {", "        actions.pubblicaCanale(stateRef.current);",
+           "        void stateRef;")],
+         "vitest", [T_ACX], ["visibilitychange pubblica il calendario, sullo stato di adesso"]),
+    riga("pubblica-senza-toggle", "client, passo 3", "--",
+         [(ACT, "function pubblicaCanale(stato) {", "stato.impostazioni?.notifiche_attive !== 1", "false")],
+         "vitest", [T_ACAN], ["a toggle spento o app non pronta nessuna pubblicazione"]),
+    # Il battito (passo 4; condizione della 9, soglia della 33 B): mai un OK
+    # vecchio. La soglia nei due versi; l eta cresce col tempo del telefono, il
+    # maggiore dei due orologi; un valore che non si legge non e un OK (M2).
+    riga("battito-soglia-larga", "client, passo 4", "M2",
+         [(STC, "export const SOGLIA_BATTITO_MS", "5 * 60_000", "60 * 60_000")],
+         "vitest", [T_STC], ["oltre la soglia: non verificati, dalle l ora dell ultima passata"]),
+    riga("battito-soglia-stretta", "client, passo 4", "--",
+         [(STC, "export const SOGLIA_BATTITO_MS", "5 * 60_000", "3 * 60_000")],
+         "vitest", [T_STC], ["cinque minuti meno un secondo di eta: attivi"]),
+    riga("battito-senza-trascorso", "client, passo 4", "M2",
+         [(STC, "export function valutaCanale(", "const eta = battito.eta_ms + trascorso(lettura, adesso);",
+           "const eta = battito.eta_ms;")],
+         "vitest", [T_STC],
+         ["oltre la soglia: non verificati, dalle l ora dell ultima passata",
+          "l eta cresce col tempo passato sul telefono dopo la lettura"]),
+    riga("battito-solo-monotono", "client, passo 4", "M2",
+         [(STC, "export function trascorso(",
+           "[adesso?.mono - lettura?.lettoMono, adesso?.ms - lettura?.lettoMs]", "[adesso?.mono - lettura?.lettoMono]")],
+         "vitest", [T_STC], ["un salto avanti della parete lo invecchia"]),
+    riga("battito-solo-parete", "client, passo 4", "M2",
+         [(STC, "export function trascorso(",
+           "[adesso?.mono - lettura?.lettoMono, adesso?.ms - lettura?.lettoMs]", "[adesso?.ms - lettura?.lettoMs]")],
+         "vitest", [T_STC], ["un salto indietro della parete non ringiovanisce il battito"]),
+    riga("battito-illeggibile-ok", "client, passo 4", "M2",
+         [(STC, "export function valutaCanale(", "if (!(eta <= SOGLIA_BATTITO_MS))", "if (eta > SOGLIA_BATTITO_MS)")],
+         "vitest", [T_STC], ["orologi che non si leggono non danno un OK"]),
+    # Non attivi quando sappiamo che i promemoria non arrivano (Roberto,
+    # 2026-10-01): ciascun motivo, e la parola che lo dice.
+    riga("stato-spento-ignorato", "client, passo 4", "M2",
+         [(STC, "export function valutaCanale(",
+           "if (risposta.canale?.attivo !== true) return esito(E.NON_ATTIVI, P.CANALE_SPENTO);", "void 0;")],
+         "vitest", [T_STC],
+         ["canale spento sul server", "cio che sappiamo vince su cio che non sappiamo: canale spento e battito vecchio"]),
+    riga("stato-mai-partita-ignorata", "client, passo 4", "M2",
+         [(STC, "export function valutaCanale(",
+           "if (battito === null) return esito(E.NON_ATTIVI, P.PASSATA_MAI_PARTITA);",
+           "if (battito === null) return esito(E.ATTIVI);")],
+         "vitest", [T_STC], ["passata mai partita"]),
+    riga("stato-esito-ignorato", "client, passo 4", "M2",
+         [(STC, "export function valutaCanale(",
+           "if (battito.esito !== 'ok') return esito(E.NON_ATTIVI, P.ESITO_PASSATA);", "void 0;")],
+         "vitest", [T_STC], ["ultima passata con esito non ok"]),
+    riga("stato-iscrizione-ignorata", "client, passo 4", "M2",
+         [(STC, "export function valutaCanale(", "if (!iscritto) return esito(E.NON_ATTIVI, P.NON_ISCRITTO);",
+           "void iscritto;")],
+         "vitest", [T_STC], ["questo telefono non iscritto: assente, spento, o senza id"]),
+    riga("stato-noto-come-dubbio", "client, passo 4", "--",
+         [(STC, "export function valutaCanale(", "return esito(E.NON_ATTIVI, P.CANALE_SPENTO);",
+           "return esito(E.NON_VERIFICATI, P.CANALE_SPENTO);")],
+         "vitest", [T_STC], ["canale spento sul server"]),
+    # Non aggiornati (aggiunta di Roberto al passo 4), nei due versi.
+    riga("stato-pubblicazione-ignorata", "client, passo 4", "M2",
+         [(STC, "export function valutaCanale(", "if (pubblicazione?.esito === 'non_pubblicata') {", "if (false) {")],
+         "vitest", [T_STC], ["una pubblicazione fallita accende, con l ora dell ultima riuscita"]),
+    riga("stato-pubblicazione-perpetua", "client, passo 4", "--",
+         [(STC, "export function valutaCanale(", "if (pubblicazione?.esito === 'non_pubblicata') {",
+           "if (pubblicazione != null) {")],
+         "vitest", [T_STC], ["una pubblicazione riuscita, o invariata, spegne"]),
+    # Le parole: ciascuna nei due versi; un 201 e accettato, mai consegnato
+    # (M3 sul registro del canale, decisione 2).
+    riga("testo-non-attivi-sfumato", "client, passo 4", "--",
+         [(TES, "export function testoStatoCanale(",
+           "if (esito === 'non_attivi') return `${CANALE_TITOLO} non attivi.`;",
+           "if (esito === 'non_attivi') return `${CANALE_TITOLO} non verificati.`;")],
+         "vitest", [T_TES], ["non attivi: lo dice in chiaro, senza ora e senza dubbio"]),
+    riga("testo-non-verificati-assertivo", "client, passo 4", "--",
+         [(TES, "export function testoStatoCanale(", "      : `${CANALE_TITOLO} non verificati.`;",
+           "      : `${CANALE_TITOLO} non attivi.`;")],
+         "vitest", [T_TES], ["non verificati: solo quando non sappiamo, con l ora se la sappiamo"]),
+    riga("testo-non-aggiornati-confuso", "client, passo 4", "--",
+         [(TES, "export function testoStatoCanale(", "non aggiornati dalle", "non verificati dalle")],
+         "vitest", [T_TES], ["non aggiornati: il server tiene il calendario di prima"]),
+    riga("testo-consegnato", "client, passo 4", "M3",
+         [(TES, "const STATI_INVIO = Object.freeze({", "accettato: 'accettato',", "accettato: 'consegnato',")],
+         "vitest", [T_TES, T_IMP],
+         ["un 201 e accettato, mai consegnato", "un 201 si legge accettato, mai consegnato"]),
+    # La riga di Oggi: solo quando lo stato non e OK, nei due versi; il tocco
+    # iscrive dentro il gesto (ratifica A).
+    riga("riga-ok-mostrata", "client, passo 4", "--",
+         [(TES, "export function testoRigaCanale(",
+           "if (valutazione == null || valutazione.esito === 'attivi') return null;",
+           "if (valutazione == null) return null;")],
+         "vitest", [T_RIGA], ["attivi: nessuna riga"]),
+    riga("riga-taciuta", "client, passo 4", "M2",
+         [(RIGA, "export default function RigaCanale() {", "  if (testo === null) return null;", "  return null;")],
+         "vitest", [T_RIGA],
+         ["non attivi: la riga lo dice in chiaro", "non verificati: battito vecchio",
+          "non aggiornati: l ultima pubblicazione non e arrivata"]),
+    riga("riga-tocco-non-nel-gesto", "client, passo 4", "--",
+         [(RIGA, "export default function RigaCanale() {",
+           "        void verificaCanale({ services, actions, valutazione });",
+           "        void Promise.resolve().then(() => verificaCanale({ services, actions, valutazione }));")],
+         "vitest", [T_RIGA],
+         ["telefono non iscritto: subscribe e il primo atto del tocco, poi la conferma e la rilettura"]),
+    # Le letture dello stato: orologi prima della richiesta (mai un OK
+    # vecchio), in coda dopo il rinnovo, una alla volta; all ingresso delle
+    # viste, al rientro, dopo una pubblicazione col PUT; mai al tick (Q-SYNC);
+    # a toggle spento nessuna.
+    riga("lettura-orologi-dopo", "client, passo 4", "M2",
+         [(CPU, "function leggiStato() {",
+           "      const lettoMono = orologi.mono();\n      const lettoMs = orologi.ms();\n      try {\n"
+           "        const risposta = await rete.leggiStato();\n",
+           "      let lettoMono;\n      let lettoMs;\n      try {\n"
+           "        const risposta = await rete.leggiStato();\n"
+           "        lettoMono = orologi.mono();\n        lettoMs = orologi.ms();\n")],
+         "vitest", [T_CPU], ["i due orologi si leggono prima che la richiesta parta"]),
+    riga("lettura-fuori-coda", "client, passo 4", "--",
+         [(CPU, "function leggiStato() {", "    attesa.turno = inCoda(async () => {",
+           "    attesa.turno = Promise.resolve().then(async () => {")],
+         "vitest", [T_CPU], ["una lettura chiesta dopo un rinnovo lo vede: viene dopo il PUT"]),
+    riga("lettura-doppia", "client, passo 4", "--",
+         [(CPU, "function leggiStato() {", "if (letturaInAttesa !== null) return letturaInAttesa.turno;",
+           "void letturaInAttesa;")],
+         "vitest", [T_CPU], ["due richieste mentre una aspetta: una lettura"]),
+    riga("stato-non-riletto-al-rientro", "client, passo 4", "--",
+         [(ACX, "const onForegroundEvent = () => {", "        actions.leggiStatoCanale();", "        void actions;")],
+         "vitest", [T_ACX], ["visibilitychange rilegge lo stato del canale"]),
+    riga("stato-letto-al-tick", "client, passo 4", "--",
+         [(ACX, "const tick = () => {", "      actions.drainOutbox();\n    };",
+           "      actions.drainOutbox();\n      actions.leggiStatoCanale();\n    };")],
+         "vitest", [T_ACX], ["il tick non rilegge lo stato del canale: mai a intervalli (Q-SYNC)"]),
+    riga("stato-non-riletto-dopo-pubblicazione", "client, passo 4", "--",
+         [(ACT, "function pubblicaCanale(stato) {", "        void leggiStatoCanale({ voluto: true });", "        void 0;")],
+         "vitest", [T_ACAN],
+         ["dopo una pubblicazione che ha fatto il PUT lo stato si rilegge; dopo una invariata no"]),
+    riga("stato-riletto-dopo-invariata", "client, passo 4", "--",
+         [(ACT, "function pubblicaCanale(stato) {",
+           "if (esito && (esito.esito === 'pubblicata' || esito.motivo === 'pubblicazione')) {", "if (esito) {")],
+         "vitest", [T_ACAN],
+         ["dopo una pubblicazione che ha fatto il PUT lo stato si rilegge; dopo una invariata no"]),
+    riga("stato-letto-a-toggle-spento", "client, passo 4", "--",
+         [(ACT, "async function leggiStatoCanale(", "    if (!vuole) return null;", "    void vuole;")],
+         "vitest", [T_ACAN], ["a toggle spento nessuna lettura"]),
+    riga("sezione-non-riletta", "client, passo 4", "--",
+         [(IMP, "function SezioneCanale() {", "    actions?.leggiStatoCanale?.();", "    void actions;")],
+         "vitest", [T_IMP], ["all ingresso rilegge lo stato; Verifica ora rinnova e rilegge"]),
+    riga("oggi-non-riletta", "client, passo 4", "--",
+         [(OGGI, "export default function OggiView() {", "    actions?.leggiStatoCanale?.();", "    void actions;")],
+         "vitest", [T_OGGI], ["all ingresso nella vista rilegge lo stato del canale, una volta"]),
+    # D4, parte client (passo 5): la copy del toggle dice il vero, l avviso
+    # all ora della dose e ad app aperta; "poco prima" non lo era.
+    riga("copia-avviso-poco-prima", "client, passo 5", "--",
+         [(IMP, "{showActiveHint && (", "Avviso all'ora di ogni dose, con l'app aperta.",
+           "Avviso poco prima di ogni dose.")],
+         "vitest", [T_IMPT], ["standalone + granted + enabled=true \u2192 toggle on, click invoca disable"]),
 ]
 
 # L'autoprova: righe il cui esito e FISSATO, e che il banco pretende.

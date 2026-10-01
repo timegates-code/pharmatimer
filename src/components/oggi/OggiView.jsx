@@ -108,6 +108,7 @@ import { selectFarmaciAttivi, selectProssimoGiornoConDosi, selectProssimaDoseFuo
 import EmptyStateZeroFarmaci from './EmptyStateZeroFarmaci.jsx';
 import PreviewBlock from './PreviewBlock.jsx';
 import IndicatoreCoda from '../shared/IndicatoreCoda.jsx'; // SENTINEL_QMETOPA_IMPORT
+import RigaCanale from '../shared/RigaCanale.jsx';
 import { ORARIO_NON_RISOLVIBILE_ETICHETTA } from '../../utils/testi.js';
 
 const IS_DEV = import.meta.env.DEV;
@@ -191,6 +192,13 @@ export default function OggiView() {
   const { state, actions } = useAppContext();
   const { tokens: t, mode } = useTheme();
   const now = useNow();
+
+  // Client of the reminder channel, step 4: the state of the channel is read
+  // again at the entry of the view, never at intervals (Q-SYNC).
+  useEffect(() => {
+    actions?.leggiStatoCanale?.();
+    // deps volutamente incomplete -- react-hooks non e installato in eslint.config.js
+  }, []);
 
   // --- 7c-1 modal open-state (+ 7d-1 triggerEl for a11y focus restore) ---
   const [altroModal, setAltroModal] = useState(CLOSED);
@@ -544,6 +552,7 @@ export default function OggiView() {
             />
           </div>
           <IndicatoreCoda />
+          <RigaCanale />
           </div>
 
           {/* DEV SLIDER — guarded here, not inside the component (AMB-7b.J) */}

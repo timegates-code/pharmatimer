@@ -124,7 +124,12 @@ describe('notifications service', () => {
     expect(MockNotification).toHaveBeenCalledWith('second', { body: 'b2', tag: 'k1' });
   });
 
-  it('showDoseNotification builds dose-tag and uses formatRelazionePastoCopy body', () => {
+  // Decisione 32 A (2026-10-01): il testo dei timer di pagina e quello del
+  // push di dose (domain/promemoria.js). I ROSSI dei due attesi di prima,
+  // "30 min prima colazione" e "Promemoria farmaco", sono stati VISTI e
+  // NOMINATI prima di toccarli: ora il corpo porta l'ora dell'istante, la
+  // relazione col pasto se c'e, e l'invito ad aprire l'app.
+  it('showDoseNotification builds dose-tag and uses the text of the push, with the meal relation', () => {
     const svc = createNotificationsService();
     const t0 = Date.now();
     const fireAt = t0 + 30 * 60_000;
@@ -149,12 +154,12 @@ describe('notifications service', () => {
     vi.advanceTimersByTime(30 * 60_000);
     expect(MockNotification).toHaveBeenCalledTimes(1);
     expect(MockNotification).toHaveBeenCalledWith('Pantorc 40mg', {
-      body: '30 min prima colazione',
+      body: `Dose delle ${hh}:${mm}, 30 min prima colazione. Apri l'app per controllare.`,
       tag: `dose-7-2-${dateStr}`,
     });
   });
 
-  it('showDoseNotification with indifferente+null farmaco uses fallback "Promemoria farmaco" body', () => {
+  it('showDoseNotification with indifferente+null farmaco: the text of the push without meal relation', () => {
     const svc = createNotificationsService();
     const t0 = Date.now();
     const fireAt = t0 + 30 * 60_000;
@@ -177,7 +182,7 @@ describe('notifications service', () => {
     svc.showDoseNotification(entry, farmaco);
     vi.advanceTimersByTime(30 * 60_000);
     expect(MockNotification).toHaveBeenCalledWith('Levotuss 10ml', {
-      body: 'Promemoria farmaco',
+      body: `Dose delle ${hh}:${mm}. Apri l'app per controllare.`,
       tag: `dose-11-1-${dateStr}`,
     });
   });
@@ -484,5 +489,68 @@ describe('rescheduleAllNotifications -- finestra sulla data EFFETTIVA', () => {
     const service = makeServiceMock();
     rescheduleAllNotifications(state, service);
     expect(service.showDoseNotification).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ============================================================
+// Il riarmo non fa ripartire un avviso gia mostrato.
+//
+// Decisione 10 A e condizione di Roberto del 2026-10-01: AppContext riarma
+// i timer di pagina a ogni cambio applicato del piano, quindi molto piu
+// spesso di prima. Un avviso gia mostrato non riparte per lo stesso istante,
+// nemmeno quando l orologio di parete legge qualche ms prima dell istante,
+// cioe il caso che `delay <= 0` da solo non copre. Nei due versi: i riarmi
+// prima dello scatto non lo impediscono, e una dose spostata a un istante
+// nuovo si arma per il nuovo. Le righe nel banco: timer-riarmo-riparte,
+// timer-riarmo-bloccato, timer-riarmo-per-dose.
+// ============================================================
+describe('il riarmo non fa ripartire un avviso gia mostrato', () => {
+  beforeEach(() => {
+    vi.setSystemTime(new Date('2026-04-27T08:00:00'));
+  });
+
+  const farmaci = [{ id: 7, nome: 'Eutirox 50', relazione_pasto: 'prima' }];
+  const dose = (oraPrevista) => ({
+    dateStr: '2026-04-27',
+    stato: 'prevista',
+    orario: { farmaco_id: 7, dose_numero: 1 },
+    ora_prevista: oraPrevista,
+    ora_ricalcolata: null,
+  });
+
+  it('dopo lo scatto un riarmo non lo fa ripartire, nemmeno con l orologio un poco indietro', () => {
+    const svc = createNotificationsService();
+    const stato = makeMockState({ plan: [dose('08:01')], farmaci });
+    rescheduleAllNotifications(stato, svc);
+    vi.advanceTimersByTime(60_000);
+    expect(MockNotification).toHaveBeenCalledTimes(1);
+    // L orologio legge mezzo secondo prima dell istante dello scatto.
+    vi.setSystemTime(new Date('2026-04-27T08:00:59.500'));
+    rescheduleAllNotifications(stato, svc);
+    rescheduleAllNotifications(stato, svc);
+    vi.advanceTimersByTime(120_000);
+    expect(MockNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it('i riarmi prima dello scatto non lo impediscono: un solo avviso, all istante', () => {
+    const svc = createNotificationsService();
+    const stato = makeMockState({ plan: [dose('08:01')], farmaci });
+    for (let i = 0; i < 3; i += 1) {
+      rescheduleAllNotifications(stato, svc);
+      vi.advanceTimersByTime(10_000);
+    }
+    expect(MockNotification).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(30_000);
+    expect(MockNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it('una dose spostata a un istante nuovo si arma per il nuovo', () => {
+    const svc = createNotificationsService();
+    rescheduleAllNotifications(makeMockState({ plan: [dose('08:01')], farmaci }), svc);
+    vi.advanceTimersByTime(60_000);
+    expect(MockNotification).toHaveBeenCalledTimes(1);
+    rescheduleAllNotifications(makeMockState({ plan: [dose('08:03')], farmaci }), svc);
+    vi.advanceTimersByTime(120_000);
+    expect(MockNotification).toHaveBeenCalledTimes(2);
   });
 });

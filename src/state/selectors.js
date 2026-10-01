@@ -49,6 +49,7 @@ import {
   isExtendedInterval,
   computeExtendedOccurrencesInWindow,
 } from '../domain/extendedFrequency.js';
+import { valutaCanale } from '../domain/statoCanale.js';
 
 /** Convert 'HH:MM' to minutes-from-midnight. */
 function hhmmToMinutes(hhmm) {
@@ -764,5 +765,26 @@ export function selectLogEntriesFiltered(logsArray, filters = {}) {
     const kb = b.ora_effettiva ?? b.ora_prevista ?? "";
     if (ka !== kb) return ka < kb ? 1 : -1;
     return (b.dose_numero ?? 0) - (a.dose_numero ?? 0);
+  });
+}
+
+/**
+ * The state of the reminder channel ad app chiusa for the views (client of
+ * branch A, step 4; domain/statoCanale.js). null when the channel is not in
+ * play: app not ready, toggle off, local mode (where no record is ever
+ * written), or nothing known yet.
+ * @param {import('./reducer.js').AppState} state
+ * @param {{mono: number, ms: number}} adesso the phone's two clocks, now
+ */
+export function selectValutazioneCanale(state, adesso) {
+  if (state?.status !== 'ready') return null;
+  if (state.impostazioni?.notifiche_attive !== 1) return null;
+  const canale = state.canale;
+  if (canale == null) return null;
+  return valutaCanale({
+    lettura: canale.stato ?? null,
+    letturaFallita: canale.statoErrore != null,
+    adesso,
+    pubblicazione: canale.pubblicazione ?? null,
   });
 }

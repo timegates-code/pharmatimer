@@ -120,8 +120,10 @@ eseguire dal Terminale.
 Resta vero che `make check` non puo essere verde PRIMA di un commit: il blocco
 `albero` misura `TREE` da git vivo e lo albero e sporco per costruzione finche
 il commit non esiste. Prima del commit si pretendono verdi tutti gli altri
-blocchi, e rosso il solo `albero` su `TREE`; dopo commit e push, il gate e verde
-per intero.
+blocchi, e rosso il solo `albero` su `TREE`. Dopo commit e push il gate NON si
+rilancia: lo hook di pre-push ha appena eseguito `make check-prepush` sullo
+stesso commit. Si leggono con git `TREE` e `AHEAD` (`git status --porcelain`
+vuoto, `git rev-list --count @{u}..HEAD` a zero), poi l'esito della CI.
 
 ---
 
@@ -222,8 +224,10 @@ vincolo:
 1. **`make check` verde.** Se non lo e, la sessione non chiude: si dice cosa e
    rosso e perche.
 2. **`git commit` e `git push`.** Comandi git normali. Non esiste piu un
-   involucro con pre-gate: latomicita la garantisce chi compone il commit, e
-   `make check` misura `TREE` e `AHEAD` da git vivo prima e dopo.
+   involucro con pre-gate: latomicita la garantisce chi compone il commit. Dopo
+   il push `TREE` e `AHEAD` si leggono con git e si legge l'esito della CI,
+   senza rilanciare il gate, che lo hook di pre-push ha appena eseguito
+   (sezione 4).
 3. **`STATO_CORRENTE.md` riscritto**, corto: cosa ha fatto questa sessione, cosa
    resta in coda, cosa spetta a Roberto decidere. E tracciato, quindi entra nel
    commit come qualunque altro file.

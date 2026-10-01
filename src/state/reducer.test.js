@@ -81,7 +81,34 @@ describe('reducer — stato iniziale', () => {
       // Q-ZAGARA-6=A: `null` dice NON ANCORA MISURATO. `false` direbbe
       // collegamento PRESENTE, che e una asserzione mai misurata: M3.
       senzaCollegamento: null,
+      // Client del canale, passo 2. Il ROSSO di questo pin e stato VISTO e
+      // NOMINATO prima di toccare questa riga: un solo campo ricevuto in
+      // piu, `canale: null`. `null` dice NON ANCORA MISURATO, e in
+      // modalita locale resta tale perche il canale non esiste.
+      canale: null,
     });
+  });
+});
+
+describe('reducer — canale dei promemoria ad app chiusa', () => {
+  it('CANALE_STATO scrive la lettura e azzera l errore; CANALE_STATO_ERRORE tiene la lettura', () => {
+    const lettura = { risposta: { x: 1 }, lettoMono: 1, lettoMs: 2, deviceId: 'd' };
+    const conErrore = reducer(initialState, { type: 'CANALE_STATO_ERRORE', payload: 'prima' });
+    const letto = reducer(conErrore, { type: 'CANALE_STATO', payload: lettura });
+    expect(letto.canale).toEqual({ statoErrore: null, stato: lettura });
+    const fallito = reducer(letto, { type: 'CANALE_STATO_ERRORE', payload: 'dopo' });
+    expect(fallito.canale).toEqual({ statoErrore: 'dopo', stato: lettura });
+  });
+
+  it('CANALE_ISCRIZIONE scrive il record della iscrizione e lascia il resto', () => {
+    const record = { esito: 'non_attiva', motivo: 'chiave', dettaglio: 'chiave VAPID assente' };
+    const next = reducer(initialState, { type: 'CANALE_ISCRIZIONE', payload: record });
+    expect(next.canale).toEqual({ iscrizione: record });
+    const dopo = reducer({ ...next, canale: { ...next.canale, altro: 1 } }, {
+      type: 'CANALE_ISCRIZIONE',
+      payload: { esito: 'attiva', motivo: null, dettaglio: null },
+    });
+    expect(dopo.canale).toEqual({ altro: 1, iscrizione: { esito: 'attiva', motivo: null, dettaglio: null } });
   });
 });
 

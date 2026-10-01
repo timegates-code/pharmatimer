@@ -5,6 +5,15 @@ import { db } from '../../data/db.js';
 import { useTheme } from '../../hooks/useTheme.js';
 import { useNotifications } from '../../hooks/useNotifications.js';
 import ConfirmModal from '../shared/ConfirmModal.jsx';
+import { adessoDelTelefono, verificaCanale } from '../shared/RigaCanale.jsx';
+import { selectValutazioneCanale } from '../../state/selectors.js';
+import {
+  CANALE_TITOLO,
+  quandoCanale,
+  testoEsitoInvio,
+  testoPercheCanale,
+  testoStatoCanale,
+} from '../../utils/testi.js';
 
 // ============================================================
 // ImpostazioniTab — sezioni Config utente.
@@ -170,7 +179,7 @@ function SezioneTema() {
 //                                   + hint "Verrà chiesto il permesso"
 //   true × 'granted' × enabled=0    toggle off, click → requestEnable
 //   true × 'granted' × enabled=1    toggle on,  click → disable
-//                                   + hint "Avviso poco prima..."
+//                                   + hint "Avviso all'ora di ogni dose..."
 //   true × 'denied'                 toggle disabilitato + banner
 //                                   "Permesso negato — sistema"
 //
@@ -251,12 +260,149 @@ function SezioneNotifiche() {
           Verrà chiesto il permesso di sistema.
         </p>
       )}
+      {/* D4, client side: the page timers fire AT the dose's instant and only
+          while the app is open. "Poco prima" was not true; what happens with
+          the app closed is told by SezioneCanale, right below. */}
       {showActiveHint && (
         <p className="text-sm mt-1" style={{ color: t.textPrimary }}>
-          Avviso poco prima di ogni dose.
+          Avviso all'ora di ogni dose, con l'app aperta.
         </p>
       )}
     </fieldset>
+  );
+}
+
+// ============================================================
+// SezioneCanale -- the whole state of the reminder channel ad app chiusa
+// (client of branch A, step 4; STATO_CORRENTE.md, "Il commit B del client").
+// ============================================================
+//
+// In API mode with the toggle on; nothing in local mode, where the channel
+// does not exist (state.canale stays null). The head line and its reason
+// come from testi.js on the evaluation of domain/statoCanale.js: "non attivi"
+// when the reminders will not arrive, "non verificati" when it is not known,
+// "non aggiornati" when the server keeps the calendar it had. Below, what
+// the server says: planner, this phone, the published calendar, the last
+// outcomes. A 201 reads "accettato", never "consegnato" (decision 2).
+// "Verifica ora" does what the line of Oggi does: renews, inside the gesture
+// when this phone is not subscribed, and reads the state again.
+
+const INVII_MOSTRATI = 10;
+const AVVISI_MOSTRATI = 5;
+
+function SezioneCanale() {
+  const { state, actions, services } = useAppContext();
+  const { tokens: t } = useTheme();
+
+  // The state is read again at the entry of the section, never at intervals.
+  useEffect(() => {
+    actions?.leggiStatoCanale?.();
+    // deps volutamente incomplete -- react-hooks non e installato in eslint.config.js
+  }, []);
+
+  const canale = state?.canale;
+  if (state?.impostazioni?.notifiche_attive !== 1 || canale == null) return null;
+
+  const valutazione = selectValutazioneCanale(state, adessoDelTelefono());
+  const r = canale.stato?.risposta ?? null;
+  const deviceId = canale.stato?.deviceId ?? null;
+  const questo = r?.iscrizioni?.find((i) => i.device_id === deviceId) ?? null;
+  const nomeFarmaco = (id) => state.farmaci?.find((f) => f.id === id)?.nome ?? `farmaco ${id}`;
+  const altroTelefono = (riga) => (riga.device_id && riga.device_id !== deviceId ? ' (altro telefono)' : '');
+  const perche = testoPercheCanale(valutazione, {
+    risposta: r ?? {},
+    iscrizione: canale.iscrizione,
+    pubblicazione: canale.pubblicazione,
+    errore: canale.statoErrore,
+  });
+
+  return (
+    <section
+      data-testid="sezione-canale"
+      className="py-4 mt-4 border-t pt-4"
+      style={{ borderTopColor: t.headerBorder }}
+    >
+      <h3 className="text-sm font-medium mb-2">{CANALE_TITOLO}</h3>
+      {valutazione !== null && (
+        <p data-testid="sezione-canale-stato" className="text-sm" style={{ color: t.textPrimary }}>
+          {testoStatoCanale(valutazione)}
+        </p>
+      )}
+      {perche !== null && (
+        <p data-testid="sezione-canale-perche" className="text-sm mt-1" style={{ color: t.textPrimary }}>
+          {perche}
+        </p>
+      )}
+      {r !== null && (
+        <dl className="text-sm mt-2 space-y-1" style={{ color: t.textPrimary }}>
+          <div>
+            <dt className="inline font-medium">Pianificatore: </dt>
+            <dd className="inline">
+              {r.pianificatore
+                ? `ultima passata ${quandoCanale(r.pianificatore.ultima_passata_ms)}, esito ${r.pianificatore.esito}.`
+                : 'mai partito.'}
+            </dd>
+          </div>
+          <div>
+            <dt className="inline font-medium">Questo telefono: </dt>
+            <dd className="inline">
+              {questo?.attiva === true
+                ? `iscritto, confermato ${quandoCanale(questo.confermata_ms)}.`
+                : 'non iscritto.'}
+            </dd>
+          </div>
+          <div>
+            <dt className="inline font-medium">Calendario: </dt>
+            <dd className="inline">
+              {r.pubblicazione
+                ? `pubblicato ${quandoCanale(r.pubblicazione.pubblicata_ms)}, ${r.pubblicazione.voci} dosi, `
+                  + `fino a ${quandoCanale(r.pubblicazione.orizzonte_fino_ms)}; `
+                  + `avviso di fine ${quandoCanale(r.pubblicazione.avviso_fine_ms)}.`
+                : 'mai pubblicato.'}
+            </dd>
+          </div>
+        </dl>
+      )}
+      {r !== null && (
+        <div className="mt-2">
+          <p className="text-sm font-medium">Ultimi invii</p>
+          {(r.ultimi_invii ?? []).length === 0 ? (
+            <p className="text-sm" style={{ color: t.textSecondary }}>Nessuno.</p>
+          ) : (
+            <ul data-testid="sezione-canale-invii" className="text-sm">
+              {r.ultimi_invii.slice(0, INVII_MOSTRATI).map((i) => (
+                <li key={`${i.farmaco_id}-${i.data}-${i.dose_numero}-${i.device_id}-${i.deciso_ms}`}>
+                  {`${quandoCanale(i.istante_ms)}, ${nomeFarmaco(i.farmaco_id)}, dose ${i.dose_numero}: `
+                    + `${testoEsitoInvio(i)}${altroTelefono(i)}`}
+                </li>
+              ))}
+            </ul>
+          )}
+          {(r.ultimi_avvisi_fine ?? []).length > 0 && (
+            <>
+              <p className="text-sm font-medium mt-2">Avvisi di fine orizzonte</p>
+              <ul className="text-sm">
+                {r.ultimi_avvisi_fine.slice(0, AVVISI_MOSTRATI).map((a) => (
+                  <li key={`${a.avviso_fine_ms}-${a.device_id}-${a.deciso_ms}`}>
+                    {`${quandoCanale(a.avviso_fine_ms)}: ${testoEsitoInvio(a)}${altroTelefono(a)}`}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={() => {
+          void verificaCanale({ services, actions, valutazione });
+        }}
+        className="mt-3 px-4 py-2 rounded border text-sm"
+        style={{ background: t.modalBg, color: t.textPrimary, borderColor: t.tapBd }}
+      >
+        Verifica ora
+      </button>
+    </section>
   );
 }
 
@@ -517,6 +663,7 @@ export default function ImpostazioniTab(props) {
       <SezioneNome dirty={dirty} setDirty={setDirty} />
       <SezioneTema />
       <SezioneNotifiche />
+      <SezioneCanale />
       <SezioneAiuto />
       <SezioneDati />
       {import.meta.env.DEV && <SezioneAvanzate />}

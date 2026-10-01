@@ -16,6 +16,7 @@ import {
   notifications as notificationsService,
   rescheduleAllNotifications,
 } from '../services/notifications.js';
+import { canalePush as canalePushService } from '../services/canalePush.js';
 
 // ============================================================
 // Global state provider. Owns the reducer, wires createActions
@@ -92,8 +93,11 @@ export function AppProvider({ children, initialStateProp }) {
   // and the AppContext.test.jsx stub Provider both share state —
   // tests that need isolation pass a fresh `createNotificationsService()`
   // via the test harness instead.
+  // The reminder channel ad app chiusa (client of branch A, step 2) joins
+  // the bag the same way: one module-scoped instance, so the toggle's hook
+  // and the thunks share its preparation.
   const services = useMemo(
-    () => ({ notifications: notificationsService }),
+    () => ({ notifications: notificationsService, canale: canalePushService }),
     []
   );
 
@@ -186,6 +190,18 @@ export function AppProvider({ children, initialStateProp }) {
       // Spec 14.2.2 -- trigger 2, on the existing visibilitychange/focus
       // handler.
       actions.drainOutbox();
+      // Client of the reminder channel, step 2: the renewal at every return
+      // to the foreground. visibilitychange also fires when the page goes
+      // hidden, and there is nothing to renew then. focus and
+      // visibilitychange arrive together: the service merges the two.
+      if (document.visibilityState !== 'hidden') {
+        actions.rinnovaCanale();
+        // Step 3: and the calendar, on the state as it is now. Unchanged
+        // content goes nowhere (Q-SYNC).
+        actions.pubblicaCanale(stateRef.current);
+        // Step 4: and its state, read again.
+        actions.leggiStatoCanale();
+      }
     };
     // SENTINEL_QOCT_ONLINE_LISTENER
     // Spec 14.2.3 -- trigger 3. A DEDICATED handler, NOT a reuse of
@@ -209,6 +225,34 @@ export function AppProvider({ children, initialStateProp }) {
       window.removeEventListener('online', onOnline);
     };
   }, [actions, services]);
+
+  // Ratification A of 2026-10-01 (client of the reminder channel, step 3):
+  // ONE seat on the state React has committed, for the page timers and for
+  // the calendar the phone publishes. The seats of maybeReschedule
+  // in actions.js read stateRef, which follows a dispatch one render later:
+  // measured, the one of init arms nothing at a cold opening and the one of
+  // addFarmaco re-arms the plan without the new farmaco. Here the page timers
+  // are re-armed on the plan as it is, when the app becomes ready and at
+  // every change of plan, farmaci, active profile or toggle. Idempotent
+  // (cancel-then-rebuild), and a re-arm never starts again a notification
+  // already shown (services/notifications.js). The old seats stay: harmless
+  // duplicates.
+  useEffect(() => {
+    if (state.status !== 'ready') return;
+    if (state.impostazioni?.notifiche_attive !== 1) return;
+    rescheduleAllNotifications(state, services.notifications);
+    // The calendar of the channel, from the same seat and the same state.
+    actions.pubblicaCanale(state);
+    // deps volutamente incomplete -- react-hooks non e installato in eslint.config.js
+  }, [
+    state.status,
+    state.plan,
+    state.farmaci,
+    state.profiloAttivo,
+    state.impostazioni?.notifiche_attive,
+    services,
+    actions,
+  ]);
 
   // Dev-only console handle. Namespaced under window.__pt.app to
   // coexist with devCheck.js helpers (window.__pt.db/repo/...).

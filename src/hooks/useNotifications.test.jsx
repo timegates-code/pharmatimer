@@ -17,13 +17,18 @@ function makeMockApp({
   notifiche_attive = 0,
   isSupported = true,
   requestPermissionResult = 'granted',
+  canale = undefined,
+  setSettingResult = undefined,
 } = {}) {
   const cancelAll = vi.fn();
   const requestPermission = vi.fn().mockResolvedValue(requestPermissionResult);
-  const setSetting = vi.fn().mockResolvedValue(undefined);
+  const setSetting = vi.fn().mockResolvedValue(setSettingResult);
+  const accendiCanale = vi.fn().mockResolvedValue(null);
+  const spegniCanale = vi.fn().mockResolvedValue(null);
+  const permesso = { valore: permission };
   const notifications = {
     isSupported: () => isSupported,
-    getPermission: () => permission,
+    getPermission: () => permesso.valore,
     requestPermission,
     cancelAll,
     scheduleNotification: vi.fn(),
@@ -31,12 +36,13 @@ function makeMockApp({
     showDoseNotification: vi.fn(),
     getPendingCount: () => 0,
   };
+  const services = canale === undefined ? { notifications } : { notifications, canale };
   useApp.mockReturnValue({
     state: { impostazioni: { notifiche_attive } },
-    services: { notifications },
-    actions: { setSetting },
+    services,
+    actions: { setSetting, accendiCanale, spegniCanale },
   });
-  return { cancelAll, requestPermission, setSetting, notifications };
+  return { cancelAll, requestPermission, setSetting, accendiCanale, spegniCanale, notifications, permesso };
 }
 
 let originalMatchMedia;
@@ -143,5 +149,136 @@ describe('useNotifications', () => {
     renderHook(() => useNotifications());
     expect(setSetting).toHaveBeenCalledWith('notifiche_attive', 0);
     expect(cancelAll).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ============================================================
+// Client of the reminder channel, step 2 (STATO_CORRENTE.md, "Il commit B
+// del client"). Ratification A of 2026-10-01: in API mode, with the
+// preparation complete, subscribe() is the FIRST act of the toggle's tap and
+// asks for the permission itself (S1). The service is a fake here; its own
+// rules are pinned in services/canalePush.test.js.
+// ============================================================
+
+function creaCanale({ esitoGesto = { ok: true, iscrizione: { endpoint: 'https://x' } }, prepara = true } = {}) {
+  return {
+    prepara: vi.fn().mockResolvedValue(null),
+    iscriviNelGesto: vi.fn(() => (prepara ? Promise.resolve(esitoGesto) : null)),
+  };
+}
+
+describe('useNotifications -- il canale dei promemoria ad app chiusa', () => {
+  it('all ingresso nella sezione il canale si prepara', () => {
+    setStandalone(true);
+    const canale = creaCanale();
+    makeMockApp({ permission: 'granted', notifiche_attive: 0, canale });
+    renderHook(() => useNotifications());
+    expect(canale.prepara).toHaveBeenCalledTimes(1);
+  });
+
+  it('subscribe e il primo atto del tocco: prima di ogni attesa, e senza requestPermission', async () => {
+    setStandalone(true);
+    const esitoGesto = { ok: true, iscrizione: { endpoint: 'https://x' } };
+    const canale = creaCanale({ esitoGesto });
+    const { requestPermission, setSetting, accendiCanale, permesso } = makeMockApp({
+      permission: 'default',
+      notifiche_attive: 0,
+      canale,
+    });
+    // The prompt that subscribe() opens is answered: granted.
+    canale.iscriviNelGesto.mockImplementation(() => {
+      permesso.valore = 'granted';
+      return Promise.resolve(esitoGesto);
+    });
+    const { result } = renderHook(() => useNotifications());
+    // No act() around the call: the assertion must see what happened BEFORE
+    // any microtask runs, which is what "first act of the gesture" means.
+    const promessa = result.current.requestEnable();
+    expect(canale.iscriviNelGesto).toHaveBeenCalledTimes(1);
+    expect(requestPermission).not.toHaveBeenCalled();
+    await act(async () => {
+      await promessa;
+    });
+    expect(setSetting).toHaveBeenCalledWith('notifiche_attive', 1);
+    expect(accendiCanale).toHaveBeenCalledWith(esitoGesto);
+  });
+
+  it('senza preparazione il tocco fa cio che faceva: permesso e timer di pagina, e lo stato dice perche', async () => {
+    setStandalone(true);
+    const canale = creaCanale({ prepara: false });
+    const { requestPermission, setSetting, accendiCanale } = makeMockApp({
+      permission: 'default',
+      notifiche_attive: 0,
+      canale,
+    });
+    const { result } = renderHook(() => useNotifications());
+    await act(async () => {
+      await result.current.requestEnable();
+    });
+    expect(requestPermission).toHaveBeenCalledTimes(1);
+    expect(setSetting).toHaveBeenCalledWith('notifiche_attive', 1);
+    expect(accendiCanale).toHaveBeenCalledWith(null);
+  });
+
+  it('permesso negato al prompt del tocco: niente toggle e niente canale', async () => {
+    setStandalone(true);
+    const canale = creaCanale({ esitoGesto: { ok: false, errore: new Error('negato') } });
+    const { setSetting, accendiCanale, permesso } = makeMockApp({
+      permission: 'default',
+      notifiche_attive: 0,
+      canale,
+    });
+    canale.iscriviNelGesto.mockImplementation(() => {
+      permesso.valore = 'denied';
+      return Promise.resolve({ ok: false, errore: new Error('negato') });
+    });
+    const { result } = renderHook(() => useNotifications());
+    await expect(result.current.requestEnable()).rejects.toThrow('permission_denied');
+    expect(setSetting).not.toHaveBeenCalled();
+    expect(accendiCanale).not.toHaveBeenCalled();
+  });
+
+  it('il toggle che non resta acceso porta via la subscription appena fatta', async () => {
+    setStandalone(true);
+    const canale = creaCanale();
+    const { accendiCanale, spegniCanale } = makeMockApp({
+      permission: 'granted',
+      notifiche_attive: 0,
+      canale,
+      setSettingResult: { ok: false },
+    });
+    const { result } = renderHook(() => useNotifications());
+    await act(async () => {
+      await result.current.requestEnable();
+    });
+    expect(spegniCanale).toHaveBeenCalledTimes(1);
+    expect(accendiCanale).not.toHaveBeenCalled();
+  });
+
+  it('toggle spento: anche il canale si spegne', async () => {
+    setStandalone(true);
+    const { setSetting, cancelAll, spegniCanale } = makeMockApp({
+      permission: 'granted',
+      notifiche_attive: 1,
+      canale: creaCanale(),
+    });
+    const { result } = renderHook(() => useNotifications());
+    await act(async () => {
+      await result.current.disable();
+    });
+    expect(setSetting).toHaveBeenCalledWith('notifiche_attive', 0);
+    expect(cancelAll).toHaveBeenCalledTimes(1);
+    expect(spegniCanale).toHaveBeenCalledTimes(1);
+  });
+
+  it('permesso revocato: anche il canale si spegne', () => {
+    setStandalone(true);
+    const { spegniCanale } = makeMockApp({
+      permission: 'denied',
+      notifiche_attive: 1,
+      canale: creaCanale(),
+    });
+    renderHook(() => useNotifications());
+    expect(spegniCanale).toHaveBeenCalledTimes(1);
   });
 });

@@ -673,24 +673,40 @@ def voce16():
 # ---------------------------------------------------------------- 17
 def voce17():
     head(17, "notifiche: meccanismo di consegna e capacita ad app chiusa")
-    n = read("src/services/notifications.js")
-    # Un token dentro un commento non e lo uso di quel token (CLAUDE.md sez. 5):
-    # questa sonda misura il CODICE, quindi i commenti si spogliano PRIMA. Senza
-    # questo passo, citare in un commento il messaggio di errore di Chrome
-    # ("Use ServiceWorkerRegistration.showNotification() instead") bastava a far
-    # dichiarare presente un meccanismo indipendente dalla pagina che non esiste.
-    n = re.sub(r"/\*.*?\*/", "", n, flags=re.S)
-    n = re.sub(r"^\s*//.*$", "", n, flags=re.M)
+    # Il perimetro (client del canale, passo 5): i timer di pagina in
+    # notifications.js, e le due sedi del canale Web Push, l iscrizione in
+    # canalePush.js e la notifica del worker in public/sw-push.js. I meccanismi
+    # di pagina si cercano nella sola sede dei timer: setTimeout, nel servizio
+    # del canale e nel worker, e un attesa massima e non un avviso.
+    sedi = ["src/services/notifications.js", "src/services/canalePush.js", "public/sw-push.js"]
+    codice = {}
+    for p in sedi:
+        t = read(p)
+        # Un token dentro un commento non e lo uso di quel token (CLAUDE.md sez. 5):
+        # questa sonda misura il CODICE, quindi i commenti si spogliano PRIMA. Senza
+        # questo passo, citare in un commento il messaggio di errore di Chrome
+        # ("Use ServiceWorkerRegistration.showNotification() instead") bastava a far
+        # dichiarare presente un meccanismo indipendente dalla pagina che non esiste.
+        t = re.sub(r"/\*.*?\*/", "", t, flags=re.S)
+        t = re.sub(r"^\s*//.*$", "", t, flags=re.M)
+        codice[p] = t
+    n = codice["src/services/notifications.js"]
+
+    def dove(*token):
+        return [p for p in sedi if any(k in codice[p] for k in token)]
+
     mecc = [
-        ("setTimeout in contesto di pagina", "setTimeout" in n),
-        ("new Notification(...) (contesto pagina)", "new globalThis.Notification" in n or "new Notification" in n),
-        ("registration.showNotification (service worker)", "showNotification" in n),
-        ("TimestampTrigger / showTrigger (schedulazione OS)", "TimestampTrigger" in n or "showTrigger" in n),
-        ("Web Push (pushManager.subscribe)", "pushManager" in n),
+        ("setTimeout in contesto di pagina", ["src/services/notifications.js"] if "setTimeout" in n else []),
+        ("new Notification(...) (contesto pagina)",
+         ["src/services/notifications.js"] if ("new globalThis.Notification" in n or "new Notification" in n)
+         else []),
+        ("registration.showNotification (service worker)", dove("showNotification(")),
+        ("TimestampTrigger / showTrigger (schedulazione OS)", dove("TimestampTrigger", "showTrigger")),
+        ("Web Push (pushManager.subscribe)", dove("pushManager.subscribe(")),
     ]
-    for nome, ok in mecc:
-        print("  %-50s %s" % (nome, "SI" if ok else "no"))
-    solo_timer = "setTimeout" in n and "showNotification" not in n and "TimestampTrigger" not in n
+    for nome, luoghi in mecc:
+        print("  %-50s %s" % (nome, ("SI  " + ", ".join(luoghi)) if luoghi else "no"))
+    solo_timer = bool(mecc[0][1]) and not any(luoghi for _, luoghi in mecc[2:])
     print("\n  ESITO: %s" % ("SOLO TIMER DI PAGINA -- con app chiusa o device sospeso"
                               " il timer non esiste e la notifica NON parte." if solo_timer
                               else "presente almeno un meccanismo indipendente dalla pagina"))
@@ -702,7 +718,7 @@ def voce17():
     print("  tabella push_subscriptions nello schema: %s; riferimenti nel codice: %d"
           % ("SI" if tab_push else "no", rif_push))
     esito("meccanismi presenti %d/%d -> %s; tabella push %s, riferimenti %d",
-          sum(1 for _, ok in mecc if ok), len(mecc),
+          sum(1 for _, luoghi in mecc if luoghi), len(mecc),
           "SOLO TIMER DI PAGINA: ad app chiusa la notifica NON parte" if solo_timer
           else "presente un meccanismo indipendente dalla pagina",
           "SI" if tab_push else "no", rif_push)

@@ -138,7 +138,7 @@ L'utente tipo è un paziente politrattato (10-15 farmaci/die) con terapie a inte
 - **Framework:** React (JSX)
 - **Styling:** Tailwind CSS (core utility classes)
 - **Installazione:** Salvabile come app da home screen su iOS e Android
-- **Notifiche:** Push notifications via PWA (iOS 16.4+, Android supportato) per i promemoria orari
+- **Notifiche:** un avviso all'ora di ogni dose con l'app aperta (timer di pagina); in modalita server anche il promemoria ad app chiusa via Web Push, un promemoria diurno con i limiti della sez. 6.4. Su iOS il Web Push vuole la web app aggiunta alla Home (16.4+)
 - **Offline:** Funzionamento base anche senza connessione (cache locale IndexedDB in modalita standalone). NOTA (s.6.245, F6 par.22.131): la sincronizzazione bidirezionale "al ritorno online" (outbox scritture offline) e ASPIRAZIONALE/Fase-4, NON implementata in Fase 3 -- coerente con Q-SYNC refresh-on-open (sez. 11.6.3) + sync multi-device out-of-scope (sez. 11). In API-mode le scritture sono sincrone verso il backend (fail-fast DB_UNAVAILABLE se offline); in standalone Dexie e locale senza backend.
 
 ### 2.2 Backend — Python + MariaDB
@@ -564,10 +564,11 @@ Le card sono raggruppate per fascia oraria con etichetta (es. "ORE 10:00 — COL
 ## 6. Notifiche Push
 
 ### 6.1 Requisiti
-- La PWA deve richiedere il consenso alle notifiche al primo avvio
-- Ogni dose programmata genera una notifica all'ora prevista (o ricalcolata)
-- La notifica mostra: nome farmaco, dosaggio, relazione pasto
-- Suono: beep standard del sistema
+- Il consenso si chiede dal toggle "Notifiche dosi" di Impostazioni, non al primo avvio. In modalita server lo stesso tocco iscrive il telefono al canale della 6.4, con `subscribe()` come primo atto del gesto (ratifica A del 2026-10-01)
+- Ogni dose prevista o ricalcolata ha un avviso al suo istante: il timer di pagina con l'app aperta e, in modalita server, il push del canale ad app chiusa
+- Il testo e lo stesso sui due canali (decisione 32 A): titolo il nome del farmaco, che porta il dosaggio; corpo "Dose delle HH:MM", la relazione col pasto se c'e, e "Apri l'app per controllare." Mai uno stato della dose
+- Suono: quello standard del sistema, che l'app non sceglie
+- Un tocco porta avanti la finestra aperta senza navigarla (decisione 10 A). Su iPhone ad app aperta timer di pagina e push possono dare due avvisi per la stessa dose: un doppio dichiarato, con lo stesso testo
 
 ### 6.2 Limitazioni iOS
 - Le notifiche push PWA funzionano da iOS 16.4+
@@ -605,7 +606,7 @@ Si ritenta solo cio che certifica il rifiuto del servizio push, per lista bianca
 
 **La chiave VAPID** (decisione 15): PEM 0600 nella home del Mini, fuori da `~/PharmaTimer`; il percorso sta nei plist dell'API e della passata come `VAPID_PEM_FILE`, il `sub` nel `.env.dev` del Mini. Senza chiave il canale si spegne e lo dice, con un 503 su `/api/push/chiave` e col motivo nel battito, e l'app parte comunque.
 
-**Stato.** Il lato server c'e. Iscrizione, pubblicazione e service worker arrivano col client: fino ad allora nessun telefono e iscritto e la passata non spedisce nulla. 6.1-6.3 restano i requisiti delle notifiche dell'app; il loro allineamento col canale arriva col client.
+**Il lato client** (sedi `src/services/canalePush.js`, `src/domain/pubblicatore.js`, `src/domain/statoCanale.js`, `public/sw-push.js`). Il telefono si iscrive dal toggle (6.1) e rinnova l'iscrizione a ogni apertura e rientro in primo piano, solo se il worker attivo risponde. Pubblica il calendario a ogni cambio del piano che l'app ha applicato, e il contenuto invariato non si ripubblica. Legge lo stato del canale all'apertura, al rientro, all'ingresso di Oggi e di Impostazioni e dopo ogni pubblicazione, mai a intervalli, e lo dice con parole diverse: "non attivi" quando i promemoria non arriveranno (canale spento, passata mai partita o con esito non ok, telefono non iscritto), "non verificati" quando non si sa (battito oltre i 5 minuti, decisione 33 B), "non aggiornati" quando l'ultima pubblicazione non e arrivata al server. In Impostazioni lo stato intero; in Oggi una riga sola quando lo stato non e OK. Un'iscrizione morta si scopre all'apertura successiva.
 
 ---
 
@@ -629,7 +630,7 @@ Si ritenta solo cio che certifica il rifiuto del servizio push, per lista bianca
 ### 8.1 Frontend
 - React 18+ (JSX, hooks)
 - Tailwind CSS (utility classes core, no compiler)
-- Service Worker per notifiche push e cache offline
+- Service Worker per la cache offline e per il push del canale della 6.4 (`public/sw-push.js`, caricato con `importScripts`)
 - Fetch API per comunicazione con backend
 
 ### 8.2 Backend

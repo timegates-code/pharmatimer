@@ -3,7 +3,9 @@
 #
 # Lancia make check-prepush, che e make check con TREE asserito e AHEAD no:
 # prima del push AHEAD non e zero per costruzione, e asserirlo bloccherebbe
-# ogni push. AHEAD resta nel make check di chiusura.
+# ogni push. Dopo il push AHEAD si legge con git, insieme a TREE e all esito
+# della CI, senza rilanciare il gate che questo hook ha appena eseguito
+# (CLAUDE.md sezioni 4 e 8).
 #
 # Attivazione, una volta per clone (il file e tracciato, la config no):
 #     git config core.hooksPath scripts/githooks

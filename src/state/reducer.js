@@ -84,6 +84,11 @@ export const initialState = {
   // initial: `false` would assert a connection NEVER MEASURED. The
   // POLARITY LIVES IN THE NAME, so no site has to remember an inversion.
   senzaCollegamento: null,
+  // The reminder channel ad app chiusa (client of branch A, step 2). `null`
+  // until the first measure, like `coda`: in local mode it stays `null`,
+  // because there the channel does not exist. `iscrizione` and
+  // `pubblicazione` are the records of services/canalePush.js.
+  canale: null,
 };
 
 /**
@@ -258,6 +263,23 @@ export function reducer(state, action) {
     // validated by the collector (state/coda.js), never here.
     case 'SET_SENZA_COLLEGAMENTO':
       return { ...state, senzaCollegamento: action.payload };
+
+    // --- Reminder channel (client of branch A) ---------------
+    // The payload is the record of services/canalePush.js, validated there.
+    case 'CANALE_ISCRIZIONE':
+      return { ...state, canale: { ...(state.canale ?? {}), iscrizione: action.payload } };
+
+    case 'CANALE_PUBBLICAZIONE':
+      return { ...state, canale: { ...(state.canale ?? {}), pubblicazione: action.payload } };
+
+    // The last reading of /api/push/stato that answered, and the error of a
+    // later one that did not. A failed reading keeps the last good one: its
+    // age keeps growing, and the state says "non verificati" when it must.
+    case 'CANALE_STATO':
+      return { ...state, canale: { ...(state.canale ?? {}), stato: action.payload, statoErrore: null } };
+
+    case 'CANALE_STATO_ERRORE':
+      return { ...state, canale: { ...(state.canale ?? {}), statoErrore: action.payload } };
 
     // --- Error channel --------------------------------------
     case 'SET_ERROR':

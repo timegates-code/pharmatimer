@@ -247,7 +247,12 @@ describe('ImpostazioniTab — Sezione Notifiche (CP5 9-B)', () => {
     const toggle = screen.getByRole('switch', { name: /notifiche dosi/i });
     expect(toggle).toHaveAttribute('aria-checked', 'true');
     expect(toggle).not.toBeDisabled();
-    expect(screen.getByText(/avviso poco prima di ogni dose/i)).toBeInTheDocument();
+    // D4, parte client (commit B del client): il ROSSO del vecchio atteso,
+    // "avviso poco prima di ogni dose", e stato VISTO e NOMINATO prima di
+    // toccarlo. I timer di pagina suonano ALL'ora della dose e solo ad app
+    // aperta: "poco prima" non era vero. Nei due versi.
+    expect(screen.getByText("Avviso all'ora di ogni dose, con l'app aperta.")).toBeInTheDocument();
+    expect(screen.queryByText(/poco prima/i)).toBeNull();
     await user.click(toggle);
     expect(disable).toHaveBeenCalledTimes(1);
     expect(requestEnable).not.toHaveBeenCalled();
