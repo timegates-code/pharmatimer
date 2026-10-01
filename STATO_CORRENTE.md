@@ -38,10 +38,9 @@ corregge al passo 2.
 
 **Deviazioni.** Nessuna dalla Spec.
 
-**Cosa resta.** Il commit B: passo 2 (scheda della 10, modulo di rete,
-iscrizione e rinnovo), passo 3 (pubblicatore, col testo del push di dose da
-ratificare), passo 4 (battito, con la soglia da ratificare), passo 5 (parte
-client della D4). Prima del deploy del canale, dal Terminale sul Mini:
+**Cosa resta.** Il commit B, con la struttura approvata nella sezione "Il
+commit B del client" qui sotto: la 10 al passo 2, la 32 al passo 3, la 33 al
+passo 4. Prima del deploy del canale, dal Terminale sul Mini:
 installazione dal lock, chiave VAPID (15), `VAPID_SUB` nel `.env.dev`,
 `apply_v07_prod.py`, perche g21 pretende la v07 e sul Mini c e la sola
 `push_subscriptions`; poi `make prod-check` verde e `bash
@@ -95,6 +94,67 @@ del Mini, piu una scrittura sul DB di produzione il cui esito non e a verbale.
   Home Screen Web Apps, scheda Storage, Local Storage, chiave
   `pharmatimer.userToken`); la voce Keychain `pharmatimer-token-2` non era
   stata aggiornata dalla rotazione del 3 settembre. Vedi decisione 23.
+
+---
+
+## Il commit B del client: struttura approvata da Roberto il 2026-10-01
+
+Passi 2-5 in un solo commit: e quello che rende il canale usabile, quindi
+porta la parte client della D4 (28). Qui le regole; i valori nelle loro sedi.
+
+- **Passo 2, iscrizione e rinnovo** (2, 14 A), dopo la scheda della 10. Le
+  chiamate in `src/data/repository/canale.js`, che importa `apiClient`;
+  `device_id` generato una volta, in `localStorage`. Toggle acceso, solo in
+  modalita API: permesso, chiave da `/api/push/chiave`, `subscribe`, poi
+  `PUT /api/push/iscrizione`. A ogni apertura e rientro in primo piano:
+  `getSubscription()`, nuova iscrizione se manca o se e legata a un altra
+  chiave, poi il `PUT` che la conferma. Toggle spento o permesso revocato:
+  `unsubscribe()` e `DELETE`. Ci si iscrive solo se il worker attivo risponde
+  alla domanda di `public/sw-push.js`. Senza chiave nessuna iscrizione, lo
+  stato lo dice e l app parte (15). Il click dei timer di pagina smette di
+  andare a `/oggi` assoluto.
+- **Passo 3, pubblicatore** (8, 11, 12, 16). Funzione pura in `src/domain/`,
+  col suo `*.dst.test.js`. Pubblica le voci del piano dell app, scelte per
+  istante effettivo, in stato `prevista` o `ricalcolata` e con orario
+  risolto: una dose chiusa sul telefono esce dal calendario (rapporto, §4).
+  La chiave e la proiezione di `buildLogWrite` (`recalc.js`); l istante e la
+  formula di `showDoseNotification` (`notifications.js`); `ora_ricalcolata`
+  al secondo intero, o vuota. Avviso di fine: l ultima voce piu la
+  tolleranza; se la sua finestra tocca il sonno del profilo attivo
+  (`ora_sonno`, `ora_sveglia`), va alla sveglia; `entro` e l avviso piu la
+  tolleranza, letta da `/api/push/stato` nello stesso ciclo e mai copiata.
+  Pubblica dalle sedi di `maybeReschedule` (`AppContext.jsx` e i thunk di
+  `actions.js`) e dopo una consegna riuscita della coda: un invio alla
+  volta, vince l ultimo piano; il contenuto invariato non si ripubblica
+  (Q-SYNC), ma all apertura una volta si; un errore non riprova in ciclo. Un
+  test lega la chiave pubblicata alla riga che le transizioni vere di
+  `recalc.js` scrivono, nei due versi, su un piano del vero
+  `buildMultiDayPlan` con un farmaco standard, uno esteso, uno `fisso_date`
+  e una dose di ieri ricalcolata a oggi; lo stesso per `ora_ricalcolata`.
+  Righe nel banco: `calendario-data-dall-istante`, `calendario-dose-numero`,
+  `calendario-ricalcolata-vuota`.
+- **Passo 4, battito** (9). L eta e `eta_ms` del server alla lettura piu il
+  tempo trascorso sul telefono, su orologio monotono. Mai un OK vecchio:
+  "non verificati dalle HH:MM" oltre la soglia, con esito diverso da `ok`,
+  canale spento o questo telefono non iscritto. In Impostazioni lo stato
+  intero, dove un 201 si legge "accettato" e mai "consegnato" (2); in Oggi
+  una riga sola quando lo stato non e OK, che toccata rilegge.
+  **Aggiunta di Roberto:** la riga di Oggi si accende anche quando l ultima
+  pubblicazione non e andata a buon fine, perche il server tiene il
+  calendario vecchio e il telefono lo deve dire; test nei due versi.
+  `/api/push/stato` si rilegge all apertura, al rientro in primo piano,
+  all ingresso nella vista e dopo ogni pubblicazione, mai a intervalli
+  (Q-SYNC).
+- **Passo 5, parte client della D4** (28): Spec 2.1, 6.1, 8.1 e il paragrafo
+  "Stato" della 6.4, che col client diventa falso; la copy "Avviso poco
+  prima" di `ImpostazioniTab.jsx` col suo test; nel README le righe delle
+  notifiche locali e il blocco del limite. La 11.5.2 resta: e storica. La
+  voce 17 dell inventario allarga il perimetro alle sedi nuove. Il minore su
+  click, copy e Spec si chiude; quello degli endpoint mai chiamati perde
+  quelli del canale e resta aperto per gli altri.
+- **Prova a mano** in chiusura del commit B: sullo Studio, browser desktop su
+  localhost, passata lanciata a mano dal Terminale e chiave VAPID dello
+  Studio (15). Sull iPhone alla sessione del deploy, col caso della 31.
 
 ---
 
@@ -573,3 +633,13 @@ notifiche ad app chiusa non si fanno.
     sopprimere la notifica di una dose chiusa (S11, mai sopprimere); chiedere
     lo stato al server dal worker (servono token e tailnet, cioe cio che
     manca nel caso che conta); una copia del taccuino nella Cache.
+
+32. [aperta] **Testo del push di dose, al passo 3.** Titolo e corpo li compone
+    il telefono (8). La Spec 6.1 vuole nome del farmaco, dosaggio e relazione
+    pasto; l I1 vuole l ora e nessuno stato (`rapporto.md` :41-43). Si
+    ratifica come i testi della 27.
+
+33. [aperta] **Soglia del battito vecchio, al passo 4.** Oltre quale eta l app
+    smette di dire "attivi" e dice "non verificati dalle HH:MM" (condizione
+    della 9). La cadenza della passata sta nel suo plist, la tolleranza di
+    una dose in `canale.py`.
