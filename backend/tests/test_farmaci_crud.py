@@ -158,6 +158,37 @@ def test_put_happy_full_replace(
     assert body["id"] == farmaco_id
 
 
+def test_put_identical_values_then_orari_saved(
+    client: TestClient, seed_owner_test: tuple[str, int]
+) -> None:
+    """PUT with unchanged values -> 200, and the orari PUT that follows is saved.
+
+    MySQL reports changed rows, not matched ones: a PUT that changes nothing
+    must not read as "not found" (it blocked the orari-only edit).
+    """
+    token, _ = seed_owner_test
+    headers = {"X-User-Token": token}
+    payload = _payload_fisso()
+    farmaco_id = client.post("/api/farmaci", json=payload, headers=headers).json()["id"]
+    response = client.put(f"/api/farmaci/{farmaco_id}", json=payload, headers=headers)
+    assert response.status_code == 200
+    assert response.json()["id"] == farmaco_id
+    assert response.json()["nome"] == payload["nome"]
+    orari = [{
+        "dose_numero": 1,
+        "offset_minuti": 0,
+        "ancora_riferimento": "colazione",
+        "ora_prevista": "07:30:00",
+        "descrizione_momento": "colazione",
+    }]
+    orari_response = client.put(
+        f"/api/farmaci/{farmaco_id}/orari", json=orari, headers=headers
+    )
+    assert orari_response.status_code == 200
+    saved = client.get(f"/api/farmaci/{farmaco_id}/orari", headers=headers).json()
+    assert [o["ora_prevista"] for o in saved] == ["07:30:00"]
+
+
 def test_put_not_found(
     client: TestClient, seed_owner_test: tuple[str, int]
 ) -> None:

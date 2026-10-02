@@ -133,6 +133,9 @@ T_IMP = "src/components/config/ImpostazioniTab.canale.test.jsx"
 OGGI = "src/components/oggi/OggiView.jsx"
 T_OGGI = "src/components/oggi/OggiView.canale.test.jsx"
 T_IMPT = "src/components/config/ImpostazioniTab.test.jsx"
+# PUT farmaci: l esistenza si legge dalla SELECT con scope, non da rowcount.
+FA = "backend/pharmatimer_api/routers/farmaci.py"
+T_FC = "tests/test_farmaci_crud.py"
 
 # Il tocco del toggle (ratifica A del 2026-10-01): subscribe() primo atto del gesto.
 SUBSCRIBE_NEL_GESTO = (
@@ -1234,6 +1237,19 @@ MUTAZIONI = [
          [(IMP, "{showActiveHint && (", "Avviso all'ora di ogni dose, con l'app aperta.",
            "Avviso poco prima di ogni dose.")],
          "vitest", [T_IMPT], ["standalone + granted + enabled=true \u2192 toggle on, click invoca disable"]),
+    # PUT farmaci, nei due versi: valori invariati non sono "non trovato"
+    # (rowcount conta le righe cambiate e bloccava il PUT degli orari), e un
+    # id inesistente o di un altro utente resta 404.
+    riga("farmaci-put-sempre-404", "router farmaci, 404 su valori invariati", "--",
+         [(FA, "def update_farmaco(", "        if row is None:\n", "        if True:\n")],
+         "pytest", [T_FC], ["test_put_identical_values_then_orari_saved", "test_put_happy_full_replace"]),
+    riga("farmaci-put-mai-404", "router farmaci, 404 su valori invariati", "--",
+         [(FA, "def update_farmaco(", "        if row is None:\n", "        if False:\n")],
+         "pytest", [T_FC], ["test_put_not_found"]),
+    riga("farmaci-put-altrui", "router farmaci, 404 su valori invariati", "--",
+         [(FA, "def update_farmaco(", '"FROM farmaci WHERE id = %s AND utente_id = %s"',
+           '"FROM farmaci WHERE id = %s AND (utente_id = %s OR TRUE)"')],
+         "pytest", [T_FC], ["test_put_scope_violation_other_user"]),
 ]
 
 # L'autoprova: righe il cui esito e FISSATO, e che il banco pretende.

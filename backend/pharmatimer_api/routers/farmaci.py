@@ -145,21 +145,23 @@ def update_farmaco(
                 current_user.id,
             ),
         )
-        if cur.rowcount == 0:
-            conn.rollback()
-            raise RepositoryError(
-                code=RepositoryErrorCode.NOT_FOUND,
-                message=f"Farmaco {farmaco_id} non trovato",
-            )
+        # Existence is read from the scoped SELECT, not from rowcount: MySQL
+        # counts changed rows, so a PUT with unchanged values would read as 0.
         cur.execute(
             "SELECT id, utente_id, nome, principio_attivo, funzione, tipo_frequenza, "
             "intervallo_ore, intervallo_minimo_ore, dosi_giornaliere, relazione_pasto, "
             "dettaglio_pasto, note, data_inizio, data_fine, attivo, demo, "
             "created_at, updated_at "
-            "FROM farmaci WHERE id = %s",
-            (farmaco_id,),
+            "FROM farmaci WHERE id = %s AND utente_id = %s",
+            (farmaco_id, current_user.id),
         )
         row = cur.fetchone()
+        if row is None:
+            conn.rollback()
+            raise RepositoryError(
+                code=RepositoryErrorCode.NOT_FOUND,
+                message=f"Farmaco {farmaco_id} non trovato",
+            )
         conn.commit()
     finally:
         cur.close()

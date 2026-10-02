@@ -12,58 +12,51 @@ deploy/deploy-mini.sh` dal Terminale.
 
 ---
 
-## Ultima sessione -- client del canale, ramo A: commit B, 2026-10-01
+## Ultima sessione -- il 404 di PUT /api/farmaci, 2026-10-02
 
-`make check` verde in apertura su `541b74a`, misurato da Roberto e rilanciato
-qui. Il commit B rende il canale usabile: i passi 2-5 della struttura
-approvata, in un commit solo. Decise in sessione la 10, la 32, la 33 e due
-ratifiche nuove, la 34 e la 35 (sotto).
+`make check` verde in apertura su `b64c281`, misurato da Roberto. Sessione
+breve prima del deploy: una correzione sola, ratificata A.
 
-**Fatto.**
-- Passo 2, iscrizione e rinnovo: `src/data/repository/canale.js` (le cinque
-  chiamate di `/api/push` e il `device_id`), `src/services/canalePush.js`
-  (preparazione, tocco, rinnovo, spegnimento, un operazione alla volta), la
-  sezione `canale` del reducer, i thunk, il toggle. Il tocco dei timer di
-  pagina non naviga piu (10 A).
-- Passo 3, pubblicatore: `src/domain/pubblicatore.js` e
-  `src/domain/promemoria.js`, istante e testo condivisi coi timer di pagina
-  (32 A); il ciclo di pubblicazione; un effetto di `AppContext` riarma i timer
-  e pubblica sullo stato applicato (35).
-- Passo 4, battito: `src/domain/statoCanale.js` con la soglia della 33, i
-  testi in `src/utils/testi.js`, la riga di Oggi
-  (`src/components/shared/RigaCanale.jsx`), lo stato intero in Impostazioni.
-- Passo 5, D4 lato client: Spec 2.1, 6.1, 8.1 e il lato client della 6.4; la
-  copy del toggle; README; la voce 17 dell inventario sulle sedi nuove.
-- CLAUDE.md 4 e 8, e lo hook di pre-push: dopo il push il gate non si rilancia.
+**Prova a mano del commit B sullo Studio, di Roberto, il 2026-10-02.** Dieci
+passi su dieci superati, compresa la notifica "già registrata" dopo una presa
+offline. Ne sono uscite sei osservazioni: la 1 e chiusa qui sotto, la 2 e la
+decisione 36, la 3, la 4, la 5 e la 6 sono una voce fra le minori.
 
-**Rilievo, misurato con due sonde, esiti dichiarati prima.** Le sedi di
-`maybeReschedule` leggono `stateRef` un render indietro: all apertura a
-freddo non armavano i timer di pagina, dopo `addFarmaco` riarmavano il piano
-senza il farmaco nuovo. RICONFERMA della classe di `06dc680` e `35fed4d`;
-elemento nuovo, il trigger 1 e le sedi dei thunk. Chiuso dall effetto della
-35. **In produzione il buco c e:** secondo git lo schierato e `820e1ed`, con
-le stesse sedi.
+**Fatto: l osservazione 1.** `PUT /api/farmaci/{id}` leggeva `rowcount == 0`
+come "non trovato", ma MySQL conta le righe cambiate: un PUT con valori
+invariati rispondeva 404, e cambiare i soli orari di un farmaco falliva prima
+del PUT degli orari (`updateFarmaco` in `src/state/actions.js` li fa nella
+stessa transazione). Sonda su `pharmatimer_test`, esiti dichiarati prima:
+valori identici 404, un campo cambiato 200. Correzione locale al router (A):
+l esistenza si legge dalla SELECT dopo l UPDATE, ora con lo scope
+`utente_id`; nessuna riga, rollback e 404. Le altre cinque letture di
+`rowcount` non cambiano: il DELETE cambia sempre la riga che trova, le quattro
+del pianificatore seguono un INSERT ... SELECT o un UPDATE che scrive
+`deciso_ms`. Pin nuovo, visto rosso sul codice di HEAD; tre righe nel banco,
+nei due versi. **In produzione il difetto c e:** il router di `820e1ed` e
+identico a quello di `b64c281`.
 
 **Misure, gate prima del commit.** lint 0; frontend 125 file e 1361 test; DST
-28 su 28; dipendenze 44 su 44; backend 245; mutazioni 205 su 205, 82 righe
-nuove, 221,9 s; inventario verde; contatore con la serie scritta; albero rosso
+28 su 28; dipendenze 44 su 44; backend 246; mutazioni 208 su 208, 3 righe
+nuove, 242,1 s; inventario verde; contatore con la serie scritta; albero rosso
 sul solo TREE, per costruzione.
 
-**Non fatto.** Nessun deploy, niente sul Mini, niente in launchd, nessuna
-migrazione, nessuna dipendenza, schema Dexie invariato, backend non toccato.
-La prova a mano sullo Studio e di Roberto.
+**Non fatto.** Nessun deploy, niente sul Mini, nessuna migrazione, nessuna
+dipendenza, client non toccato, versione del backend ferma a 0.7.7. Le
+osservazioni 2-6 non si correggono qui.
 
-**Deviazioni.** Nessuna dalla Spec: la Spec si allinea in posto (D4).
+**Deviazioni.** Nessuna dalla Spec.
 
 **Cosa resta: la sessione del deploy.** Dal Terminale sul Mini: installazione
 dal lock, chiave VAPID (15), `VAPID_SUB` nel `.env.dev`, `apply_v07_prod.py`,
 perche g21 pretende la v07; poi `make prod-check` verde e `bash
 deploy/deploy-mini.sh`. **Con il canale vanno in produzione anche** `ccce837`
-(la dose oltre la mezzanotte non si perde al rollover) e `3d098a6` (il
-costruttore che lancia non porta giu la catena), oggi chiuse nel repo e non
-schierate, e il riarmo dei timer all apertura a freddo (35). **Sull iPhone:**
-il caso della 31, presa registrata offline e poi il push; e il rinnovo all
-apertura quando la subscription va ricreata senza gesto, oggi non misurato.
+(la dose oltre la mezzanotte non si perde al rollover), `3d098a6` (il
+costruttore che lancia non porta giu la catena), il riarmo dei timer all
+apertura a freddo (35) e la correzione del 404 di questa sessione. **Sull
+iPhone:** il caso della 31, presa registrata offline e poi il push (la prova
+sullo Studio non misura iOS); e il rinnovo all apertura quando la
+subscription va ricreata senza gesto, oggi non misurato.
 
 ---
 
@@ -205,6 +198,14 @@ toccano:
   rollback di `0.7.7` (la fotografia delle 11:27 non c'e piu); i dump notturni
   degli ultimi 7 giorni; i pre-B, pre-bbis e predeploy-v05 di giugno; e
   `pharmatimer-pre-19-20260918-010223.sql.gz`, la fotografia pre-ripulitura.
+- [aperta] **Osservazioni 3-6 della prova a mano del commit B, 2026-10-02.**
+  (3) Un farmaco nuovo parte da domani per impostazione. (4) "Verifica ora"
+  rilegge lo stato del canale ma non iscrive: iscrive solo la riga di Oggi.
+  (5) Il toggle "Notifiche dosi" non mostra se e acceso o spento. (6)
+  All accensione le iscrizioni nascono a coppie, una sostituita entro un
+  secondo (30 e 31, 32 e 33, 35 e 36 in `pharmatimer_dev`), e la 71 e nata e
+  stata revocata alle 12:13:11, dopo lo spegnimento. Forse clic ripetuti: da
+  verificare che un accensione produca un iscrizione sola.
 - [aperta] Fuori dal repo, da rifare su una macchina nuova: `.claude/settings.local.json`
   con `sandbox.network`, e `git config core.hooksPath scripts/githooks`.
 
@@ -631,3 +632,10 @@ notifiche ad app chiusa non si fanno.
     ripartire l avviso di una dose gia mostrata, pin nei due versi. **Scartata:**
     pubblicare dalle sedi come sono (misurato: all apertura niente, dopo un
     farmaco aggiunto il piano senza di lui, M2 sul canale).
+
+36. [aperta] **La dose di domani si registra oggi con un tocco.** Prova a mano
+    del 2026-10-02, osservazione 2: un tocco, senza conferma, registra la
+    presa della dose di domani, il server la accetta e l app mostra "Anticipo
+    24h 03". E una domanda clinica e la decisione e di Roberto. Non misurato
+    quali sedi la permettono, client, server o entrambi: la sonda viene prima
+    della scheda.
