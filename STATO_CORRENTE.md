@@ -12,51 +12,60 @@ deploy/deploy-mini.sh` dal Terminale.
 
 ---
 
-## Ultima sessione -- il 404 di PUT /api/farmaci, 2026-10-02
+## Ultima sessione -- il deploy del canale, aperto un giorno prima, 2026-10-05
 
-`make check` verde in apertura su `b64c281`, misurato da Roberto. Sessione
-breve prima del deploy: una correzione sola, ratificata A.
+La sessione del deploy, preparata il 04/10 per la finestra di martedi 06/10, e
+partita lunedi 05/10: misurato con `date` sullo Studio alle 10:58:58 e
+confermato da Roberto. **Nessuna apertura di rito:** ne `make check` in
+apertura, ne la lettura del giro di StockFusion; vale il gate prima del
+commit. Decisione della consulenza, su delega di Roberto: oggi niente sul Mini
+e nessun atto della sequenza; il deploy resta domani, con una sessione nuova e
+un prompt rivisto.
 
-**Prova a mano del commit B sullo Studio, di Roberto, il 2026-10-02.** Dieci
-passi su dieci superati, compresa la notifica "già registrata" dopo una presa
-offline. Ne sono uscite sei osservazioni: la 1 e chiusa qui sotto, la 2 e la
-decisione 36, la 3, la 4, la 5 e la 6 sono una voce fra le minori.
+**Fatto: le verifiche sul codice** che la sequenza chiede prima degli atti,
+sole letture sullo Studio fra le 11:00 e le 11:03. I due plist del repo portano
+per `DB_DEFAULTS_FILE`, `DB_NAME` e `VAPID_PEM_FILE` gli stessi valori della
+riga della v07 e dell'atto della chiave, e nessuno dei due porta `VAPID_SUB`.
+`canale.py` legge la chiave con tre controlli: file leggibile, PEM non cifrato,
+EC P-256; nessuno su modo o proprietario. `VAPID_SUB` la leggono dal `.env.dev`
+del Mini tutti e due i servizi, che partono in `backend/`, e il rsync del
+deploy esclude `.env*`. L'import dell'app di `820e1ed` non apre connessioni e
+non scrive: il pool nasce solo nel `lifespan`, che l'import non esegue.
+**In testa a `CLAUDE.md`**, la riga sui dati dell'utente 2: di prova
+realistici, senza uso reale, con M3 per intero.
 
-**Fatto: l osservazione 1.** `PUT /api/farmaci/{id}` leggeva `rowcount == 0`
-come "non trovato", ma MySQL conta le righe cambiate: un PUT con valori
-invariati rispondeva 404, e cambiare i soli orari di un farmaco falliva prima
-del PUT degli orari (`updateFarmaco` in `src/state/actions.js` li fa nella
-stessa transazione). Sonda su `pharmatimer_test`, esiti dichiarati prima:
-valori identici 404, un campo cambiato 200. Correzione locale al router (A):
-l esistenza si legge dalla SELECT dopo l UPDATE, ora con lo scope
-`utente_id`; nessuna riga, rollback e 404. Le altre cinque letture di
-`rowcount` non cambiano: il DELETE cambia sempre la riga che trova, le quattro
-del pianificatore seguono un INSERT ... SELECT o un UPDATE che scrive
-`deciso_ms`. Pin nuovo, visto rosso sul codice di HEAD; tre righe nel banco,
-nei due versi. **In produzione il difetto c e:** il router di `820e1ed` e
-identico a quello di `b64c281`.
+**Permessi di Claude Code, misurati oggi alle 11:04.** Sono una fotografia,
+non una norma: la fonte sono i file, che chi ne ha bisogno rilegge, e qui non
+si aggiornano. `~/.claude/settings.json`: modo `default`, nessuna lista.
+`.claude/settings.json`: deny su Edit e Write di `apiClient.js`,
+`ApiRepository.js` e `vite.config.js`, i vietati della sezione 7.
+`.claude/settings.local.json`: sandbox acceso con `autoAllowBashIfSandboxed`
+falso, quindi ogni comando chiede il permesso; in rete il socket di MySQL e il
+loopback (`allowLocalBinding`); qualche allow puntuale lasciato da sessioni
+passate.
 
-**Misure, gate prima del commit.** lint 0; frontend 125 file e 1361 test; DST
-28 su 28; dipendenze 44 su 44; backend 246; mutazioni 208 su 208, 3 righe
-nuove, 242,1 s; inventario verde; contatore con la serie scritta; albero rosso
-sul solo TREE, per costruzione.
-
-**Non fatto.** Nessun deploy, niente sul Mini, nessuna migrazione, nessuna
-dipendenza, client non toccato, versione del backend ferma a 0.7.7. Le
-osservazioni 2-6 non si correggono qui.
+**Non fatto.** Nessun atto sul Mini. La sonda del loopback va alla sessione
+del gate, con la voce 7 della coda. Nessuna riga di codice.
 
 **Deviazioni.** Nessuna dalla Spec.
 
-**Cosa resta: la sessione del deploy.** Dal Terminale sul Mini: installazione
-dal lock, chiave VAPID (15), `VAPID_SUB` nel `.env.dev`, `apply_v07_prod.py`,
-perche g21 pretende la v07; poi `make prod-check` verde e `bash
-deploy/deploy-mini.sh`. **Con il canale vanno in produzione anche** `ccce837`
-(la dose oltre la mezzanotte non si perde al rollover), `3d098a6` (il
-costruttore che lancia non porta giu la catena), il riarmo dei timer all
-apertura a freddo (35) e la correzione del 404 di questa sessione. **Sull
-iPhone:** il caso della 31, presa registrata offline e poi il push (la prova
-sullo Studio non misura iOS); e il rinnovo all apertura quando la
-subscription va ricreata senza gesto, oggi non misurato.
+**Cosa resta: il deploy, domani 06/10.** Dal Terminale dello Studio girano
+`make prod-check` e `bash deploy/deploy-mini.sh`. Dal Terminale sul Mini:
+l'installazione dal lock, la chiave VAPID (15), `VAPID_SUB` nel `.env.dev` e
+`apply_v07_prod.py`, perche g21 pretende la v07; prima di tutto si portano
+dallo Studio i cinque file che quegli atti usano: `requirements.lock`,
+`installa-dal-lock.sh`, `v07_push.sql`, `apply_v07_push.py` e
+`apply_v07_prod.py`. Quest'ultimo vuole `DB_DEFAULTS_FILE` e
+`DB_NAME=pharmatimer` sulla riga di comando, perche il `.env.dev` del Mini
+porta `pharmatimer_dev`. Sequenza, punti d'arresto e attesi stanno nel prompt
+di domani. **Gia in produzione dal 03/09,** nel client `80cf0f2`: `ccce837`
+(la dose oltre la mezzanotte non si perde al rollover) e `3d098a6` (il
+costruttore che lancia non porta giu la catena). **Con il canale vanno in
+produzione** il riarmo dei timer all'apertura a freddo (35) e la correzione
+del 404 del 02/10. **Sull'iPhone, dopo il deploy:** il caso della 31, presa
+registrata offline e poi il push (la prova sullo Studio non misura iOS); e il
+rinnovo all'apertura quando la subscription va ricreata senza gesto, oggi non
+misurato.
 
 ---
 
@@ -117,8 +126,9 @@ Si esegue, non si rimisura. Ordinata per rischio clinico.
 | 2 | [aperta] **Ricalcolo D+1 rifiutato: il riallineamento riporta la D+1 all'ora prevista, sotto il minimo** | **M1** | Misurato il 2026-09-29 con una sonda sulle sedi vere (fuori dal repo): presa alle 23:30 nella notte del cambio d'ora di primavera, D+1 ricalcolata alle 07:30 rifiutata; lo specchio la cancella alla rilettura (`LocalRepository.js` :539), e il piano la riporta prevista alle 07:00, 390 minuti reali dopo la presa, contro un minimo di 450. Al tocco il server registra la presa con l'avviso "Due dosi molto vicine". **Con il canale acceso il rilievo arriva anche ad app chiusa:** per la A della 11, log e pubblicazione vuoti fanno partire un push di dose all'ora prevista. Oggi non è raggiungibile: la D+1 ricalcolata nasce solo per i farmaci a intervallo, e la terapia vera non ne ha. **Va chiuso prima che un farmaco a intervallo con un minimo entri in terapia.** La forma del rimedio non è decisa; la sonda va riscritta nel repo come pin, rosso prima del rimedio. |
 | 3 | [aperta] **targa annidata nel batch, forma (a) decisa** | **M3** | Meccanico: il modello pydantic del ricalcolo dichiara `client_op_id` opzionale e ignorato, con il motivo nel docstring; R4 in `ApiRepository.contratto.test.js` arrossa e il marcatore `it.fails` si toglie nello stesso commit. Nessuna sede VIETATA, nessuna migrazione, wire-neutro. |
 | 4 | [aperta] **estrarre il SQL dai router** in `repository/` | -- | Refactor, sessione propria, se ancora voluto. Norma dichiarata: SQL nel router (`CLAUDE.md` 13). |
-| 5 | [aperta] **`deploy-mini.sh` non fotografa il bundle** prima del `rsync --delete` | -- | Fatto a mano per la seconda volta (`web.bak.*` e `backend.predeploy.*.tgz`). Lo script deve farlo da se, come passo fra le guardie e il rsync. |
+| 5 | [aperta] **`deploy-mini.sh` non fotografa il bundle** prima del `rsync --delete` | -- | Fatto a mano per la seconda volta (`web.bak.*` e `backend.predeploy.*.tgz`). Lo script deve farlo da se, come passo fra le guardie e il rsync. **Riconferma del 2026-10-04:** il 03/09 alle 20:03 e stato schierato il client `80cf0f2`, senza foto e senza verbale. Elemento nuovo: un deploy intero senza la foto fatta a mano e senza un commit che lo racconti. |
 | 6 | [aperta] **Il meccanismo delle orfane** | M3 | Il cambio di profilo cancella le ricalcolate solo in locale (`ApiRepository.js` :66-69) e lo specchio le rimette alla lettura successiva; la giunzione `(farmaco_id, dose_numero)` non e una FK: e la D2 della 20. Materia di record, non condizione del canale (decisione 22 A). Forma del rimedio non decisa: portare la cancellazione al server tocca l invariante dello specchio (`mirrorLogWindow`) e la meccanica M1 della voce 2. |
+| 7 | [aperta] **La suite di backend ha una sola difesa contro il server sbagliato** | **M2** | Rilievi della sonda sulla suite del 2026-10-04, riletti alle sedi il 2026-10-05; si risolvono nella sessione del gate, dopo l'accettazione del canale. (1) `CLAUDE.md` dice che col sandbox il Mini resta fuori: e dedotto falso, perche il loopback dello Studio comprende la 3307, il tunnel di StockFusion. Riletto oggi: la stessa affermazione sta nella sezione 4 ("il Mini resta fuori") e nella 11 ("Cio che resta fuori e la tailnet"). Si misura per analogia su una porta di loopback libera, senza toccare il tunnel, e le due righe si correggono sulla misura. (2) La difesa e un solo strato: i valori di `backend/.env.dev` dello Studio, ignorato da git, e l'assenza di `DB_*` nell'ambiente. `cleanup_test_data`, autouse in `backend/tests/conftest.py`, svuota con TRUNCATE le tabelle di `_TRUNCATE_ORDER` a chiavi esterne spente, prima di ogni test e sul server che quei valori nominano, senza verificarlo. Rimedio: prima del primo TRUNCATE la fixture verifica l'identita del server, non solo i nomi. La barriera di StockFusion, tutto in sola lettura, qui non si copia: i nostri test scrivono. (3) Il default della passata e l'invio vero (`invia=invio.invia` in `pianificatore.passata`) e ogni test lo sostituisce: non e voce, perche gli endpoint dei test sono inventati. |
 
 ### Rilievi chiusi, e cio che resta aperto sotto di loro
 
@@ -206,8 +216,10 @@ toccano:
   secondo (30 e 31, 32 e 33, 35 e 36 in `pharmatimer_dev`), e la 71 e nata e
   stata revocata alle 12:13:11, dopo lo spegnimento. Forse clic ripetuti: da
   verificare che un accensione produca un iscrizione sola.
-- [aperta] Fuori dal repo, da rifare su una macchina nuova: `.claude/settings.local.json`
-  con `sandbox.network`, e `git config core.hooksPath scripts/githooks`.
+- [aperta] Fuori dal repo, da rifare su una macchina nuova: `.claude/settings.json`
+  con la deny sui vietati della sezione 7, `.claude/settings.local.json` con
+  `sandbox.network`, e `git config core.hooksPath scripts/githooks`. L'assetto
+  stabile dei permessi e materia della sessione del gate.
 
 ---
 
@@ -451,6 +463,10 @@ notifiche ad app chiusa non si fanno.
     scartate della ratifica stanno in git, commit `34f0e94`; il verbale
     dell'esecuzione sta in git, commit `e615916`. Non riapre la 8 ne la 12,
     non tocca la 4, non apre D nella 2.
+    **Riga nuova del 2026-10-05:** in produzione nessun uso reale, solo dati
+    di prova realistici; lo ha dichiarato Roberto il 04/10, con
+    `log_assunzioni` a 0 sul Mini. Il testo qui sopra e storico e non si
+    riscrive: la norma e la riga in testa a `CLAUDE.md`.
 
 20. [aperta] **Posologia variabile nel tempo per uno stesso farmaco -- vitamina D.**
     La Spec 10.4 prescrive la modifica manuale di orari_base/dosi "nel tempo".
