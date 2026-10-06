@@ -12,60 +12,62 @@ deploy/deploy-mini.sh` dal Terminale.
 
 ---
 
-## Ultima sessione -- il deploy del canale, aperto un giorno prima, 2026-10-05
+## Ultima sessione -- il deploy del canale, 2026-10-06
 
-La sessione del deploy, preparata il 04/10 per la finestra di martedi 06/10, e
-partita lunedi 05/10: misurato con `date` sullo Studio alle 10:58:58 e
-confermato da Roberto. **Nessuna apertura di rito:** ne `make check` in
-apertura, ne la lettura del giro di StockFusion; vale il gate prima del
-commit. Decisione della consulenza, su delega di Roberto: oggi niente sul Mini
-e nessun atto della sequenza; il deploy resta domani, con una sessione nuova e
-un prompt rivisto.
+**Il canale e in produzione dalle 10:29 del 06/10, codice `3a05aef`.** Con
+lui sono in produzione il riarmo dei timer all'apertura a freddo (35) e la
+correzione del 404 del 02/10. Finestra del 06/10 coi punti d'arresto P0, P1 e
+P2, tutti verdi, e un solo tratto critico, finito alle 10:29. Le misure di
+ogni punto stanno nel riepilogo finale della sessione; qui l'essenziale.
 
-**Fatto: le verifiche sul codice** che la sequenza chiede prima degli atti,
-sole letture sullo Studio fra le 11:00 e le 11:03. I due plist del repo portano
-per `DB_DEFAULTS_FILE`, `DB_NAME` e `VAPID_PEM_FILE` gli stessi valori della
-riga della v07 e dell'atto della chiave, e nessuno dei due porta `VAPID_SUB`.
-`canale.py` legge la chiave con tre controlli: file leggibile, PEM non cifrato,
-EC P-256; nessuno su modo o proprietario. `VAPID_SUB` la leggono dal `.env.dev`
-del Mini tutti e due i servizi, che partono in `backend/`, e il rsync del
-deploy esclude `.env*`. L'import dell'app di `820e1ed` non apre connessioni e
-non scrive: il pool nasce solo nel `lifespan`, che l'import non esegue.
-**In testa a `CLAUDE.md`**, la riga sui dati dell'utente 2: di prova
-realistici, senza uso reale, con M3 per intero.
+- **Decisione 10, prima di P0, sul codice.** Nessuna transazione resta aperta
+  fra due passate, durante la POST (il commit viene prima) o fra due richieste
+  dell'API (il pool azzera la sessione al rilascio); la rilettura del log al
+  fuoco apre a ogni tentativo una transazione nuova. Sul Mini:
+  REPEATABLE-READ, attesa dei lock 50 s, `pharmatimer_app` senza PROCESS.
+- **P0, 09:32.** Come atteso. L'avvio fallito del 15/09 alle 14:22:59 dice
+  MySQL: `2003 (HY000): Can't connect to MySQL server on '127.0.0.1:3306'
+  (61)`. Le cinque celle di default sono NULL, come sullo Studio.
+- **Atti inerti, 09:43-10:20.** Copia del DB
+  `pharmatimer-pre-canale-20261006-094354.sql.gz`, md5 uguale su Mini e
+  Studio, `push_subscriptions` a 0; i cinque file; installazione dal lock e
+  v07 staccate sul Mini, uscita in `~/PharmaTimer/logs/`, 12 oggetti e nessun
+  errore nei minuti della v07; il PEM, impronta `2b1412801df2`, con la copia
+  verificata nel Portachiavi (`pharmatimer-vapid-mini`); `VAPID_SUB`; la foto
+  `predeploy-canale.20261006_102023`.
+- **Alle 10:24 e girato per errore il ritorno a P1,** al posto del tratto
+  critico. Ha riavviato l'API sullo stato di P1 senza toccare dati, v07, PEM
+  e `VAPID_SUB`; P1 rimisurato verde alle 10:27.
+- **P2, 10:29-10:53.** Il prod-check del passo 7 di `deploy-mini.sh`, alla
+  fine del tratto critico, e VERDE col bundle nuovo `index-Dv0-EdhH` e
+  l'OpenAPI a 54189 byte; l'uscita del tratto critico lo porta anche prima
+  del deploy, al passo 1. Battito `ok`, tabelle del canale a 0. uvicorn ascolta
+  su `TCP *:8000` IPv4: anche sui due indirizzi LAN del Mini, oltre a
+  Tailscale; `ssh mini` va alla LAN, 192.168.1.167. Due letture di
+  INNODB_TRX a cavallo di due passate, nessuna transazione di PharmaTimer. La
+  chiave servita dal vivo e quella del PEM.
 
-**Permessi di Claude Code, misurati oggi alle 11:04.** Sono una fotografia,
-non una norma: la fonte sono i file, che chi ne ha bisogno rilegge, e qui non
-si aggiornano. `~/.claude/settings.json`: modo `default`, nessuna lista.
-`.claude/settings.json`: deny su Edit e Write di `apiClient.js`,
-`ApiRepository.js` e `vite.config.js`, i vietati della sezione 7.
-`.claude/settings.local.json`: sandbox acceso con `autoAllowBashIfSandboxed`
-falso, quindi ogni comando chiede il permesso; in rete il socket di MySQL e il
-loopback (`allowLocalBinding`); qualche allow puntuale lasciato da sessioni
-passate.
+**Correzioni ai blocchi preparati, fuori dal repo.** Il blocco del
+Portachiavi del 05/10 lanciava `ssh` senza `-n` dentro `bash -s`: avrebbe
+consumato lo script dopo la prima riga (misurato con `/bin/bash` 3.2). La
+foto non stampava la cartella che il ritorno usa. La v07 gira con `-B`.
 
-**Non fatto.** Nessun atto sul Mini. La sonda del loopback va alla sessione
-del gate, con la voce 7 della coda. Nessuna riga di codice.
+**Il file del token dell'utente 2 era sparito,** riscritto alle 10:52: vedi
+la decisione 23.
+
+**Non fatto.** La prova sull'iPhone, oggi pomeriggio. INNODB_TRX dopo una
+richiesta autenticata: la lettura e venuta prima della richiesta valida, e
+"nessuna transazione fra due richieste" resta misurata sul codice.
 
 **Deviazioni.** Nessuna dalla Spec.
 
-**Cosa resta: il deploy, domani 06/10.** Dal Terminale dello Studio girano
-`make prod-check` e `bash deploy/deploy-mini.sh`. Dal Terminale sul Mini:
-l'installazione dal lock, la chiave VAPID (15), `VAPID_SUB` nel `.env.dev` e
-`apply_v07_prod.py`, perche g21 pretende la v07; prima di tutto si portano
-dallo Studio i cinque file che quegli atti usano: `requirements.lock`,
-`installa-dal-lock.sh`, `v07_push.sql`, `apply_v07_push.py` e
-`apply_v07_prod.py`. Quest'ultimo vuole `DB_DEFAULTS_FILE` e
-`DB_NAME=pharmatimer` sulla riga di comando, perche il `.env.dev` del Mini
-porta `pharmatimer_dev`. Sequenza, punti d'arresto e attesi stanno nel prompt
-di domani. **Gia in produzione dal 03/09,** nel client `80cf0f2`: `ccce837`
-(la dose oltre la mezzanotte non si perde al rollover) e `3d098a6` (il
-costruttore che lancia non porta giu la catena). **Con il canale vanno in
-produzione** il riarmo dei timer all'apertura a freddo (35) e la correzione
-del 404 del 02/10. **Sull'iPhone, dopo il deploy:** il caso della 31, presa
-registrata offline e poi il push (la prova sullo Studio non misura iOS); e il
-rinnovo all'apertura quando la subscription va ricreata senza gesto, oggi non
-misurato.
+**Cosa resta: la prova sull'iPhone e la settimana di accettazione (17).**
+L'app al bundle nuovo `index-Dv0-EdhH`; l'iscrizione dal toggle (34); un push
+di dose alla sua ora, con la sua riga in `push_dispatch`; il caso della 31,
+presa registrata offline e poi il push; il rinnovo all'apertura quando la
+subscription va ricreata senza gesto (34). **Il ritorno, se servisse,**
+riporta a P1 dalla foto qui sopra, con la procedura della preparazione del
+04/10; la v07 resta.
 
 ---
 
@@ -128,7 +130,7 @@ Si esegue, non si rimisura. Ordinata per rischio clinico.
 | 4 | [aperta] **estrarre il SQL dai router** in `repository/` | -- | Refactor, sessione propria, se ancora voluto. Norma dichiarata: SQL nel router (`CLAUDE.md` 13). |
 | 5 | [aperta] **`deploy-mini.sh` non fotografa il bundle** prima del `rsync --delete` | -- | Fatto a mano per la seconda volta (`web.bak.*` e `backend.predeploy.*.tgz`). Lo script deve farlo da se, come passo fra le guardie e il rsync. **Riconferma del 2026-10-04:** il 03/09 alle 20:03 e stato schierato il client `80cf0f2`, senza foto e senza verbale. Elemento nuovo: un deploy intero senza la foto fatta a mano e senza un commit che lo racconti. |
 | 6 | [aperta] **Il meccanismo delle orfane** | M3 | Il cambio di profilo cancella le ricalcolate solo in locale (`ApiRepository.js` :66-69) e lo specchio le rimette alla lettura successiva; la giunzione `(farmaco_id, dose_numero)` non e una FK: e la D2 della 20. Materia di record, non condizione del canale (decisione 22 A). Forma del rimedio non decisa: portare la cancellazione al server tocca l invariante dello specchio (`mirrorLogWindow`) e la meccanica M1 della voce 2. |
-| 7 | [aperta] **La suite di backend ha una sola difesa contro il server sbagliato** | **M2** | Rilievi della sonda sulla suite del 2026-10-04, riletti alle sedi il 2026-10-05; si risolvono nella sessione del gate, dopo l'accettazione del canale. (1) `CLAUDE.md` dice che col sandbox il Mini resta fuori: e dedotto falso, perche il loopback dello Studio comprende la 3307, il tunnel di StockFusion. Riletto oggi: la stessa affermazione sta nella sezione 4 ("il Mini resta fuori") e nella 11 ("Cio che resta fuori e la tailnet"). Si misura per analogia su una porta di loopback libera, senza toccare il tunnel, e le due righe si correggono sulla misura. (2) La difesa e un solo strato: i valori di `backend/.env.dev` dello Studio, ignorato da git, e l'assenza di `DB_*` nell'ambiente. `cleanup_test_data`, autouse in `backend/tests/conftest.py`, svuota con TRUNCATE le tabelle di `_TRUNCATE_ORDER` a chiavi esterne spente, prima di ogni test e sul server che quei valori nominano, senza verificarlo. Rimedio: prima del primo TRUNCATE la fixture verifica l'identita del server, non solo i nomi. La barriera di StockFusion, tutto in sola lettura, qui non si copia: i nostri test scrivono. (3) Il default della passata e l'invio vero (`invia=invio.invia` in `pianificatore.passata`) e ogni test lo sostituisce: non e voce, perche gli endpoint dei test sono inventati. |
+| 7 | [aperta] **La suite di backend ha una sola difesa contro il server sbagliato** | **M2** | Rilievi della sonda sulla suite del 2026-10-04, riletti alle sedi il 2026-10-05; si risolvono nella sessione del gate, dopo l'accettazione del canale. (1) `CLAUDE.md` dice che col sandbox il Mini resta fuori: e dedotto falso, perche il loopback dello Studio comprende la 3307, il tunnel di StockFusion. Riletto oggi: la stessa affermazione sta nella sezione 4 ("il Mini resta fuori") e nella 11 ("Cio che resta fuori e la tailnet"). Si misura per analogia su una porta di loopback libera, senza toccare il tunnel, e le due righe si correggono sulla misura. (2) La difesa e un solo strato: i valori di `backend/.env.dev` dello Studio, ignorato da git, e l'assenza di `DB_*` nell'ambiente. `cleanup_test_data`, autouse in `backend/tests/conftest.py`, svuota con TRUNCATE le tabelle di `_TRUNCATE_ORDER` a chiavi esterne spente, prima di ogni test e sul server che quei valori nominano, senza verificarlo. Rimedio: prima del primo TRUNCATE la fixture verifica l'identita del server, non solo i nomi. La barriera di StockFusion, tutto in sola lettura, qui non si copia: i nostri test scrivono. (3) Il default della passata e l'invio vero (`invia=invio.invia` in `pianificatore.passata`) e ogni test lo sostituisce: non e voce, perche gli endpoint dei test sono inventati. (4) Il gate dipende da `~/.my.cnf` dello Studio: la precondizione di `test-backend` lancia `mysql -N -B -e 'SELECT LEFT(@@server_uuid,9)'` senza `--defaults-file` (`Makefile` :184), e il client legge quel file da se, cioe credenziali di root, in 644 secondo StockFusion. Misurato il 2026-10-06; quel giorno ha risposto `8c7fac68-`, l'uuid dello Studio. |
 
 ### Rilievi chiusi, e cio che resta aperto sotto di loro
 
@@ -530,6 +532,15 @@ notifiche ad app chiusa non si fanno.
     `security add-generic-password -U` e cancellare il file, oppure tenere il
     file: spetta a te. Finche non si decide, il runbook della lezione #65
     punta a un token morto.
+    **Riga nuova del 2026-10-06:** a P2 del deploy il file non c'era, e
+    nessuna trascrizione delle sessioni di Claude Code ne registra la
+    cancellazione; la voce del Keychain (account `Roberto`, modificata il
+    2026-06-30) la produzione la rifiuta con 401. Riscritto alle 10:52 da un
+    appunto di Roberto, preso durante gli ultimi test di PharmaTimer: 43 byte,
+    impronta `e93e6178dd6e`, uguale a `utenti.token_hash` dell'id 2. Il token
+    vivo sta anche in quell'appunto, terza copia oltre al file e al
+    Portachiavi (la cui voce pero porta quello vecchio): cosa farne lo decide
+    Roberto, dentro la 23.
 
 24. [aperta] **Fine silenziosa di ogni `fisso_date`.** Misurato il 2026-09-28
     sulle sedi vere: dopo l'ultima data della lista il farmaco esce dal piano
