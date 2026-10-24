@@ -1,7 +1,11 @@
 #!/bin/sh
 # PharmaTimer -- hook di pre-push: il gate e OBBLIGATORIO prima di ogni push.
 #
-# Lancia make check-prepush, che e make check con TREE asserito e AHEAD no:
+# Prima gitleaks sull intera storia, con i valori oscurati. Le segnalazioni
+# note stanno in .gitleaksignore, una impronta per riga; ogni altra ferma il
+# push. Senza gitleaks nel PATH il push si ferma e lo dice: mai un salto.
+#
+# Poi lancia make check-prepush, che e make check con TREE asserito e AHEAD no:
 # prima del push AHEAD non e zero per costruzione, e asserirlo bloccherebbe
 # ogni push. Dopo il push AHEAD si legge con git, insieme a TREE e all esito
 # della CI, senza rilanciare il gate che questo hook ha appena eseguito
@@ -15,6 +19,16 @@
 set -u
 radice="$(git rev-parse --show-toplevel)" || exit 1
 cd "$radice" || exit 1
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-push: ROSSO  gitleaks non e nel PATH: il push si ferma, la scansione non si salta."
+  exit 1
+fi
+echo "pre-push: gitleaks sull intera storia, valori oscurati"
+if ! gitleaks git --redact --no-banner .; then
+  echo "pre-push: ROSSO  gitleaks: segnalazioni fuori da .gitleaksignore, o scansione fallita."
+  echo "          Dettaglio, sempre oscurato: gitleaks git --redact -v ."
+  exit 1
+fi
 echo "pre-push: make check-prepush (per saltarlo, e dichiararlo: git push --no-verify)"
 umask 022
 exec make --no-print-directory check-prepush

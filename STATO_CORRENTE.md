@@ -12,7 +12,35 @@ deploy/deploy-mini.sh` dal Terminale.
 
 ---
 
-## Ultima sessione -- il deploy del canale, 2026-10-06
+## Ultima sessione -- il gate, 2026-10-24
+
+**La riscrittura corta di questo STATO e rimandata alla sua sessione (23/10, ratificata da Roberto).**
+
+Sessione dell'harness: le decisioni 1, 4, 3 e 2 della consulenza del 23/10,
+ratificate da Roberto. Qui cambia solo cio che questa sessione ha cambiato.
+
+- **Decisione 1.** La precondizione di `test-backend` legge le credenziali da
+  Settings col venv del backend e interroga il server di pytest: host, porta,
+  utente e password del pool di `backend/tests/conftest.py`. Il controllo e
+  quello di prima, una risposta non vuota con `server_uuid`, senza valore
+  atteso. Verde con `8c7fac68-`; rosso, e pytest mai partito, con `DB_PORT`
+  su una porta di loopback libera. Chiude il punto (4) della voce 7.
+- **Decisione 4.** Lo hook di pre-push lancia gitleaks sull'intera storia, coi
+  valori oscurati, prima del gate; le segnalazioni note stanno in
+  `.gitleaksignore`, per impronta. Senza gitleaks nel PATH lo hook e rosso.
+- **Decisioni 3 e 2, fuori dal repo.** `.claude/settings.local.json` non porta
+  piu voci allow e nega i percorsi di credenziali al Read di Claude Code e al
+  Bash del sandbox; `backend/.env.dev` resta leggibile. Il sandbox nega
+  `~/.my.cnf` anche al client `mysql` di CLAUDE.md 9: quel comando si lancia
+  dal Terminale.
+
+**Non fatto, rimandato con l'orchestratore** (decisione del 23/10 della
+consulenza, su delega di Roberto): il gancio `record_gate_event` e il file di
+sessione con gli allow esatti. **Deviazioni:** nessuna dalla Spec.
+
+---
+
+## Sessione precedente -- il deploy del canale, 2026-10-06
 
 **Il canale e in produzione dalle 10:29 del 06/10, codice `3a05aef`.** Con
 lui sono in produzione il riarmo dei timer all'apertura a freddo (35) e la
@@ -130,7 +158,7 @@ Si esegue, non si rimisura. Ordinata per rischio clinico.
 | 4 | [aperta] **estrarre il SQL dai router** in `repository/` | -- | Refactor, sessione propria, se ancora voluto. Norma dichiarata: SQL nel router (`CLAUDE.md` 13). |
 | 5 | [aperta] **`deploy-mini.sh` non fotografa il bundle** prima del `rsync --delete` | -- | Fatto a mano per la seconda volta (`web.bak.*` e `backend.predeploy.*.tgz`). Lo script deve farlo da se, come passo fra le guardie e il rsync. **Riconferma del 2026-10-04:** il 03/09 alle 20:03 e stato schierato il client `80cf0f2`, senza foto e senza verbale. Elemento nuovo: un deploy intero senza la foto fatta a mano e senza un commit che lo racconti. |
 | 6 | [aperta] **Il meccanismo delle orfane** | M3 | Il cambio di profilo cancella le ricalcolate solo in locale (`ApiRepository.js` :66-69) e lo specchio le rimette alla lettura successiva; la giunzione `(farmaco_id, dose_numero)` non e una FK: e la D2 della 20. Materia di record, non condizione del canale (decisione 22 A). Forma del rimedio non decisa: portare la cancellazione al server tocca l invariante dello specchio (`mirrorLogWindow`) e la meccanica M1 della voce 2. |
-| 7 | [aperta] **La suite di backend ha una sola difesa contro il server sbagliato** | **M2** | Rilievi della sonda sulla suite del 2026-10-04, riletti alle sedi il 2026-10-05; si risolvono nella sessione del gate, dopo l'accettazione del canale. (1) `CLAUDE.md` dice che col sandbox il Mini resta fuori: e dedotto falso, perche il loopback dello Studio comprende la 3307, il tunnel di StockFusion. Riletto oggi: la stessa affermazione sta nella sezione 4 ("il Mini resta fuori") e nella 11 ("Cio che resta fuori e la tailnet"). Si misura per analogia su una porta di loopback libera, senza toccare il tunnel, e le due righe si correggono sulla misura. (2) La difesa e un solo strato: i valori di `backend/.env.dev` dello Studio, ignorato da git, e l'assenza di `DB_*` nell'ambiente. `cleanup_test_data`, autouse in `backend/tests/conftest.py`, svuota con TRUNCATE le tabelle di `_TRUNCATE_ORDER` a chiavi esterne spente, prima di ogni test e sul server che quei valori nominano, senza verificarlo. Rimedio: prima del primo TRUNCATE la fixture verifica l'identita del server, non solo i nomi. La barriera di StockFusion, tutto in sola lettura, qui non si copia: i nostri test scrivono. (3) Il default della passata e l'invio vero (`invia=invio.invia` in `pianificatore.passata`) e ogni test lo sostituisce: non e voce, perche gli endpoint dei test sono inventati. (4) Il gate dipende da `~/.my.cnf` dello Studio: la precondizione di `test-backend` lancia `mysql -N -B -e 'SELECT LEFT(@@server_uuid,9)'` senza `--defaults-file` (`Makefile` :184), e il client legge quel file da se, cioe credenziali di root, in 644 secondo StockFusion. Misurato il 2026-10-06; quel giorno ha risposto `8c7fac68-`, l'uuid dello Studio. |
+| 7 | [aperta] **La suite di backend ha una sola difesa contro il server sbagliato** | **M2** | Rilievi della sonda sulla suite del 2026-10-04, riletti alle sedi il 2026-10-05; si risolvono nella sessione del gate, dopo l'accettazione del canale. (1) `CLAUDE.md` dice che col sandbox il Mini resta fuori: e dedotto falso, perche il loopback dello Studio comprende la 3307, il tunnel di StockFusion. Riletto oggi: la stessa affermazione sta nella sezione 4 ("il Mini resta fuori") e nella 11 ("Cio che resta fuori e la tailnet"). Si misura per analogia su una porta di loopback libera, senza toccare il tunnel, e le due righe si correggono sulla misura. **Misurato il 2026-10-24,** nella prova negativa della precondizione: dal sandbox una connessione a `127.0.0.1:39306`, porta libera verificata con un bind, arriva al kernel ed e rifiutata (2003, errno 61), non negata dal sandbox; per analogia una porta di loopback in ascolto, come la 3307, e raggiungibile. Le due righe di `CLAUDE.md` restano da correggere. (2) La difesa e un solo strato: i valori di `backend/.env.dev` dello Studio, ignorato da git, e l'assenza di `DB_*` nell'ambiente. `cleanup_test_data`, autouse in `backend/tests/conftest.py`, svuota con TRUNCATE le tabelle di `_TRUNCATE_ORDER` a chiavi esterne spente, prima di ogni test e sul server che quei valori nominano, senza verificarlo. Rimedio: prima del primo TRUNCATE la fixture verifica l'identita del server, non solo i nomi. La barriera di StockFusion, tutto in sola lettura, qui non si copia: i nostri test scrivono. (3) Il default della passata e l'invio vero (`invia=invio.invia` in `pianificatore.passata`) e ogni test lo sostituisce: non e voce, perche gli endpoint dei test sono inventati. (4) Il gate dipende da `~/.my.cnf` dello Studio: la precondizione di `test-backend` lancia `mysql -N -B -e 'SELECT LEFT(@@server_uuid,9)'` senza `--defaults-file` (`Makefile` :184), e il client legge quel file da se, cioe credenziali di root, in 644 secondo StockFusion. Misurato il 2026-10-06; quel giorno ha risposto `8c7fac68-`, l'uuid dello Studio. **Chiuso il 2026-10-24:** la precondizione legge le credenziali da Settings e interroga il server di pytest; `test-backend` e verde nel `make check` col sandbox che nega `~/.my.cnf`. |
 
 ### Rilievi chiusi, e cio che resta aperto sotto di loro
 
@@ -219,9 +247,14 @@ toccano:
   stata revocata alle 12:13:11, dopo lo spegnimento. Forse clic ripetuti: da
   verificare che un accensione produca un iscrizione sola.
 - [aperta] Fuori dal repo, da rifare su una macchina nuova: `.claude/settings.json`
-  con la deny sui vietati della sezione 7, `.claude/settings.local.json` con
-  `sandbox.network`, e `git config core.hooksPath scripts/githooks`. L'assetto
-  stabile dei permessi e materia della sessione del gate.
+  con la deny sui vietati della sezione 7; `.claude/settings.local.json` con
+  `sandbox.network`, senza voci allow, e con `~/.ssh`, `~/.my.cnf`,
+  `~/.mylogin.cnf` e `~/pt-token-utente2.txt` negati due volte, come `Read(...)`
+  in `permissions.deny` e come `deny` in `sandbox.credentials.files`
+  (2026-10-24); `git config core.hooksPath scripts/githooks`; gitleaks nel PATH,
+  senza il quale il pre-push e rosso. Dell'assetto stabile dei permessi restano
+  il file di sessione con gli allow esatti e il gancio `record_gate_event`,
+  rimandati con l'orchestratore.
 
 ---
 

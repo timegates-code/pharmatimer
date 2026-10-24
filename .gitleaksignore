@@ -1,0 +1,9 @@
+# Impronte delle segnalazioni note di gitleaks, una per riga: commit:file:regola:riga.
+# Le legge gitleaks lanciato da scripts/githooks/pre-push; una segnalazione che
+# non e qui ferma il push.
+2049ab2c75271e82ece010123596f4ba1fda8ac6:PharmaTimer_Changelog_Fase2.md:curl-auth-header:5316
+a78be66d4b98a3b9f4c42ef2cbd90927b64787e9:PharmaTimer_Changelog_Fase2.md:curl-auth-header:5316
+a78be66d4b98a3b9f4c42ef2cbd90927b64787e9:PharmaTimer_Changelog_Fase2.md:generic-api-key:17842
+a78be66d4b98a3b9f4c42ef2cbd90927b64787e9:PharmaTimer_Changelog_Fase3.md:generic-api-key:6360
+d4e47b2c7b4c6c228b134cf880651ebe3f151a33:PharmaTimer_Changelog_Fase3.md:generic-api-key:6360
+fe212ad593a410e30bd83b6ccc35e8d03accbd89:PharmaTimer_Changelog_Fase2.md:generic-api-key:17842
