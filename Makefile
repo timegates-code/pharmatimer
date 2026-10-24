@@ -3,8 +3,8 @@
 #
 #   make check       GATE DI SESSIONE. Apertura e chiusura si fanno su questo.
 #                    lint + test frontend + controllo DST + dipendenze +
-#                    test backend + mutazioni + inventario + contatore dello
-#                    STATO + albero.
+#                    test backend + mutazioni + inventario + tetto e
+#                    contatore dello STATO + albero.
 #   make check-prepush  Lo stesso gate, lanciato dallo hook di pre-push:
 #                    asserisce TREE e non AHEAD, che prima del push non e zero.
 #   make check-ci    Lo stesso gate, lanciato da GitHub Actions su ogni push.
@@ -22,9 +22,12 @@
 #                    il prodotto su una copia fuori dall albero e pretende il
 #                    rosso dei test che nomina.
 #   make inventario  le diciannove voci, rigenerate dal disco.
-#   make contatore-stato  conta le voci [aperta] e [chiusa] di STATO_CORRENTE.md
-#                    per sezione e appende a docs/serie-stato.tsv SOLO a
-#                    conteggio cambiato. Non giudica: registra.
+#   make tetto-stato STATO_CORRENTE.md entro i tetti di righe e di caratteri
+#                    per riga di scripts/audit/tetto_stato.py. Giudica.
+#   make contatore-stato  conta per sezione le voci di STATO_CORRENTE.md e le
+#                    chiuse di docs/chiuse-stato.tsv, e appende a
+#                    docs/serie-stato.tsv SOLO a conteggio cambiato. Non
+#                    giudica: registra.
 #
 # PRINCIPIO: nessun atteso e pinnato in un file a parte. Cio che si puo derivare
 # dal vivo si deriva; cio che non si puo asserire si STAMPA come INFO e si dice
@@ -44,13 +47,13 @@ PY := backend/venv/bin/python
 
 .PHONY: check check-prepush check-ci _gate prod-check lint lint-backend lint-frontend \
         test test-frontend test-frontend-compatto controllo-dst dipendenze test-backend mutazioni \
-        mutazioni-compatto inventario inventario-compatto contatore-stato albero g21 openapi \
+        mutazioni-compatto inventario inventario-compatto tetto-stato contatore-stato albero g21 openapi \
         venv help
 
 help:
 	@echo "gate di sessione : make check"
 	@echo "prima di deployare: make prod-check"
-	@echo "singoli          : lint | test-frontend | controllo-dst | dipendenze | test-backend | mutazioni | inventario | contatore-stato | albero | openapi"
+	@echo "singoli          : lint | test-frontend | controllo-dst | dipendenze | test-backend | mutazioni | inventario | tetto-stato | contatore-stato | albero | openapi"
 
 # ----------------------------------------------------------------- VENV
 venv:
@@ -233,10 +236,20 @@ inventario-compatto: venv
 	@$(PY) scripts/audit/inventario.py --compatto
 	@echo "   dettaglio: make inventario"
 
+# ----------------------------------------------------------------- TETTO
+# Il tetto dello STATO, decisione 1 del 2026-10-24: righe e caratteri per riga
+# di STATO_CORRENTE.md, coi valori in testa a scripts/audit/tetto_stato.py.
+# GIUDICA, a differenza del contatore che registra: per questo e un blocco a
+# parte. Prima dello STATO lo script misura il proprio campione ai due lati di
+# ciascun tetto, e arrossa se lo strumento non li distingue.
+tetto-stato: venv
+	@$(PY) scripts/audit/tetto_stato.py
+
 # ----------------------------------------------------------------- CONTATORE
-# Conta le voci dello STATO per sezione e le registra in docs/serie-stato.tsv,
-# tracciato. NON GIUDICA: nessun conteggio fa arrossare; arrossa solo lo
-# strumento (autoprova del riconoscitore) o uno STATO illeggibile.
+# Conta per sezione le voci dello STATO e le chiuse di docs/chiuse-stato.tsv,
+# e le registra in docs/serie-stato.tsv, tracciato. NON GIUDICA: nessun
+# conteggio fa arrossare; arrossa solo lo strumento (autoprova del
+# riconoscitore) o uno dei due file illeggibile.
 # Sta PRIMA di albero, e scrive SOLO a conteggio cambiato: cosi una riga nuova
 # e un TREE sporco atteso alla chiusura, che entra nel commit dello STATO, e
 # all apertura l albero resta pulito per costruzione. La serie registra i
@@ -246,7 +259,7 @@ inventario-compatto: venv
 SERIE_SCRIVI ?= si
 
 contatore-stato: venv
-	@echo "== CONTATORE STATO: voci [aperta] e [chiusa] per sezione (registra, non giudica) =="
+	@echo "== CONTATORE STATO: voci dello STATO e chiuse di docs/chiuse-stato.tsv, per sezione (registra, non giudica) =="
 	@$(PY) scripts/audit/contatore_stato.py --scrivi $(SERIE_SCRIVI)
 
 # ----------------------------------------------------------------- ALBERO
@@ -289,6 +302,7 @@ _gate:
 	echo; $(MAKE) --no-print-directory test-backend || rc=1; \
 	echo; $(MAKE) --no-print-directory mutazioni-compatto || rc=1; \
 	echo; $(MAKE) --no-print-directory inventario-compatto || rc=1; \
+	echo; $(MAKE) --no-print-directory tetto-stato || rc=1; \
 	echo; $(MAKE) --no-print-directory contatore-stato || rc=1; \
 	echo; $(MAKE) --no-print-directory albero || rc=1; \
 	echo; echo "###############################################"; \

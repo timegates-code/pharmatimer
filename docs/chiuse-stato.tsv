@@ -1,0 +1,34 @@
+# PharmaTimer -- voci chiuse di STATO_CORRENTE.md, una riga per voce.
+# Le conta scripts/audit/contatore_stato.py per sezione, sommate alle voci
+# dello STATO: cosi la serie docs/serie-stato.tsv resta cumulativa.
+# Testo intero fino al 2026-10-24: git show de0a538:STATO_CORRENTE.md
+# Campi, separati da TAB: sezione, voce, chiusura, commit, titolo.
+# sezione: l'intestazione dello STATO, identica. voce: il suo numero, o -.
+# chiusura: come la voce la riporta. commit: solo se la voce lo riporta, o -.
+Rilievi chiusi, e cio che resta aperto sotto di loro	-	CHIUSO dalla decisione 18 il 2026-09-18; ESEGUITA il 2026-09-18	-	Righe di log aperte e irraggiungibili sul Mini: sono DUE, non una.
+Minori, aperti e non urgenti	-	Allineati nel commit B del client	commit B del client	Il click della notifica naviga a /oggi assoluto ignorando BASE_URL; la copy "Avviso poco prima di ogni dose"; Spec 2.1 :140 e 8.1 :583 sul push via PWA
+Minori, aperti e non urgenti	-	tolto il 2026-10-01	-	CLAUDE.md 13 portava "67 cur.execute nei cinque router"
+Decisioni che spettano a Roberto	1	CHIUSA il 2026-09-29, lettera A	-	ricostruzione-mini: chiuderla o no
+Decisioni che spettano a Roberto	9	DECISA il 2026-09-29, lettera A, con una condizione	-	Q9=A da riaprire per lettera
+Decisioni che spettano a Roberto	10	DECISA il 2026-10-01, lettera A	-	Emettitore unico o due sorgenti
+Decisioni che spettano a Roberto	11	DECISA il 2026-09-29, lettera A	-	Ricalcolo D+1 rifiutato dal server
+Decisioni che spettano a Roberto	12	DECISA il 2026-09-29, lettera A, con una condizione	-	Orizzonte pubblicato e fine orizzonte
+Decisioni che spettano a Roberto	14	DECISA il 2026-10-01, lettera A	-	Sblocco di vite.config.js per una riga e sede del modulo di rete
+Decisioni che spettano a Roberto	15	DECISA il 2026-09-29, lettera A	-	Custodia VAPID
+Decisioni che spettano a Roberto	16	DECISA il 2026-09-29, lettera A	-	Tolleranza e TTL
+Decisioni che spettano a Roberto	17	DECISA il 2026-09-29, lettera A	-	Ordine dei lavori
+Decisioni che spettano a Roberto	18	DECISA il 2026-09-18, lettera A, per la sola parte RECORD; ESEGUITA sul record il 2026-09-18	-	Le due righe di log aperte e irraggiungibili sul Mini
+Decisioni che spettano a Roberto	19	DECISA il 2026-09-18, lettera A, ed ESEGUITA lo stesso giorno	34f0e94 ratifica, e615916 esecuzione	La terapia vera al posto dei dati di prova
+Decisioni che spettano a Roberto	21	ESEGUITA il 2026-09-18, lettera A	il commit che esegue la 19	La riga di CLAUDE.md:5 "Non esiste produzione con utenti terzi"
+Decisioni che spettano a Roberto	22	DECISA il 2026-09-29, lettera A	-	Rimedio alle orfane
+Decisioni che spettano a Roberto	25	DECISA il 2026-09-30, lettera A	-	Sede della passata e del suo SQL
+Decisioni che spettano a Roberto	26	DECISA il 2026-10-01, lettera A	-	Farmaco o utente disattivati dopo l'ultima pubblicazione
+Decisioni che spettano a Roberto	27	DECISA il 2026-10-01, lettera A	-	Testi dell'avviso neutro e di fine orizzonte
+Decisioni che spettano a Roberto	28	DECISA il 2026-10-01, lettera A, nel perimetro della scheda	-	D4
+Decisioni che spettano a Roberto	29	due condizioni di Roberto del 2026-09-30	-	Ritentativi
+Decisioni che spettano a Roberto	30	di Roberto del 2026-09-30	-	Confine delle righe scaduto
+Decisioni che spettano a Roberto	31	DECISA il 2026-10-01, lettera A	-	Il worker legge il taccuino all arrivo
+Decisioni che spettano a Roberto	32	DECISA il 2026-10-01, lettera A	-	Testo del push di dose
+Decisioni che spettano a Roberto	33	DECISA il 2026-10-01, lettera B, 5 minuti	-	Soglia del battito vecchio
+Decisioni che spettano a Roberto	34	DECISA il 2026-10-01, lettera A	-	Ordine dentro il tocco del toggle
+Decisioni che spettano a Roberto	35	DECISA il 2026-10-01, lettera A, con una condizione	-	Sede della pubblicazione

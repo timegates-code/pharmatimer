@@ -91,6 +91,9 @@ strumenti di sviluppo ammessi in piu), **test backend** (pytest, con il MySQL
 di dev come precondizione dichiarata), **mutazioni** (ogni riga della tabella
 del banco muta il prodotto su una copia fuori dall'albero e deve far arrossare
 i test che nomina: sezione 6), **inventario** (le diciannove voci),
+**tetto dello STATO** (righe e caratteri per riga di `STATO_CORRENTE.md`
+entro i tetti di `scripts/audit/tetto_stato.py`: giudica, a differenza del
+contatore, e per questo e un blocco a parte),
 **contatore dello STATO** (voci aperte e chiuse per sezione, appese a
 `docs/serie-stato.tsv` solo a conteggio cambiato: registra, non giudica), e
 **albero** (`TREE` e `AHEAD` letti da git vivo).
@@ -100,7 +103,10 @@ riga che porta `[aperta]` o `[chiusa]` subito dopo il marcatore di lista
 (`- `, `12. `) o dopo la prima cella di una riga di tabella; la sua sezione e
 l'ultima intestazione `##` o `###` sopra. Il tag e binario: cio che non e
 chiuso per intero e `[aperta]`, la sfumatura resta in prosa, il verbale non
-porta tag. Il portatore della norma e `scripts/audit/contatore_stato.py`, che
+porta tag. Una voce chiusa esce dallo STATO ed e una riga di
+`docs/chiuse-stato.tsv`, con la sua sezione nel primo campo: il contatore
+somma per sezione le voci dello STATO e quelle righe, e cosi la serie resta
+cumulativa. Il portatore della norma e `scripts/audit/contatore_stato.py`, che
 arrossa solo sulla propria autoprova. La serie registra i cambiamenti dello
 STATO, non le esecuzioni del gate: la riga nuova entra nel commit che cambia
 lo STATO, e in prepush e ci non si scrive.
@@ -311,8 +317,8 @@ vitest riporta N unhandled errors con 0 test eseguiti e pytest da
 
 **Il gate e `make check`**, e vale in apertura e in chiusura (sezioni 4 e 8).
 Esegue lint, test frontend, controllo DST, dipendenze, test backend,
-mutazioni, inventario, contatore dello STATO e albero, e stampa un verdetto
-unico. **Prima di un deploy, e solo allora, `make prod-check`**, che tocca il
+mutazioni, inventario, tetto e contatore dello STATO e albero, e stampa un
+verdetto unico. **Prima di un deploy, e solo allora, `make prod-check`**, che tocca il
 Mini e include `make g21` e il confronto del venv del Mini con il lock.
 
 Sotto Claude Code il gate gira per intero: la precondizione MySQL di

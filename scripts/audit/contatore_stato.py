@@ -8,7 +8,8 @@ Uso:  python3 scripts/audit/contatore_stato.py [--scrivi si|no]
                     check-prepush e check-ci, dove scrivere sporcherebbe TREE.
 
 NON GIUDICA: REGISTRA. Nessun conteggio fa arrossare il blocco. Arrossa solo
-lo strumento: l'autoprova in testa a ogni esecuzione, o lo STATO illeggibile.
+lo strumento: l'autoprova in testa a ogni esecuzione, o lo STATO o il file
+delle chiuse illeggibile.
 
 LA NORMA (CLAUDE.md sezione 4). Una voce e SOLO una riga che porta il tag
 `[aperta]` o `[chiusa]` subito dopo il marcatore di lista (`- `, `* `, `12. `)
@@ -18,13 +19,21 @@ non e una voce, qualunque forma abbia: gli elenchi del verbale non si contano.
 Un tag trovato fuori da quella posizione si stampa come INFO e non si conta.
 Il tag e binario: cio che non e chiuso per intero e `[aperta]`.
 
-LA SERIE registra i CAMBIAMENTI dello STATO, non le esecuzioni del gate: una
-riga si appende solo a conteggio cambiato, data esclusa dal confronto. Cosi
-all'apertura l'albero resta pulito per costruzione, e la riga entra nello
-stesso commit che cambia lo STATO. Conta cio che il file porta: una voce
-chiusa e poi tolta dallo STATO esce dal conteggio.
+LE CHIUSE (decisione 3 del 2026-10-24). Una voce chiusa esce dallo STATO ed
+entra in docs/chiuse-stato.tsv: una riga per voce, la sezione nel primo campo,
+separato da TAB; commenti (#) e righe vuote non sono voci, una riga senza
+sezione si stampa come INFO e non si conta. Una sezione somma le voci dello
+STATO e le righe del file; l'ordine e quello dello STATO, poi le sezioni del
+solo file nell'ordine del file. Un [chiusa] ancora nello STATO si conta come
+prima, e si stampa come INFO: la sua sede e il file delle chiuse.
 
-Uscita 0 se l'autoprova passa e lo STATO si legge, 1 altrimenti.
+LA SERIE registra i CAMBIAMENTI dello STATO e delle chiuse, non le esecuzioni
+del gate: una riga si appende solo a conteggio cambiato, data esclusa dal
+confronto. Cosi all'apertura l'albero resta pulito per costruzione, e la riga
+entra nello stesso commit che cambia lo STATO. Una voce chiusa che passa dallo
+STATO al file delle chiuse resta nel conteggio: la serie e cumulativa.
+
+Uscita 0 se l'autoprova passa e i due file si leggono, 1 altrimenti.
 """
 import datetime
 import os
@@ -33,6 +42,7 @@ import sys
 
 RADICE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 STATO = os.path.join(RADICE, "STATO_CORRENTE.md")
+CHIUSE = os.path.join(RADICE, "docs", "chiuse-stato.tsv")
 SERIE = os.path.join(RADICE, "docs", "serie-stato.tsv")
 
 INTESTAZIONE_SERIE = """\
@@ -40,7 +50,7 @@ INTESTAZIONE_SERIE = """\
 # Scritta da scripts/audit/contatore_stato.py: non si edita a mano.
 # Registra i CAMBIAMENTI dello STATO, non le esecuzioni del gate: una riga si
 # appende solo quando i conteggi differiscono dall'ultima, data esclusa.
-# Conta cio che il file porta: una voce chiusa e poi tolta esce dal conteggio.
+# Conta le voci dello STATO e le chiuse di docs/chiuse-stato.tsv: e cumulativa.
 # Campi, separati da TAB: data, aperte, chiuse, poi sezione=aperte/chiuse
 # nell'ordine in cui le sezioni compaiono nello STATO.
 """
@@ -81,6 +91,39 @@ def conta(testo):
         elif QUALUNQUE_TAG.search(riga):
             fuori.append((n, riga.strip()))
     return sezioni, fuori
+
+
+def conta_chiuse(testo):
+    """Rende (sezioni, senza_sezione) del file delle chiuse.
+
+    sezioni: lista ordinata di [nome, 0, chiuse], nella forma di conta().
+    senza_sezione: lista di (numero di riga, riga) senza sezione nel primo campo.
+    """
+    sezioni, indice, senza = [], {}, []
+    for n, riga in enumerate(testo.splitlines(), 1):
+        if not riga.strip() or riga.startswith("#"):
+            continue
+        nome = riga.split("\t", 1)[0].strip() if "\t" in riga else ""
+        if not nome:
+            senza.append((n, riga.strip()))
+            continue
+        if nome not in indice:
+            indice[nome] = [nome, 0, 0]
+            sezioni.append(indice[nome])
+        indice[nome][2] += 1
+    return sezioni, senza
+
+
+def unisci(stato, chiuse):
+    """Somma per sezione: prima l'ordine dello STATO, poi le sezioni del solo file."""
+    uniti, indice = [], {}
+    for nome, aperte, chiuse_sezione in stato + chiuse:
+        if nome not in indice:
+            indice[nome] = [nome, 0, 0]
+            uniti.append(indice[nome])
+        indice[nome][1] += aperte
+        indice[nome][2] += chiuse_sezione
+    return uniti
 
 
 def campi(sezioni):
@@ -130,6 +173,21 @@ CAMPIONE = """\
 """
 ATTESO = [["Coda", 1, 1], ["Decisioni", 3, 1]]
 
+# Il campione del file delle chiuse: un commento e una riga vuota che non sono
+# voci, due sezioni dello STATO con chiuse in numero diverso, una sezione del
+# solo file che va in coda, e una riga senza sezione che non si conta. I totali
+# uniti restano asimmetrici, per la stessa ragione del campione dello STATO.
+CAMPIONE_CHIUSE = """\
+# commento, non e una voce
+Coda\t-\tchiusa\t-\tsettima
+
+Decisioni\t9\tDECISA\t-\tottava
+Coda\t-\tchiusa\t-\tnona
+Archivio\t-\tchiusa\t-\tsezione del solo file
+riga senza tabulazione
+"""
+ATTESO_UNITI = [["Coda", 1, 3], ["Decisioni", 3, 2], ["Archivio", 0, 1]]
+
 
 def autoprova():
     """Rende la lista dei difetti dello strumento sul campione; vuota se sano."""
@@ -145,6 +203,18 @@ def autoprova():
     mosso, _ = conta(CAMPIONE.replace("| 1 | [aperta]", "| 1 | [chiusa]"))
     if campi(mosso) == campi(sezioni):
         difetti.append("un tag mosso da aperta a chiusa non cambia i campi")
+    chiuse, senza = conta_chiuse(CAMPIONE_CHIUSE)
+    uniti = unisci(sezioni, chiuse)
+    if uniti != ATTESO_UNITI:
+        difetti.append(f"sezioni unite {uniti}, attese {ATTESO_UNITI}")
+    if [n for n, _ in senza] != [7]:
+        difetti.append(f"righe senza sezione {[n for n, _ in senza]}, attesa la 7")
+    if campi(uniti) != ["aperte=4", "chiuse=6", "Coda=1/3", "Decisioni=3/2", "Archivio=0/1"]:
+        difetti.append(f"campi uniti {campi(uniti)}")
+    # Anche il file delle chiuse va visto: una riga tolta cambia i campi.
+    tolta, _ = conta_chiuse(CAMPIONE_CHIUSE.replace("Decisioni\t9\tDECISA\t-\tottava\n", ""))
+    if campi(unisci(sezioni, tolta)) == campi(uniti):
+        difetti.append("una chiusa tolta dal file non cambia i campi")
     return difetti
 
 
@@ -162,7 +232,8 @@ def main(argv):
         for d in difetti:
             print(f"         {d}")
         return 1
-    print("   OK    autoprova: aperta e chiusa contate in lista e in tabella, verbale e recinto esclusi")
+    print("   OK    autoprova: aperta e chiusa contate in lista e in tabella, verbale e recinto esclusi;"
+          " chiuse del file sommate per sezione")
 
     try:
         with open(STATO, encoding="utf-8") as f:
@@ -170,16 +241,29 @@ def main(argv):
     except OSError as e:
         print(f"ROSSO  STATO illeggibile: {e}")
         return 1
+    try:
+        with open(CHIUSE, encoding="utf-8") as f:
+            testo_chiuse = f.read()
+    except OSError as e:
+        print(f"ROSSO  file delle chiuse illeggibile: {e}")
+        return 1
 
-    sezioni, fuori = conta(testo)
+    sezioni_stato, fuori = conta(testo)
+    sezioni_chiuse, senza = conta_chiuse(testo_chiuse)
+    sezioni = unisci(sezioni_stato, sezioni_chiuse)
     for s in sezioni:
         print(f"   {s[1]:>3} aperte {s[2]:>3} chiuse   {s[0]}")
     nuovi = campi(sezioni)
     print(f"   TOTALE  {nuovi[0]}  {nuovi[1]}")
     if not sezioni:
-        print("   INFO  zero voci con tag nello STATO: si registra lo zero, non si giudica")
+        print("   INFO  zero voci nello STATO e nel file delle chiuse: si registra lo zero, non si giudica")
     for n, riga in fuori:
         print(f"   INFO  tag fuori posizione, non contato: STATO_CORRENTE.md:{n}: {riga[:70]}")
+    nello_stato = sum(s[2] for s in sezioni_stato)
+    if nello_stato:
+        print(f"   INFO  {nello_stato} voci [chiusa] ancora nello STATO: la loro sede e docs/chiuse-stato.tsv")
+    for n, riga in senza:
+        print(f"   INFO  riga senza sezione, non contata: docs/chiuse-stato.tsv:{n}: {riga[:70]}")
 
     precedenti = ultima_riga(SERIE)
     if precedenti == nuovi:
