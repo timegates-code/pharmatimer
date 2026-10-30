@@ -127,8 +127,11 @@ def esegui(pool, sql: str, params: tuple = ()) -> None:
         conn.close()
 
 
-def crea_iscrizione(pool, utente_id: int, endpoint: str, attivazione_ms: int, chiavi=None) -> int:
-    """An active subscription whose current activation began at attivazione_ms."""
+def crea_iscrizione(
+    pool, utente_id: int, endpoint: str, attivazione_ms: int, chiavi=None, device_id: str | None = None
+) -> int:
+    """An active subscription whose current activation began at attivazione_ms,
+    on a phone of its own unless device_id names one."""
     chiavi = chiavi or iscrizione(endpoint, nuovo_device())["keys"]
     conn = pool.get_connection()
     try:
@@ -144,7 +147,7 @@ def crea_iscrizione(pool, utente_id: int, endpoint: str, attivazione_ms: int, ch
                 chiavi["p256dh"],
                 chiavi["auth"],
                 hashlib.sha256(endpoint.encode("utf-8")).hexdigest(),
-                nuovo_device(),
+                device_id or nuovo_device(),
                 attivazione_ms,
                 attivazione_ms // 1000,
             ),

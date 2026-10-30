@@ -397,6 +397,77 @@ def test_voce_ritirata_chiude_il_ritentativo(scena) -> None:
     )
 
 
+# ------------------------------------------------------------ at most once per phone
+
+
+def _reiscrivi(scena, endpoint: str, attivazione_ms: int) -> int:
+    """What PUT /api/push/iscrizione leaves for a new endpoint of the same phone
+    (routers/push.py, iscrivi): a subscription with the phone's device_id,
+    activated at attivazione_ms, and the previous one off as 'sostituita'."""
+    (vecchia,) = righe(scena.pool, "SELECT device_id FROM push_subscriptions WHERE id = %s", (scena.sub,))
+    nuova = crea_iscrizione(scena.pool, scena.u, endpoint, attivazione_ms, device_id=vecchia["device_id"])
+    esegui(
+        scena.pool,
+        "UPDATE push_subscriptions SET attiva = FALSE, disattivata_ms = %s, "
+        "motivo_disattivazione = 'sostituita' WHERE id = %s AND attiva = TRUE",
+        (attivazione_ms, scena.sub),
+    )
+    return nuova
+
+
+def test_reiscrizione_nella_finestra_non_rimanda_la_dose_accettata(scena) -> None:
+    # Roberto, 2026-10-30: no dose twice on the same phone, even when the
+    # first push was only accepted with a 201. The phone subscribes again
+    # inside the window: the new subscription does not receive the dose.
+    metti_voce(scena.pool, scena.u, scena.f, OGGI, 1, ADESSO - 5 * MINUTO)
+    _passata(scena.pool)
+    nuova = _reiscrivi(scena, E2, ADESSO + MINUTO)
+    mittente = _passata(scena.pool, ora=ADESSO + 2 * MINUTO)
+    assert mittente.chiamate == []
+    assert righe(scena.pool, "SELECT subscription_id, stato, motivo FROM push_dispatch ORDER BY id") == [
+        {"subscription_id": scena.sub, "stato": "accettato", "motivo": None},
+        {"subscription_id": nuova, "stato": "non_inviato", "motivo": "stesso_telefono"},
+    ]
+
+
+def test_reiscrizione_nella_finestra_non_rimanda_la_dose_dall_esito_ignoto(scena) -> None:
+    # A POST that left without an outcome may have reached the phone: never
+    # attempted again (condition 2), not even on the phone's new subscription.
+    metti_voce(scena.pool, scena.u, scena.f, OGGI, 1, ADESSO - 5 * MINUTO)
+    esegui(
+        scena.pool,
+        "INSERT INTO push_dispatch (subscription_id, utente_id, farmaco_id, data, dose_numero, "
+        "istante_ms, forma, stato, motivo, deciso_ms) "
+        "VALUES (%s, %s, %s, %s, 1, %s, 'dose', 'in_invio', 'esito_ignoto', %s)",
+        (scena.sub, scena.u, scena.f, OGGI, ADESSO - 5 * MINUTO, ADESSO - 4 * MINUTO),
+    )
+    nuova = _reiscrivi(scena, E2, ADESSO + MINUTO)
+    mittente = _passata(scena.pool, ora=ADESSO + 2 * MINUTO)
+    assert mittente.chiamate == []
+    assert righe(
+        scena.pool, "SELECT stato, motivo FROM push_dispatch WHERE subscription_id = %s", (nuova,)
+    ) == [{"stato": "non_inviato", "motivo": "stesso_telefono"}]
+
+
+def test_reiscrizione_nella_finestra_riceve_la_dose_respinta(scena) -> None:
+    # The other direction (M2): a certified refusal never reached the phone,
+    # so the phone's new subscription receives the dose.
+    metti_voce(scena.pool, scena.u, scena.f, OGGI, 1, ADESSO - 5 * MINUTO)
+    _passata(scena.pool, mittente=Mittente(MORTA))
+    _reiscrivi(scena, E2, ADESSO + MINUTO)
+    mittente = _passata(scena.pool, ora=ADESSO + 2 * MINUTO)
+    assert [c["endpoint"] for c in mittente.chiamate] == [E2]
+
+
+def test_un_altro_telefono_dello_stesso_utente_riceve_la_dose(scena) -> None:
+    # The guard is per phone, not per user (M2): a second phone of the same
+    # patient receives the dose too, once.
+    crea_iscrizione(scena.pool, scena.u, E2, ADESSO - GIORNO)
+    metti_voce(scena.pool, scena.u, scena.f, OGGI, 1, ADESSO - 5 * MINUTO)
+    mittente = _passata(scena.pool)
+    assert sorted(c["endpoint"] for c in mittente.chiamate) == sorted([E1, E2])
+
+
 # ------------------------------------------------------------ condition 2, end to end
 
 

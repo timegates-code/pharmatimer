@@ -15,16 +15,24 @@ EVERY ATTEMPT, the first and each retry (condition 1 of Roberto, 2026-09-30):
      a row with that reason (decision 8); no row -> push (fail-safe);
   2. farmaco and utente are re-read: not active -> no push (D2 A,
      2026-10-01);
-  3. the window is [istante, istante + 20 min): nothing leaves before it, the
+  3. the slot's pushes to this phone are re-read, by device_id and through
+     its other subscriptions: one accepted, or in_invio with an unknown
+     outcome -> no push, reason 'stesso_telefono'. It is the rule of v07, one
+     decision per slot, extended to the other subscriptions of the same phone
+     (Roberto, 2026-10-30): a phone that subscribes again does not receive the
+     dose twice, even when the first push was only accepted with a 201, and
+     even when a republication moved the dose after it. The M2 of a dose
+     accepted and never shown is the declared price;
+  4. the window is [istante, istante + 20 min): nothing leaves before it, the
      TTL is what is left of it at the POST, and at zero or less there is no
      POST but a row 'scaduto' (decision 16);
-  4. ora_ricalcolata of the log equals the published one, NULLs included ->
+  5. ora_ricalcolata of the log equals the published one, NULLs included ->
      dose push; otherwise a neutral notice, no farmaco and no time, reason
      'divergenza' (decision 11);
-  5. the decision is written only if the calendar entry is still the one
-     read, and committed BEFORE the POST: at most once per dose and phone
-     (v07). Only a certified refusal is attempted again (condition 2,
-     pharmatimer_api/invio.py).
+  6. the decision is written only if the calendar entry is still the one
+     read, and committed BEFORE the POST: at most once per dose and
+     subscription (v07), and per phone by step 3. Only a certified refusal is
+     attempted again (condition 2, pharmatimer_api/invio.py).
 The end-of-horizon notice goes through the same steps minus the dose ones
 (decision 12). Its publication is one row per user, so a newer publication
 replaces it by construction.
@@ -68,6 +76,7 @@ DIVERGENZA = "divergenza"
 CHIAVE_ASSENTE = "chiave_assente"
 FARMACO_NON_ATTIVO = "farmaco_non_attivo"
 UTENTE_NON_ATTIVO = "utente_non_attivo"
+STESSO_TELEFONO = "stesso_telefono"
 VOCE_RITIRATA = "voce_ritirata"
 ISCRIZIONE_SPENTA = "iscrizione_spenta"
 SUPERATO = "superato"
@@ -124,14 +133,17 @@ def decidi_dose(
     fine_ms: int,
     ora_ms: int,
     firma_pronta: bool,
+    stesso_telefono: bool,
 ) -> Decisione:
-    """Steps 1-4 of the module docstring, on values already re-read. Pure."""
+    """Steps 1-5 of the module docstring, on values already re-read. Pure."""
     if letto_stato in STATI_CHIUSI:
         return Decisione(NON_INVIATO, letto_stato, None, None)
     if not farmaco_attivo:
         return Decisione(NON_INVIATO, FARMACO_NON_ATTIVO, None, None)
     if not utente_attivo:
         return Decisione(NON_INVIATO, UTENTE_NON_ATTIVO, None, None)
+    if stesso_telefono:
+        return Decisione(NON_INVIATO, STESSO_TELEFONO, None, None)
     ttl_s = (fine_ms - ora_ms) // 1000
     if ttl_s <= 0:
         return Decisione(NON_INVIATO, SCADUTO, None, None)
@@ -175,6 +187,27 @@ def _rileggi_attivi(cur, utente_id: int, farmaco_id: int | None) -> tuple[bool, 
     )
     riga = cur.fetchone()
     return bool(riga["farmaco"]), bool(riga["utente"])
+
+
+def _rileggi_telefono(cur, voce) -> bool:
+    """Whether a push of the slot already left toward this phone (step 3).
+
+    The phone is the device_id of the subscription attempted, through its
+    other subscriptions: on the subscription itself the slot has one decision
+    by the UNIQUE key of v07, and that mechanism keeps its own pins. A push
+    counts when accepted, or in_invio with an unknown outcome. A certified
+    refusal, a retry or a decision not to send never reached the phone, and
+    does not count.
+    """
+    cur.execute(
+        "SELECT COUNT(*) AS n FROM push_dispatch d "
+        "JOIN push_subscriptions s ON s.id = d.subscription_id "
+        "JOIN push_subscriptions q ON q.id = %s AND q.device_id = s.device_id AND s.id <> q.id "
+        "WHERE d.farmaco_id = %s AND d.data = %s AND d.dose_numero = %s "
+        "AND d.stato IN ('accettato', 'in_invio')",
+        (voce["sub_id"], voce["farmaco_id"], voce["data"], voce["dose_numero"]),
+    )
+    return cur.fetchone()["n"] > 0
 
 
 def _scrivi_dose(cur, voce, d: Decisione, letto_stato, letto_ora, ora: int) -> int | None:
@@ -275,6 +308,7 @@ def _tenta_dose(conn, cur, voce, firma: invio.Firma, invia, orologio) -> str:
     # Condition 1: every attempt, the first and each retry, re-reads the record.
     letto_stato, letto_ora = _rileggi_log(cur, voce)
     farmaco_attivo, utente_attivo = _rileggi_attivi(cur, voce["utente_id"], voce["farmaco_id"])
+    stesso_telefono = _rileggi_telefono(cur, voce)
     ora = orologio()
     d = decidi_dose(
         letto_stato,
@@ -285,6 +319,7 @@ def _tenta_dose(conn, cur, voce, firma: invio.Firma, invia, orologio) -> str:
         voce["istante_ms"] + canale.TOLLERANZA_PUSH_MS,
         ora,
         firma.motivo is None,
+        stesso_telefono,
     )
     riga_id = _scrivi_dose(cur, voce, d, letto_stato, letto_ora, ora)
     conn.commit()

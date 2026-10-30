@@ -3,15 +3,20 @@
 Prima del taglio del 2026-10-24: `git show de0a538:STATO_CORRENTE.md`.
 Voci chiuse: `docs/chiuse-stato.tsv`, una riga per voce con la sua sezione.
 
-## Ultima sessione -- lo STATO corto, 2026-10-24
-Decisioni 1-5 di Roberto del 24/10 alle 18:09, con le correzioni a F1.
-- STATO da 701 a 130 righe; le 27 chiuse in `docs/chiuse-stato.tsv`.
-- Il contatore somma per sezione le aperte dello STATO e le chiuse del file:
-  35 aperte e 27 chiuse, le cifre di prima, serie allineata.
-- Blocco nuovo `tetto-stato` in `make check`: 150 righe, 80 caratteri.
-- CLAUDE.md 4 e 11: norma della voce ed elenco dei blocchi. Serie: riga 5.
-- Deviazioni: nessuna dalla Spec. Codice e Spec che citano "decision N"
-  restano: la voce chiusa si trova per numero nel file, intera in `de0a538`.
+## Ultima sessione -- il silenzio del canale, 2026-10-30
+Decisioni: del 30/10 alle 22:17, di Roberto; alle 23:23, della consulenza su
+sua delega; alle 23:57, di Roberto: la chiusura con la sola guardia e la 12.
+- Causa, misurata sul Mini: l'unica pubblicazione, del 06/10, finiva l'08/10
+  alle 00:00, e il telefono non chiama l'API dal 06/10 alle 17:13. Limite
+  della decisione 8, non difetto: decisione 12 qui sotto. Escluse le funzioni
+  coi nomi dei fusi e le configurazioni tenute in memoria dal server.
+- Guardia del doppio per telefono nel pianificatore, passo 3: la dose gia
+  accettata, o in_invio, su un'altra iscrizione dello stesso device_id non
+  riparte, motivo `stesso_telefono`. E la regola della v07 estesa alle altre
+  iscrizioni dello stesso telefono. **Prezzo M2 dichiarato:** la dose
+  accettata e mai mostrata non riparte, anche spostata dopo un promemoria
+  accettato. Il test del rilievo, rosso prima; 4 pin, 6 righe nel banco.
+- Deviazioni: nessuna dalla Spec.
 
 ## In esercizio
 - 06/10: canale Web Push in produzione dalle 10:29, codice `3a05aef`.
@@ -110,6 +115,17 @@ Si esegue, non si rimisura. Ordinata per rischio clinico.
    orari e al fuoco rilegge il log: niente invio su presa, saltata o sospesa,
    nessuna riga = invia. Giorni senza aprire l'app: non un requisito; se la
    19 lo porta si riapre prima la 12, B solo dopo.
+12. [aperta] **L'orizzonte pubblicato, riaperta il 2026-10-30.** Il canale
+    tace quando l'app non si apre: il telefono pubblica ieri, oggi e domani,
+    fra 24 e 48 ore, e l'avviso di fine dice solo di aprire l'app.
+    **L'avviso esplicito, deciso per la sessione dopo:** l'avviso dice che i
+    promemoria si fermano (il testo e della 27), con l'etichetta
+    `stesso_telefono` in Impostazioni. **L'orizzonte di K giorni, non sicuro
+    nella forma di oggi:** allunga da circa due a K giorni le finestre dei
+    promemoria per dosi prese e registrate senza rete, che il Mini non
+    conosce, e dei promemoria vecchi dopo un cambio di terapia fatto da un
+    altro dispositivo. Si riprende solo con una mitigazione, in una sessione
+    sua.
 13. [aperta] **Testo verso terzi**, solo per C: nome del farmaco sui server di
     Pushover o testo neutro.
 20. [aperta] **Posologia variabile nel tempo per uno stesso farmaco --

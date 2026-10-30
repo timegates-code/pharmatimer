@@ -624,6 +624,34 @@ MUTAZIONI = [
          [(PIAN, "_DOSI_DOVUTE = (", "AND (d.id IS NULL OR d.stato = 'da_ritentare') ", "AND TRUE "),
           (PIAN, "def _scrivi_dose(", "WHERE d.id = %s AND d.stato = 'da_ritentare' ", "WHERE d.id = %s ")],
          "pytest", [T_PIAN], ["test_due_passate_un_solo_invio", "test_decisione_gia_presa_non_riparte"]),
+    # Al piu una volta per dose anche fra due iscrizioni dello stesso
+    # telefono (Roberto, 2026-10-30), nei due versi: la reiscrizione dentro la
+    # finestra non riceve la dose gia accettata, o dall esito ignoto (M1); la
+    # dose respinta, e quella di un altro telefono, partono (M2).
+    riga("passata-telefono-ignorato", "passata, 30/10", "M1",
+         [(PIAN, "def decidi_dose(", "if stesso_telefono:", "if False:")],
+         "pytest", [T_PIAN], ["test_reiscrizione_nella_finestra_non_rimanda_la_dose_accettata",
+                              "test_reiscrizione_nella_finestra_non_rimanda_la_dose_dall_esito_ignoto"]),
+    riga("passata-telefono-201-ignorato", "passata, 30/10", "M1",
+         [(PIAN, "def _rileggi_telefono(", "AND d.stato IN ('accettato', 'in_invio')",
+           "AND d.stato IN ('in_invio')")],
+         "pytest", [T_PIAN], ["test_reiscrizione_nella_finestra_non_rimanda_la_dose_accettata"]),
+    riga("passata-telefono-ignoto-ignorato", "passata, 30/10", "M1",
+         [(PIAN, "def _rileggi_telefono(", "AND d.stato IN ('accettato', 'in_invio')",
+           "AND d.stato IN ('accettato')")],
+         "pytest", [T_PIAN], ["test_reiscrizione_nella_finestra_non_rimanda_la_dose_dall_esito_ignoto"]),
+    riga("passata-telefono-sempre-chiuso", "passata, 30/10", "M2",
+         [(PIAN, "def decidi_dose(", "if stesso_telefono:", "if True:")],
+         "pytest", [T_PIAN], ["test_voce_dovuta_parte_con_ttl_del_resto_della_finestra",
+                              "test_reiscrizione_nella_finestra_riceve_la_dose_respinta"]),
+    riga("passata-telefono-dopo-rifiuto", "passata, 30/10", "M2",
+         [(PIAN, "def _rileggi_telefono(", "AND d.stato IN ('accettato', 'in_invio')",
+           "AND d.stato IN ('accettato', 'in_invio', 'respinto')")],
+         "pytest", [T_PIAN], ["test_reiscrizione_nella_finestra_riceve_la_dose_respinta"]),
+    riga("passata-telefono-per-utente", "passata, 30/10", "M2",
+         [(PIAN, "def _rileggi_telefono(", "AND q.device_id = s.device_id",
+           "AND q.utente_id = s.utente_id")],
+         "pytest", [T_PIAN], ["test_un_altro_telefono_dello_stesso_utente_riceve_la_dose"]),
     # Condizione 1: ogni tentativo rifa i controlli al fuoco. Nei due versi:
     # un ritentativo che non rilegge il log parte dopo una presa (M1); una
     # riga da ritentare che non riparte mai perde il promemoria (M2).
