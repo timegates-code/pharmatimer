@@ -130,7 +130,7 @@ def test_tolleranza_e_venti_minuti() -> None:
     assert canale.TOLLERANZA_PUSH_MS == 20 * 60 * 1000
 
 
-def test_testi_degli_avvisi_d3() -> None:
+def test_testo_dell_avviso_neutro_d3() -> None:
     # D3 A (2026-10-01), against the decision and not against the constants.
     assert json.loads(canale.payload_avviso_neutro()) == {
         "v": 1,
@@ -138,9 +138,15 @@ def test_testi_degli_avvisi_d3() -> None:
         "titolo": "PharmaTimer",
         "corpo": "Apri l'app per controllare i promemoria.",
     }
+
+
+def test_testo_dell_avviso_di_fine_decisione_27() -> None:
+    # Decision 27 of 2026-11-03, against the decision and not against the
+    # constants: the end-of-horizon notice says that the reminders stop and
+    # what to do, never a time, under a title of its own (D1 A of 2026-11-03).
     assert json.loads(canale.payload_avviso_fine()) == {
         "v": 1,
         "tipo": "avviso_fine",
-        "titolo": "PharmaTimer",
-        "corpo": "Apri l'app per aggiornare i promemoria.",
+        "titolo": "Promemoria in scadenza",
+        "corpo": "Fra poco non riceverai altri promemoria. Apri PharmaTimer per rinnovarli.",
     }

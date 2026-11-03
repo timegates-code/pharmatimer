@@ -27,6 +27,15 @@ const leggi = (relativo) => readFileSync(new URL(relativo, import.meta.url), "ut
 const SORGENTE = leggi("../../public/sw-push.js");
 const SCOPE = "https://pt.esempio/pharmatimer/";
 
+// The texts the server composes, read from their one seat
+// (backend/pharmatimer_api/canale.py) and never copied here (decision 27).
+const CANALE = leggi("../../backend/pharmatimer_api/canale.py");
+function costanteDiCanale(nome) {
+  const trovato = new RegExp("^" + nome + ' = "([^"]*)"$', "m").exec(CANALE);
+  if (trovato === null) throw new Error("costante assente in canale.py: " + nome);
+  return trovato[1];
+}
+
 // 08:00 of 2026-10-02 in Rome (CEST): the suite pins TZ=Europe/Rome.
 const ISTANTE = Date.parse("2026-10-02T08:00:00+02:00");
 const CORPO = "Dose delle 08:00, prima di colazione. Apri l'app per controllare.";
@@ -165,11 +174,16 @@ describe("un push mostra sempre una notifica, nei due versi (decisione 2)", () =
     });
     const w = avviaWorker({ indexedDB: { open: apertura } });
     await w.push({ v: 1, tipo: "avviso_neutro", titolo: "PharmaTimer", corpo: "Apri l'app per controllare i promemoria." });
-    await w.push({ v: 1, tipo: "avviso_fine", titolo: "PharmaTimer", corpo: "Apri l'app per aggiornare i promemoria." });
+    await w.push({
+      v: 1,
+      tipo: "avviso_fine",
+      titolo: costanteDiCanale("TITOLO_AVVISO_FINE"),
+      corpo: costanteDiCanale("CORPO_AVVISO_FINE"),
+    });
     expect(apertura).not.toHaveBeenCalled();
     expect(w.notifiche.map((n) => n.opzioni.body)).toEqual([
       "Apri l'app per controllare i promemoria.",
-      "Apri l'app per aggiornare i promemoria.",
+      costanteDiCanale("CORPO_AVVISO_FINE"),
     ]);
     expect(w.notifiche.every((n) => n.opzioni.tag === undefined)).toBe(true);
   });
@@ -306,16 +320,10 @@ describe("la domanda della pagina prima dell'iscrizione", () => {
 
 describe("le copie che il test tiene allineate", () => {
   it("il testo di un push illeggibile e quello dell'avviso neutro del server (decisione 27)", async () => {
-    const canale = leggi("../../backend/pharmatimer_api/canale.py");
-    const costante = (nome) => {
-      const trovato = new RegExp("^" + nome + ' = "([^"]*)"$', "m").exec(canale);
-      if (trovato === null) throw new Error("costante assente in canale.py: " + nome);
-      return trovato[1];
-    };
     const w = avviaWorker();
     await w.push(null);
-    expect(w.notifiche[0].titolo).toBe(costante("TITOLO_AVVISI"));
-    expect(w.notifiche[0].opzioni.body).toBe(costante("CORPO_AVVISO_NEUTRO"));
+    expect(w.notifiche[0].titolo).toBe(costanteDiCanale("TITOLO_AVVISI"));
+    expect(w.notifiche[0].opzioni.body).toBe(costanteDiCanale("CORPO_AVVISO_NEUTRO"));
   });
 
   it("il tag di una dose e quello dei timer di pagina (services/notifications.js)", async () => {

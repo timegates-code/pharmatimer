@@ -140,12 +140,16 @@ def payload_dose(titolo: str, corpo: str, istante_ms: int, farmaco_id: int, data
     )
 
 
-# D3 A, 2026-10-01: the two texts the server composes. No farmaco, no time,
-# no state asserted (I1, decisions 11 and 12): they only invite to open the
-# app, which shows the true state. The dose push keeps the phone's own text.
+# D3 A, 2026-10-01: the texts the server composes. No farmaco, no time, no
+# state of a dose asserted (I1, decisions 11 and 12). The neutral notice only
+# invites to open the app, which shows the true state; the service worker's
+# fallback is held equal to its two texts (src/pwa/sw-push.test.js). Decision
+# 27 of 2026-11-03: the end-of-horizon notice says that the reminders stop and
+# what to do, under a title of its own. The dose push keeps the phone's text.
 TITOLO_AVVISI = "PharmaTimer"
 CORPO_AVVISO_NEUTRO = "Apri l'app per controllare i promemoria."
-CORPO_AVVISO_FINE = "Apri l'app per aggiornare i promemoria."
+TITOLO_AVVISO_FINE = "Promemoria in scadenza"
+CORPO_AVVISO_FINE = "Fra poco non riceverai altri promemoria. Apri PharmaTimer per rinnovarli."
 
 
 def payload_avviso_neutro() -> str:
@@ -154,5 +158,5 @@ def payload_avviso_neutro() -> str:
 
 
 def payload_avviso_fine() -> str:
-    """The end-of-horizon notice of decision 12: no dose data."""
-    return _json({"v": 1, "tipo": "avviso_fine", "titolo": TITOLO_AVVISI, "corpo": CORPO_AVVISO_FINE})
+    """The end-of-horizon notice of decision 12, with the text of decision 27: no dose data."""
+    return _json({"v": 1, "tipo": "avviso_fine", "titolo": TITOLO_AVVISO_FINE, "corpo": CORPO_AVVISO_FINE})

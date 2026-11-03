@@ -375,6 +375,18 @@ MUTAZIONI = [
     riga("push-sub-sempre-assente", "canale, passo 1", "M2",
          [(CAN, "def stato_chiave(", "if not sub:", "if True:")],
          "pytest", [T_CAN], ["test_sub_assente_o_non_valido_spegne_ma_la_chiave_si_legge"]),
+    # Il testo dell avviso di fine (27, 2026-11-03): dice che i promemoria si
+    # fermano e cosa fare, sotto un titolo suo. Il pin confronta con la
+    # decisione e non con la costante: il testo vecchio e il titolo comune
+    # devono arrossare. Una variabile per riga.
+    riga("avviso-fine-testo-vecchio", "avviso esplicito, 03/11", "--",
+         [(CAN, "CORPO_AVVISO_FINE =",
+           '"Fra poco non riceverai altri promemoria. Apri PharmaTimer per rinnovarli."',
+           "\"Apri l'app per aggiornare i promemoria.\"")],
+         "pytest", [T_CAN], ["test_testo_dell_avviso_di_fine_decisione_27"]),
+    riga("avviso-fine-titolo-comune", "avviso esplicito, 03/11", "--",
+         [(CAN, "TITOLO_AVVISO_FINE =", '"Promemoria in scadenza"', '"PharmaTimer"')],
+         "pytest", [T_CAN], ["test_testo_dell_avviso_di_fine_decisione_27"]),
     # Impostazioni VAPID mai validate all avvio (decisione 15): un sub validato
     # dal modello fermerebbe l API, e con essa la consegna della coda.
     riga("push-config-validata", "canale, passo 1", "M2",
