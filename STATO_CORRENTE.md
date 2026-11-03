@@ -12,14 +12,18 @@ consulenza su sua delega.
 - Il pin del testo, rosso prima; 2 righe nel banco; il test del worker legge
   il testo da `canale.py`. La 12 chiude in `docs/chiuse-stato.tsv`, e la
   sua riga nomina la 27.
-- Il deploy di questo commit, che porta anche `afe4119`, segue in sessione.
+- Deploy di `c0f67d5`, con `afe4119`, il 03/11 alle 16:39:57, verificato:
+  prod-check verde, pubblicazione delle 16:41:33 con l'avviso il 04/11 alle
+  20:50, registro invariato. I due doppi trovati sono righe di prima del 03/11.
 - Deviazioni: nessuna dalla Spec.
 
 ## In esercizio
-- 06/10: canale Web Push in produzione dalle 10:29, codice `3a05aef`.
-- 06/10: bundle `index-Dv0-EdhH`; uvicorn su `TCP *:8000` IPv4, anche in LAN.
-- 06/10: ritorno, se servisse: a P1 con la procedura del 04/10; la v07 resta.
-- 06/10: la foto di P1 e `predeploy-canale.20261006_102023`.
+- 03/11: canale Web Push in produzione dal 06/10; dalle 16:40 codice `c0f67d5`.
+- 03/11: bundle `index-Dv0-EdhH`, lo stesso del 06/10; uvicorn su `TCP *:8000`
+  IPv4, anche in LAN.
+- 03/11: ritorno, se servisse: la foto `predeploy-avviso-20261103` in
+  `~/PharmaTimer/backups/`, coi due plist; ripristino, `pip install -e`,
+  bootout e bootstrap. La v07 resta; i dati non si toccano.
 - 06/10: restano la prova sull'iPhone e la settimana di accettazione (17).
 - 03/09: il token e per utente e non si recupera dal server (SHA-256).
 - 03/09: ruotarlo e un UPDATE sul DB di produzione, da ratificare ogni volta.
