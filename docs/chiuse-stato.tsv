@@ -5,6 +5,7 @@
 # Campi, separati da TAB: sezione, voce, chiusura, commit, titolo.
 # sezione: l'intestazione dello STATO, identica. voce: il suo numero, o -.
 # chiusura: come la voce la riporta. commit: solo se la voce lo riporta, o -.
+Coda di rimedio	7	CHIUSA il 2026-11-04: la guardia d'identita del server, backend/tests/guardia_server.py, ferma in rosso prima del DB i test su ogni server che non sia il MySQL di dev o il contenitore della CI; CLAUDE.md 4 e 11 corretti	-	La suite di backend ha una sola difesa contro il server sbagliato
 Rilievi chiusi, e cio che resta aperto sotto di loro	-	CHIUSO dalla decisione 18 il 2026-09-18; ESEGUITA il 2026-09-18	-	Righe di log aperte e irraggiungibili sul Mini: sono DUE, non una.
 Minori, aperti e non urgenti	-	Allineati nel commit B del client	commit B del client	Il click della notifica naviga a /oggi assoluto ignorando BASE_URL; la copy "Avviso poco prima di ogni dose"; Spec 2.1 :140 e 8.1 :583 sul push via PWA
 Minori, aperti e non urgenti	-	tolto il 2026-10-01	-	CLAUDE.md 13 portava "67 cur.execute nei cinque router"

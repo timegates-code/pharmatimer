@@ -87,10 +87,13 @@ baseline), **test frontend** (vitest), **controllo DST** (i file
 `*.dst.test.js` lanciati senza ora legale devono arrossare tutti: e un pin
 visto rosso a ogni gate), **dipendenze** (`backend/venv` contro
 `backend/requirements.lock`: ogni voce installata alla sua versione, gli
-strumenti di sviluppo ammessi in piu), **test backend** (pytest, con il MySQL
-di dev come precondizione dichiarata), **mutazioni** (ogni riga della tabella
-del banco muta il prodotto su una copia fuori dall'albero e deve far arrossare
-i test che nomina: sezione 6), **inventario** (le diciannove voci),
+strumenti di sviluppo ammessi in piu), **test backend** (pytest, dietro la
+guardia d'identita del server, `backend/tests/guardia_server.py`: la suite
+parte solo sul MySQL di dev dello Studio o sul contenitore della CI, e su
+ogni altro server si ferma in rosso prima di toccare il DB), **mutazioni**
+(ogni riga della tabella del banco muta il prodotto su una copia fuori
+dall'albero e deve far arrossare i test che nomina: sezione 6),
+**inventario** (le diciannove voci),
 **tetto dello STATO** (righe e caratteri per riga di `STATO_CORRENTE.md`
 entro i tetti di `scripts/audit/tetto_stato.py`: giudica, a differenza del
 contatore, e per questo e un blocco a parte),
@@ -120,9 +123,12 @@ Poi si legge `STATO_CORRENTE.md`, che e corto e dice cosa e successo per ultimo.
 `.claude/settings.local.json` porta `sandbox.network` con `allowLocalBinding` e
 `allowUnixSockets`. Prima non lo era: il sandbox negava il loopback con EPERM su
 socket e su TCP, e `test-backend` arrossava per ambiente e non per mondo.
-Il **Mini resta fuori**, ed e voluto: `allowLocalBinding` apre il solo loopback,
-quindi `make prod-check` e `make g21`, che toccano la tailnet, restano da
-eseguire dal Terminale.
+Il **Mini resta fuori per la tailnet, non per il loopback**: `allowLocalBinding`
+apre il loopback, quindi `make prod-check` e `make g21`, che toccano la
+tailnet, restano da eseguire dal Terminale; ma una porta di loopback inoltrata
+al Mini, come la 3307 di SF Tunnel, il sandbox la raggiunge come le altre.
+E dedotto per analogia con la misura del 2026-10-24, non misurato a 3307
+aperta. Contro i test c'e la guardia d'identita del server, scritta sopra.
 
 Resta vero che `make check` non puo essere verde PRIMA di un commit: il blocco
 `albero` misura `TREE` da git vivo e lo albero e sporco per costruzione finche
@@ -321,9 +327,11 @@ mutazioni, inventario, tetto e contatore dello STATO e albero, e stampa un
 verdetto unico. **Prima di un deploy, e solo allora, `make prod-check`**, che tocca il
 Mini e include `make g21` e il confronto del venv del Mini con il lock.
 
-Sotto Claude Code il gate gira per intero: la precondizione MySQL di
-`test-backend` passa perche il sandbox ammette il loopback. Cio che resta fuori
-e la tailnet, quindi `make prod-check` e `make g21`. La configurazione che lo
+Sotto Claude Code il gate gira per intero: la precondizione di
+`test-backend`, che e la guardia d'identita del server, passa perche il
+sandbox ammette il loopback e il server e il MySQL di dev. Cio che resta fuori
+e la tailnet, quindi `make prod-check` e `make g21`; non ne resta fuori una
+porta di loopback inoltrata al Mini (sezione 4). La configurazione che lo
 permette sta in `.claude/settings.local.json`, non e tracciata, e va rimessa a
 mano su una macchina nuova.
 

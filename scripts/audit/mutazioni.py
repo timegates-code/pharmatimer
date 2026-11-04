@@ -28,7 +28,9 @@ cartella (config.py), e .env.dev e ignorato, quindi non viene copiato: entra
 per link. Prima di ogni pytest il banco confronta la risoluzione della copia
 con quella di backend/ dell'albero, cioe con quella di test-backend, e
 pretende DB_NAME_TEST diverso da DB_NAME. Senza link la config non si risolve
-e pytest si ferma alla raccolta, prima di ogni TRUNCATE.
+e pytest si ferma alla raccolta, prima di ogni TRUNCATE. Ogni pytest della
+copia passa poi dalla guardia d'identita del server di conftest.py (STATO
+voce 7): su un server non ammesso si ferma senza rapporto, e qui e HARNESS.
 
 Esiti che distingue, dichiarati prima della misura:
   VERDE  la harness e verificata e ogni riga MORDE: ogni test atteso e rosso
@@ -136,6 +138,9 @@ T_IMPT = "src/components/config/ImpostazioniTab.test.jsx"
 # PUT farmaci: l esistenza si legge dalla SELECT con scope, non da rowcount.
 FA = "backend/pharmatimer_api/routers/farmaci.py"
 T_FC = "tests/test_farmaci_crud.py"
+# La guardia d'identita del server nei test, STATO voce 7.
+GUA = "backend/tests/guardia_server.py"
+T_GUA = "tests/test_guardia_server.py"
 
 # Il tocco del toggle (ratifica A del 2026-10-01): subscribe() primo atto del gesto.
 SUBSCRIBE_NEL_GESTO = (
@@ -1290,6 +1295,13 @@ MUTAZIONI = [
          [(FA, "def update_farmaco(", '"FROM farmaci WHERE id = %s AND utente_id = %s"',
            '"FROM farmaci WHERE id = %s AND (utente_id = %s OR TRUE)"')],
          "pytest", [T_FC], ["test_put_scope_violation_other_user"]),
+    # La guardia d'identita del server nei test (STATO voce 7, decisione 3 del
+    # 2026-11-04): aperta, ammetterebbe il Mini della riapertura e un server
+    # sconosciuto. Chiusa non si collauda qui: fermerebbe anche la sessione
+    # della copia, che il banco legge come HARNESS.
+    riga("guardia-server-ammette-chiunque", "guardia d'identita del server, voce 7", "M2",
+         [(GUA, "def giudica(", "    if identita.server_uuid not in SERVER_AMMESSI:\n", "    if False:\n")],
+         "pytest", [T_GUA], ["test_il_mini_della_riapertura_si_ferma", "test_un_server_sconosciuto_si_ferma"]),
 ]
 
 # L'autoprova: righe il cui esito e FISSATO, e che il banco pretende.

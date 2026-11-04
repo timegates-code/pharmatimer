@@ -10,6 +10,11 @@
 # pharmatimer_test, e la suite passa per intero sul DB cosi ricostruito. Se un
 # giorno qui arrossa in quel passo, e un reperto sulla catena, non un ostacolo
 # da aggirare.
+#
+# La guardia d'identita del server dei test (backend/tests/guardia_server.py,
+# STATO voce 7) e attiva anche qui: ammette il contenitore per il suo
+# server_uuid, UUID_CI, scritto nel repo, che il passo apposito gli mette in
+# auto.cnf prima del gate. Nessun interruttore la spegne o la allarga.
 name: gate
 
 on:
@@ -77,7 +82,24 @@ jobs:
           backend/venv/bin/pip install --quiet -c "$RUNNER_TEMP/vincoli.txt" \
             -e "backend[dev]" setuptools wheel
 
-      - name: client mysql per la precondizione di make test-backend
+      - name: il contenitore MySQL prende il server_uuid che la guardia ammette
+        run: |
+          # mysqld legge il server_uuid da auto.cnf solo all avvio: lo si scrive
+          # li, dal repo, e si riavvia il contenitore. La guardia non legge
+          # niente dall ambiente oltre ai parametri di connessione dei test.
+          uuid=$(cd backend && venv/bin/python -c 'from tests.guardia_server import UUID_CI; print(UUID_CI)')
+          id="${{ job.services.mysql.id }}"
+          docker exec "$id" sh -c "printf '[auto]\nserver-uuid=%s\n' '$uuid' > /var/lib/mysql/auto.cnf && chown mysql:mysql /var/lib/mysql/auto.cnf"
+          docker restart "$id"
+          for i in $(seq 1 60); do
+            if docker exec "$id" mysqladmin ping -h 127.0.0.1 -uroot -proot_ci --silent; then break; fi
+            sleep 2
+          done
+          letto=$(docker exec "$id" mysql -uroot -proot_ci -N -B -e 'SELECT @@server_uuid')
+          echo "server_uuid del contenitore: $letto"
+          test "$letto" = "$uuid"
+
+      - name: client mysql per la catena delle migrazioni
         run: command -v mysql || (sudo apt-get update -q && sudo apt-get install -y -q mysql-client)
 
       - name: utente, database, e catena delle migrazioni applicata da zero

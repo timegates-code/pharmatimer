@@ -3,6 +3,10 @@ PharmaTimer F3-S1-bis-delta parte 2/2 CP4
 Pytest fixtures: test pool puntato a DB_NAME_TEST, FK-safe cleanup autouse,
 seed_owner inline + helper insert_test_user/insert_test_farmaco, TestClient
 con get_db override (no lifespan via TestClient senza context manager).
+
+STATO voce 7, 2026-11-04: before all of it pytest_sessionstart runs the server
+identity guard of tests/guardia_server.py, and the pool takes the guard's own
+connection parameters, so the guard reads the server the tests will use.
 """
 from __future__ import annotations
 
@@ -25,9 +29,10 @@ from mysql.connector import pooling
 from mysql.connector.pooling import MySQLConnectionPool
 
 from pharmatimer_api.app import app
-from pharmatimer_api.config import settings
 from pharmatimer_api.db import connection as conn_module
 from pharmatimer_api.db.dependencies import get_db
+
+from .guardia_server import USCITA_GUARDIA, parametri_di_test, verifica
 
 _TRUNCATE_ORDER = [
     # v07: children of push_subscriptions, farmaci and utenti come first.
@@ -47,23 +52,30 @@ _TRUNCATE_ORDER = [
 ]
 
 
+def pytest_sessionstart(session: pytest.Session) -> None:
+    """The server identity guard, before collection, fixtures and every TRUNCATE.
+
+    A server not in tests/guardia_server.py, one that does not answer, or an
+    identity that does not read stops the session red, saying what the guard
+    saw. Never a skip (STATO voce 7, decisions 1-4 of 2026-11-04).
+    """
+    motivo = verifica(parametri_di_test())
+    if motivo is not None:
+        pytest.exit(motivo, returncode=USCITA_GUARDIA)
+
+
 @pytest.fixture(scope="session")
 def db_test_pool() -> Generator[MySQLConnectionPool, None, None]:
     """Session-scope test pool pointing to DB_NAME_TEST.
 
     Patches connection._pool so db_ping() and get_connection() resolve to test pool.
+    Its parameters are the guard's, from parametri_di_test: one seat.
     """
     pool = pooling.MySQLConnectionPool(
         pool_name="pharmatimer_test_pool",
         pool_size=5,
-        host=settings.DB_HOST,
-        port=settings.DB_PORT,
-        user=settings.DB_USER,
-        password=settings.DB_PASSWORD,
-        database=settings.DB_NAME_TEST,
-        charset="utf8mb4",
-        collation="utf8mb4_unicode_ci",
         autocommit=False,
+        **parametri_di_test(),
     )
     original = conn_module._pool
     conn_module._pool = pool

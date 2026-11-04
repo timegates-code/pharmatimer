@@ -3,19 +3,17 @@
 Prima del taglio del 2026-10-24: `git show de0a538:STATO_CORRENTE.md`.
 Voci chiuse: `docs/chiuse-stato.tsv`, una riga per voce con la sua sezione.
 
-## Ultima sessione -- l'avviso esplicito di fine orizzonte, 2026-11-03
-Decisioni: del 03/11 dalle 12:16, di Roberto; alle 13:29 e alle 14:52, della
-consulenza su sua delega.
-- L'avviso di fine orizzonte ha un titolo suo, "Promemoria in scadenza", e il
-  testo della 27: "Fra poco non riceverai altri promemoria. Apri PharmaTimer
-  per rinnovarli." Quando parte, a chi e quante volte non cambia.
-- Il pin del testo, rosso prima; 2 righe nel banco; il test del worker legge
-  il testo da `canale.py`. La 12 chiude in `docs/chiuse-stato.tsv`, e la
-  sua riga nomina la 27.
-- Deploy di `c0f67d5`, con `afe4119`, il 03/11 alle 16:39:57, verificato:
-  prod-check verde, pubblicazione delle 16:41:33 con l'avviso il 04/11 alle
-  20:50, registro invariato. I due doppi trovati sono righe di prima del 03/11.
-- Deviazioni: nessuna dalla Spec.
+## Ultima sessione -- la guardia d'identita del server nei test, 2026-11-04
+Decisioni di Roberto del 04/11: dalla 1 alla 7 alle 12:59, la 8 dopo.
+- `backend/tests/guardia_server.py`: i test partono solo se il `server_uuid`,
+  letto coi parametri del pool di test, e del MySQL di dev o del contenitore
+  della CI; se no si fermano in rosso prima del DB, e la guardia dice cosa ha
+  visto. La lanciano `conftest.py` e la precondizione di `make test-backend`.
+- Il uuid di dev l'ha misurato la guardia; la CI scrive il suo in `auto.cnf`
+  del contenitore e lo riavvia. Nessun interruttore. CLAUDE.md 4 e 11 corretti.
+- Il pin rosso prima e verde dopo, anche dal vivo su una porta dove non
+  ascolta niente; 1 riga nel banco. La 7 chiude in `docs/chiuse-stato.tsv`.
+- Deviazioni: nessuna dalla Spec. Nessun deploy.
 
 ## In esercizio
 - 03/11: canale Web Push in produzione dal 06/10; dalle 16:40 codice `c0f67d5`.
@@ -49,11 +47,16 @@ Si esegue, non si rimisura. Ordinata per rischio clinico.
 6. [aperta] **Il meccanismo delle orfane** (M3). Il cambio di profilo cancella
    le ricalcolate solo in locale e lo specchio le rimette; la giunzione
    `(farmaco_id, dose_numero)` non e una FK. Rimedio non deciso.
-7. [aperta] **La suite di backend ha una sola difesa contro il server
-   sbagliato** (M2). (1) Da correggere CLAUDE.md 4 e 11, che dicono il Mini
-   fuori dal sandbox: per analogia con la misura del 2026-10-24 la 3307 in
-   ascolto e raggiungibile. (2) `cleanup_test_data` fa TRUNCATE senza
-   verificare il server: prima ne verifichi l'identita. (4) Chiuso.
+8. [aperta] **Il formato delle notifiche**, decisione 8 del 2026-11-04, da
+   non lavorare qui: e lo scope di una sessione sua, col deploy in un'altra.
+   Parole di Roberto. Il banner di una dose oggi è: `Assonal` /
+   `from PharmaTimer` /
+   `Dose delle 12:30, lontano dai pasti. Apri l'app per controllare.`
+   Deve diventare: `Assonal` /
+   `Dose delle 12:30, lontano dai pasti. Apri l'app per procedere.` /
+   `PharmaTimer h.hh:mm  - gg/mm/aaaa`. L'ultima riga porta ora e data
+   dell'invio, e va in tutte le notifiche di PharmaTimer, anche nell'avviso
+   di fine.
 
 ### Rilievi chiusi, e cio che resta aperto sotto di loro
 - [aperta] **La sonda sul moto g06.** Il `TypeError` del costruttore resta
@@ -82,7 +85,16 @@ Si esegue, non si rimisura. Ordinata per rischio clinico.
 - [aperta] Sette endpoint backend, i sette storici, non li chiama il frontend.
 - [aperta] npm: due dipendenze non usate e venti non fissate.
 - [aperta] pip `26.1.1` nei venv di Studio e Mini, disponibile `26.2.1`: fuori
-  dal lock, si aggiorna sui due venv o su nessuno.
+  dal lock, si aggiorna sui due venv o su nessuno. Il 03/11 la `26.3`: lo ha
+  detto il passo 6 del deploy, il cui `pip install -e` parla con PyPI, contro
+  la via del lock di CLAUDE.md 11; il backend di build da li e dedotto.
+- [aperta] L'avviso di fine non ha la guardia per telefono fra due
+  iscrizioni (dedotto): `_tenta_avviso` non chiama `_rileggi_telefono`, la
+  sola chiave e `uq_push_avviso_fine`, e la Spec 3.13 vuole una decisione per
+  istante e per telefono. Non porta dosi: niente M1. Riepilogo del 03/11.
+- [aperta] Il deploy porta sul Mini file ignorati da git: `.ruff_cache/` e
+  `openapi.json` di `backend/` passano le esclusioni di `deploy-mini.sh`,
+  contro il suo "Si schiera cio che git ha". Oggi innocuo; `.env*` esclusi.
 - [aperta] Backup sul Mini in `~/PharmaTimer/backups/` al 2026-09-18: rollback
   di `0.7.7` del 02/09, notturni di 7 giorni, quelli di giugno, pre-ripulitura.
 - [aperta] **Osservazioni 3-6 della prova a mano del commit B, 2026-10-02:**

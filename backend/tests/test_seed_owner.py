@@ -8,6 +8,10 @@ The name is DERIVED, not hardcoded: with a hardcoded "pharmatimer_test" the
 fixtures truncated DB_NAME_TEST while the subprocess wrote elsewhere, and the
 suite passed only when the two happened to coincide (measured against a
 database rebuilt from the migration chain: 1 failed, 129 passed).
+
+DB_HOST and DB_PORT go to the subprocess too, from the parameters the server
+identity guard verified (tests/guardia_server.py, STATO voce 7): the child
+reaches the server the guard admitted, whatever .env.dev its own cwd resolves.
 """
 import hashlib
 import os
@@ -19,6 +23,8 @@ from mysql.connector.pooling import MySQLConnectionPool
 
 from pharmatimer_api.config import settings
 
+from .guardia_server import parametri_di_test
+
 BACKEND_DIR = Path(__file__).parent.parent
 
 
@@ -27,6 +33,8 @@ def _run_seed_owner(owner_name: str) -> subprocess.CompletedProcess:
     env = os.environ.copy()
     env["OWNER_NAME"] = owner_name
     env["DB_NAME"] = settings.DB_NAME_TEST
+    env["DB_HOST"] = parametri_di_test()["host"]
+    env["DB_PORT"] = str(parametri_di_test()["port"])
     return subprocess.run(
         [sys.executable, "seed_owner.py"],
         cwd=str(BACKEND_DIR),

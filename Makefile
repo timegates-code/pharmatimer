@@ -181,30 +181,26 @@ controllo-dst: venv
 dipendenze: venv
 	@$(PY) scripts/audit/dipendenze.py
 
-# La precondizione prende le credenziali da Settings, lanciato col venv del
-# backend: e la fonte unica di quelle di sviluppo, che legge backend/.env.dev
-# o, in CI, l ambiente del workflow. Host, porta, utente e password sono quelli
-# del pool di backend/tests/conftest.py, quindi la sonda interroga lo stesso
-# server di pytest, e ~/.my.cnf non si legge piu. Il controllo resta quello di
-# prima: una risposta non vuota con server_uuid, senza valore atteso. Lo
-# stderr si scarta, come prima.
-SONDA_UUID := import mysql.connector as m; \
-  from pharmatimer_api.config import settings as s; \
-  c = m.connect(host=s.DB_HOST, port=s.DB_PORT, user=s.DB_USER, password=s.DB_PASSWORD); \
-  k = c.cursor(); k.execute("SELECT LEFT(@@server_uuid,9)"); print(k.fetchone()[0]); c.close()
-
+# La precondizione e la guardia d'identita del server (STATO voce 7, decisioni
+# 1-4 del 2026-11-04): backend/tests/guardia_server.py, la stessa che
+# conftest.py esegue in apertura di ogni sessione di pytest. Legge
+# @@server_uuid coi parametri del pool di test, da Settings, che legge
+# backend/.env.dev o, in CI, l ambiente del workflow; ~/.my.cnf non si legge.
+# La suite parte solo sul MySQL di dev dello Studio o sul contenitore della CI.
+# Su ogni altro esito -- un server non ammesso, uno che non risponde, una
+# identita che non si legge -- il blocco e rosso prima che pytest parta, e la
+# guardia dice cosa ha visto.
 test-backend: venv
 	@echo "== TEST BACKEND (pytest) =="
-	@echo "-- precondizione: MySQL di dev raggiungibile, credenziali da Settings (ex sonda DEV_UUID) --"
-	@if uuid=$$(cd backend && venv/bin/python -c '$(SONDA_UUID)' 2>/dev/null) && [ -n "$$uuid" ]; then \
-	  echo "   OK  server_uuid = $$uuid"; \
+	@echo "-- precondizione: la guardia d'identita del server, la stessa di conftest.py --"
+	@if (umask 022 && cd backend && venv/bin/python -m tests.guardia_server); then \
 	  umask 022 && cd backend && venv/bin/python -m pytest -q ; \
 	else \
-	  echo "ROSSO  MySQL di dev NON raggiungibile con le credenziali di Settings: la"; \
-	  echo "       suite backend non puo girare. La sonda va in TCP come pytest: sotto"; \
-	  echo "       il sandbox di Claude Code serve sandbox.network.allowLocalBinding in"; \
-	  echo "       .claude/settings.local.json. Altrimenti e MySQL che non gira, o"; \
+	  echo "       La suite backend non gira. Se il server non risponde: sotto il"; \
+	  echo "       sandbox di Claude Code serve sandbox.network.allowLocalBinding in"; \
+	  echo "       .claude/settings.local.json; altrimenti e MySQL che non gira, o"; \
 	  echo "       backend/.env.dev che non regge: avviarlo, o eseguire dal Terminale."; \
+	  echo "       Un server non ammesso si ammette solo scrivendone il uuid nel repo."; \
 	  exit 1; \
 	fi
 
