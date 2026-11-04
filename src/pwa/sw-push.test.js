@@ -21,6 +21,7 @@ import vm from "node:vm";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { db } from "../data/db.js";
 import { LocalRepository } from "../data/repository/LocalRepository.js";
+import { rigaInvio } from "../domain/promemoria.js";
 import { createNotificationsService } from "../services/notifications.js";
 
 const leggi = (relativo) => readFileSync(new URL(relativo, import.meta.url), "utf8");
@@ -38,7 +39,16 @@ function costanteDiCanale(nome) {
 
 // 08:00 of 2026-10-02 in Rome (CEST): the suite pins TZ=Europe/Rome.
 const ISTANTE = Date.parse("2026-10-02T08:00:00+02:00");
-const CORPO = "Dose delle 08:00, prima di colazione. Apri l'app per controllare.";
+const CORPO = "Dose delle 08:00, prima di colazione. Apri l'app per procedere.";
+
+// Decision 8 of 2026-11-04: every notification closes with the hour and the
+// date of the sending. The server sends at 08:01 (D1, inviato_ms); the phone
+// shows at 08:03, by the clock of the worker scope (D2). The expected lines
+// are written from the decision, never computed.
+const INVIATO = ISTANTE + 60_000;
+const ADESSO_TELEFONO = ISTANTE + 3 * 60_000;
+const RIGA_INVIO = "PharmaTimer h.08:01  - 02/10/2026";
+const RIGA_TELEFONO = "PharmaTimer h.08:03  - 02/10/2026";
 
 function pushDose(campi = {}) {
   return {
@@ -50,8 +60,29 @@ function pushDose(campi = {}) {
     farmaco_id: 7,
     data: "2026-10-02",
     dose_numero: 1,
+    inviato_ms: INVIATO,
     ...campi,
   };
+}
+
+// The phone's clock in the worker scope: Date as it is, with a fixed now.
+function orologioFisso(adesso) {
+  return class extends Date {
+    static now() {
+      return adesso;
+    }
+  };
+}
+
+// A clock that fails: neither the hour nor a date can be read.
+class OrologioGuasto {
+  constructor() {
+    throw new Error("orologio guasto");
+  }
+
+  static now() {
+    throw new Error("orologio guasto");
+  }
 }
 
 function datiPush(payload) {
@@ -61,7 +92,12 @@ function datiPush(payload) {
 }
 
 // The worker scope, built fresh for every worker started.
-function avviaWorker({ indexedDB = globalThis.indexedDB, timer = setTimeout, finestre = [] } = {}) {
+function avviaWorker({
+  indexedDB = globalThis.indexedDB,
+  timer = setTimeout,
+  finestre = [],
+  data = orologioFisso(ADESSO_TELEFONO),
+} = {}) {
   const ascoltatori = {};
   const notifiche = [];
   const aperte = [];
@@ -70,6 +106,7 @@ function avviaWorker({ indexedDB = globalThis.indexedDB, timer = setTimeout, fin
     setTimeout: timer,
     clearTimeout,
     URL,
+    Date: data,
     addEventListener(tipo, fn) {
       (ascoltatori[tipo] = ascoltatori[tipo] || []).push(fn);
     },
@@ -148,7 +185,7 @@ describe("un push mostra sempre una notifica, nei due versi (decisione 2)", () =
     await w.push(pushDose());
     expect(w.notifiche).toHaveLength(1);
     expect(w.notifiche[0].titolo).toBe("Eutirox 50");
-    expect(w.notifiche[0].opzioni.body).toBe(CORPO);
+    expect(w.notifiche[0].opzioni.body).toBe(CORPO + "\n" + RIGA_INVIO);
     expect(w.notifiche[0].opzioni.tag).toBe("dose-7-1-2026-10-02");
   });
 
@@ -165,7 +202,7 @@ describe("un push mostra sempre una notifica, nei due versi (decisione 2)", () =
     await w.push(payload);
     expect(w.notifiche).toHaveLength(1);
     expect(w.notifiche[0].titolo).toBe("PharmaTimer");
-    expect(w.notifiche[0].opzioni.body).toBe("Apri l'app per controllare i promemoria.");
+    expect(w.notifiche[0].opzioni.body).toBe("Apri l'app per controllare i promemoria.\n" + RIGA_TELEFONO);
   });
 
   it("gli avvisi neutro e di fine si mostrano col loro testo, senza tag e senza leggere il taccuino", async () => {
@@ -173,17 +210,24 @@ describe("un push mostra sempre una notifica, nei due versi (decisione 2)", () =
       throw new Error("un avviso senza dose non legge il taccuino");
     });
     const w = avviaWorker({ indexedDB: { open: apertura } });
-    await w.push({ v: 1, tipo: "avviso_neutro", titolo: "PharmaTimer", corpo: "Apri l'app per controllare i promemoria." });
+    await w.push({
+      v: 1,
+      tipo: "avviso_neutro",
+      titolo: "PharmaTimer",
+      corpo: "Apri l'app per controllare i promemoria.",
+      inviato_ms: INVIATO,
+    });
     await w.push({
       v: 1,
       tipo: "avviso_fine",
       titolo: costanteDiCanale("TITOLO_AVVISO_FINE"),
       corpo: costanteDiCanale("CORPO_AVVISO_FINE"),
+      inviato_ms: INVIATO,
     });
     expect(apertura).not.toHaveBeenCalled();
     expect(w.notifiche.map((n) => n.opzioni.body)).toEqual([
-      "Apri l'app per controllare i promemoria.",
-      costanteDiCanale("CORPO_AVVISO_FINE"),
+      "Apri l'app per controllare i promemoria.\n" + RIGA_INVIO,
+      costanteDiCanale("CORPO_AVVISO_FINE") + "\n" + RIGA_INVIO,
     ]);
     expect(w.notifiche.every((n) => n.opzioni.tag === undefined)).toBe(true);
   });
@@ -200,7 +244,7 @@ describe("il taccuino all'arrivo (decisione 31)", () => {
     await w.push(pushDose());
     expect(w.notifiche).toHaveLength(1);
     expect(w.notifiche[0].titolo).toBe("Eutirox 50");
-    expect(w.notifiche[0].opzioni.body).toBe(atteso);
+    expect(w.notifiche[0].opzioni.body).toBe(atteso + "\n" + RIGA_INVIO);
     expect(w.notifiche[0].opzioni.tag).toBe("dose-7-1-2026-10-02");
   });
 
@@ -209,14 +253,14 @@ describe("il taccuino all'arrivo (decisione 31)", () => {
     const w = avviaWorker();
     await w.push(pushDose());
     expect(w.notifiche).toHaveLength(1);
-    expect(w.notifiche[0].opzioni.body).toBe(CORPO);
+    expect(w.notifiche[0].opzioni.body).toBe(CORPO + "\n" + RIGA_INVIO);
   });
 
   it("la riga di un'altra dose non conta: resta il testo pubblicato", async () => {
     await registra({ dose_numero: 2, stato: "presa", ora_effettiva: "2026-10-02T13:05:00" });
     const w = avviaWorker();
     await w.push(pushDose());
-    expect(w.notifiche[0].opzioni.body).toBe(CORPO);
+    expect(w.notifiche[0].opzioni.body).toBe(CORPO + "\n" + RIGA_INVIO);
   });
 
   it("due righe per la stessa dose: nulla si afferma, resta il testo pubblicato", async () => {
@@ -226,14 +270,14 @@ describe("il taccuino all'arrivo (decisione 31)", () => {
     ]);
     const w = avviaWorker();
     await w.push(pushDose());
-    expect(w.notifiche[0].opzioni.body).toBe(CORPO);
+    expect(w.notifiche[0].opzioni.body).toBe(CORPO + "\n" + RIGA_INVIO);
   });
 
   it("senza istante nel payload il corpo riscritto comincia dalla frase", async () => {
     await registra({ stato: "presa", ora_effettiva: "07:55" });
     const w = avviaWorker();
     await w.push(pushDose({ istante_ms: undefined }));
-    expect(w.notifiche[0].opzioni.body).toBe("Già registrata come presa alle 07:55.");
+    expect(w.notifiche[0].opzioni.body).toBe("Già registrata come presa alle 07:55.\n" + RIGA_INVIO);
   });
 
   it("il worker non scrive nel taccuino", async () => {
@@ -253,7 +297,7 @@ describe("il taccuino all'arrivo (decisione 31)", () => {
     const w = avviaWorker();
     await w.push(pushDose());
     expect(w.notifiche).toHaveLength(1);
-    expect(w.notifiche[0].opzioni.body).toBe(CORPO);
+    expect(w.notifiche[0].opzioni.body).toBe(CORPO + "\n" + RIGA_INVIO);
     const nomi = (await indexedDB.databases()).map((d) => d.name);
     expect(nomi).not.toContain("pharmatimer");
   });
@@ -265,7 +309,7 @@ describe("il taccuino all'arrivo (decisione 31)", () => {
     });
     await w.push(pushDose());
     expect(w.notifiche).toHaveLength(1);
-    expect(w.notifiche[0].opzioni.body).toBe(CORPO);
+    expect(w.notifiche[0].opzioni.body).toBe(CORPO + "\n" + RIGA_INVIO);
   });
 
   it("un errore all'apertura: resta il testo pubblicato", async () => {
@@ -278,7 +322,63 @@ describe("il taccuino all'arrivo (decisione 31)", () => {
     });
     await w.push(pushDose());
     expect(w.notifiche).toHaveLength(1);
-    expect(w.notifiche[0].opzioni.body).toBe(CORPO);
+    expect(w.notifiche[0].opzioni.body).toBe(CORPO + "\n" + RIGA_INVIO);
+  });
+});
+
+// Decision 8 of 2026-11-04. D1: the last line of a push is the instant the
+// server put in it, written in the phone's local time. D2: a push without
+// one that reads carries the hour the phone shows it. Rule 1 of the session:
+// a last line that does not compose never costs the notification, which
+// leaves without it, and a dose stays a dose. The other notifications carry
+// the line in the tests above, each with its own text.
+describe("l'ultima riga di ogni notifica (decisione 8)", () => {
+  it("un push di dose porta l'istante che il server ci ha messo, nell'ora del telefono (D1)", async () => {
+    const w = avviaWorker();
+    await w.push(pushDose({ inviato_ms: Date.parse("2026-11-04T12:31:00+01:00") }));
+    expect(w.notifiche).toHaveLength(1);
+    expect(w.notifiche[0].opzioni.body).toBe(CORPO + "\nPharmaTimer h.12:31  - 04/11/2026");
+  });
+
+  it.each([
+    ["da un server non ancora aggiornato", undefined],
+    ["una stringa", "1793878260000"],
+    ["null", null],
+    ["zero", 0],
+    ["negativo", -60_000],
+    ["fuori dal calendario", 1e20],
+  ])("un push senza un istante dell'invio leggibile (%s) porta l'ora in cui il telefono lo mostra (D2)", async (_nome, istante) => {
+    const w = avviaWorker();
+    await w.push(pushDose({ inviato_ms: istante }));
+    expect(w.notifiche).toHaveLength(1);
+    expect(w.notifiche[0].titolo).toBe("Eutirox 50");
+    expect(w.notifiche[0].opzioni.body).toBe(CORPO + "\n" + RIGA_TELEFONO);
+  });
+
+  it("regola 1: un'ultima riga che non si compone non costa la notifica, che parte senza, e una dose resta una dose", async () => {
+    const w = avviaWorker({ data: OrologioGuasto });
+    await w.push(pushDose());
+    await w.push({
+      v: 1,
+      tipo: "avviso_neutro",
+      titolo: "PharmaTimer",
+      corpo: "Apri l'app per controllare i promemoria.",
+      inviato_ms: INVIATO,
+    });
+    await w.push({
+      v: 1,
+      tipo: "avviso_fine",
+      titolo: costanteDiCanale("TITOLO_AVVISO_FINE"),
+      corpo: costanteDiCanale("CORPO_AVVISO_FINE"),
+      inviato_ms: INVIATO,
+    });
+    await w.push(null);
+    expect(w.notifiche.map((n) => [n.titolo, n.opzioni.body, n.opzioni.tag])).toEqual([
+      ["Eutirox 50", CORPO, "dose-7-1-2026-10-02"],
+      ["PharmaTimer", "Apri l'app per controllare i promemoria.", undefined],
+      [costanteDiCanale("TITOLO_AVVISO_FINE"), costanteDiCanale("CORPO_AVVISO_FINE"), undefined],
+      ["PharmaTimer", "Apri l'app per controllare i promemoria.", undefined],
+    ]);
   });
 });
 
@@ -323,7 +423,22 @@ describe("le copie che il test tiene allineate", () => {
     const w = avviaWorker();
     await w.push(null);
     expect(w.notifiche[0].titolo).toBe(costanteDiCanale("TITOLO_AVVISI"));
-    expect(w.notifiche[0].opzioni.body).toBe(costanteDiCanale("CORPO_AVVISO_NEUTRO"));
+    expect(w.notifiche[0].opzioni.body).toBe(costanteDiCanale("CORPO_AVVISO_NEUTRO") + "\n" + RIGA_TELEFONO);
+  });
+
+  it("l'ultima riga del worker e quella dei timer di pagina (domain/promemoria.js)", async () => {
+    const istanti = [
+      INVIATO,
+      Date.parse("2026-11-04T12:31:00+01:00"),
+      Date.parse("2026-11-04T23:30:00Z"),
+      Date.parse("2026-03-29T03:00:00+02:00"),
+      Date.parse("2026-12-31T23:59:00+01:00"),
+    ];
+    for (const istante of istanti) {
+      const w = avviaWorker();
+      await w.push(pushDose({ inviato_ms: istante }));
+      expect(w.notifiche[0].opzioni.body).toBe(CORPO + "\n" + rigaInvio(istante));
+    }
   });
 
   it("il tag di una dose e quello dei timer di pagina (services/notifications.js)", async () => {
@@ -367,7 +482,7 @@ describe("per ultimo: lo schema dell'app", () => {
     const versione = db.backendDB().version;
     const w = avviaWorker();
     await w.push(pushDose());
-    expect(w.notifiche[0].opzioni.body).toBe("Dose delle 08:00: già registrata come presa alle 07:55.");
+    expect(w.notifiche[0].opzioni.body).toBe("Dose delle 08:00: già registrata come presa alle 07:55.\n" + RIGA_INVIO);
     const richiesta = indexedDB.open("pharmatimer", versione + 1);
     const esito = await new Promise((risolvi) => {
       richiesta.onblocked = () => risolvi("bloccato");

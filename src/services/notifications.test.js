@@ -54,7 +54,10 @@ describe('notifications service', () => {
     expect(MockNotification).not.toHaveBeenCalled();
     vi.advanceTimersByTime(5 * 60 * 1000);
     expect(MockNotification).toHaveBeenCalledTimes(1);
-    expect(MockNotification).toHaveBeenCalledWith('Test', { body: 'Body', tag: 'k1' });
+    expect(MockNotification).toHaveBeenCalledWith('Test', {
+      body: 'Body\nPharmaTimer h.12:05  - 27/04/2026',
+      tag: 'k1',
+    });
     expect(svc.getPendingCount()).toBe(0);
   });
 
@@ -121,7 +124,10 @@ describe('notifications service', () => {
     vi.advanceTimersByTime(11 * 60_000);
     // Solo la 2° schedule deve aver fired (la 1° è stata cancellata).
     expect(MockNotification).toHaveBeenCalledTimes(1);
-    expect(MockNotification).toHaveBeenCalledWith('second', { body: 'b2', tag: 'k1' });
+    expect(MockNotification).toHaveBeenCalledWith('second', {
+      body: 'b2\nPharmaTimer h.12:10  - 27/04/2026',
+      tag: 'k1',
+    });
   });
 
   // Decisione 32 A (2026-10-01): il testo dei timer di pagina e quello del
@@ -153,8 +159,11 @@ describe('notifications service', () => {
     expect(svc.getPendingCount()).toBe(1);
     vi.advanceTimersByTime(30 * 60_000);
     expect(MockNotification).toHaveBeenCalledTimes(1);
+    // Decision 8 of 2026-11-04: "per procedere", and the last line with the
+    // hour the timer fired, 12:30 of the day the beforeEach fixes.
     expect(MockNotification).toHaveBeenCalledWith('Pantorc 40mg', {
-      body: `Dose delle ${hh}:${mm}, 30 min prima colazione. Apri l'app per controllare.`,
+      body: `Dose delle ${hh}:${mm}, 30 min prima colazione. Apri l'app per procedere.\n`
+        + `PharmaTimer h.${hh}:${mm}  - 27/04/2026`,
       tag: `dose-7-2-${dateStr}`,
     });
   });
@@ -182,7 +191,7 @@ describe('notifications service', () => {
     svc.showDoseNotification(entry, farmaco);
     vi.advanceTimersByTime(30 * 60_000);
     expect(MockNotification).toHaveBeenCalledWith('Levotuss 10ml', {
-      body: `Dose delle ${hh}:${mm}. Apri l'app per controllare.`,
+      body: `Dose delle ${hh}:${mm}. Apri l'app per procedere.\nPharmaTimer h.${hh}:${mm}  - 27/04/2026`,
       tag: `dose-11-1-${dateStr}`,
     });
   });
@@ -383,10 +392,60 @@ describe('scheduleNotification -- costruttore che lancia (Chrome Android)', () =
     svc.scheduleNotification({ entryKey: 'k1', fireAt: Date.now() + 60_000, title: 't', body: 'b', onFire });
     vi.advanceTimersByTime(60_000);
     expect(MockNotification).toHaveBeenCalledTimes(1);
-    expect(MockNotification).toHaveBeenCalledWith('t', { body: 'b', tag: 'k1' });
+    expect(MockNotification).toHaveBeenCalledWith('t', {
+      body: 'b\nPharmaTimer h.12:01  - 27/04/2026',
+      tag: 'k1',
+    });
     const istanza = MockNotification.mock.instances[0];
     expect(typeof istanza.onclick).toBe('function');
     expect(onFire).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ============================================================
+// L'ultima riga dei timer di pagina -- decisione 8 del 2026-11-04, D3.
+//
+// Ogni notifica dei timer di pagina chiude con "PharmaTimer h.HH:MM  -
+// GG/MM/AAAA", l'ora e la data in cui il timer scatta: non l'istante per cui
+// era armato, che su iOS una pagina sospesa supera. Regola 1 della sessione:
+// un'ultima riga che non si compone non costa la notifica, che parte senza.
+// Le righe nel banco: timer-ultima-riga-dall-istante-armato,
+// timer-ultima-riga-senza-guardia.
+// ============================================================
+describe('l ultima riga dei timer di pagina (decisione 8, D3)', () => {
+  beforeEach(() => {
+    vi.setSystemTime(new Date('2026-04-27T12:00:00'));
+  });
+
+  it('un timer di pagina chiude con l ultima riga, con l ora in cui scatta e non quella per cui era armato', () => {
+    const svc = createNotificationsService();
+    svc.scheduleNotification({ entryKey: 'k1', fireAt: Date.now() + 5 * 60_000, title: 't', body: 'b' });
+    // The page was suspended: the wall clock went on, the timer did not fire.
+    vi.setSystemTime(new Date('2026-04-27T12:20:00'));
+    vi.advanceTimersByTime(5 * 60_000);
+    expect(MockNotification).toHaveBeenCalledTimes(1);
+    expect(MockNotification).toHaveBeenCalledWith('t', {
+      body: 'b\nPharmaTimer h.12:25  - 27/04/2026',
+      tag: 'k1',
+    });
+  });
+
+  it('regola 1: un ultima riga che non si compone non costa la notifica, che parte senza', () => {
+    const svc = createNotificationsService();
+    const onFire = vi.fn();
+    svc.scheduleNotification({ entryKey: 'k1', fireAt: Date.now() + 60_000, title: 't', body: 'b', onFire });
+    const orologio = vi.spyOn(Date, 'now').mockImplementation(() => {
+      throw new Error('orologio guasto allo scatto');
+    });
+    try {
+      expect(() => vi.advanceTimersByTime(60_000)).not.toThrow();
+    } finally {
+      orologio.mockRestore();
+    }
+    expect(MockNotification).toHaveBeenCalledTimes(1);
+    expect(MockNotification).toHaveBeenCalledWith('t', { body: 'b', tag: 'k1' });
+    expect(onFire).toHaveBeenCalledTimes(1);
+    expect(svc.getPendingCount()).toBe(0);
   });
 });
 

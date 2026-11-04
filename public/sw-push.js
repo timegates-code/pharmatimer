@@ -15,6 +15,11 @@
 //   the phone's own ledger (the taccuino) is read: if the dose is already
 //   closed there, the body says so (decision 31 A). The read is bounded in
 //   time, and any failure keeps the published text. Never suppressed.
+// - Every notification closes with the hour and the date of the sending, in
+//   the phone's local time (decision 8 of 2026-11-04): the instant the server
+//   put in the push (D1), or the hour the phone shows it when the push
+//   carries none that reads (D2). A last line that does not compose never
+//   costs the notification, which leaves without it, and a dose stays a dose.
 // - Read only: no action buttons, nothing written to the ledger or to the
 //   outbox (I2). The database is opened without a version, never created,
 //   never upgraded, and closed as soon as the read ends, so it never blocks
@@ -58,6 +63,19 @@
     return String(n).padStart(2, "0");
   }
 
+  // The last line, "PharmaTimer h.HH:MM  - DD/MM/YYYY", or null when the
+  // instant does not read. The same text as rigaInvio of
+  // src/domain/promemoria.js, the page timers' copy: the test holds the two
+  // together.
+  function rigaInvio(istanteMs) {
+    if (typeof istanteMs !== "number" || !Number.isFinite(istanteMs) || istanteMs <= 0) return null;
+    const quando = new Date(istanteMs);
+    if (Number.isNaN(quando.getTime())) return null;
+    const ora = dueCifre(quando.getHours()) + ":" + dueCifre(quando.getMinutes());
+    const giorno = dueCifre(quando.getDate()) + "/" + dueCifre(quando.getMonth() + 1) + "/" + quando.getFullYear();
+    return "PharmaTimer h." + ora + "  - " + giorno;
+  }
+
   // The published payload, or null when it cannot be read. A dose push
   // carries its slot key, the same key as the log (decision 8).
   function leggiPayload(dati) {
@@ -70,6 +88,8 @@
       titolo: grezzo.titolo,
       corpo: grezzo.corpo,
       dose: grezzo.tipo === "dose" ? chiaveDose(grezzo) : null,
+      // As it came: only the last line reads it, inside its own guard.
+      inviato: grezzo.inviato_ms,
     };
   }
 
@@ -187,7 +207,7 @@
   async function componi(dati) {
     const messaggio = leggiPayload(dati);
     if (messaggio === null) return null;
-    const notifica = { titolo: messaggio.titolo, opzioni: { body: messaggio.corpo } };
+    const notifica = { titolo: messaggio.titolo, opzioni: { body: messaggio.corpo }, inviato: messaggio.inviato };
     if (messaggio.dose !== null) {
       notifica.opzioni.tag = tagDose(messaggio.dose);
       let riga = null;
@@ -209,7 +229,17 @@
   }
 
   function notificaNeutra() {
-    return { titolo: TITOLO_NEUTRO, opzioni: { body: CORPO_NEUTRO } };
+    return { titolo: TITOLO_NEUTRO, opzioni: { body: CORPO_NEUTRO }, inviato: null };
+  }
+
+  // The instant the server put in the push (D1), else the hour the phone
+  // shows it (D2): a push from a server not yet updated, or one this file
+  // cannot read. The body changes only once the whole line is composed.
+  function aggiungiUltimaRiga(notifica) {
+    const riga = rigaInvio(notifica.inviato) || rigaInvio(Date.now());
+    if (riga === null) return;
+    const corpo = notifica.opzioni.body;
+    notifica.opzioni.body = corpo === "" ? riga : corpo + "\n" + riga;
   }
 
   async function mostra(dati) {
@@ -221,6 +251,12 @@
     }
     if (notifica === null) {
       notifica = notificaNeutra();
+    }
+    try {
+      aggiungiUltimaRiga(notifica);
+    } catch {
+      // Rule 1 of 2026-11-04: a last line that does not compose never costs
+      // the notification, which leaves without it.
     }
     return self.registration.showNotification(notifica.titolo, notifica.opzioni);
   }

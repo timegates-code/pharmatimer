@@ -132,6 +132,7 @@ def test_voce_dovuta_parte_con_ttl_del_resto_della_finestra(scena) -> None:
                 "farmaco_id": scena.f,
                 "data": OGGI,
                 "dose_numero": 1,
+                "inviato_ms": ADESSO,
             },
         }
     ]
@@ -219,7 +220,8 @@ def test_ricalcolata_non_pubblicata_da_avviso_neutro(scena) -> None:
     mittente = _passata(scena.pool)
     (chiamata,) = mittente.chiamate
     assert chiamata["dati"]["tipo"] == "avviso_neutro"
-    assert set(chiamata["dati"]) == {"v", "tipo", "titolo", "corpo"}
+    # No dose data; the one instant is the sending's (decision 8 of 2026-11-04).
+    assert set(chiamata["dati"]) == {"v", "tipo", "titolo", "corpo", "inviato_ms"}
     riga = _dispatch(scena.pool)
     assert (riga["forma"], riga["stato"], riga["motivo"]) == ("avviso_neutro", "accettato", "divergenza")
 
@@ -613,7 +615,7 @@ def test_avviso_fine_parte_nella_sua_finestra(scena) -> None:
     (chiamata,) = mittente.chiamate
     assert chiamata["ttl_s"] == 30 * 60
     assert chiamata["dati"]["tipo"] == "avviso_fine"
-    assert set(chiamata["dati"]) == {"v", "tipo", "titolo", "corpo"}
+    assert set(chiamata["dati"]) == {"v", "tipo", "titolo", "corpo", "inviato_ms"}
     assert [(a["stato"], a["ttl_s"]) for a in _avvisi(scena.pool)] == [("accettato", 1800)]
 
 
@@ -649,6 +651,33 @@ def test_avviso_fine_utente_non_attivo(scena) -> None:
     assert [(a["stato"], a["motivo"]) for a in _avvisi(scena.pool)] == [
         ("non_inviato", "utente_non_attivo")
     ]
+
+
+# ------------------------------------------------------------ decision 8 of 2026-11-04
+
+
+def test_ogni_push_porta_l_ora_del_tentativo_la_stessa_del_registro(scena) -> None:
+    # D1 and S1 A of 2026-11-04: every push, dose or notice, carries the
+    # instant of the sending, the server clock as its attempt read it: the
+    # value the record writes as inviato_ms. Never the start of the pass,
+    # never the instant of the dose.
+    metti_voce(scena.pool, scena.u, scena.f, OGGI, 1, ADESSO - 2 * MINUTO)
+    metti_voce(scena.pool, scena.u, scena.f, OGGI, 2, ADESSO - MINUTO)
+    metti_log(scena.pool, scena.u, scena.f, OGGI, 2, "ricalcolata", "2026-10-01 11:30:00")
+    metti_pubblicazione(scena.pool, scena.u, ADESSO - MINUTO, ADESSO + 30 * MINUTO)
+    mittente = _passata(scena.pool, ora=[ADESSO, ADESSO + 1_000, ADESSO + 2_000, ADESSO + 3_000])
+    assert [(c["dati"]["tipo"], c["dati"]["inviato_ms"]) for c in mittente.chiamate] == [
+        ("dose", ADESSO + 1_000),
+        ("avviso_neutro", ADESSO + 2_000),
+        ("avviso_fine", ADESSO + 3_000),
+    ]
+    assert righe(
+        scena.pool, "SELECT dose_numero, forma, inviato_ms FROM push_dispatch ORDER BY dose_numero"
+    ) == [
+        {"dose_numero": 1, "forma": "dose", "inviato_ms": ADESSO + 1_000},
+        {"dose_numero": 2, "forma": "avviso_neutro", "inviato_ms": ADESSO + 2_000},
+    ]
+    assert righe(scena.pool, "SELECT inviato_ms FROM push_avvisi_fine") == [{"inviato_ms": ADESSO + 3_000}]
 
 
 # ------------------------------------------------------------ I2 and the heartbeat

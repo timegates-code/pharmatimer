@@ -3,17 +3,17 @@
 Prima del taglio del 2026-10-24: `git show de0a538:STATO_CORRENTE.md`.
 Voci chiuse: `docs/chiuse-stato.tsv`, una riga per voce con la sua sezione.
 
-## Ultima sessione -- la guardia d'identita del server nei test, 2026-11-04
-Decisioni di Roberto del 04/11: dalla 1 alla 7 alle 12:59, la 8 dopo.
-- `backend/tests/guardia_server.py`: i test partono solo se il `server_uuid`,
-  letto coi parametri del pool di test, e del MySQL di dev o del contenitore
-  della CI; se no si fermano in rosso prima del DB, e la guardia dice cosa ha
-  visto. La lanciano `conftest.py` e la precondizione di `make test-backend`.
-- Il uuid di dev l'ha misurato la guardia; la CI scrive il suo in `auto.cnf`
-  del contenitore e lo riavvia. Nessun interruttore. CLAUDE.md 4 e 11 corretti.
-- Il pin rosso prima e verde dopo, anche dal vivo su una porta dove non
-  ascolta niente; 1 riga nel banco. La 7 chiude in `docs/chiuse-stato.tsv`.
-- Deviazioni: nessuna dalla Spec. Nessun deploy.
+## Ultima sessione -- il formato delle notifiche, voce 8, 2026-11-04
+Decisioni di Roberto del 04/11: la 8 dopo le 12:59, D1-D6 alle 17:23, S1 A
+e S2 A alla F1 delle 17:42.
+- Ogni notifica chiude con `PharmaTimer h.HH:MM  - GG/MM/AAAA`: nel push
+  l'istante `inviato_ms`, lo `ora` del tentativo che il registro gia scrive;
+  senza un istante leggibile e nei timer di pagina, l'ora in cui si mostra.
+- La dose invita "per procedere". Se la riga non si compone, la notifica
+  parte senza (regola 1). Sedi: `canale.py`, `pianificatore.py`,
+  `promemoria.js`, `notifications.js`, `public/sw-push.js`.
+- Pin rossi prima e verdi dopo; 11 righe nuove nel banco e 2 spostate.
+- Spec 6.1 e 6.4 nello stesso commit. Deviazioni: nessuna. Nessun deploy.
 
 ## In esercizio
 - 03/11: canale Web Push in produzione dal 06/10; dalle 16:40 codice `c0f67d5`.
@@ -47,8 +47,8 @@ Si esegue, non si rimisura. Ordinata per rischio clinico.
 6. [aperta] **Il meccanismo delle orfane** (M3). Il cambio di profilo cancella
    le ricalcolate solo in locale e lo specchio le rimette; la giunzione
    `(farmaco_id, dose_numero)` non e una FK. Rimedio non deciso.
-8. [aperta] **Il formato delle notifiche**, decisione 8 del 2026-11-04, da
-   non lavorare qui: e lo scope di una sessione sua, col deploy in un'altra.
+8. [aperta] **Il formato delle notifiche**, decisione 8 del 2026-11-04: il
+   codice e i pin nel commit del 04/11 sul formato; manca il deploy (D6).
    Parole di Roberto. Il banner di una dose oggi è: `Assonal` /
    `from PharmaTimer` /
    `Dose delle 12:30, lontano dai pasti. Apri l'app per controllare.`

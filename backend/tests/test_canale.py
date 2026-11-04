@@ -18,6 +18,7 @@ import base64
 import json
 import subprocess
 import sys
+from datetime import date
 from pathlib import Path
 
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -27,6 +28,8 @@ from pharmatimer_api import canale
 
 BACKEND = Path(__file__).resolve().parents[1]
 SUB = "mailto:sonda@example.org"
+# An instant of the sending, epoch ms: the server never formats it (decision 8, D1).
+INVIATO = 1_790_841_660_000
 
 _SONDA = """
 import json, sys
@@ -132,21 +135,38 @@ def test_tolleranza_e_venti_minuti() -> None:
 
 def test_testo_dell_avviso_neutro_d3() -> None:
     # D3 A (2026-10-01), against the decision and not against the constants.
-    assert json.loads(canale.payload_avviso_neutro()) == {
+    # Decision 8 of 2026-11-04 adds the instant of the sending, not a dose time.
+    assert json.loads(canale.payload_avviso_neutro(inviato_ms=INVIATO)) == {
         "v": 1,
         "tipo": "avviso_neutro",
         "titolo": "PharmaTimer",
         "corpo": "Apri l'app per controllare i promemoria.",
+        "inviato_ms": INVIATO,
     }
 
 
 def test_testo_dell_avviso_di_fine_decisione_27() -> None:
     # Decision 27 of 2026-11-03, against the decision and not against the
     # constants: the end-of-horizon notice says that the reminders stop and
-    # what to do, never a time, under a title of its own (D1 A of 2026-11-03).
-    assert json.loads(canale.payload_avviso_fine()) == {
+    # what to do, never a time in its text, under a title of its own (D1 A of
+    # 2026-11-03). Decision 8 of 2026-11-04 adds the instant of the sending,
+    # from which the phone writes the last line.
+    assert json.loads(canale.payload_avviso_fine(inviato_ms=INVIATO)) == {
         "v": 1,
         "tipo": "avviso_fine",
         "titolo": "Promemoria in scadenza",
         "corpo": "Fra poco non riceverai altri promemoria. Apri PharmaTimer per rinnovarli.",
+        "inviato_ms": INVIATO,
     }
+
+
+def test_ogni_push_porta_l_istante_dell_invio_in_millisecondi() -> None:
+    # Decision 8 of 2026-11-04, D1: every push, dose or notice, carries the
+    # instant of the sending as epoch milliseconds, as given and never turned
+    # into a wall-clock time: the last line is the phone's, in its local time.
+    dose = canale.payload_dose("Assonal", "Dose delle 12:30.", 1, 7, date(2026, 11, 4), 1, inviato_ms=INVIATO)
+    neutro = canale.payload_avviso_neutro(inviato_ms=INVIATO)
+    fine = canale.payload_avviso_fine(inviato_ms=INVIATO)
+    for dati in (json.loads(dose), json.loads(neutro), json.loads(fine)):
+        assert dati["inviato_ms"] == INVIATO
+        assert type(dati["inviato_ms"]) is int

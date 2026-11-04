@@ -566,7 +566,7 @@ Le card sono raggruppate per fascia oraria con etichetta (es. "ORE 10:00 — COL
 ### 6.1 Requisiti
 - Il consenso si chiede dal toggle "Notifiche dosi" di Impostazioni, non al primo avvio. In modalita server lo stesso tocco iscrive il telefono al canale della 6.4, con `subscribe()` come primo atto del gesto (ratifica A del 2026-10-01)
 - Ogni dose prevista o ricalcolata ha un avviso al suo istante: il timer di pagina con l'app aperta e, in modalita server, il push del canale ad app chiusa
-- Il testo e lo stesso sui due canali (decisione 32 A): titolo il nome del farmaco, che porta il dosaggio; corpo "Dose delle HH:MM", la relazione col pasto se c'e, e "Apri l'app per controllare." Mai uno stato della dose
+- Il testo e lo stesso sui due canali (decisione 32 A): titolo il nome del farmaco, che porta il dosaggio; corpo "Dose delle HH:MM", la relazione col pasto se c'e, e "Apri l'app per procedere." Mai uno stato della dose
 - Suono: quello standard del sistema, che l'app non sceglie
 - Un tocco porta avanti la finestra aperta senza navigarla (decisione 10 A). Su iPhone ad app aperta timer di pagina e push possono dare due avvisi per la stessa dose: un doppio dichiarato, con lo stesso testo
 
@@ -603,6 +603,8 @@ Si ritenta solo cio che certifica il rifiuto del servizio push, per lista bianca
 **L'avviso di fine orizzonte** (decisione 12): istante ed `entro` li calcola il telefono, oltre il TTL dell'ultima dose e fuori dalla finestra di sonno. Parte solo se non e arrivata una pubblicazione piu recente, con gli stessi passi tranne quelli di dose.
 
 **I testi.** Il push di dose porta titolo e corpo pubblicati dal telefono. L'avviso neutro e quello di fine portano testi fissi, senza dati di dose, che invitano ad aprire l'app: la loro sede unica e `canale.py`, e li tengono i suoi test (decisione 27).
+
+**L'ultima riga** (decisione 8 del 2026-11-04): ogni notifica di PharmaTimer, push o timer di pagina, chiude con `PharmaTimer h.HH:MM  - GG/MM/AAAA`, ora e data dell'invio che il telefono scrive nella sua ora locale, dall'istante che il server mette in ogni push, quello del tentativo che il registro scrive come `inviato_ms`, o dall'ora in cui la mostra per un timer di pagina e per un push senza un istante leggibile; e l'ora dell'invio, non quella della dose, e se non si compone la notifica si mostra senza.
 
 **La chiave VAPID** (decisione 15): PEM 0600 nella home del Mini, fuori da `~/PharmaTimer`; il percorso sta nei plist dell'API e della passata come `VAPID_PEM_FILE`, il `sub` nel `.env.dev` del Mini. Senza chiave il canale si spegne e lo dice, con un 503 su `/api/push/chiave` e col motivo nel battito, e l'app parte comunque.
 

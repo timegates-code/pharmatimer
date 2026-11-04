@@ -33,6 +33,10 @@ EVERY ATTEMPT, the first and each retry (condition 1 of Roberto, 2026-09-30):
      read, and committed BEFORE the POST: at most once per dose and
      subscription (v07), and per phone by step 3. Only a certified refusal is
      attempted again (condition 2, pharmatimer_api/invio.py).
+Every push carries the instant of the sending (decision 8 of 2026-11-04, D1
+and S1 A): the clock the attempt read to decide, the same value the record
+writes as deciso_ms and inviato_ms. It is only shown, by the phone: it enters
+no decision.
 The end-of-horizon notice goes through the same steps minus the dose ones
 (decision 12). Its publication is one row per user, so a newer publication
 replaces it by construction.
@@ -335,9 +339,10 @@ def _tenta_dose(conn, cur, voce, firma: invio.Firma, invia, orologio) -> str:
             voce["farmaco_id"],
             voce["data"],
             voce["dose_numero"],
+            inviato_ms=ora,
         )
     else:
-        dati = canale.payload_avviso_neutro()
+        dati = canale.payload_avviso_neutro(inviato_ms=ora)
     esito = invia(_iscrizione(voce), dati, d.ttl_s, firma.vapid, firma.sub)
     _registra_esito(cur, "push_dispatch", riga_id, esito, d.motivo, ora)
     if esito.iscrizione_morta:
@@ -357,7 +362,8 @@ def _tenta_avviso(conn, cur, avviso, firma: invio.Firma, invia, orologio) -> str
         return CAMBIATA
     if d.stato != invio.IN_INVIO:
         return d.motivo or d.stato
-    esito = invia(_iscrizione(avviso), canale.payload_avviso_fine(), d.ttl_s, firma.vapid, firma.sub)
+    dati = canale.payload_avviso_fine(inviato_ms=ora)
+    esito = invia(_iscrizione(avviso), dati, d.ttl_s, firma.vapid, firma.sub)
     _registra_esito(cur, "push_avvisi_fine", riga_id, esito, d.motivo, ora)
     if esito.iscrizione_morta:
         _spegni(cur, avviso["sub_id"], ora)

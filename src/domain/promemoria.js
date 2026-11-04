@@ -14,7 +14,12 @@
  *   phone may already have closed the dose, offline. One text on both
  *   channels, so a double on the iPhone with the app open (decision 10 A)
  *   reads as one dose shown twice; the worker rewrites a closed dose from the
- *   same "Dose delle HH:MM" (public/sw-push.js).
+ *   same "Dose delle HH:MM" (public/sw-push.js). The invitation is "per
+ *   procedere" since decision 8 of 2026-11-04.
+ * - rigaInvio: decision 8 of 2026-11-04, the last line of every notification
+ *   of PharmaTimer, from an instant the caller passes: the page timers pass
+ *   the hour they fire (D3). The service worker keeps its own copy
+ *   (public/sw-push.js), which src/pwa/sw-push.test.js holds equal to this.
  */
 
 import { parseIsoDateTime, wallToInstant } from '../utils/time.js';
@@ -27,7 +32,7 @@ import { formatRelazionePastoCopy } from '../utils/copy.js';
 export const TITOLO_MAX = 100;
 export const CORPO_MAX = 255;
 
-const INVITO = "Apri l'app per controllare.";
+const INVITO = "Apri l'app per procedere.";
 
 /**
  * The instant of a dose, epoch ms, or null when it has no time.
@@ -76,4 +81,21 @@ export function testoDose(entry, farmaco) {
     titolo: tronca(nome === '' ? 'Farmaco' : nome, TITOLO_MAX),
     corpo: tronca(corpo, CORPO_MAX),
   };
+}
+
+/**
+ * The last line of a notification (decision 8 of 2026-11-04): the hour and
+ * the date of the sending in the phone's local time, hours and minutes on two
+ * digits and on 24 hours, two spaces before the dash, the year on four.
+ * @param {unknown} istanteMs epoch ms
+ * @returns {string|null} `PharmaTimer h.HH:MM  - DD/MM/YYYY`, or null when the
+ *   instant does not read: not a number, not positive, or out of the calendar
+ */
+export function rigaInvio(istanteMs) {
+  if (typeof istanteMs !== 'number' || !Number.isFinite(istanteMs) || istanteMs <= 0) return null;
+  const quando = new Date(istanteMs);
+  if (Number.isNaN(quando.getTime())) return null;
+  const ora = `${dueCifre(quando.getHours())}:${dueCifre(quando.getMinutes())}`;
+  const giorno = `${dueCifre(quando.getDate())}/${dueCifre(quando.getMonth() + 1)}/${quando.getFullYear()}`;
+  return `PharmaTimer h.${ora}  - ${giorno}`;
 }

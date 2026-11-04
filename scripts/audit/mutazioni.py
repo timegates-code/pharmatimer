@@ -614,10 +614,21 @@ MUTAZIONI = [
          "pytest", [T_PIAN], ["test_ricalcolata_uguale_da_push_di_dose"]),
     # L avviso neutro della 11 non porta farmaco ne ora.
     riga("passata-neutro-con-farmaco", "passata, passo 2", "M1",
-         [(PIAN, "def _tenta_dose(", "dati = canale.payload_avviso_neutro()",
+         [(PIAN, "def _tenta_dose(", "dati = canale.payload_avviso_neutro(inviato_ms=ora)",
            'dati = canale.payload_dose(voce["titolo"], voce["corpo"], voce["istante_ms"], '
-           'voce["farmaco_id"], voce["data"], voce["dose_numero"])')],
+           'voce["farmaco_id"], voce["data"], voce["dose_numero"], inviato_ms=ora)')],
          "pytest", [T_PIAN], ["test_ricalcolata_non_pubblicata_da_avviso_neutro"]),
+    # Decisione 8 del 2026-11-04, D1 e S1 A: ogni push porta l istante
+    # dell invio, lo ora del tentativo che il registro scrive come
+    # inviato_ms; mai l istante della dose. E l avviso di fine lo porta.
+    riga("passata-inviato-dall-istante-della-dose", "decisione 8, 2026-11-04", "--",
+         [(PIAN, "def _tenta_dose(", "            inviato_ms=ora,\n",
+           '            inviato_ms=voce["istante_ms"],\n')],
+         "pytest", [T_PIAN], ["test_ogni_push_porta_l_ora_del_tentativo_la_stessa_del_registro"]),
+    riga("canale-fine-senza-istante", "decisione 8, 2026-11-04", "--",
+         [(CAN, "def payload_avviso_fine(", '            "inviato_ms": inviato_ms,\n', "")],
+         "pytest", [T_CAN], ["test_testo_dell_avviso_di_fine_decisione_27",
+                             "test_ogni_push_porta_l_istante_dell_invio_in_millisecondi"]),
     # D2 A: farmaco e utente riletti a ogni tentativo. Un farmaco sospeso che
     # suona col suo nome e l errore clinico di Spec 14.4.3 (M1).
     riga("passata-farmaco-non-attivo", "passata, passo 2", "M1",
@@ -851,6 +862,31 @@ MUTAZIONI = [
     riga("worker-non-incluso", "client, passo 1", "M2",
          [("vite.config.js", "workbox: {", 'importScripts: ["sw-push.js"],', "")],
          "vitest", [T_SW], ["vite.config.js carica il worker con una riga (decisione 14)"]),
+    # L ultima riga di ogni notifica del worker (decisione 8 del 2026-11-04):
+    # l istante che il server ha messo nel push (D1), l ora del telefono senza
+    # un istante leggibile (D2), la stessa riga dei timer di pagina. Regola 1
+    # della sessione: una riga che non si compone non costa la notifica, che
+    # parte senza; senza la guardia il push non mostra nulla (M2).
+    riga("worker-ultima-riga-senza-guardia", "decisione 8, 2026-11-04", "M2",
+         [(SW, "async function mostra(", "      aggiungiUltimaRiga(notifica);\n    } catch {",
+           "      aggiungiUltimaRiga(notifica);\n    } finally {")],
+         "vitest", [T_SW],
+         ["regola 1: un'ultima riga che non si compone non costa la notifica, che parte senza, "
+          "e una dose resta una dose"]),
+    riga("worker-ultima-riga-dal-telefono", "decisione 8, 2026-11-04", "--",
+         [(SW, "function aggiungiUltimaRiga(", "rigaInvio(notifica.inviato) || rigaInvio(Date.now())",
+           "rigaInvio(Date.now())")],
+         "vitest", [T_SW],
+         ["un push di dose porta l'istante che il server ci ha messo, nell'ora del telefono (D1)"]),
+    riga("worker-ultima-riga-senza-ripiego", "decisione 8, 2026-11-04", "--",
+         [(SW, "function aggiungiUltimaRiga(", "rigaInvio(notifica.inviato) || rigaInvio(Date.now())",
+           "rigaInvio(notifica.inviato)")],
+         "vitest", [T_SW],
+         ["un push senza un istante dell'invio leggibile (da un server non ancora aggiornato) "
+          "porta l'ora in cui il telefono lo mostra (D2)"]),
+    riga("worker-ultima-riga-divergente", "decisione 8, 2026-11-04", "--",
+         [(SW, "function rigaInvio(", '"  - "', '" - "')],
+         "vitest", [T_SW], ["l'ultima riga del worker e quella dei timer di pagina (domain/promemoria.js)"]),
     # Client del canale, passo 2: iscrizione e rinnovo. Ci si iscrive, o si
     # conferma, solo se il worker attivo risponde: un worker che non mostra i
     # push fa estinguere la subscription a iOS (S11). Nei due versi: un
@@ -1031,6 +1067,19 @@ MUTAZIONI = [
           (NOTI, "function scheduleNotification(", "      clearTimeout(pending.get(entryKey));",
            "      void entryKey;")],
          "vitest", [T_NOTI], ["i riarmi prima dello scatto non lo impediscono: un solo avviso, all istante"]),
+    # L ultima riga dei timer di pagina (decisione 8 del 2026-11-04, D3): l ora
+    # in cui il timer scatta, non l istante per cui era armato. Regola 1 della
+    # sessione: senza la guardia lo scatto muore prima del costruttore (M2).
+    riga("timer-ultima-riga-dall-istante-armato", "decisione 8, 2026-11-04", "--",
+         [(NOTI, "function scheduleNotification(", "const riga = rigaInvio(Date.now());",
+           "const riga = rigaInvio(fireAt);")],
+         "vitest", [T_NOTI],
+         ["un timer di pagina chiude con l ultima riga, con l ora in cui scatta e non quella per cui era armato"]),
+    riga("timer-ultima-riga-senza-guardia", "decisione 8, 2026-11-04", "M2",
+         [(NOTI, "function scheduleNotification(",
+           "      } catch { /* the notification leaves without its last line */ }",
+           "      } finally { /* the notification leaves without its last line */ }")],
+         "vitest", [T_NOTI], ["regola 1: un ultima riga che non si compone non costa la notifica, che parte senza"]),
     # Il calendario pubblicato (passo 3). La chiave e quella che buildLogWrite
     # proietta: la passata rilegge il log per quella chiave, e una chiave che
     # scivola legge la riga di un altra dose (M1). Le tre righe nominate dalla
@@ -1080,9 +1129,23 @@ MUTAZIONI = [
     # Il testo della dose (32 A): mai uno stato (I1), sempre l ora, nei limiti
     # del server, uguale sul timer di pagina.
     riga("testo-asserisce-stato", "client, passo 3", "M1",
-         [(PRO, "const INVITO =", "\"Apri l'app per controllare.\"",
+         [(PRO, "const INVITO =", "\"Apri l'app per procedere.\"",
            "\"Non ancora presa: apri l'app per registrarla.\"")],
          "vitest", [T_PRO], ["non asserisce mai uno stato della dose (I1), qualunque esso sia"]),
+    # Decisione 8 del 2026-11-04: l invito della dose e "per procedere", e
+    # l ultima riga ha la forma decisa, nell ora locale del telefono.
+    riga("testo-invito-di-prima", "decisione 8, 2026-11-04", "--",
+         [(PRO, "const INVITO =", "\"Apri l'app per procedere.\"", "\"Apri l'app per controllare.\"")],
+         "vitest", [T_PRO],
+         ["decisione 8: il banner di Assonal delle 12:30, lontano dai pasti, invita a procedere"]),
+    riga("riga-invio-spazio-singolo", "decisione 8, 2026-11-04", "--",
+         [(PRO, "export function rigaInvio(", "`PharmaTimer h.${ora}  - ${giorno}`",
+           "`PharmaTimer h.${ora} - ${giorno}`")],
+         "vitest", [T_PRO], ["l esempio di Roberto: un push mandato alle 12:31 del 04/11/2026"]),
+    riga("riga-invio-in-utc", "decisione 8, 2026-11-04", "--",
+         [(PRO, "export function rigaInvio(", "dueCifre(quando.getHours())", "dueCifre(quando.getUTCHours())")],
+         "vitest", [T_PRO],
+         ["nell ora locale del telefono, non in UTC: le 23:30 UTC del 04/11 sono le 00:30 del 05/11 a Roma"]),
     riga("testo-senza-ora", "client, passo 3", "--",
          [(PRO, "export function testoDose(",
            "`Dose delle ${dueCifre(quando.getHours())}:${dueCifre(quando.getMinutes())}`", "'Dose'")],

@@ -183,7 +183,7 @@ describe('cosa entra nel calendario', () => {
   it('titolo e corpo sono quelli della dose (decisione 32)', () => {
     const [voce] = vociDelCalendario(piano()).filter((v) => v.farmaco_id === 1 && v.data === OGGI);
     expect(voce.titolo).toBe('Cardioaspirina 100');
-    expect(voce.corpo).toBe("Dose delle 07:30, dopo i pasti. Apri l'app per controllare.");
+    expect(voce.corpo).toBe("Dose delle 07:30, dopo i pasti. Apri l'app per procedere.");
   });
 
   it('una voce per dose, in ordine di istante', () => {

@@ -32,7 +32,7 @@
 // Tag-based replacement: schedulare stesso entryKey cancella il timer precedente
 // (Q-CP2.3 + AMB-9.H). entryKey convenzione: dose-{farmaco_id}-{dose_numero}-{dateStr}.
 
-import { istanteDose, testoDose } from '../domain/promemoria.js';
+import { istanteDose, testoDose, rigaInvio } from '../domain/promemoria.js';
 import {
   selectToday,
   selectEntriesForEffectiveDay,
@@ -94,6 +94,15 @@ export function createNotificationsService() {
       }
       // Q-CP2.4=A: defensive permission check al fire (cattura revoche post-schedule).
       if (globalThis.Notification.permission !== 'granted') return;
+      // Decision 8 of 2026-11-04, D3: the last line of every notification,
+      // with the hour the timer fires, never the instant it was armed for: a
+      // suspended page fires late. Rule 1 of the session: a line that does
+      // not compose never costs the notification, which leaves without it.
+      let testo = body;
+      try {
+        const riga = rigaInvio(Date.now());
+        if (riga !== null) testo = typeof body === 'string' && body !== '' ? `${body}\n${riga}` : riga;
+      } catch { /* the notification leaves without its last line */ }
       // Chrome Android: `new Notification()` in page context always throws
       // TypeError ("Illegal constructor. Use
       // ServiceWorkerRegistration.showNotification() instead", MDN BCD
@@ -105,7 +114,7 @@ export function createNotificationsService() {
       // chain is not. It changes nothing where the constructor works (iOS in
       // an installed PWA): same construction, same onclick, same onFire.
       try {
-        const notif = new globalThis.Notification(title, { body, tag: entryKey });
+        const notif = new globalThis.Notification(title, { body: testo, tag: entryKey });
         // Decision 10 A: the window comes forward as it is, never navigated.
         notif.onclick = () => {
           try { window.focus(); } catch { /* noop */ }

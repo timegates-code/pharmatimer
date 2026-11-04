@@ -122,10 +122,24 @@ def _json(oggetto: dict) -> str:
     return json.dumps(oggetto, ensure_ascii=False, separators=(",", ":"))
 
 
-def payload_dose(titolo: str, corpo: str, istante_ms: int, farmaco_id: int, data, dose_numero: int) -> str:
+def payload_dose(
+    titolo: str,
+    corpo: str,
+    istante_ms: int,
+    farmaco_id: int,
+    data,
+    dose_numero: int,
+    *,
+    inviato_ms: int,
+) -> str:
     """The dose push as the service worker reads it (classic branch: decision 2
     excludes the declarative one). Title and body are the phone's own, composed
-    and self-dated by the phone (I1); the slot key is there for the tag."""
+    and self-dated by the phone (I1); the slot key is there for the tag.
+
+    inviato_ms, in every push (decision 8 of 2026-11-04, D1): the instant of
+    the sending, epoch ms, never turned into a wall-clock time here; the
+    phone writes the last line from it, in its own local time. The field is
+    additive: a worker that does not know it shows the push as before."""
     return _json(
         {
             "v": 1,
@@ -136,6 +150,7 @@ def payload_dose(titolo: str, corpo: str, istante_ms: int, farmaco_id: int, data
             "farmaco_id": farmaco_id,
             "data": data.isoformat(),
             "dose_numero": dose_numero,
+            "inviato_ms": inviato_ms,
         }
     )
 
@@ -146,17 +161,35 @@ def payload_dose(titolo: str, corpo: str, istante_ms: int, farmaco_id: int, data
 # fallback is held equal to its two texts (src/pwa/sw-push.test.js). Decision
 # 27 of 2026-11-03: the end-of-horizon notice says that the reminders stop and
 # what to do, under a title of its own. The dose push keeps the phone's text.
+# Decision 8 of 2026-11-04: the notices carry the instant of the sending as
+# well, the dose push's inviato_ms; it is not a time of the dose.
 TITOLO_AVVISI = "PharmaTimer"
 CORPO_AVVISO_NEUTRO = "Apri l'app per controllare i promemoria."
 TITOLO_AVVISO_FINE = "Promemoria in scadenza"
 CORPO_AVVISO_FINE = "Fra poco non riceverai altri promemoria. Apri PharmaTimer per rinnovarli."
 
 
-def payload_avviso_neutro() -> str:
+def payload_avviso_neutro(*, inviato_ms: int) -> str:
     """The neutral notice of decision 11: nothing of the dose, not even its key."""
-    return _json({"v": 1, "tipo": "avviso_neutro", "titolo": TITOLO_AVVISI, "corpo": CORPO_AVVISO_NEUTRO})
+    return _json(
+        {
+            "v": 1,
+            "tipo": "avviso_neutro",
+            "titolo": TITOLO_AVVISI,
+            "corpo": CORPO_AVVISO_NEUTRO,
+            "inviato_ms": inviato_ms,
+        }
+    )
 
 
-def payload_avviso_fine() -> str:
+def payload_avviso_fine(*, inviato_ms: int) -> str:
     """The end-of-horizon notice of decision 12, with the text of decision 27: no dose data."""
-    return _json({"v": 1, "tipo": "avviso_fine", "titolo": TITOLO_AVVISO_FINE, "corpo": CORPO_AVVISO_FINE})
+    return _json(
+        {
+            "v": 1,
+            "tipo": "avviso_fine",
+            "titolo": TITOLO_AVVISO_FINE,
+            "corpo": CORPO_AVVISO_FINE,
+            "inviato_ms": inviato_ms,
+        }
+    )
