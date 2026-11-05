@@ -3,17 +3,17 @@
 Prima del taglio del 2026-10-24: `git show de0a538:STATO_CORRENTE.md`.
 Voci chiuse: `docs/chiuse-stato.tsv`, una riga per voce con la sua sezione.
 
-## Ultima sessione -- il formato delle notifiche, voce 8, 2026-11-04
-Decisioni di Roberto del 04/11: la 8 dopo le 12:59, D1-D6 alle 17:23, S1 A
-e S2 A alla F1 delle 17:42.
-- Ogni notifica chiude con `PharmaTimer h.HH:MM  - GG/MM/AAAA`: nel push
-  l'istante `inviato_ms`, lo `ora` del tentativo che il registro gia scrive;
-  senza un istante leggibile e nei timer di pagina, l'ora in cui si mostra.
-- La dose invita "per procedere". Se la riga non si compone, la notifica
-  parte senza (regola 1). Sedi: `canale.py`, `pianificatore.py`,
-  `promemoria.js`, `notifications.js`, `public/sw-push.js`.
-- Pin rossi prima e verdi dopo; 11 righe nuove nel banco e 2 spostate.
-- Spec 6.1 e 6.4 nello stesso commit. Deviazioni: nessuna. Nessun deploy.
+## Ultima sessione -- le due prese di prova del 06/10 tolte, 2026-11-05
+Decisioni di Roberto del 05/11: D1-D3 fra le 13:29 e le 13:41; a F1, 2 B e 3 A.
+- Dal log del Mini tolte le id 14 e 15, due prove del canale del 06/10, con
+  un DELETE legato a id, utente 2, data e targa: alle 17:29:32, prima della
+  prima presa vera. Verifica: log vuoto, le altre tabelle come alle 13:17.
+- Ritorno, se servisse: il modo ritorno di `~/pt-scrittura-dati-20261105.sh`,
+  che rimette lo INSERT esportato alle 16:41, sul Mini in
+  `~/PharmaTimer/backups/prescrittura-dati-20261105/`. Mai il dump.
+- Restano come sono i farmaci e gli orari dell'utente 2 (D2), gli utenti 3 e
+  4 e il canale push (D3). Nel telefono le due prese restano in locale.
+- Nessun codice di prodotto, nessun deploy. Deviazioni: nessuna.
 
 ## In esercizio
 - 03/11: canale Web Push in produzione dal 06/10; dalle 16:40 codice `c0f67d5`.
