@@ -3,25 +3,27 @@
 Prima del taglio del 2026-10-24: `git show de0a538:STATO_CORRENTE.md`.
 Voci chiuse: `docs/chiuse-stato.tsv`, una riga per voce con la sua sezione.
 
-## Ultima sessione -- le due prese di prova del 06/10 tolte, 2026-11-05
-Decisioni di Roberto del 05/11: D1-D3 fra le 13:29 e le 13:41; a F1, 2 B e 3 A.
-- Dal log del Mini tolte le id 14 e 15, due prove del canale del 06/10, con
-  un DELETE legato a id, utente 2, data e targa: alle 17:29:32, prima della
-  prima presa vera. Verifica: log vuoto, le altre tabelle come alle 13:17.
-- Ritorno, se servisse: il modo ritorno di `~/pt-scrittura-dati-20261105.sh`,
-  che rimette lo INSERT esportato alle 16:41, sul Mini in
-  `~/PharmaTimer/backups/prescrittura-dati-20261105/`. Mai il dump.
-- Restano come sono i farmaci e gli orari dell'utente 2 (D2), gli utenti 3 e
-  4 e il canale push (D3). Nel telefono le due prese restano in locale.
-- Nessun codice di prodotto, nessun deploy. Deviazioni: nessuna.
+## Ultima sessione -- il deploy del formato delle notifiche, 2026-11-07
+Scelte di Roberto del 07/11: a F1 1A, 2A e 3A; a F2 il limite delle 17:30.
+- Sul Mini il codice di HEAD `581c72e`, col formato di `02e7cbf`: foto
+  `predeploy-formato-20261107` alle 16:19:46, `deploy-mini.sh` fino alle
+  16:19:57, controlli tornati alle 16:21:13. Nessuna migrazione.
+- Verifica: prod-check verde col bundle `index-CpEj02dF`; app aperta una
+  volta con Ricarica alle 16:25; la lettura del Mini delle 16:30 uguale a
+  quella delle 14:33 salvo pubblicazione e conferma; 20 voci per procedere.
+- Il banner: titolo, la riga "from PharmaTimer" dell'iOS, testo, ultima
+  riga (1A). Il primo alle 19:00 del 07/11: lo guarda Roberto.
+- Nessun codice di prodotto. Deviazioni: nessuna. La voce 8 chiude.
 
 ## In esercizio
-- 03/11: canale Web Push in produzione dal 06/10; dalle 16:40 codice `c0f67d5`.
-- 03/11: bundle `index-Dv0-EdhH`, lo stesso del 06/10; uvicorn su `TCP *:8000`
-  IPv4, anche in LAN.
-- 03/11: ritorno, se servisse: la foto `predeploy-avviso-20261103` in
-  `~/PharmaTimer/backups/`, coi due plist; ripristino, `pip install -e`,
-  bootout e bootstrap. La v07 resta; i dati non si toccano.
+- 07/11: canale Web Push in produzione dal 06/10; dalle 16:19 codice
+  `581c72e`, col formato delle notifiche di `02e7cbf`.
+- 07/11: bundle `index-CpEj02dF`; uvicorn su `TCP *:8000` IPv4, anche in LAN.
+- 07/11: ritorno, se servisse: la foto `predeploy-formato-20261107` in
+  `~/PharmaTimer/backups/`, coi due plist; rsync dalla foto, plist, bootout
+  e bootstrap, senza `pip install -e`. La v07 resta; i dati non si toccano.
+- 07/11: la foto del 03/11, `predeploy-avviso-20261103`, resta finche
+  Roberto non decide di toglierla.
 - 06/10: restano la prova sull'iPhone e la settimana di accettazione (17).
 - 03/09: il token e per utente e non si recupera dal server (SHA-256).
 - 03/09: ruotarlo e un UPDATE sul DB di produzione, da ratificare ogni volta.
@@ -47,16 +49,6 @@ Si esegue, non si rimisura. Ordinata per rischio clinico.
 6. [aperta] **Il meccanismo delle orfane** (M3). Il cambio di profilo cancella
    le ricalcolate solo in locale e lo specchio le rimette; la giunzione
    `(farmaco_id, dose_numero)` non e una FK. Rimedio non deciso.
-8. [aperta] **Il formato delle notifiche**, decisione 8 del 2026-11-04: il
-   codice e i pin nel commit del 04/11 sul formato; manca il deploy (D6).
-   Parole di Roberto. Il banner di una dose oggi è: `Assonal` /
-   `from PharmaTimer` /
-   `Dose delle 12:30, lontano dai pasti. Apri l'app per controllare.`
-   Deve diventare: `Assonal` /
-   `Dose delle 12:30, lontano dai pasti. Apri l'app per procedere.` /
-   `PharmaTimer h.hh:mm  - gg/mm/aaaa`. L'ultima riga porta ora e data
-   dell'invio, e va in tutte le notifiche di PharmaTimer, anche nell'avviso
-   di fine.
 
 ### Rilievi chiusi, e cio che resta aperto sotto di loro
 - [aperta] **La sonda sul moto g06.** Il `TypeError` del costruttore resta
