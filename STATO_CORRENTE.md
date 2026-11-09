@@ -3,17 +3,17 @@
 Prima del taglio del 2026-10-24: `git show de0a538:STATO_CORRENTE.md`.
 Voci chiuse: `docs/chiuse-stato.tsv`, una riga per voce con la sua sezione.
 
-## Ultima sessione -- il deploy del formato delle notifiche, 2026-11-07
-Scelte di Roberto del 07/11: a F1 1A, 2A e 3A; a F2 il limite delle 17:30.
-- Sul Mini il codice di HEAD `581c72e`, col formato di `02e7cbf`: foto
-  `predeploy-formato-20261107` alle 16:19:46, `deploy-mini.sh` fino alle
-  16:19:57, controlli tornati alle 16:21:13. Nessuna migrazione.
-- Verifica: prod-check verde col bundle `index-CpEj02dF`; app aperta una
-  volta con Ricarica alle 16:25; la lettura del Mini delle 16:30 uguale a
-  quella delle 14:33 salvo pubblicazione e conferma; 20 voci per procedere.
-- Il banner: titolo, la riga "from PharmaTimer" dell'iOS, testo, ultima
-  riga (1A). Il primo alle 19:00 del 07/11: lo guarda Roberto.
-- Nessun codice di prodotto. Deviazioni: nessuna. La voce 8 chiude.
+## Ultima sessione -- la guardia del minimo su /recupero, 2026-11-09
+Scelte di Roberto del 09/11: a F1 1A, 2A, 3A e 4A; quattro righe nel banco.
+- `post_recupero` rifiuta con 409 CONSTRAINT_VIOLATION il gesto che anticipa
+  la dose sotto `intervallo_minimo_ore` dalla presa piu vicina prima, in
+  minuti reali; il minimo esatto passa, il gesto che posticipa non si giudica,
+  senza minimo niente guardia. Test in `test_recupero_minimo.py`.
+- CLAUDE.md 11: comandi come negli allow, uno per volta, e la umask dai
+  target del Makefile. Spec 4.7: la riga di `/recupero` dice la guardia.
+- Solo Studio, niente deploy: la voce 1 resta aperta. Nessun codice client;
+  i test che coprono le prese e i promemoria non sono toccati.
+- Deviazioni dalla Spec: nessuna.
 
 ## In esercizio
 - 07/11: canale Web Push in produzione dal 06/10; dalle 16:19 codice
@@ -30,9 +30,9 @@ Scelte di Roberto del 07/11: a F1 1A, 2A e 3A; a F2 il limite delle 17:30.
 
 ## Coda di rimedio
 Si esegue, non si rimisura. Ordinata per rischio clinico.
-1. [aperta] **`/recupero` senza guardia sul minimo** (M1), Spec 4.7 :431: il
-   server accetta un recupero sotto `intervallo_minimo_ore`, lo ferma solo lo
-   slider del client. Senza presa al 2026-09-18: nessun farmaco a intervallo.
+1. [aperta] **`/recupero` e il minimo** (M1): guardia nel commit del 09/11
+   (Spec 4.7, riga di `/recupero`), manca il deploy: fino ad allora il Mini
+   accetta il recupero sotto il minimo. Al 18/09 nessun farmaco a intervallo.
 2. [aperta] **Ricalcolo D+1 rifiutato: il riallineamento riporta la D+1
    all'ora prevista, sotto il minimo** (M1). Sonda del 2026-09-29: 390 minuti
    reali dalla presa contro 450, e col canale anche ad app chiusa. Oggi

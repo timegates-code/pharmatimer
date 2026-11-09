@@ -314,12 +314,25 @@ Separare sempre le azioni **tue** (Roberto) da quelle **mie** (Claude).
 
 ## 11. COMANDI
 
+**Sotto Claude Code ogni comando si lancia come sta negli allow del file della
+sessione, uno per volta e un file per comando:** due `shasum` su due file sono
+due comandi. Niente comandi composti (`&&`, `;`, `|`) e niente redirezioni:
+non sono negli allow, e ciascuno diventa una richiesta di permesso. Niente
+sostituzioni di processo: il sandbox le nega (`/dev/fd/12: Operation not
+permitted`, misurato il 2026-11-07). Un confronto fra due file, o fra due
+tratti dello stesso file, si fa leggendoli col tool Read, non con `diff` o
+`sed` dalla shell.
+
 **Precondizione a ogni suite: `umask 022` nella STESSA invocazione che lancia
-la suite** (lezione #66). Claude Code apre una shell nuova per ogni comando,
-quindi una umask impostata in un comando precedente NON sopravvive: si scrive
-`umask 022 && npx vitest run`, mai due comandi separati. Con umask diversa
-vitest riporta N unhandled errors con 0 test eseguiti e pytest da
-`PermissionError` dentro `$TMPDIR`: il guasto e di ambiente, non di codice.
+la suite** (lezione #66). Ogni comando apre una shell nuova, quindi una umask
+impostata in un comando precedente NON sopravvive. Sotto Claude Code le suite
+si lanciano coi target del Makefile, che la impostano da se nella stessa
+invocazione: le ricette di `test-frontend` e `test-backend`, e `os.umask` in
+`scripts/audit/controllo_dst.py` e `scripts/audit/mutazioni.py`. Dal
+Terminale si scrive `umask 022 && npx vitest run`, mai due comandi separati.
+Con umask diversa vitest riporta N unhandled errors con 0 test eseguiti e
+pytest da `PermissionError` dentro `$TMPDIR`: il guasto e di ambiente, non di
+codice.
 
 **Il gate e `make check`**, e vale in apertura e in chiusura (sezioni 4 e 8).
 Esegue lint, test frontend, controllo DST, dipendenze, test backend,

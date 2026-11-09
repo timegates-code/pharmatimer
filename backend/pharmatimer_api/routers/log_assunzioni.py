@@ -888,7 +888,9 @@ def post_recupero(
     Q-RES-2 = A constraints:
       - recupero_minuti <= row.gap_minuti
       - resulting ora_ricalcolata >= TIMESTAMP(data, ora_prevista) (no anticipation)
-    TODO F3-S3-gamma+: intervallo_minimo_ore enforcement (Q-RES-2 deferred).
+    STATO voce 1, decisions of 2026-11-09 (1A, 2A): a gesture that moves the
+    dose earlier may not land under intervallo_minimo_ore from the nearest
+    presa before it, in real minutes (SENTINEL_RECUPERO_MINIMO below).
 
     DRIFT-NEW.3 = A: read row.gap_minuti directly (no TIMESTAMPDIFF inline).
 
@@ -1004,6 +1006,49 @@ def post_recupero(
 
         cur.execute(_LOG_ROW_SELECT, (existing["id"],))
         row = cur.fetchone()
+
+        # SENTINEL_RECUPERO_MINIMO -- STATO, Coda di rimedio, voce 1; decisions
+        # of 2026-11-09, 1A and 2A. Spec 4.6: a recupero may not shorten the
+        # interval under intervallo_minimo_ore.
+        #
+        # The new time is the one just stored, read back above, so the UPDATE
+        # arithmetic has one seat. It is measured from the nearest presa of the
+        # SAME FARMACO at or before it, any dose_numero, any date: the
+        # "precedente" side of decisione 2, in REAL minutes
+        # (tempo.minuti_reali). The client slider bounds the total in WALL
+        # minutes (recalc.js calcolaRecuperoMax), so it lets through a time one
+        # real hour short on the spring transition night, and a time under the
+        # minimum when intervallo_ore was raised after the presa. The minimum
+        # itself is admitted: Spec 4.6 says "sotto".
+        #
+        # Only a gesture that moves the dose EARLIER is judged. A lower total,
+        # or the reset, moves it later: refusing it would keep the dose closer
+        # to the presa than the person asked, so it passes even when the new
+        # time is still under a minimum set after the recalculation.
+        #
+        # FAIL-SAFE: no minimum (P2=A of decisione 2) or no presa before the
+        # new time means no guard; absence of information PROCEEDS. The refusal
+        # is a CONSTRAINT_VIOLATION like the other data guards of this route:
+        # the transaction rolls back and no row moves. /recupero never records
+        # a presa, so nothing taken can be lost (M2).
+        minimo_minuti = _intervallo_minimo_minuti(cur, farmaco_id)
+        if minimo_minuti is not None and payload.recupero_minuti > rec_old:
+            cur.execute(
+                _PRESA_VICINA_SELECT + "AND ora_effettiva <= %s ORDER BY ora_effettiva DESC LIMIT 1",
+                (current_user.id, farmaco_id, existing["id"], row["ora_ricalcolata"]),
+            )
+            precedente = cur.fetchone()
+            if precedente is not None:
+                minuti = minuti_reali(row["ora_ricalcolata"], precedente["ora_effettiva"])
+                if minuti < minimo_minuti:
+                    raise RepositoryError(
+                        code=RepositoryErrorCode.CONSTRAINT_VIOLATION,
+                        message=(
+                            f"Recupero sotto l'intervallo minimo: la dose cadrebbe a {minuti} "
+                            f"minuti dalla presa precedente, il minimo e {minimo_minuti}"
+                        ),
+                    )
+
         conn.commit()
     except (RepositoryError, Exception):
         conn.rollback()

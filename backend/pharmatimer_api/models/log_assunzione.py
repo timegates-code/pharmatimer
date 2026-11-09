@@ -189,7 +189,8 @@ class LogAssunzioneRecuperoPayload(LogAssunzioneSlotPayload):
 
     Q-RES-2 = A (minimal): recupero_minuti must be <= row.gap_minuti and the
     resulting ora_ricalcolata must remain >= ora_prevista (no anticipation
-    beyond base time). intervallo_minimo_ore constraint DEFERRED F3-S3-gamma+.
+    beyond base time). intervallo_minimo_ore is enforced by the route on a
+    gesture that moves the dose earlier (STATO voce 1, 2026-11-09).
     """
 
     # SENTINEL_S6264_GE0

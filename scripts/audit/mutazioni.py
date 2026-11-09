@@ -75,6 +75,7 @@ AH = "src/state/applyHelper.js"
 SPLIT = "src/domain/outboxSplitter.js"
 # pytest: percorsi relativi a backend/. vitest: relativi alla radice.
 T_IM = "tests/test_intervallo_minimo.py"
+T_RM = "tests/test_recupero_minimo.py"
 T_CO = "tests/test_invariante_coppia.py"
 T_SRIM = "src/data/repository/SyncRepository.intervalloMinimo.test.js"
 T_SR = "src/data/repository/SyncRepository.test.js"
@@ -221,6 +222,25 @@ MUTAZIONI = [
            "  if (r.motivo === MOTIVO_INTERVALLO_MINIMO) {\n    return componiSchedaIntervalloMinimo(r);\n  }\n",
            "")],
          "vitest", [T_AS], ["I2 record completo -> COMPLETA, con la ora della PRESA e non del tocco"]),
+    # STATO voce 1, la guardia del minimo su /recupero (scelte 1A e 2A del
+    # 2026-11-09): il rifiuto e lo accettato, i minuti reali nei due versi, e
+    # il gesto che posticipa non giudicato.
+    riga("recupero-minimo-mai", "voce 1, 2026-11-09", "M1",
+         [(LA, "# SENTINEL_RECUPERO_MINIMO", "if minuti < minimo_minuti:", "if False:")],
+         "pytest", [T_RM], ["test_recupero_sotto_il_minimo_rifiutato_e_righe_intatte"]),
+    riga("recupero-minimo-sempre", "voce 1, 2026-11-09", "M1",
+         [(LA, "# SENTINEL_RECUPERO_MINIMO", "if minuti < minimo_minuti:", "if True:")],
+         "pytest", [T_RM],
+         ["test_recupero_esattamente_al_minimo_accettato", "test_recupero_sopra_il_minimo_accettato"]),
+    riga("recupero-minimo-parete", "voce 1, 2026-11-09", "M1",
+         [(LA, "# SENTINEL_RECUPERO_MINIMO",
+           'minuti = minuti_reali(row["ora_ricalcolata"], precedente["ora_effettiva"])',
+           'minuti = round((row["ora_ricalcolata"] - precedente["ora_effettiva"]).total_seconds() / 60)')],
+         "pytest", [T_RM],
+         ["test_dst_primavera_sotto_il_minimo_reale_rifiutato", "test_dst_autunno_e_notte_ordinaria_accettati"]),
+    riga("recupero-minimo-ogni-gesto", "voce 1, 2026-11-09", "M1",
+         [(LA, "# SENTINEL_RECUPERO_MINIMO", " and payload.recupero_minuti > rec_old:", ":")],
+         "pytest", [T_RM], ["test_recupero_che_posticipa_accettato_quello_che_anticipa_rifiutato"]),
     # 012e34a, decisione 3: contratto dei tipi. Forme dal corpo.
     riga("d3-scavalco-mezzanotte", "012e34a MD3", "M3",
          [("src/domain/recalc.js", "// Step 3: patch target",
