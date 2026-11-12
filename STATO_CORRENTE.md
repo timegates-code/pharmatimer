@@ -3,17 +3,17 @@
 Prima del taglio del 2026-10-24: `git show de0a538:STATO_CORRENTE.md`.
 Voci chiuse: `docs/chiuse-stato.tsv`, una riga per voce con la sua sezione.
 
-## Ultima sessione -- la guardia del minimo su /recupero, 2026-11-09
-Scelte di Roberto del 09/11: a F1 1A, 2A, 3A e 4A; quattro righe nel banco.
-- `post_recupero` rifiuta con 409 CONSTRAINT_VIOLATION il gesto che anticipa
-  la dose sotto `intervallo_minimo_ore` dalla presa piu vicina prima, in
-  minuti reali; il minimo esatto passa, il gesto che posticipa non si giudica,
-  senza minimo niente guardia. Test in `test_recupero_minimo.py`.
-- CLAUDE.md 11: comandi come negli allow, uno per volta, e la umask dai
-  target del Makefile. Spec 4.7: la riga di `/recupero` dice la guardia.
-- Solo Studio, niente deploy: la voce 1 resta aperta. Nessun codice client;
-  i test che coprono le prese e i promemoria non sono toccati.
-- Deviazioni dalla Spec: nessuna.
+## Ultima sessione -- il deploy della guardia del minimo, 2026-11-12
+Decisioni di Roberto dell'11/11 (1-6) e scelte del 12/11 (1A, 2A).
+- Deploy di `6fa9079` NON fatto: lo script della consulenza si e fermato in
+  D4 alle 14:54:22, prima della foto. La rilettura del Mini differiva da
+  quella delle 12:46:55 in una cella sola: `confermata_ms` della riga di
+  telefono 18, riscritto alle 14:10:30 dal PUT `/api/push/iscrizione`, che
+  l'app manda a ogni apertura e ritorno in primo piano. Prese, invii e
+  promemoria invariati.
+- Mini invariato: niente foto, deploy o ritorno. La finestra del 12/11 si e
+  chiusa alle 14:57:51: la voce 1 resta aperta.
+- Nessun codice, solo questo STATO. Deviazioni dalla Spec: nessuna.
 
 ## In esercizio
 - 07/11: canale Web Push in produzione dal 06/10; dalle 16:19 codice
@@ -33,6 +33,7 @@ Si esegue, non si rimisura. Ordinata per rischio clinico.
 1. [aperta] **`/recupero` e il minimo** (M1): guardia nel commit del 09/11
    (Spec 4.7, riga di `/recupero`), manca il deploy: fino ad allora il Mini
    accetta il recupero sotto il minimo. Al 18/09 nessun farmaco a intervallo.
+   Il deploy del 12/11 si e fermato prima di scrivere: ultima sessione.
 2. [aperta] **Ricalcolo D+1 rifiutato: il riallineamento riporta la D+1
    all'ora prevista, sotto il minimo** (M1). Sonda del 2026-09-29: 390 minuti
    reali dalla presa contro 450, e col canale anche ad app chiusa. Oggi
