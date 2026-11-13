@@ -55,7 +55,7 @@ describe('notifications service', () => {
     vi.advanceTimersByTime(5 * 60 * 1000);
     expect(MockNotification).toHaveBeenCalledTimes(1);
     expect(MockNotification).toHaveBeenCalledWith('Test', {
-      body: 'Body\nPharmaTimer h.12:05  - 27/04/2026',
+      body: 'Body\nPharmaTimer h.12:05 - 27/04/2026',
       tag: 'k1',
     });
     expect(svc.getPendingCount()).toBe(0);
@@ -125,7 +125,7 @@ describe('notifications service', () => {
     // Solo la 2° schedule deve aver fired (la 1° è stata cancellata).
     expect(MockNotification).toHaveBeenCalledTimes(1);
     expect(MockNotification).toHaveBeenCalledWith('second', {
-      body: 'b2\nPharmaTimer h.12:10  - 27/04/2026',
+      body: 'b2\nPharmaTimer h.12:10 - 27/04/2026',
       tag: 'k1',
     });
   });
@@ -163,7 +163,7 @@ describe('notifications service', () => {
     // hour the timer fired, 12:30 of the day the beforeEach fixes.
     expect(MockNotification).toHaveBeenCalledWith('Pantorc 40mg', {
       body: `Dose delle ${hh}:${mm}, 30 min prima colazione. Apri l'app per procedere.\n`
-        + `PharmaTimer h.${hh}:${mm}  - 27/04/2026`,
+        + `PharmaTimer h.${hh}:${mm} - 27/04/2026`,
       tag: `dose-7-2-${dateStr}`,
     });
   });
@@ -191,7 +191,7 @@ describe('notifications service', () => {
     svc.showDoseNotification(entry, farmaco);
     vi.advanceTimersByTime(30 * 60_000);
     expect(MockNotification).toHaveBeenCalledWith('Levotuss 10ml', {
-      body: `Dose delle ${hh}:${mm}. Apri l'app per procedere.\nPharmaTimer h.${hh}:${mm}  - 27/04/2026`,
+      body: `Dose delle ${hh}:${mm}. Apri l'app per procedere.\nPharmaTimer h.${hh}:${mm} - 27/04/2026`,
       tag: `dose-11-1-${dateStr}`,
     });
   });
@@ -393,7 +393,7 @@ describe('scheduleNotification -- costruttore che lancia (Chrome Android)', () =
     vi.advanceTimersByTime(60_000);
     expect(MockNotification).toHaveBeenCalledTimes(1);
     expect(MockNotification).toHaveBeenCalledWith('t', {
-      body: 'b\nPharmaTimer h.12:01  - 27/04/2026',
+      body: 'b\nPharmaTimer h.12:01 - 27/04/2026',
       tag: 'k1',
     });
     const istanza = MockNotification.mock.instances[0];
@@ -405,8 +405,9 @@ describe('scheduleNotification -- costruttore che lancia (Chrome Android)', () =
 // ============================================================
 // L'ultima riga dei timer di pagina -- decisione 8 del 2026-11-04, D3.
 //
-// Ogni notifica dei timer di pagina chiude con "PharmaTimer h.HH:MM  -
-// GG/MM/AAAA", l'ora e la data in cui il timer scatta: non l'istante per cui
+// Ogni notifica dei timer di pagina chiude con "PharmaTimer h.HH:MM -
+// GG/MM/AAAA", uno spazio solo prima del trattino dalla decisione 3 del
+// 2026-11-13, l'ora e la data in cui il timer scatta: non l'istante per cui
 // era armato, che su iOS una pagina sospesa supera. Regola 1 della sessione:
 // un'ultima riga che non si compone non costa la notifica, che parte senza.
 // Le righe nel banco: timer-ultima-riga-dall-istante-armato,
@@ -425,7 +426,7 @@ describe('l ultima riga dei timer di pagina (decisione 8, D3)', () => {
     vi.advanceTimersByTime(5 * 60_000);
     expect(MockNotification).toHaveBeenCalledTimes(1);
     expect(MockNotification).toHaveBeenCalledWith('t', {
-      body: 'b\nPharmaTimer h.12:25  - 27/04/2026',
+      body: 'b\nPharmaTimer h.12:25 - 27/04/2026',
       tag: 'k1',
     });
   });

@@ -43,12 +43,13 @@ const CORPO = "Dose delle 08:00, prima di colazione. Apri l'app per procedere.";
 
 // Decision 8 of 2026-11-04: every notification closes with the hour and the
 // date of the sending. The server sends at 08:01 (D1, inviato_ms); the phone
-// shows at 08:03, by the clock of the worker scope (D2). The expected lines
-// are written from the decision, never computed.
+// shows at 08:03, by the clock of the worker scope (D2). One space before the
+// dash since decision 3 of 2026-11-13. The expected lines are written from
+// the decisions, never computed.
 const INVIATO = ISTANTE + 60_000;
 const ADESSO_TELEFONO = ISTANTE + 3 * 60_000;
-const RIGA_INVIO = "PharmaTimer h.08:01  - 02/10/2026";
-const RIGA_TELEFONO = "PharmaTimer h.08:03  - 02/10/2026";
+const RIGA_INVIO = "PharmaTimer h.08:01 - 02/10/2026";
+const RIGA_TELEFONO = "PharmaTimer h.08:03 - 02/10/2026";
 
 function pushDose(campi = {}) {
   return {
@@ -337,7 +338,7 @@ describe("l'ultima riga di ogni notifica (decisione 8)", () => {
     const w = avviaWorker();
     await w.push(pushDose({ inviato_ms: Date.parse("2026-11-04T12:31:00+01:00") }));
     expect(w.notifiche).toHaveLength(1);
-    expect(w.notifiche[0].opzioni.body).toBe(CORPO + "\nPharmaTimer h.12:31  - 04/11/2026");
+    expect(w.notifiche[0].opzioni.body).toBe(CORPO + "\nPharmaTimer h.12:31 - 04/11/2026");
   });
 
   it.each([

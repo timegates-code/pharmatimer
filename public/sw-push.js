@@ -63,17 +63,17 @@
     return String(n).padStart(2, "0");
   }
 
-  // The last line, "PharmaTimer h.HH:MM  - DD/MM/YYYY", or null when the
-  // instant does not read. The same text as rigaInvio of
-  // src/domain/promemoria.js, the page timers' copy: the test holds the two
-  // together.
+  // The last line, "PharmaTimer h.HH:MM - DD/MM/YYYY", one space before the
+  // dash since decision 3 of 2026-11-13, or null when the instant does not
+  // read. The same text as rigaInvio of src/domain/promemoria.js, the page
+  // timers' copy: the test holds the two together.
   function rigaInvio(istanteMs) {
     if (typeof istanteMs !== "number" || !Number.isFinite(istanteMs) || istanteMs <= 0) return null;
     const quando = new Date(istanteMs);
     if (Number.isNaN(quando.getTime())) return null;
     const ora = dueCifre(quando.getHours()) + ":" + dueCifre(quando.getMinutes());
     const giorno = dueCifre(quando.getDate()) + "/" + dueCifre(quando.getMonth() + 1) + "/" + quando.getFullYear();
-    return "PharmaTimer h." + ora + "  - " + giorno;
+    return "PharmaTimer h." + ora + " - " + giorno;
   }
 
   // The published payload, or null when it cannot be read. A dose push

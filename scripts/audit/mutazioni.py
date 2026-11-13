@@ -142,6 +142,15 @@ T_FC = "tests/test_farmaci_crud.py"
 # La guardia d'identita del server nei test, STATO voce 7.
 GUA = "backend/tests/guardia_server.py"
 T_GUA = "tests/test_guardia_server.py"
+# Il battito verso il monitor, decisione 1 del 2026-11-13.
+MON = "backend/pharmatimer_api/monitor.py"
+T_MON = "tests/test_monitor.py"
+T_MONP = "tests/test_monitor_processo.py"
+# I servizi del Mini in make prod-check, parte 2 del fermo visibile.
+SA = "deploy/stato_agenti.py"
+T_SA = "tests/test_stato_agenti.py"
+SM = "scripts/audit/servizi_mini.py"
+T_SM = "tests/test_servizi_mini.py"
 
 # Il tocco del toggle (ratifica A del 2026-10-01): subscribe() primo atto del gesto.
 SUBSCRIBE_NEL_GESTO = (
@@ -904,8 +913,10 @@ MUTAZIONI = [
          "vitest", [T_SW],
          ["un push senza un istante dell'invio leggibile (da un server non ancora aggiornato) "
           "porta l'ora in cui il telefono lo mostra (D2)"]),
-    riga("worker-ultima-riga-divergente", "decisione 8, 2026-11-04", "--",
-         [(SW, "function rigaInvio(", '"  - "', '" - "')],
+    # Decisione 3 del 2026-11-13: uno spazio solo prima del trattino. La
+    # mutazione rimette i due spazi di prima nel solo worker.
+    riga("worker-ultima-riga-divergente", "decisione 8, 2026-11-04; decisione 3, 2026-11-13", "--",
+         [(SW, "function rigaInvio(", '" - "', '"  - "')],
          "vitest", [T_SW], ["l'ultima riga del worker e quella dei timer di pagina (domain/promemoria.js)"]),
     # Client del canale, passo 2: iscrizione e rinnovo. Ci si iscrive, o si
     # conferma, solo se il worker attivo risponde: un worker che non mostra i
@@ -1153,14 +1164,15 @@ MUTAZIONI = [
            "\"Non ancora presa: apri l'app per registrarla.\"")],
          "vitest", [T_PRO], ["non asserisce mai uno stato della dose (I1), qualunque esso sia"]),
     # Decisione 8 del 2026-11-04: l invito della dose e "per procedere", e
-    # l ultima riga ha la forma decisa, nell ora locale del telefono.
+    # l ultima riga ha la forma decisa, nell ora locale del telefono; dalla
+    # decisione 3 del 2026-11-13 con uno spazio solo prima del trattino.
     riga("testo-invito-di-prima", "decisione 8, 2026-11-04", "--",
          [(PRO, "const INVITO =", "\"Apri l'app per procedere.\"", "\"Apri l'app per controllare.\"")],
          "vitest", [T_PRO],
          ["decisione 8: il banner di Assonal delle 12:30, lontano dai pasti, invita a procedere"]),
-    riga("riga-invio-spazio-singolo", "decisione 8, 2026-11-04", "--",
-         [(PRO, "export function rigaInvio(", "`PharmaTimer h.${ora}  - ${giorno}`",
-           "`PharmaTimer h.${ora} - ${giorno}`")],
+    riga("riga-invio-spazio-doppio", "decisione 3, 2026-11-13", "--",
+         [(PRO, "export function rigaInvio(", "`PharmaTimer h.${ora} - ${giorno}`",
+           "`PharmaTimer h.${ora}  - ${giorno}`")],
          "vitest", [T_PRO], ["l esempio di Roberto: un push mandato alle 12:31 del 04/11/2026"]),
     riga("riga-invio-in-utc", "decisione 8, 2026-11-04", "--",
          [(PRO, "export function rigaInvio(", "dueCifre(quando.getHours())", "dueCifre(quando.getUTCHours())")],
@@ -1385,6 +1397,150 @@ MUTAZIONI = [
     riga("guardia-server-ammette-chiunque", "guardia d'identita del server, voce 7", "M2",
          [(GUA, "def giudica(", "    if identita.server_uuid not in SERVER_AMMESSI:\n", "    if False:\n")],
          "pytest", [T_GUA], ["test_il_mini_della_riapertura_si_ferma", "test_un_server_sconosciuto_si_ferma"]),
+    # Il battito verso il monitor: decisione 1 del 2026-11-13, scelte 3 A e
+    # 4 A della F1 del fermo visibile, con la condizione delle 21:41. Una GET
+    # sola, senza dati e senza redirect, all indirizzo della configurazione;
+    # nessuna senza indirizzo o senza https; un esito che non porta mai
+    # l indirizzo; un attesa limitata, in un thread daemon che non tiene vivo
+    # il processo. Dal main: solo dopo una passata completa con battito ok,
+    # dopo il battito nel DB, dentro il tetto dei 40 s, senza ritentare, e un
+    # fallimento che va nel log e basta. Nei due versi dove c e un cancello.
+    # M2 dove la mutazione puo ritardare una passata o nascondere un fermo.
+    riga("monitor-senza-indirizzo-parte", "decisione 1, 2026-11-13", "--",
+         [(MON, "def batti(", "    if not url:\n        return NON_CONFIGURATO\n",
+           "    if False:\n        return NON_CONFIGURATO\n")],
+         "pytest", [T_MON], ["test_senza_indirizzo_nessuna_richiesta[nessuno]",
+                             "test_senza_indirizzo_nessuna_richiesta[vuoto]"]),
+    riga("monitor-http-ammesso", "decisione 1, 2026-11-13", "--",
+         [(MON, "def batti(", '    if not url.startswith("https://"):\n        return NON_VALIDO\n',
+           "    if False:\n        return NON_VALIDO\n")],
+         "pytest", [T_MON], ["test_indirizzo_non_https_nessuna_richiesta[http]",
+                             "test_indirizzo_non_https_nessuna_richiesta[senza-schema]"]),
+    riga("monitor-indirizzo-nell-esito", "decisione 1, 2026-11-13", "--",
+         [(MON, "def batti(", "esito[0] = type(exc).__name__", 'esito[0] = f"{type(exc).__name__}: {exc}"')],
+         "pytest", [T_MON], ["test_eccezione_solo_il_nome_della_classe"]),
+    riga("monitor-attesa-senza-limite", "scelta 4 A, 2026-11-13", "M2",
+         [(MON, "def batti(", "filo.join(attesa_s)", "filo.join()")],
+         "pytest", [T_MON], ["test_richiesta_appesa_torna_entro_l_attesa"]),
+    riga("monitor-due-richieste", "decisione 1, 2026-11-13", "M2",
+         [(MON, "def batti(", "            stato = richiedi(url, attesa_s)\n",
+           "            richiedi(url, attesa_s)\n            stato = richiedi(url, attesa_s)\n")],
+         "pytest", [T_MON], ["test_una_sola_richiesta_all_indirizzo"]),
+    riga("monitor-segue-i-redirect", "decisione 1, 2026-11-13", "--",
+         [(MON, "def _get(", "allow_redirects=False", "allow_redirects=True")],
+         "pytest", [T_MON], ["test_la_get_porta_solo_l_indirizzo"]),
+    riga("monitor-get-con-dati", "decisione 1, 2026-11-13", "--",
+         [(MON, "def _get(", "allow_redirects=False", 'allow_redirects=False, params={"esito": "ok"}')],
+         "pytest", [T_MON], ["test_la_get_porta_solo_l_indirizzo"]),
+    riga("monitor-thread-non-daemon", "condizione delle 21:41 sulla scelta 4 A, 2026-11-13", "M2",
+         [(MON, "def batti(", "daemon=True", "daemon=False")],
+         "pytest", [T_MONP], ["test_con_la_get_appesa_il_processo_della_passata_finisce_entro_l_attesa"]),
+    riga("battito-monitor-mai", "scelta 3 A, 2026-11-13", "--",
+         [(PIAN, "def main(", "    if firma.motivo is None:\n        _batti_al_monitor(inizio)\n",
+           "    if False:\n        _batti_al_monitor(inizio)\n")],
+         "pytest", [T_PIAN], ["test_battito_al_monitor_dopo_una_passata_ok"]),
+    riga("battito-monitor-con-chiave-assente", "scelta 3 A, 2026-11-13", "M2",
+         [(PIAN, "def main(", "    if firma.motivo is None:\n        _batti_al_monitor(inizio)\n",
+           "    if True:\n        _batti_al_monitor(inizio)\n")],
+         "pytest", [T_PIAN], ["test_nessun_battito_con_la_chiave_assente"]),
+    riga("battito-monitor-prima-della-passata", "decisione 1, 2026-11-13", "M2",
+         [(PIAN, "def main(", "        conteggi = passata(conn, firma)\n",
+           "        _batti_al_monitor(inizio)\n        conteggi = passata(conn, firma)\n")],
+         "pytest", [T_PIAN], ["test_battito_al_monitor_dopo_una_passata_ok"]),
+    riga("battito-monitor-senza-tetto", "scelta 4 A, 2026-11-13", "M2",
+         [(PIAN, "def _batti_al_monitor(", "    if trascorso > LIMITE_BATTITO_S:\n", "    if False:\n")],
+         "pytest", [T_PIAN], ["test_battito_oltre_il_tetto_non_parte_e_lo_dice"]),
+    riga("battito-monitor-senza-indirizzo-parte", "decisione 1, 2026-11-13", "--",
+         [(PIAN, "def _batti_al_monitor(", "    if not url:\n        return\n", "    if False:\n        return\n")],
+         "pytest", [T_PIAN], ["test_senza_indirizzo_nessun_battito_e_nessuna_riga"]),
+    riga("battito-monitor-ritenta", "decisione 1, 2026-11-13", "M2",
+         [(PIAN, "def _batti_al_monitor(", "    esito = monitor.batti(url)\n",
+           "    esito = monitor.batti(url)\n    if esito != monitor.OK:\n        esito = monitor.batti(url)\n")],
+         "pytest", [T_PIAN], ["test_battito_fallito_solo_nel_log[ConnectTimeout]",
+                              "test_battito_fallito_solo_nel_log[http_500]"]),
+    riga("battito-monitor-fallito-solleva", "decisione 1, 2026-11-13", "--",
+         [(PIAN, "def _batti_al_monitor(", '        _scrivi_log(f"battito al monitor non riuscito: {esito}")\n',
+           "        raise RuntimeError(esito)\n")],
+         "pytest", [T_PIAN], ["test_battito_fallito_solo_nel_log[ConnectTimeout]",
+                              "test_battito_fallito_solo_nel_log[scaduto]"]),
+    riga("battito-monitor-indirizzo-nel-log", "decisione 1, 2026-11-13", "--",
+         [(PIAN, "def _batti_al_monitor(", '_scrivi_log(f"battito al monitor non riuscito: {esito}")',
+           '_scrivi_log(f"battito al monitor non riuscito: {esito} {url}")')],
+         "pytest", [T_PIAN], ["test_battito_fallito_solo_nel_log[non_valido]"]),
+    riga("monitor-config-validata", "decisione 1, 2026-11-13", "M2",
+         [(CFG, "The heartbeat toward the external monitor, decision 1 of 2026-11-13.",
+           "MONITOR_URL: str | None = None",
+           'MONITOR_URL: str | None = __import__("pydantic").Field(default=None, pattern="^https://")')],
+         "pytest", [T_CFG], ["test_settings_monitor_facoltativo_mai_validato"]),
+    riga("config-rifiuta-chiavi-sconosciute", "risposta a Roberto, 21:41 del 2026-11-13", "--",
+         [(CFG, "model_config = SettingsConfigDict(", 'extra="ignore",', 'extra="forbid",')],
+         "pytest", [T_CFG], ["test_settings_chiave_sconosciuta_del_file_ignorata"]),
+    # I servizi del Mini in make prod-check: parte 2 del fermo visibile,
+    # decisioni del 2026-11-13. La lettura di launchctl print (una sede,
+    # deploy/stato_agenti.py: contano le sole righe a un tab, e un codice
+    # diverso da 0 e un servizio non caricato) e i verdetti dello script, nei
+    # due versi: un LaunchAgent non caricato, quello con KeepAlive fermo, la
+    # passata uscita con 1, il battito assente, vecchio o non ok sono ROSSO;
+    # la riga del monitor assente e INFO (scelta 5 B), doppia, non https o
+    # illeggibile e ROSSO; le letture chiedono al Mini solo launchctl print.
+    # M2 dove la mutazione nasconde un servizio fermo o un battito perso.
+    riga("stato-agenti-righe-annidate", "parte 2, 2026-11-13", "M2",
+         [(SA, "_CAMPO = re.compile(", r'r"^\t(state', r'r"^\t+(state')],
+         "pytest", [T_SA], ["test_le_righe_annidate_non_contano", "test_solo_righe_annidate_nessuno_stato"]),
+    riga("stato-agenti-uscita-ignorata", "parte 2, 2026-11-13", "M2",
+         [(SA, "def leggi(", "    if codice != 0:\n        return Agente(etichetta, False)\n",
+           "    if False:\n        return Agente(etichetta, False)\n")],
+         "pytest", [T_SA], ["test_codice_diverso_da_zero_non_caricato"]),
+    riga("servizi-scaricato-verde", "parte 2, 2026-11-13", "M2",
+         [(SM, "def giudica_agente(", '        return ROSSO, (\n            "%s NON CARICATO',
+           '        return OK, (\n            "%s NON CARICATO')],
+         "pytest", [T_SM], ["test_agente_non_caricato_rosso[api]", "test_agente_non_caricato_rosso[passata]"]),
+    riga("servizi-api-ferma-taciuta", "parte 2, 2026-11-13", "M2",
+         [(SM, "def giudica_agente(", "        if not agente.in_esecuzione:\n", "        if False:\n")],
+         "pytest", [T_SM], ["test_api_wrapper_non_in_esecuzione_rosso"]),
+    riga("servizi-uscita-della-passata-taciuta", "parte 2, 2026-11-13", "M2",
+         [(SM, "def giudica_agente(", '    if agente.ultima_uscita not in ("0", stato_agenti.MAI_USCITO):\n',
+           "    if False:\n")],
+         "pytest", [T_SM], ["test_pianificatore_uscito_con_1_rosso"]),
+    riga("servizi-keepalive-ignorato", "parte 2, 2026-11-13", "M2",
+         [(SM, "def sempre_vivo(", 'return plist.get("KeepAlive") is True', "return False")],
+         "pytest", [T_SM], ["test_sempre_vivo_dal_plist_di_git"]),
+    riga("servizi-battito-vecchio-taciuto", "parte 2, decisione 33 B", "M2",
+         [(SM, "def giudica_battito(", " or eta_s > SOGLIA_BATTITO_S", " or False")],
+         "pytest", [T_SM], ["test_battito_vecchio_rosso", "test_battito_al_confine_della_soglia"]),
+    riga("servizi-battito-esito-taciuto", "parte 2, 2026-11-13", "M2",
+         [(SM, "def giudica_battito(", 'if esito != "ok" or ', "if False or ")],
+         "pytest", [T_SM], ["test_battito_con_esito_non_ok_rosso[chiave_assente]",
+                            "test_battito_con_esito_non_ok_rosso[errore]"]),
+    riga("servizi-battito-assente-verde", "parte 2, 2026-11-13", "M2",
+         [(SM, "def giudica_battito(", '        return ROSSO, "BATTITO assente', '        return OK, "BATTITO assente')],
+         "pytest", [T_SM], ["test_battito_assente_rosso"]),
+    riga("servizi-soglia-copiata", "parte 2, decisione 33 B", "--",
+         [(SM, "SOGLIA_BATTITO_S = ", "300", "600")],
+         "pytest", [T_SM], ["test_soglia_uguale_a_quella_del_client"]),
+    riga("servizi-monitor-assente-rosso", "scelta 5 B, 2026-11-13", "--",
+         [(SM, "def giudica_monitor(", '        return INFO, "MONITOR non configurato',
+           '        return ROSSO, "MONITOR non configurato')],
+         "pytest", [T_SM], ["test_monitor_assente_info", "test_main_verde_col_monitor_assente"]),
+    riga("servizi-monitor-doppio-taciuto", "scelta 5 B, 2026-11-13", "--",
+         [(SM, "def giudica_monitor(", "    if chiave > 1:\n", "    if False:\n")],
+         "pytest", [T_SM], ["test_monitor_due_righe_rosso[due-https]", "test_monitor_due_righe_rosso[due-una-https]"]),
+    riga("servizi-monitor-non-https-taciuto", "parte 2, 2026-11-13", "--",
+         [(SM, "def giudica_monitor(", "    if https != 1:\n", "    if False:\n")],
+         "pytest", [T_SM], ["test_monitor_non_https_rosso"]),
+    riga("servizi-monitor-illeggibile-info", "scelta 5 B, 2026-11-13", "--",
+         [(SM, "def giudica_monitor(", "    if conteggi is None:\n        return ROSSO",
+           "    if conteggi is None:\n        return INFO")],
+         "pytest", [T_SM], ["test_monitor_che_non_si_legge_rosso"]),
+    riga("servizi-lettura-che-agisce", "parte 2, 2026-11-13", "M2",
+         [(SM, "def comando_launchctl(", 'launchctl print \\"gui', 'launchctl kickstart \\"gui')],
+         "pytest", [T_SM], ["test_le_letture_sono_in_sola_lettura"]),
+    riga("servizi-sempre-verde", "parte 2, 2026-11-13", "M2",
+         [(SM, "def main(", "    return 1 if any(livello == ROSSO for livello, _ in esiti) else 0", "    return 0")],
+         "pytest", [T_SM], ["test_main_rosso_con_un_agente_scaricato", "test_main_rosso_col_mini_che_non_risponde"]),
+    riga("servizi-sempre-rosso", "parte 2, 2026-11-13", "--",
+         [(SM, "def main(", "    return 1 if any(livello == ROSSO for livello, _ in esiti) else 0", "    return 1")],
+         "pytest", [T_SM], ["test_main_verde_col_monitor_assente"]),
 ]
 
 # L'autoprova: righe il cui esito e FISSATO, e che il banco pretende.

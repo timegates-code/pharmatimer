@@ -44,6 +44,14 @@ replaces it by construction.
 No 'scaduto' row for a window that closed before the subscription's current
 activation, push_subscriptions.created_at (Roberto, 2026-09-30).
 
+After a complete pass whose heartbeat is 'ok', main sends one heartbeat to
+the external monitor (decision 1 of 2026-11-13, pharmatimer_api.monitor),
+when the Mini's configuration names its address. It leaves after the pass
+has decided, sent and written everything, and only while the process is
+young enough that its bounded wait cannot reach the next start of the
+LaunchAgent. Its outcome goes to the log and nowhere else: no retry, no row,
+no effect on the exit code or on the next pass.
+
 Writes push_dispatch, push_avvisi_fine, push_pianificatore, and
 push_subscriptions only to switch a dead one off (404, 410). Reads
 log_assunzioni and never writes it (I2). With routers/*.py, the second and
@@ -60,11 +68,20 @@ from dataclasses import dataclass
 
 from mysql.connector import IntegrityError
 
-from pharmatimer_api import canale, invio
+from pharmatimer_api import canale, invio, monitor
 from pharmatimer_api.config import settings
 from pharmatimer_api.db import connection
 
 STATI_CHIUSI = ("presa", "saltata", "sospesa")
+
+# The heartbeat toward the monitor is attempted only while the process has
+# lived less than this, seconds (choice 4 A of 2026-11-13). launchd skips a
+# firing of StartInterval while the job still runs ("If the job is running
+# during an interval firing, that interval firing will likewise be missed",
+# launchd.plist(5)), and a skipped firing is a reminder 60 s late. 40 plus the
+# 5 of monitor.ATTESA_S leaves more than 10 s before the next firing of the
+# 60, the start of python included.
+LIMITE_BATTITO_S = 40.0
 
 # An 'in_invio' row this old without an outcome was left by an interrupted
 # pass: its POST may or may not have left, so it is an unknown outcome and it
@@ -472,8 +489,38 @@ def passata(
     return conteggi
 
 
+def _scrivi_log(testo: str) -> None:
+    """One line on stderr, the LaunchAgent's pianificatore.err.log, with the hour."""
+    print(time.strftime("%Y-%m-%d %H:%M:%S"), testo, file=sys.stderr, flush=True)
+
+
+def _batti_al_monitor(inizio: float) -> None:
+    """Decision 1 of 2026-11-13: one heartbeat toward the monitor, after the pass.
+
+    inizio is the process clock (time.monotonic) at the start of main. Without
+    an address nothing leaves and nothing is said. Past LIMITE_BATTITO_S
+    nothing leaves and the log says so. A failure goes to the log, as its
+    token, never the address.
+    """
+    url = settings.MONITOR_URL
+    if not url:
+        return
+    trascorso = time.monotonic() - inizio
+    if trascorso > LIMITE_BATTITO_S:
+        _scrivi_log(f"battito al monitor non inviato: passata di {trascorso:.0f} s")
+        return
+    esito = monitor.batti(url)
+    if esito != monitor.OK:
+        _scrivi_log(f"battito al monitor non riuscito: {esito}")
+
+
 def main() -> int:
-    """The LaunchAgent's entry point: one pass, exit 0; 1 on error, said in the heartbeat."""
+    """The LaunchAgent's entry point: one pass, exit 0; 1 on error, said in the heartbeat.
+
+    After a complete pass with heartbeat 'ok', the heartbeat toward the
+    monitor (choice 3 A of 2026-11-13); its outcome never changes the exit.
+    """
+    inizio = time.monotonic()
     try:
         conn = connection.apri_connessione()
     except Exception:
@@ -496,6 +543,8 @@ def main() -> int:
         conn.close()
     if conteggi:
         print(time.strftime("%Y-%m-%d %H:%M:%S"), _riassunto(conteggi), flush=True)
+    if firma.motivo is None:
+        _batti_al_monitor(inizio)
     return 0
 
 

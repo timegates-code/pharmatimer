@@ -13,6 +13,12 @@ Every pin has its row in scripts/audit/mutazioni.py, in both directions
 where the gate has two. Pin 3 of decision 22 (an open row outside the
 calendar gives no send) holds by construction: the planner starts from the
 calendar and never from the log. It is pinned here and declared in the bench.
+
+The heartbeat toward the monitor (decision 1 of 2026-11-13) is pinned here
+from main, with monitor.batti replaced; the function itself in
+tests/test_monitor.py, the process in tests/test_monitor_processo.py. No
+test of this file reaches a monitor: the address is off unless a test sets
+it, and the GET is replaced for every test.
 """
 import json
 from types import SimpleNamespace
@@ -21,7 +27,7 @@ import pytest
 import requests
 from urllib3.exceptions import MaxRetryError, NewConnectionError
 
-from pharmatimer_api import invio, pianificatore
+from pharmatimer_api import invio, monitor, pianificatore
 
 from .aiuti_push import (
     ADESSO,
@@ -47,6 +53,20 @@ MORTA = invio.Esito("respinto", "iscrizione_morta", 410, None, iscrizione_morta=
 
 FIRMA = invio.Firma(vapid=object(), sub=SUB, motivo=None)
 SENZA_CHIAVE = invio.Firma(vapid=None, sub=None, motivo="pem_illeggibile")
+
+# A placeholder of the reserved .invalid domain, never the real address.
+URL_MONITOR = "https://monitor.invalid/battito/passata"
+
+
+@pytest.fixture(autouse=True)
+def _nessuna_rete_verso_il_monitor(monkeypatch):
+    """No test of this file reaches a monitor, whatever the .env.dev says."""
+    monkeypatch.setattr(pianificatore.settings, "MONITOR_URL", None)
+
+    def vietata(url: str, attesa_s: float) -> int:
+        raise RuntimeError("GET verso un monitor in un test")
+
+    monkeypatch.setattr(monitor, "_get", vietata)
 
 
 class Mittente:
@@ -730,6 +750,91 @@ def test_main_dice_l_errore_nel_battito(scena, monkeypatch) -> None:
     assert righe(scena.pool, "SELECT ultima_passata_ms, esito, dettaglio FROM push_pianificatore") == [
         {"ultima_passata_ms": ADESSO, "esito": "errore", "dettaglio": "RuntimeError: guasto di prova"}
     ]
+
+
+# ------------------------------------------------------------ the monitor, decision 1 of 2026-11-13
+
+
+class Battito:
+    """In place of monitor.batti: records every call, with the heartbeat row it found."""
+
+    def __init__(self, pool, esito: str = "ok") -> None:
+        self.pool = pool
+        self.esito = esito
+        self.chiamate: list[tuple] = []
+
+    def __call__(self, url, attesa_s=monitor.ATTESA_S, richiedi=None) -> str:
+        riga = righe(self.pool, "SELECT esito FROM push_pianificatore")
+        self.chiamate.append((url, riga))
+        return self.esito
+
+
+def _main(scena, monkeypatch, firma, battito, url=URL_MONITOR) -> int:
+    monkeypatch.setattr(pianificatore.connection, "apri_connessione", scena.pool.get_connection)
+    monkeypatch.setattr(pianificatore.invio, "prepara_firma", lambda pem, sub: firma)
+    monkeypatch.setattr(pianificatore.canale, "adesso_ms", lambda: ADESSO)
+    monkeypatch.setattr(pianificatore.settings, "MONITOR_URL", url)
+    monkeypatch.setattr(pianificatore.monitor, "batti", battito)
+    return pianificatore.main()
+
+
+def test_battito_al_monitor_dopo_una_passata_ok(scena, monkeypatch) -> None:
+    # Choice 3 A: once, at the end of a complete pass, after the pass has
+    # written its own heartbeat; the address as the configuration gives it.
+    battito = Battito(scena.pool)
+    assert _main(scena, monkeypatch, FIRMA, battito) == 0
+    assert battito.chiamate == [(URL_MONITOR, [{"esito": "ok"}])]
+
+
+@pytest.mark.parametrize("esito", ["ConnectTimeout", "http_500", "scaduto", "non_valido"])
+def test_battito_fallito_solo_nel_log(scena, monkeypatch, capsys, esito) -> None:
+    # Decision 1: a failure goes to the log and that is all. No second
+    # attempt, the exit stays 0, the heartbeat row is the pass's own, and the
+    # line carries the outcome, never the address.
+    battito = Battito(scena.pool, esito)
+    assert _main(scena, monkeypatch, FIRMA, battito) == 0
+    assert len(battito.chiamate) == 1
+    errori = capsys.readouterr().err
+    assert f"battito al monitor non riuscito: {esito}" in errori
+    assert "monitor.invalid" not in errori
+    assert righe(scena.pool, "SELECT esito, dettaglio FROM push_pianificatore") == [
+        {"esito": "ok", "dettaglio": None}
+    ]
+
+
+def test_nessun_battito_con_la_chiave_assente(scena, monkeypatch) -> None:
+    # Choice 3 A: a channel off sends no reminder, and the monitor must see it.
+    battito = Battito(scena.pool)
+    assert _main(scena, monkeypatch, SENZA_CHIAVE, battito) == 0
+    assert battito.chiamate == []
+
+
+def test_nessun_battito_dopo_una_passata_caduta(scena, monkeypatch) -> None:
+    def rotta(conn, firma, **_):
+        raise RuntimeError("guasto di prova")
+
+    monkeypatch.setattr(pianificatore, "passata", rotta)
+    battito = Battito(scena.pool)
+    assert _main(scena, monkeypatch, FIRMA, battito) == 1
+    assert battito.chiamate == []
+
+
+def test_battito_oltre_il_tetto_non_parte_e_lo_dice(scena, monkeypatch, capsys) -> None:
+    # Choice 4 A: past the limit the wait could reach the next firing of the
+    # LaunchAgent, which launchd would skip: nothing leaves, the log says it.
+    monkeypatch.setattr(pianificatore, "LIMITE_BATTITO_S", -1.0)
+    battito = Battito(scena.pool)
+    assert _main(scena, monkeypatch, FIRMA, battito) == 0
+    assert battito.chiamate == []
+    assert "battito al monitor non inviato: passata di" in capsys.readouterr().err
+
+
+def test_senza_indirizzo_nessun_battito_e_nessuna_riga(scena, monkeypatch, capsys) -> None:
+    # Decision 1: without the address the heartbeat does not leave; prod-check says it.
+    battito = Battito(scena.pool)
+    assert _main(scena, monkeypatch, FIRMA, battito, url=None) == 0
+    assert battito.chiamate == []
+    assert "battito al monitor" not in capsys.readouterr().err
 
 
 # ------------------------------------------------------------ closures, I3

@@ -9,7 +9,9 @@
 #                    asserisce TREE e non AHEAD, che prima del push non e zero.
 #   make check-ci    Lo stesso gate, lanciato da GitHub Actions su ogni push.
 #   make prod-check  SOLO QUANDO SI DEPLOYA. Tocca il Mini via rete: stato del
-#                    servizio, bundle, openapi, censimento, e G-21.
+#                    servizio, bundle, openapi, censimento, dipendenze, i
+#                    LaunchAgent, il battito della passata, la riga del
+#                    monitor (scripts/audit/servizi_mini.py), e G-21.
 #   make lint        ruff (backend) + eslint (frontend) + tipografia.
 #   make openapi     esporta lo schema OpenAPI dal backend vivo in
 #                    backend/openapi.json (ignorato da git); lo legge il test
@@ -357,6 +359,7 @@ prod-check:
 	else echo "== DIPENDENZE DEL MINI =="; \
 	  echo "   ROSSO freeze del Mini non misurabile: $$(tail -1 $$tmp/freeze-mini.err)"; rc=1; fi; \
 	rm -rf $$tmp; \
+	echo; $(PY) scripts/audit/servizi_mini.py --mysql '$(MINI_MYSQL)' --db pharmatimer || rc=1; \
 	echo; $(MAKE) --no-print-directory g21 || rc=1; \
 	echo; echo "###############################################"; \
 	if [ $$rc -eq 0 ]; then echo "# PROD-CHECK: VERDE -- deploy ammesso"; \

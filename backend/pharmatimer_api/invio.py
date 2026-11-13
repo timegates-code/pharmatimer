@@ -1,8 +1,10 @@
 """
 PharmaTimer -- Web Push reminder channel, branch A: the transport. One POST
 to the push service, and what its outcome certifies. It is the planner's only
-door to the network and the only module that imports pywebpush, which loads
-aiohttp at import: the API never imports it (tests/test_canale.py).
+door to the push service and the only module that imports pywebpush, which
+loads aiohttp at import: the API never imports it (tests/test_canale.py). The
+planner's other door to the network is monitor.py, one heartbeat toward the
+external monitor (decision 1 of 2026-11-13).
 
 Condition 2 of Roberto, 2026-09-30: a message is attempted again only when
 the outcome CERTIFIES that the push service did not accept it, by white

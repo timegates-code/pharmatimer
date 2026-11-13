@@ -3,19 +3,22 @@
 Prima del taglio del 2026-10-24: `git show de0a538:STATO_CORRENTE.md`.
 Voci chiuse: `docs/chiuse-stato.tsv`, una riga per voce con la sua sezione.
 
-## Ultima sessione -- il deploy della guardia del minimo, 2026-11-13
-Secondo tentativo, sulle decisioni di Roberto del 12/11 e del 13/11.
-- Deploy di `2de8185`, che porta `6fa9079`, fatto sul Mini alle 13:18 e
-  verificato. Lo script della consulenza chiude con DEPLOY: FATTO, e la
-  lettura di dopo delle 13:19 torna: sul Mini cambiano solo i due file di
-  `6fa9079`, il suo test e `openapi.json`; servizi ripartiti alle 13:18,
-  battito ok, nessun invio, prese uguali. Il ritorno non e servito.
-- D4 non confronta piu alla lettera `confermata_ms` delle righe dei
-  telefoni: lo controlla a parte, che non torni indietro e non passi
-  l'orologio del Mini. Il fermo del 12/11 non si e ripetuto.
-- La voce 1 della coda e chiusa. Nessun codice di prodotto: lo STATO,
-  `docs/chiuse-stato.tsv` e la riga di `docs/serie-stato.tsv`. Deviazioni
-  dalla Spec: nessuna.
+## Ultima sessione -- il fermo visibile, parti 2-4, 2026-11-13
+S1 della sequenza del 12/11, sulle decisioni di Roberto del 13/11 (20:32,
+20:58, 21:41). Codice e test sullo Studio: nessun deploy, niente Mini.
+- `make prod-check` guarda i LaunchAgent del deploy, il battito della
+  passata e la riga `MONITOR_URL` del `.env.dev` del Mini, senza leggerne il
+  valore: senza riga e INFO (`scripts/audit/servizi_mini.py`). La lettura
+  di launchctl sta in `deploy/stato_agenti.py`, perche la parte 1 la riusi.
+- Dopo ogni passata ok, un battito al monitor: GET senza dati, al piu 5 s
+  in un thread daemon, solo sotto i 40 s di processo (`monitor.py`).
+- L'ultima riga delle notifiche ha uno spazio solo prima del trattino.
+- La parte 1, il riavvio dei servizi al deploy, va in una sessione sua
+  prima di D1, che porta questo commit (decisione 5 del 12/11). Nessuna
+  voce chiusa o aperta (decisione 2). La Spec dice il battito al monitor e
+  lo spazio nuovo: nessuna deviazione.
+- Prima di D1, a Roberto: account e controllo nel monitor, e la riga
+  `MONITOR_URL=https://...` nel `.env.dev` del Mini, mai nel repo.
 
 ## In esercizio
 - 13/11: canale Web Push in produzione dal 06/10; dalle 13:18 codice

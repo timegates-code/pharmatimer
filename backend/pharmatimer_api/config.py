@@ -50,6 +50,15 @@ class Settings(BaseSettings):
     VAPID_PEM_FILE: str | None = None
     VAPID_SUB: str | None = None
 
+    # The heartbeat toward the external monitor, decision 1 of 2026-11-13.
+    # OPTIONAL and never validated at startup, like the VAPID settings: a value
+    # that cannot work must not stop the API or the planner at import, and a
+    # validation error would print it. The address lives only in the Mini's
+    # .env.dev, outside the repo: never in the repo, in the tests or in an
+    # output. Without it no heartbeat leaves. Read by pharmatimer_api.monitor,
+    # through the planner.
+    MONITOR_URL: str | None = None
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]

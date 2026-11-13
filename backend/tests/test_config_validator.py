@@ -93,3 +93,42 @@ def test_settings_vapid_facoltative_mai_validate(monkeypatch):
     )
     assert s.VAPID_PEM_FILE == "/percorso/che/non/esiste.pem"
     assert s.VAPID_SUB == "non-un-sub"
+
+
+def test_settings_monitor_facoltativo_mai_validato(monkeypatch):
+    """Decision 1 of 2026-11-13: MONITOR_URL is optional and never validated at startup.
+
+    Like the VAPID settings: a value that cannot work must not stop the API
+    or the planner at import, and a validation error would print it. The
+    heartbeat says what is wrong instead (pharmatimer_api.monitor). Pinned in
+    scripts/audit/mutazioni.py.
+    """
+    monkeypatch.delenv("MONITOR_URL", raising=False)
+    s = _fresh_settings(monkeypatch, DB_NAME="anydb", DB_USER="u", DB_PASSWORD="p")
+    assert s.MONITOR_URL is None
+    s = _fresh_settings(
+        monkeypatch, DB_NAME="anydb", DB_USER="u", DB_PASSWORD="p", MONITOR_URL="non-un-indirizzo"
+    )
+    assert s.MONITOR_URL == "non-un-indirizzo"
+
+
+def test_settings_chiave_sconosciuta_del_file_ignorata(monkeypatch, tmp_path):
+    """A key of the env file that Settings does not know is ignored, never refused.
+
+    It is extra="ignore" of model_config. The order of a deploy rests on it:
+    the Mini's .env.dev may carry a key before the code that reads it, as
+    MONITOR_URL before the deploy that brings it. Pinned in
+    scripts/audit/mutazioni.py.
+    """
+    for k in ("DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME", "DB_NAME_TEST",
+              "DB_DEFAULTS_FILE", "CHIAVE_CHE_LA_CONFIGURAZIONE_NON_CONOSCE"):
+        monkeypatch.delenv(k, raising=False)
+    file_env = tmp_path / ".env.prova"
+    file_env.write_text(
+        "DB_NAME=anydb\nDB_USER=u\nDB_PASSWORD=p\nCHIAVE_CHE_LA_CONFIGURAZIONE_NON_CONOSCE=1\n",
+        encoding="utf-8",
+    )
+    from pharmatimer_api.config import Settings
+    s = Settings(_env_file=str(file_env))
+    assert s.DB_NAME == "anydb"
+    assert not hasattr(s, "CHIAVE_CHE_LA_CONFIGURAZIONE_NON_CONOSCE")

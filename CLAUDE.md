@@ -255,7 +255,12 @@ per costruzione.
 asserisce che il servizio risponde, che **`make g21`** e verde -- cioe che il
 livello di migrazione applicato in produzione non e sotto quello che il codice
 richiede -- e che il venv del Mini porta `backend/requirements.lock` voce per
-voce. Il resto lo stampa come `INFO` e dice che e INFO.
+voce. Asserisce anche, con `scripts/audit/servizi_mini.py`, che i LaunchAgent
+del deploy sono caricati, quello con KeepAlive in esecuzione e la passata
+senza un'uscita diversa da 0, e che il battito della passata e `ok` e non piu
+vecchio di 5 minuti. Della riga `MONITOR_URL` nel `.env.dev` del Mini conta le
+righe senza leggerne il valore: se manca e INFO, se e doppia o non https e
+ROSSO. Il resto lo stampa come `INFO` e dice che e INFO.
 
 **Ordine vincolante di schieramento: migrazione PRIMA, codice DOPO.**
 
@@ -338,7 +343,8 @@ codice.
 Esegue lint, test frontend, controllo DST, dipendenze, test backend,
 mutazioni, inventario, tetto e contatore dello STATO e albero, e stampa un
 verdetto unico. **Prima di un deploy, e solo allora, `make prod-check`**, che tocca il
-Mini e include `make g21` e il confronto del venv del Mini con il lock.
+Mini e include `make g21`, il confronto del venv del Mini con il lock, i
+LaunchAgent, il battito della passata e la riga del monitor (sezione 8).
 
 Sotto Claude Code il gate gira per intero: la precondizione di
 `test-backend`, che e la guardia d'identita del server, passa perche il
@@ -466,7 +472,13 @@ Dice dove mettere il PROSSIMO file; cio che non la rispetta si dichiara qui.
 - Eccezione dichiarata: i pin degli script di gate stanno in `backend/tests/` e
   non accanto allo script, perche il banco delle mutazioni lancia solo pytest e
   vitest: `test_g21_livello.py` per `inventario.py`, `test_dipendenze.py` per
-  `dipendenze.py`.
+  `dipendenze.py`, `test_servizi_mini.py` per `servizi_mini.py`, e
+  `test_stato_agenti.py` per `deploy/stato_agenti.py`.
+- Eccezione dichiarata, parte 2 del fermo visibile del 2026-11-13:
+  `deploy/stato_agenti.py` e il solo modulo Python di `deploy/`. E la sede
+  unica della lettura di `launchctl print`, che prod-check usa oggi e che il
+  riavvio del deploy riusera; sta li perche `deploy/` arriva sul Mini e
+  `scripts/` no.
 - `backend/pharmatimer_api/` ha un solo strato: **il SQL sta nel router**.
   Le due impalcature vuote `repository/` e `services/`, che portavano il solo
   `__init__.py` e che nessuno importava, sono state rimosse alla sessione di

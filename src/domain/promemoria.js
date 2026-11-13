@@ -86,9 +86,10 @@ export function testoDose(entry, farmaco) {
 /**
  * The last line of a notification (decision 8 of 2026-11-04): the hour and
  * the date of the sending in the phone's local time, hours and minutes on two
- * digits and on 24 hours, two spaces before the dash, the year on four.
+ * digits and on 24 hours, one space before the dash (decision 3 of
+ * 2026-11-13, in place of the two of decision 8), the year on four.
  * @param {unknown} istanteMs epoch ms
- * @returns {string|null} `PharmaTimer h.HH:MM  - DD/MM/YYYY`, or null when the
+ * @returns {string|null} `PharmaTimer h.HH:MM - DD/MM/YYYY`, or null when the
  *   instant does not read: not a number, not positive, or out of the calendar
  */
 export function rigaInvio(istanteMs) {
@@ -97,5 +98,5 @@ export function rigaInvio(istanteMs) {
   if (Number.isNaN(quando.getTime())) return null;
   const ora = `${dueCifre(quando.getHours())}:${dueCifre(quando.getMinutes())}`;
   const giorno = `${dueCifre(quando.getDate())}/${dueCifre(quando.getMonth() + 1)}/${quando.getFullYear()}`;
-  return `PharmaTimer h.${ora}  - ${giorno}`;
+  return `PharmaTimer h.${ora} - ${giorno}`;
 }
