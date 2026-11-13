@@ -3,37 +3,40 @@
 Prima del taglio del 2026-10-24: `git show de0a538:STATO_CORRENTE.md`.
 Voci chiuse: `docs/chiuse-stato.tsv`, una riga per voce con la sua sezione.
 
-## Ultima sessione -- il deploy della guardia del minimo, 2026-11-12
-Decisioni di Roberto dell'11/11 (1-6) e scelte del 12/11 (1A, 2A).
-- Deploy di `6fa9079` NON fatto: lo script della consulenza si e fermato in
-  D4 alle 14:54:22, prima della foto. La rilettura del Mini differiva da
-  quella delle 12:46:55 in una cella sola: `confermata_ms` della riga di
-  telefono 18, riscritto alle 14:10:30 dal PUT `/api/push/iscrizione`, che
-  l'app manda a ogni apertura e ritorno in primo piano. Prese, invii e
-  promemoria invariati.
-- Mini invariato: niente foto, deploy o ritorno. La finestra del 12/11 si e
-  chiusa alle 14:57:51: la voce 1 resta aperta.
-- Nessun codice, solo questo STATO. Deviazioni dalla Spec: nessuna.
+## Ultima sessione -- il deploy della guardia del minimo, 2026-11-13
+Secondo tentativo, sulle decisioni di Roberto del 12/11 e del 13/11.
+- Deploy di `2de8185`, che porta `6fa9079`, fatto sul Mini alle 13:18 e
+  verificato. Lo script della consulenza chiude con DEPLOY: FATTO, e la
+  lettura di dopo delle 13:19 torna: sul Mini cambiano solo i due file di
+  `6fa9079`, il suo test e `openapi.json`; servizi ripartiti alle 13:18,
+  battito ok, nessun invio, prese uguali. Il ritorno non e servito.
+- D4 non confronta piu alla lettera `confermata_ms` delle righe dei
+  telefoni: lo controlla a parte, che non torni indietro e non passi
+  l'orologio del Mini. Il fermo del 12/11 non si e ripetuto.
+- La voce 1 della coda e chiusa. Nessun codice di prodotto: lo STATO,
+  `docs/chiuse-stato.tsv` e la riga di `docs/serie-stato.tsv`. Deviazioni
+  dalla Spec: nessuna.
 
 ## In esercizio
-- 07/11: canale Web Push in produzione dal 06/10; dalle 16:19 codice
-  `581c72e`, col formato delle notifiche di `02e7cbf`.
-- 07/11: bundle `index-CpEj02dF`; uvicorn su `TCP *:8000` IPv4, anche in LAN.
-- 07/11: ritorno, se servisse: la foto `predeploy-formato-20261107` in
+- 13/11: canale Web Push in produzione dal 06/10; dalle 13:18 codice
+  `2de8185`, col formato delle notifiche di `02e7cbf` e la guardia del
+  minimo su `/recupero` di `6fa9079`, che agisce solo su un farmaco col
+  minimo: al 13/11 nessuno. Prima del primo restano le due verifiche
+  della decisione 9 dell'11/11, che stanno nella riga della voce 1 di
+  `docs/chiuse-stato.tsv`.
+- 13/11: bundle `index-CpEj02dF`, lo stesso del 07/11; uvicorn su
+  `TCP *:8000` IPv4, anche in LAN.
+- 13/11: ritorno, se servisse: la foto `predeploy-minimo-20261113` in
   `~/PharmaTimer/backups/`, coi due plist; rsync dalla foto, plist, bootout
   e bootstrap, senza `pip install -e`. La v07 resta; i dati non si toccano.
-- 07/11: la foto del 03/11, `predeploy-avviso-20261103`, resta finche
-  Roberto non decide di toglierla.
+- 13/11: le foto `predeploy-avviso-20261103` e `predeploy-formato-20261107`
+  restano finche Roberto non decide di toglierle.
 - 06/10: restano la prova sull'iPhone e la settimana di accettazione (17).
 - 03/09: il token e per utente e non si recupera dal server (SHA-256).
 - 03/09: ruotarlo e un UPDATE sul DB di produzione, da ratificare ogni volta.
 
 ## Coda di rimedio
 Si esegue, non si rimisura. Ordinata per rischio clinico.
-1. [aperta] **`/recupero` e il minimo** (M1): guardia nel commit del 09/11
-   (Spec 4.7, riga di `/recupero`), manca il deploy: fino ad allora il Mini
-   accetta il recupero sotto il minimo. Al 18/09 nessun farmaco a intervallo.
-   Il deploy del 12/11 si e fermato prima di scrivere: ultima sessione.
 2. [aperta] **Ricalcolo D+1 rifiutato: il riallineamento riporta la D+1
    all'ora prevista, sotto il minimo** (M1). Sonda del 2026-09-29: 390 minuti
    reali dalla presa contro 450, e col canale anche ad app chiusa. Oggi
