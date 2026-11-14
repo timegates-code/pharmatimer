@@ -469,16 +469,18 @@ Dice dove mettere il PROSSIMO file; cio che non la rispetta si dichiara qui.
   usano davvero. Un componente usato da una sola vista sta nella sua vista.
 - Il test sta ACCANTO al file che prova, stesso nome piu `.test.js` o
   `.test.jsx`. `src/test/` porta solo setup, finti condivisi e i pin di suite.
-- Eccezione dichiarata: i pin degli script di gate stanno in `backend/tests/` e
-  non accanto allo script, perche il banco delle mutazioni lancia solo pytest e
-  vitest: `test_g21_livello.py` per `inventario.py`, `test_dipendenze.py` per
-  `dipendenze.py`, `test_servizi_mini.py` per `servizi_mini.py`, e
-  `test_stato_agenti.py` per `deploy/stato_agenti.py`.
-- Eccezione dichiarata, parte 2 del fermo visibile del 2026-11-13:
-  `deploy/stato_agenti.py` e il solo modulo Python di `deploy/`. E la sede
-  unica della lettura di `launchctl print`, che prod-check usa oggi e che il
-  riavvio del deploy riusera; sta li perche `deploy/` arriva sul Mini e
-  `scripts/` no.
+- Eccezione dichiarata: i pin degli script di gate e di deploy stanno in
+  `backend/tests/` e non accanto allo script, perche il banco delle mutazioni
+  lancia solo pytest e vitest: `test_g21_livello.py` per `inventario.py`,
+  `test_dipendenze.py` per `dipendenze.py`, `test_servizi_mini.py` per
+  `servizi_mini.py`, `test_stato_agenti.py` per `deploy/stato_agenti.py`, e
+  `test_riavvia_agenti.py` per `deploy/riavvia_agenti.py`.
+- Eccezione dichiarata, fermo visibile, parte 2 del 2026-11-13 e parte 1 del
+  2026-11-14: `deploy/stato_agenti.py` e `deploy/riavvia_agenti.py` sono i
+  soli moduli Python di `deploy/`. Il primo e la sede unica della lettura di
+  `launchctl print`, che prod-check e il riavvio usano; il secondo e il
+  riavvio dei LaunchAgent al passo 6 di `deploy-mini.sh`. Stanno li perche
+  `deploy/` arriva sul Mini e `scripts/` no.
 - `backend/pharmatimer_api/` ha un solo strato: **il SQL sta nel router**.
   Le due impalcature vuote `repository/` e `services/`, che portavano il solo
   `__init__.py` e che nessuno importava, sono state rimosse alla sessione di

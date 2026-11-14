@@ -1,8 +1,8 @@
 """
 Pins of the reading of `launchctl print` -- deploy/stato_agenti.py, the one
-seat of it: make prod-check reads the Mini's LaunchAgents through it today,
-and the restart of the deploy will (part 1 of the fermo visibile, decision 1
-of Roberto, 2026-11-13 at 21:41).
+seat of it: make prod-check reads the Mini's LaunchAgents through it, and so
+does the restart of the deploy, deploy/riavvia_agenti.py (part 1 of the
+fermo visibile, decision 1 of Roberto, 2026-11-13 at 21:41).
 
 The samples are the form measured on the Mini on 2026-11-11, fields on one
 tab and nested blocks on two, never the real output of a run here: this

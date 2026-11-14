@@ -3,20 +3,19 @@
 Prima del taglio del 2026-10-24: `git show de0a538:STATO_CORRENTE.md`.
 Voci chiuse: `docs/chiuse-stato.tsv`, una riga per voce con la sua sezione.
 
-## Ultima sessione -- il fermo visibile, parti 2-4, 2026-11-13
-S1 della sequenza del 12/11, sulle decisioni di Roberto del 13/11 (20:32,
-20:58, 21:41). Codice e test sullo Studio: nessun deploy, niente Mini.
-- `make prod-check` guarda i LaunchAgent del deploy, il battito della
-  passata e la riga `MONITOR_URL` del `.env.dev` del Mini, senza leggerne il
-  valore: senza riga e INFO (`scripts/audit/servizi_mini.py`). La lettura
-  di launchctl sta in `deploy/stato_agenti.py`, perche la parte 1 la riusi.
-- Dopo ogni passata ok, un battito al monitor: GET senza dati, al piu 5 s
-  in un thread daemon, solo sotto i 40 s di processo (`monitor.py`).
-- L'ultima riga delle notifiche ha uno spazio solo prima del trattino.
-- La parte 1, il riavvio dei servizi al deploy, va in una sessione sua
-  prima di D1, che porta questo commit (decisione 5 del 12/11). Nessuna
-  voce chiusa o aperta (decisione 2). La Spec dice il battito al monitor e
-  lo spazio nuovo: nessuna deviazione.
+## Ultima sessione -- il fermo visibile, parte 1, 2026-11-14
+Il riavvio dei servizi al deploy: scelte 1 A e 2 A della F1 del 13/11,
+decisione delle 21:41. Codice e test sullo Studio: niente deploy ne Mini.
+- Il passo 6 di `deploy-mini.sh` lancia `deploy/riavvia_agenti.py` con
+  `AGENTI`. I plist di git si controllano prima di toccare, poi si
+  installano; a plist invariato `kickstart -k` per l'API e nessun comando
+  per la passata; a plist cambiato, o ad agente scaricato, bootout a
+  passata finita e bootstrap fino a 10 volte. Poi la verifica: l'API con
+  un pid nuovo, una passata partita dopo il riavvio e uscita con 0. Il
+  rapporto dice ogni SCARICATO col comando; SIGHUP e SIGINT ignorati.
+- Chiude i casi a-f della 1.2 della F1. Nessuna voce chiusa o aperta.
+- D1 porta questo commit con le parti 2-4 di `b6f8a6c` e la S2 (decisione
+  5 del 12/11), e li si prova: il launchctl vero, il kickstart, la passata.
 - Prima di D1, a Roberto: account e controllo nel monitor, e la riga
   `MONITOR_URL=https://...` nel `.env.dev` del Mini, mai nel repo.
 

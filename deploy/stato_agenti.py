@@ -1,11 +1,12 @@
 """
 PharmaTimer -- the state of a LaunchAgent as `launchctl print` tells it.
 
-The one seat of that reading, for every tool that needs it. Today make
+The one seat of that reading, for every tool that needs it: make
 prod-check, through scripts/audit/servizi_mini.py, on the text ssh brings
-back from the Mini. Tomorrow the restart of the deploy, part 1 of the fermo
-visibile, which reuses it (decision 1 of Roberto, 2026-11-13 at 21:41). It
-lives in deploy/ because deploy/ reaches the Mini and scripts/ does not.
+back from the Mini; and the restart of the deploy, deploy/riavvia_agenti.py,
+part 1 of the fermo visibile (decision 1 of Roberto, 2026-11-13 at 21:41),
+on the Mini itself. It lives in deploy/ because deploy/ reaches the Mini and
+scripts/ does not.
 
 Pure: no process, no launchctl, no I/O, standard library only, for the Mini's
 python as for the Studio's. The input is the output of
@@ -34,6 +35,8 @@ import re
 from dataclasses import dataclass
 
 IN_ESECUZIONE = "running"
+# A job between two runs: the restart waits for it before a bootout.
+NON_IN_ESECUZIONE = "not running"
 MAI_USCITO = "(never exited)"
 
 # One tab, then a field of the service: never two tabs.

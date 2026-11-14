@@ -151,6 +151,10 @@ SA = "deploy/stato_agenti.py"
 T_SA = "tests/test_stato_agenti.py"
 SM = "scripts/audit/servizi_mini.py"
 T_SM = "tests/test_servizi_mini.py"
+# Il riavvio dei LaunchAgent al deploy, parte 1 del fermo visibile.
+RA = "deploy/riavvia_agenti.py"
+T_RA = "tests/test_riavvia_agenti.py"
+DM = "deploy/deploy-mini.sh"
 
 # Il tocco del toggle (ratifica A del 2026-10-01): subscribe() primo atto del gesto.
 SUBSCRIBE_NEL_GESTO = (
@@ -1541,6 +1545,85 @@ MUTAZIONI = [
     riga("servizi-sempre-rosso", "parte 2, 2026-11-13", "--",
          [(SM, "def main(", "    return 1 if any(livello == ROSSO for livello, _ in esiti) else 0", "    return 1")],
          "pytest", [T_SM], ["test_main_verde_col_monitor_assente"]),
+    # Il riavvio dei LaunchAgent al deploy: parte 1 del fermo visibile,
+    # scelte 1 A e 2 A della F1 del 2026-11-13 (decisione 1 delle 21:41). La
+    # passata non si uccide mai: nessun comando a plist invariato, e a plist
+    # cambiato bootout solo a passata finita e mai oltre il tetto; il
+    # bootstrap solo a servizio uscito dal dominio, ritentato, e tentato
+    # anche dopo un errore; uno scaricato si dice col suo comando e ferma
+    # gli agenti dopo di lui; la verifica vuole una passata partita dopo il
+    # riavvio e uscita con 0, e l API con un pid nuovo; SIGHUP e SIGINT
+    # ignorati, e un uscita chiusa non ferma la sequenza; un plist di git che
+    # non regge non tocca niente. Nei due versi dove c e un cancello. M2 dove
+    # la mutazione lascia un servizio scaricato, taglia una passata o
+    # nasconde una passata che cade.
+    riga("riavvio-passata-col-kickstart", "parte 1, scelta 1 A, 2026-11-13", "M2",
+         [(RA, "def a_giri(", '    return "StartInterval" in plist\n', "    return False\n")],
+         "pytest", [T_RA], ["test_plist_invariati_kickstart_dell_api_e_passata_verificata",
+                            "test_dai_plist_di_git_la_passata_va_a_giri_l_api_no"]),
+    riga("riavvio-bootout-a-passata-in-corso", "parte 1, scelta 1 A, 2026-11-13", "M2",
+         [(RA, "def riavvia_agente(", "lambda g: not g.caricato or g.state == stato_agenti.NON_IN_ESECUZIONE,",
+           "lambda g: True,")],
+         "pytest", [T_RA], ["test_plist_cambiato_a_passata_in_corso_nessun_bootout_finche_gira"]),
+    riga("riavvio-bootout-oltre-il-tetto", "parte 1, scelta 1 A, 2026-11-13", "M2",
+         [(RA, "def riavvia_agente(", "            if ferma is None:\n", "            if False:\n")],
+         "pytest", [T_RA], ["test_passata_oltre_il_tetto_nessun_bootout_resta_caricato"]),
+    riga("riavvio-un-solo-bootstrap", "parte 1, scelta 1 A, 2026-11-13", "M2",
+         [(RA, "TENTATIVI = 10", "10", "1")],
+         "pytest", [T_RA], ["test_bootstrap_che_fallisce_due_volte_poi_riesce"]),
+    riga("riavvio-bootstrap-senza-attesa-dello-scarico", "parte 1, caso d della F1, 2026-11-13", "M2",
+         [(RA, "def riavvia_agente(",
+           "            if aspetta(amb, etichetta, lambda g: not g.caricato, ATTESA_SCARICO_S) is None:\n",
+           "            if False:\n")],
+         "pytest", [T_RA], ["test_bootstrap_solo_dopo_che_il_servizio_e_uscito_dal_dominio"]),
+    riga("riavvio-errore-dopo-il-bootout-scarica", "parte 1, caso c della F1, 2026-11-13", "M2",
+         [(RA, "def riavvia_agente(", '            out.di(f"   {etichetta}: errore dopo il bootout',
+           '            raise\n            out.di(f"   {etichetta}: errore dopo il bootout')],
+         "pytest", [T_RA], ["test_errore_dopo_il_bootout_il_bootstrap_si_tenta_lo_stesso"]),
+    riga("riavvio-scaricato-all-inizio-lasciato", "parte 1, scelta 1 A, 2026-11-13", "M2",
+         [(RA, "def riavvia_agente(", "    if prima.caricato and not cambiato:\n", "    if not cambiato:\n")],
+         "pytest", [T_RA], ["test_agente_scaricato_all_inizio_ricaricato_senza_bootout"]),
+    riga("riavvio-scaricato-taciuto", "parte 1, casi a e b della F1, 2026-11-13", "M2",
+         [(RA, "def rapporto(", "        if not agente.caricato:\n", "        if False:\n")],
+         "pytest", [T_RA], ["test_bootstrap_sempre_fallito_scaricato_col_comando[api]",
+                            "test_bootstrap_sempre_fallito_scaricato_col_comando[passata]"]),
+    riga("riavvio-tocca-dopo-uno-scaricato", "parte 1, scelta 1 A, 2026-11-13", "M2",
+         [(RA, "def riavvia(", "            scaricato = a\n", "            pass\n")],
+         "pytest", [T_RA], ["test_dopo_uno_scaricato_gli_agenti_seguenti_non_si_toccano"]),
+    riga("riavvio-uscita-della-passata-taciuta", "parte 1, caso e della F1, 2026-11-13", "M2",
+         [(RA, "def verifica_giro(", '    if agente.ultima_uscita != "0":\n', "    if False:\n")],
+         "pytest", [T_RA], ["test_passata_dopo_il_riavvio_che_esce_1_rosso",
+                            "test_la_passata_in_corso_all_avvio_non_e_quella_del_codice_nuovo"]),
+    riga("riavvio-passata-di-prima-accettata", "parte 1, caso e della F1, 2026-11-13", "M2",
+         [(RA, "def verifica_giro(", "and g.runs > riferimento.runs", "and g.runs >= riferimento.runs")],
+         "pytest", [T_RA], ["test_la_passata_in_corso_all_avvio_non_e_quella_del_codice_nuovo"]),
+    riga("riavvio-api-senza-pid-nuovo", "parte 1, scelta 1 A, 2026-11-13", "--",
+         [(RA, "def verifica_processo(", "and g.pid != pid_prima", "and True")],
+         "pytest", [T_RA], ["test_kickstart_senza_pid_nuovo_rosso"]),
+    riga("riavvio-plist-di-git-non-controllato", "parte 1, scelta 1 A, 2026-11-13", "M2",
+         [(RA, "def prepara(", '        if dati is None or dati.get("Label") != a:\n', "        if False:\n")],
+         "pytest", [T_RA], ["test_plist_di_git_che_non_regge_nessun_comando_che_cambia_lo_stato[illeggibile]",
+                            "test_plist_di_git_che_non_regge_nessun_comando_che_cambia_lo_stato[etichetta]"]),
+    riga("riavvio-sighup-non-ignorato", "parte 1, caso c della F1, 2026-11-13", "M2",
+         [(RA, "def ignora_segnali(", "    signal.signal(signal.SIGHUP, signal.SIG_IGN)\n", "")],
+         "pytest", [T_RA], ["test_sighup_e_sigint_ignorati_al_primo_comando_che_cambia_un_servizio"]),
+    riga("riavvio-sigint-non-ignorato", "parte 1, caso c della F1, 2026-11-13", "M2",
+         [(RA, "def ignora_segnali(", "    signal.signal(signal.SIGINT, signal.SIG_IGN)\n", "")],
+         "pytest", [T_RA], ["test_sighup_e_sigint_ignorati_al_primo_comando_che_cambia_un_servizio"]),
+    riga("riavvio-uscita-chiusa-ferma", "parte 1, caso c della F1, 2026-11-13", "M2",
+         [(RA, "class Uscita:", "            self.chiusa = True\n", "            raise\n")],
+         "pytest", [T_RA], ["test_uscita_chiusa_la_sequenza_arriva_in_fondo"]),
+    riga("riavvio-sempre-verde", "parte 1, 2026-11-13", "M2",
+         [(RA, "def rapporto(", "    return 1\n", "    return 0\n")],
+         "pytest", [T_RA], ["test_dopo_uno_scaricato_gli_agenti_seguenti_non_si_toccano",
+                            "test_passata_dopo_il_riavvio_che_esce_1_rosso"]),
+    riga("riavvio-sempre-rosso", "parte 1, 2026-11-13", "--",
+         [(RA, "def rapporto(", "        return 0\n", "        return 1\n")],
+         "pytest", [T_RA], ["test_plist_invariati_kickstart_dell_api_e_passata_verificata"]),
+    riga("riavvio-deploy-senza-agenti", "parte 1, scelta 2 A, 2026-11-13", "--",
+         [(DM, 'IN_CORSO="passo 6, deploy/riavvia_agenti.py per $AGENTI', "deploy/riavvia_agenti.py $AGENTI",
+           "deploy/riavvia_agenti.py com.pharmatimer.api-wrapper")],
+         "pytest", [T_RA], ["test_deploy_mini_lancia_il_riavvio_con_agenti"]),
 ]
 
 # L'autoprova: righe il cui esito e FISSATO, e che il banco pretende.

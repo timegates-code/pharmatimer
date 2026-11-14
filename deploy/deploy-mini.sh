@@ -21,8 +21,9 @@
 #      Si schiera cio che git ha e che e su origin, non cio che sta sul disco.
 #   4. npm run build:mini                       -> dist-mini/
 #   5. rsync backend/ deploy/ dist-mini/        -> mini:~/PharmaTimer/{backend,deploy,web}
-#   6. ssh mini: pip install -e backend, i plist di AGENTI da git in
-#      ~/Library/LaunchAgents, e il riavvio di ciascuno nel dominio gui
+#   6. ssh mini: pip install -e backend; poi deploy/riavvia_agenti.py installa
+#      i plist di AGENTI da git in ~/Library/LaunchAgents, riavvia ciascuno nel
+#      dominio gui senza lasciarlo scaricato, lo verifica e ne fa il rapporto
 #   7. make prod-check di nuovo: INFO sulla versione servita, e g21 verde
 #
 # Cosa NON viaggia mai verso il Mini: .env* (il Mini ha il suo, e i plist
@@ -33,7 +34,9 @@
 # Derivato dalla procedura eseguita a mano e verbalizzata nel Changelog di
 # Fase 3 (CP3 e CP6 delle sessioni N+5.M e N+5.Q): rsync di deploy/ e
 # backend/, pip install -e sul Mini, copia dei plist in ~/Library/LaunchAgents
-# (CP3), bootout + bootstrap.
+# (CP3), bootout + bootstrap. Dalla parte 1 del fermo visibile il riavvio sta
+# in deploy/riavvia_agenti.py: prima era un bootout seguito subito dal
+# bootstrap, nella stringa ssh, senza attese, tentativi ne verifica.
 
 set -euo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
@@ -41,7 +44,10 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 MINI="${MINI:-mini}"                 # alias ssh, tailnet
 DEST="${DEST:-PharmaTimer}"          # relativo alla home di marketreader sul Mini
 # I LaunchAgent che il passo 6 installa e riavvia, in quest ordine: prima l API,
-# poi la passata. Il backup resta fuori: il deploy non lo tocca.
+# poi la passata. Il backup resta fuori: il deploy non lo tocca. La riga resta
+# in questa forma: make prod-check la legge di qui
+# (scripts/audit/servizi_mini.py), e il passo 6 la passa a
+# deploy/riavvia_agenti.py.
 AGENTI="com.pharmatimer.api-wrapper com.pharmatimer.pianificatore"
 
 # Cio che lo script ha compiuto sul Mini, e l atto avviato e non ancora
@@ -102,34 +108,29 @@ IN_CORSO=""
 echo "   rsync completato"
 
 # ---------------------------------------------------------------- 6
-passo "6. sul Mini: pip install -e backend, plist in ~/Library/LaunchAgents, riavvio dei LaunchAgent"
-# Al login automatico launchd carica solo ~/Library/LaunchAgents: i plist si
-# installano da git a ogni deploy, come al CP3 (ratifica A del 2026-10-01).
-# Prima si leggono tutti, e se uno non si legge nessun LaunchAgent si ferma;
-# poi quelli installati vanno in backups/ col diff stampato; poi si
-# sostituiscono, col modo 644 fissato qui perche rsync -a porta quello
-# dell albero dello Studio; poi bootout e bootstrap, nell ordine di AGENTI.
-IN_CORSO="passo 6, pip install -e, plist in ~/Library/LaunchAgents e riavvio dei LaunchAgent: dove si e fermato lo dice l uscita qui sopra"
+passo "6. sul Mini: pip install -e backend, poi deploy/riavvia_agenti.py per i LaunchAgent di AGENTI"
+# Due ssh. Il primo e il pip install -e di sempre. Il secondo lancia
+# deploy/riavvia_agenti.py col python del .venv, con AGENTI nel suo ordine
+# (scelte 1 A e 2 A della F1 del fermo visibile, 2026-11-13). Lo script legge
+# i plist da git prima di toccare qualsiasi cosa; li installa col modo 644 in
+# ~/Library/LaunchAgents, perche al login automatico launchd carica solo
+# quelli (ratifica A del 2026-10-01), con la copia degli installati in
+# backups/; poi riavvia senza lasciare un servizio scaricato: a plist
+# invariato kickstart -k per l API e nessun comando per la passata, che legge
+# gia il codice nuovo; a plist cambiato, o ad agente scaricato, bootout a
+# passata finita e bootstrap fino a 10 tentativi. Verifica l API con un pid
+# nuovo e una passata partita dopo il riavvio e uscita con 0, e chiude
+# sempre col rapporto, dove uno SCARICATO porta il comando per ricaricarlo.
+# Ignora SIGHUP e SIGINT: una connessione che cade non lo ferma a meta.
+IN_CORSO="passo 6, pip install -e di backend: dove si e fermato lo dice l uscita qui sopra"
 ssh "$MINI" "export PATH=/opt/homebrew/bin:\$PATH; set -e; \
   ~/$DEST/.venv/bin/pip install --quiet -e ~/$DEST/backend; \
-  ~/$DEST/.venv/bin/pip show pharmatimer-api | grep -E '^Version'; \
-  for a in $AGENTI; do plutil -lint ~/$DEST/deploy/launchd/\$a.plist || \
-    { echo \"ROSSO  \$a non si legge: nessun LaunchAgent fermato\"; exit 1; }; done; \
-  t=\$(date +%Y%m%d_%H%M%S); mkdir -p ~/$DEST/backups; \
-  for a in $AGENTI; do \
-    if [ -f ~/Library/LaunchAgents/\$a.plist ]; then \
-      cp -p ~/Library/LaunchAgents/\$a.plist ~/$DEST/backups/\$a.predeploy.\$t.plist; \
-      echo \"   \$a: installato contro git\"; \
-      diff ~/Library/LaunchAgents/\$a.plist ~/$DEST/deploy/launchd/\$a.plist || true; \
-    else echo \"   \$a: nuovo\"; fi; \
-  done; \
-  for a in $AGENTI; do install -m 644 ~/$DEST/deploy/launchd/\$a.plist ~/Library/LaunchAgents/\$a.plist; done; \
-  for a in $AGENTI; do \
-    launchctl bootout gui/\$(id -u)/\$a || true; \
-    launchctl bootstrap gui/\$(id -u) ~/Library/LaunchAgents/\$a.plist; \
-  done; \
-  sleep 3; launchctl list | grep -i pharmatimer"
-ATTI="$ATTI; passo 6, pip install -e backend, plist di $AGENTI installati (i sostituiti in ~/$DEST/backups/), LaunchAgent riavviati"
+  ~/$DEST/.venv/bin/pip show pharmatimer-api | grep -E '^Version'"
+ATTI="$ATTI; passo 6, pip install -e backend"
+IN_CORSO="passo 6, deploy/riavvia_agenti.py per $AGENTI: lo stato di ciascuno e nel rapporto qui sopra, e senza rapporto lo dice make prod-check"
+ssh "$MINI" "export PATH=/opt/homebrew/bin:\$PATH; ~/$DEST/.venv/bin/python ~/$DEST/deploy/riavvia_agenti.py $AGENTI" \
+  || rosso "passo 6: il riavvio dei LaunchAgent e ROSSO. Il rapporto qui sopra dice ogni agente, e uno SCARICATO porta il comando per ricaricarlo"
+ATTI="$ATTI; plist di $AGENTI installati (i sostituiti in ~/$DEST/backups/), LaunchAgent riavviati e verificati"
 IN_CORSO=""
 
 # ---------------------------------------------------------------- 7
